@@ -1,0 +1,51 @@
+name: buzup_mobile
+description: "BuzUp Passageiro - app movel para passageiros do transporte cashless."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  go_router: ^14.7.2
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.3.5
+  intl: ^0.20.2
+  jwt_decoder: ^2.0.1
+  cached_network_image: ^3.4.1
+  url_launcher: ^6.3.1
+  qr_flutter: ^4.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.2
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/ticket_template.jpg
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon/ic_launcher.png"
+  adaptive_icon_background: "#F07C24"
+  adaptive_icon_foreground: "assets/icon/ic_launcher_foreground.png"
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false

@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+.venv*/
+venv/
+env/
+
+# Django
+*.sqlite3
+db.sqlite3
+staticfiles/
+media/
+
+# Environment (keep *.example, ignore real env files with secrets)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Node
+node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter (pos_app + mobile_app)
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+**/.gradle/
+*.iml
+
+# Docker
+postgres_*_data/
+
+# Dev notes
+prompt

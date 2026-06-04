@@ -1,0 +1,167 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: buzup_db_prod
+    restart: unless-stopped
+    env_file:
+      - ${BACKEND_ENV_FILE:-./backend/.env.prod}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - buzup_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: buzup_redis_prod
+    restart: unless-stopped
+    networks:
+      - buzup_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: buzup_backend_prod
+    restart: unless-stopped
+    command:
+      [
+        "gunicorn",
+        "config.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+        "--workers",
+        "3",
+        "--timeout",
+        "120"
+      ]
+    env_file:
+      - ${BACKEND_ENV_FILE:-./backend/.env.prod}
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      WAIT_FOR_DB: "true"
+      WAIT_FOR_DB_TIMEOUT: "60"
+      AUTO_MIGRATE: "true"
+      AUTO_COLLECTSTATIC: "true"
+    expose:
+      - "8000"
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    networks:
+      - buzup_internal
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys,urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'X-Forwarded-Proto':'https'}); sys.exit(0 if urllib.request.urlopen(req, timeout=5).status == 200 else 1)",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+    container_name: buzup_frontend_prod
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - buzup_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: buzup_gateway_prod
+    restart: unless-stopped
+    expose:
+      - "80"
+    volumes:
+      - ./docker/prod/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_data:/var/www/backend-static:ro
+      - media_data:/var/www/backend-media:ro
+    networks:
+      buzup_internal:
+      shared_web:
+        aliases:
+          - buzup_gateway_prod
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: buzup_nginx_prod
+    profiles:
+      - standalone
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/prod/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_data:/var/www/backend-static:ro
+      - media_data:/var/www/backend-media:ro
+    networks:
+      - buzup_internal
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_prod_data:
+    name: buzup_postgres_prod_data
+    external: true
+  static_data:
+    name: buzup_static_data
+    external: true
+  media_data:
+    name: buzup_media_data
+    external: true
+
+networks:
+  buzup_internal:
+    name: buzup_internal
+    external: true
+  shared_web:
+    name: shared_web
+    external: true

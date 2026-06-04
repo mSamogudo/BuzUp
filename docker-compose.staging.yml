@@ -1,0 +1,145 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: buzup_db_staging
+    restart: unless-stopped
+    env_file:
+      - ${BACKEND_ENV_FILE:-./backend/.env.staging}
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    networks:
+      - buzup_staging_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: buzup_redis_staging
+    restart: unless-stopped
+    networks:
+      - buzup_staging_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: buzup_backend_staging
+    restart: unless-stopped
+    command:
+      [
+        "gunicorn",
+        "config.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+        "--workers",
+        "3",
+        "--timeout",
+        "120"
+      ]
+    env_file:
+      - ${BACKEND_ENV_FILE:-./backend/.env.staging}
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+      WAIT_FOR_DB: "true"
+      WAIT_FOR_DB_TIMEOUT: "60"
+      AUTO_MIGRATE: "true"
+      AUTO_COLLECTSTATIC: "true"
+    expose:
+      - "8000"
+    volumes:
+      # Garante os assets de template do bilhete (PDF) mesmo com imagem stale.
+      - ./backend/static:/app/static:ro
+      - static_staging_data:/app/staticfiles
+      - media_staging_data:/app/media
+    networks:
+      - buzup_staging_internal
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import sys,urllib.request; req=urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'X-Forwarded-Proto':'https'}); sys.exit(0 if urllib.request.urlopen(req, timeout=5).status == 200 else 1)",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+    container_name: buzup_frontend_staging
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - buzup_staging_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: buzup_gateway_staging
+    restart: unless-stopped
+    expose:
+      - "80"
+    ports:
+      - "${BUZUP_STAGING_QA_HTTP_BIND:-127.0.0.1:8083}:80"
+    volumes:
+      - ./docker/prod/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_staging_data:/var/www/backend-static:ro
+      - media_staging_data:/var/www/backend-media:ro
+    networks:
+      buzup_staging_internal:
+      shared_web:
+        aliases:
+          - buzup_gateway_staging
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_staging_data:
+    name: buzup_postgres_staging_data
+    external: true
+  static_staging_data:
+    name: buzup_static_staging_data
+    external: true
+  media_staging_data:
+    name: buzup_media_staging_data
+    external: true
+
+networks:
+  buzup_staging_internal:
+    name: buzup_staging_internal
+    external: true
+  shared_web:
+    name: shared_web
+    external: true

@@ -110,9 +110,17 @@ def _confirm_payment(payment_intent: PaymentIntent, callback: PaymentCallback, p
             pi.reference, pi.amount, pi.purpose, pi.provider, provider_ref or "-",
         )
 
-        if pi.wallet and pi.purpose in (
-            PaymentIntent.Purpose.MOBILE_WALLET_TOPUP,
-            PaymentIntent.Purpose.POS_CARD_TOPUP,
+        # NOTE: card recovery reuses POS_CARD_TOPUP as its purpose but it is a
+        # FEE, not a wallet top-up — it must NOT credit the wallet (otherwise the
+        # passenger pays the recovery fee and gets the same amount back as
+        # balance). The card_recovery hook below handles its finalisation.
+        if (
+            pi.wallet
+            and pi.purpose in (
+                PaymentIntent.Purpose.MOBILE_WALLET_TOPUP,
+                PaymentIntent.Purpose.POS_CARD_TOPUP,
+            )
+            and (pi.metadata or {}).get("kind") != "card_recovery"
         ):
             credit_wallet(
                 wallet=pi.wallet,

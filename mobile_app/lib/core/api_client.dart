@@ -38,7 +38,27 @@ class ApiClient {
           data: 'status=${e.response?.statusCode} type=${e.type.name}',
           error: e.message,
         );
-        if (e.response?.statusCode == 401) {
+        final req = e.requestOptions;
+        final is401 = e.response?.statusCode == 401;
+        final alreadyRetried = req.extra['__retried'] == true;
+        final isRefreshCall = req.path.contains('/auth/token/refresh');
+        if (is401 && !alreadyRetried && !isRefreshCall) {
+          // Try to silently refresh the access token before logging out.
+          final newAccess = await _tryRefresh();
+          if (newAccess != null) {
+            req.extra['__retried'] = true;
+            req.headers['Authorization'] = 'Bearer $newAccess';
+            try {
+              final retried = await _dio.fetch<dynamic>(req);
+              return handler.resolve(retried);
+            } on DioException catch (err) {
+              return handler.next(err);
+            }
+          }
+          // Refresh failed -> session is really over.
+          await _store.clearAll();
+          onUnauthorized?.call();
+        } else if (is401) {
           await _store.clearAll();
           onUnauthorized?.call();
         }
@@ -49,6 +69,40 @@ class ApiClient {
 
   final Dio _dio;
   final SecureStore _store;
+  Future<String?>? _refreshing; // single-flight so concurrent 401s refresh once
+
+  /// Returns a fresh access token (refreshing at most once concurrently), or
+  /// null if there's no usable refresh token / the refresh failed.
+  Future<String?> _tryRefresh() {
+    return _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);
+  }
+
+  Future<String?> _doRefresh() async {
+    final refresh = await _store.getRefresh();
+    if (refresh == null || refresh.isEmpty) return null;
+    try {
+      // Bare Dio (no interceptors) to avoid recursion on the refresh call.
+      final bare = Dio(BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        connectTimeout: AppConfig.apiTimeout,
+        receiveTimeout: AppConfig.apiTimeout,
+        contentType: Headers.jsonContentType,
+      ));
+      final res = await bare.post<Map<String, dynamic>>(
+        '/api/auth/token/refresh/',
+        data: {'refresh': refresh},
+      );
+      final access = res.data?['access'] as String?;
+      if (access == null || access.isEmpty) return null;
+      final newRefresh = (res.data?['refresh'] as String?) ?? refresh;
+      await _store.saveTokens(access: access, refresh: newRefresh);
+      Log.info('token refreshed');
+      return access;
+    } catch (err) {
+      Log.warn('token refresh failed', error: err);
+      return null;
+    }
+  }
 
   Future<Response<T>> get<T>(String path, {Map<String, dynamic>? query, Options? options}) {
     return _dio.get<T>(path, queryParameters: query, options: options);

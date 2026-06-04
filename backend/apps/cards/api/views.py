@@ -44,7 +44,11 @@ class CardViewSet(BaseModelViewSet):
 
 
 class CardLookupView(APIView):
-    permission_classes = [IsAuthenticated]
+    # Returns the cardholder's PII + wallet balance, so it must require the
+    # card-read capability (was IsAuthenticated only — any logged-in user could
+    # harvest passenger data by enumerating card UIDs).
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("cards.read",)
 
     def post(self, request):
         serializer = CardLookupSerializer(data=request.data)

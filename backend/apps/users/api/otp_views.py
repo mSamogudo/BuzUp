@@ -61,16 +61,26 @@ class PhoneCheckView(APIView):
         if not is_valid_otp_phone(phone):
             return Response({"detail": "Telefone invalido."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Throttle to blunt account-enumeration: this endpoint reveals whether a
+        # phone has an account, so cap it per IP (and per phone).
+        window = getattr(settings, "OTP_REQUEST_WINDOW_SECONDS", 300)
+        client_ip = _client_ip(request)
+        if client_ip and _rate_limit_exceeded(f"check:ip:{client_ip}", getattr(settings, "PHONE_CHECK_MAX_PER_IP", 30), window):
+            return Response({"detail": "Muitas tentativas. Tente novamente mais tarde."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        if _rate_limit_exceeded(f"check:phone:{phone}", getattr(settings, "PHONE_CHECK_MAX_PER_PHONE", 8), window):
+            return Response({"detail": "Muitas tentativas. Tente novamente mais tarde."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
         from apps.trips.models import Agent as AgentModel
         from apps.trips.models import Driver as DriverModel
 
-        if DriverModel.objects.filter(phone=phone, status=DriverModel.Status.ACTIVE).exists():
-            return Response({"exists": True, "role": "driver"})
-        if AgentModel.objects.filter(phone=phone, status=AgentModel.Status.ACTIVE).exists():
-            return Response({"exists": True, "role": "agent"})
-        if PassengerAccount.objects.filter(phone_number=phone).exists():
-            return Response({"exists": True, "role": "passenger"})
-        return Response({"exists": False, "role": None})
+        # Only disclose existence (not the role) — the app just needs to decide
+        # between login and registration.
+        exists = (
+            DriverModel.objects.filter(phone=phone, status=DriverModel.Status.ACTIVE).exists()
+            or AgentModel.objects.filter(phone=phone, status=AgentModel.Status.ACTIVE).exists()
+            or PassengerAccount.objects.filter(phone_number=phone).exists()
+        )
+        return Response({"exists": exists})
 
 
 class OtpRequestView(APIView):

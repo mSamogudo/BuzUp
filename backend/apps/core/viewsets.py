@@ -32,11 +32,29 @@ class BaseModelViewSet(ModelViewSet):
             return "active"
         return scope
 
+    def _can_view_deleted(self):
+        """Only superusers / users with this resource's manage(destroy)
+        capability may see soft-deleted rows. Prevents a mere *.read user from
+        pulling archived records via ?scope=archived|all."""
+        user = self.request.user
+        if getattr(user, "is_superuser", False):
+            return True
+        from apps.core.permissions.base import has_capabilities
+        caps = (
+            self.required_capabilities_by_action.get("destroy")
+            or self.required_capabilities_by_action.get("partial_update")
+            or self.required_capabilities_by_action.get("update")
+            or ()
+        )
+        return bool(caps) and has_capabilities(user, caps)
+
     def _apply_soft_delete_scope(self, queryset):
         if not self._has_soft_delete_field(queryset.model):
             return queryset
 
         scope = "all" if self.action == "restore" else self._soft_delete_scope()
+        if scope in ("archived", "all") and not self._can_view_deleted():
+            scope = "active"
         if scope == "archived":
             return queryset.filter(deleted_at__isnull=False)
         if scope == "all":

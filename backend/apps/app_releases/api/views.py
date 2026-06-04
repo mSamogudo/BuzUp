@@ -68,7 +68,11 @@ class AppReleaseDownloadView(APIView):
     authentication_classes = []
 
     def get(self, request, pk):
-        release = AppRelease.objects.filter(pk=pk).first()
+        # Public download only serves PUBLISHED releases — never DRAFT/SUSPENDED
+        # (those are only reachable through the authenticated admin viewset).
+        release = AppRelease.objects.filter(
+            pk=pk, status=AppRelease.Status.PUBLISHED,
+        ).first()
         if not release or not release.apk_file:
             raise Http404("APK nao encontrado.")
         filename = f"buzup-{release.app_type}-{release.version_name}.apk"

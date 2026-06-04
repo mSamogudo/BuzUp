@@ -80,7 +80,7 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewPkg(r)} />
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setForm({ name: r.name, description: r.description, discount_type: r.discount_type, discount_value: r.discount_value, price: r.price, validity_days: String(r.validity_days), max_trips: String(r.max_trips), status: r.status }); setSelectedRoutes(new Set((r.routes || []).map((rt) => rt.route_id).filter(Boolean))); }} />
-                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar o pacote ${r.name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/packages/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar o pacote ${r.name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/packages/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
               </div>
             )},
           ]} rows={pkgs || []} rowKey={(r) => r.uuid} loading={lP} emptyMessage={t(lc, "noPackages")} />

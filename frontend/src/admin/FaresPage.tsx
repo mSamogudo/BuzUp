@@ -137,7 +137,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewR(r)} />
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditR(r.id); setRForm({ fare_product: String(r.fare_product_id), route: r.route_id ? String(r.route_id) : "", origin_stop: r.origin_stop_id ? String(r.origin_stop_id) : "", destination_stop: r.destination_stop_id ? String(r.destination_stop_id) : "", calculation_method: r.calculation_method, fixed_amount: r.fixed_amount, amount_per_km: r.amount_per_km || "", min_amount: r.min_amount || "", max_amount: r.max_amount || "", distance_min_km: r.distance_min_km != null ? String(r.distance_min_km) : "", distance_max_km: r.distance_max_km != null ? String(r.distance_max_km) : "", passenger_class: r.passenger_class, priority: String(r.priority) }); setRuleModal(true); }} />
-                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: "Tem a certeza que pretende eliminar esta regra de tarifa?", tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-rules/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: "Tem a certeza que pretende eliminar esta regra de tarifa?", tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-rules/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
               </div>
             )},
           ]} rows={rules || []} rowKey={(r) => r.uuid} loading={lR} emptyMessage={t(lc, "noRules")} />
@@ -155,7 +155,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             { header: t(lc, "actions"), className: "table-actions-cell", render: (r: FareProduct) => (
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditP(r.id); setPForm({ name: r.name, product_type: r.product_type, status: r.status }); setProdModal(true); }} />
-                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar o produto ${r.name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-products/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar o produto ${r.name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-products/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
               </div>
             )},
           ]} rows={products || []} rowKey={(r) => r.uuid} loading={lP} emptyMessage={t(lc, "noProducts")} />

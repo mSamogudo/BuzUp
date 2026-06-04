@@ -71,7 +71,7 @@ export default function TripsPage() {
             <div className="admin-inline-actions">
               <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => navigate(`/app/trips/${r.id}`)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setForm({ route: String(r.route_id), vehicle: r.vehicle_id ? String(r.vehicle_id) : "", driver: r.driver_id ? String(r.driver_id) : "", planned_departure_at: r.planned_departure_at || "", planned_arrival_at: "", status: r.status }); }} />
-              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a viagem ${r.route_code}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/trips/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />
+              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a viagem ${r.route_code}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/trips/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
             </div>
           )},
         ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noTrips")} />

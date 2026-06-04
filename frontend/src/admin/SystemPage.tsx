@@ -248,7 +248,7 @@ function RolesTab() {
           <div className="admin-inline-actions">
             <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
             <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setFormName(r.name); setFormDesc(r.description); setSelectedPerms(new Set(r.permissions)); setModalOpen(true); }} />
-            {!r.is_system && <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { if (!confirm(`${t(lc, "delete")} ${r.name}?`)) return; try { await apiDelete(`/api/admin/roles/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />}
+            {!r.is_system && <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { if (!confirm(`${t(lc, "delete")} ${r.name}?`)) return; try { await apiDelete(`/api/admin/roles/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />}
           </div>
         )},
       ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noData")} />

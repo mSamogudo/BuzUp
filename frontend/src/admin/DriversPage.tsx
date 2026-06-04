@@ -48,7 +48,7 @@ export default function DriversPage() {
             <div className="admin-inline-actions">
               <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setForm({ full_name: r.full_name, phone: r.phone, license_number: r.license_number, status: r.status }); setModalOpen(true); }} />
-              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar ${r.full_name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/drivers/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />
+              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar ${r.full_name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/drivers/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
             </div>
           )},
         ]} rows={drivers || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noDrivers")} />

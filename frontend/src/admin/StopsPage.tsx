@@ -41,7 +41,7 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
   const remove = async (r: Stop) => {
     const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a paragem ${r.name}?`, tone: "danger" });
     if (!ok) return;
-    try { await apiDelete(`/api/stops/${r.id}/`, token!); reload(); } catch {}
+    try { await apiDelete(`/api/stops/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
   };
 
   const openDetail = async (stop: Stop) => {

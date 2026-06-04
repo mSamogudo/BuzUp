@@ -51,7 +51,7 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
               <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
               <TableActionButton icon={<QrCode size={15} />} label="QR Code" onClick={() => setQrVehicle(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setForm({ registration: r.registration, make: r.make, model_name: r.model_name, seated_capacity: String(r.seated_capacity), standing_capacity: String(r.standing_capacity), status: r.status }); setModalOpen(true); }} />
-              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a viatura ${r.registration}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/vehicles/${r.id}/`, token!); reload(); } catch {} }} tone="danger" />
+              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a viatura ${r.registration}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/vehicles/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
             </div>
           )},
         ]} rows={vehicles || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noVehicles")} />

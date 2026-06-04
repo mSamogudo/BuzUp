@@ -516,15 +516,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   _kv('Origem', _stopName(_originId), fg, muted),
                   _kv('Destino', _stopName(_destinationId), fg, muted),
                   const Divider(height: 14),
-                  _kv('Tarifa unitaria', '${_fare?['unit_amount'] ?? '0.00'} MZN', fg, muted),
+                  _kv('Tarifa unitaria', '${_unitFare().toStringAsFixed(2)} MZN', fg, muted),
                   _kv('Quantidade', 'x$_quantity', fg, muted),
                   const Divider(height: 14),
                   Row(children: [
                     Expanded(child: Text('TOTAL A COBRAR',
                         style: TextStyle(color: muted, fontSize: 11.5, letterSpacing: 1.0, fontWeight: FontWeight.w700))),
-                    Text('${_fare?['total_amount'] ?? '0.00'} MZN',
+                    Text('${(_unitFare() * _quantity).toStringAsFixed(2)} MZN',
                         style: TextStyle(color: fg, fontSize: 20, fontWeight: FontWeight.w800)),
                   ]),
+                  Text('Se o passageiro tiver pacote, o desconto e aplicado no pagamento.',
+                      style: TextStyle(color: muted, fontSize: 10.5)),
                   const SizedBox(height: 10),
                   // Phone being charged
                   Container(
@@ -795,6 +797,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     if (digits.length < 4) return digits;
     return '***${digits.substring(digits.length - 4)}';
   }
+
+  double _unitFare() => double.tryParse('${_fare?['fare_amount'] ?? 0}') ?? 0;
 
   String _stopName(int? id) {
     if (id == null) return '-';

@@ -74,16 +74,38 @@ class BaseModel(models.Model):
             return super().delete(using=using, keep_parents=keep_parents)
         if self.deleted_at is not None:
             return
-        soft_delete_updates = self.get_soft_delete_updates() or {}
-        self.deleted_at = timezone.now()
-        update_fields = ["deleted_at", "updated_at"]
-        if hasattr(self, "is_active"):
-            self.is_active = False
-            update_fields.append("is_active")
-        for field_name, value in soft_delete_updates.items():
-            setattr(self, field_name, value)
-            update_fields.append(field_name)
-        self.save(update_fields=update_fields)
+        from django.db import transaction
+
+        with transaction.atomic():
+            soft_delete_updates = self.get_soft_delete_updates() or {}
+            self.deleted_at = timezone.now()
+            update_fields = ["deleted_at", "updated_at"]
+            if hasattr(self, "is_active"):
+                self.is_active = False
+                update_fields.append("is_active")
+            for field_name, value in soft_delete_updates.items():
+                setattr(self, field_name, value)
+                update_fields.append(field_name)
+            self.save(update_fields=update_fields)
+            self._cascade_soft_delete()
+
+    def _cascade_soft_delete(self):
+        """Soft-delete alive children reached through on_delete=CASCADE FKs.
+
+        Mirrors the developer's declared CASCADE intent under soft-delete so a
+        soft-deleted parent doesn't leave dangling active children (which would
+        also keep occupying active unique constraints). SET_NULL/PROTECT FKs are
+        intentionally left untouched — historical/financial records (tickets,
+        payments, wallet transactions) use those, so they are never auto-removed.
+        """
+        for rel in self._meta.related_objects:
+            if getattr(rel, "on_delete", None) is not models.CASCADE:
+                continue
+            related_model = rel.related_model
+            if not (isinstance(related_model, type) and issubclass(related_model, BaseModel)):
+                continue
+            for child in related_model.objects.filter(**{rel.field.name: self}):
+                child.delete()
 
     def hard_delete(self, using=None, keep_parents=False):
         return super().delete(using=using, keep_parents=keep_parents)

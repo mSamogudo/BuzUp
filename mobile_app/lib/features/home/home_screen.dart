@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/app_update.dart';
 import '../../core/bus_loader.dart';
 import '../../core/config.dart';
 import '../../core/i18n.dart';
@@ -26,6 +27,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Future.microtask(() async {
       final tok = await ref.read(secureStoreProvider).getAccess();
       if (mounted) setState(() => _accessToken = tok);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) checkForAppUpdate(context, ref);
     });
   }
 

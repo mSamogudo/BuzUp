@@ -9,6 +9,28 @@ class AgentApi {
 
   final ApiClient _http;
 
+  // ----- App update (OTA) -----
+
+  /// Asks the backend whether a newer published POS release exists.
+  /// Public endpoint; returns {update_available, version_name, version_code,
+  /// is_mandatory, release_notes, download_url, ...}.
+  Future<Map<String, dynamic>> checkUpdate({
+    required int currentVersionCode,
+    String? deviceType,
+    String? manufacturer,
+  }) async {
+    final res = await _http.post<Map<String, dynamic>>(
+      '/api/app-releases/check/',
+      data: {
+        'app_type': 'pos',
+        'current_version_code': currentVersionCode,
+        if (deviceType != null && deviceType.isNotEmpty) 'device_type': deviceType,
+        if (manufacturer != null && manufacturer.isNotEmpty) 'manufacturer': manufacturer,
+      },
+    );
+    return res.data ?? const {};
+  }
+
   // ----- Auth -----
   Future<Map<String, dynamic>> login({
     String? username,

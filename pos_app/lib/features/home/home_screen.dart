@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_update.dart';
 import '../../core/config.dart';
 import '../../core/feedback.dart';
 import '../../core/providers.dart';
@@ -35,6 +36,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _heartbeatTimer = Timer.periodic(AppConfig.heartbeatInterval, (_) => _sendHeartbeat());
       _sendHeartbeat();
       _loadSummary();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) checkForAppUpdate(context, ref);
     });
   }
 

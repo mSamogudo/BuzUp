@@ -7,6 +7,19 @@ class PassengerApi {
   PassengerApi(this._http);
   final ApiClient _http;
 
+  // ----- App update (OTA) -----
+
+  /// Asks the backend whether a newer published release exists for this app.
+  /// Public endpoint; returns {update_available, version_name, version_code,
+  /// is_mandatory, release_notes, download_url, ...}.
+  Future<Map<String, dynamic>> checkUpdate({required int currentVersionCode}) async {
+    final res = await _http.post<Map<String, dynamic>>(
+      '/api/app-releases/check/',
+      data: {'app_type': 'passenger', 'current_version_code': currentVersionCode},
+    );
+    return res.data ?? const {};
+  }
+
   // ----- OTP login -----
 
   /// Checks whether a phone already has an account before sending an OTP.

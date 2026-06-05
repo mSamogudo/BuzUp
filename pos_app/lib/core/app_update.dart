@@ -31,9 +31,13 @@ Future<void> checkForAppUpdate(BuildContext context, WidgetRef ref) async {
   }
 }
 
-Future<List<int>> _downloadApk(String url) async {
+Future<List<int>> _downloadApk(String url, void Function(int, int) onProgress) async {
   final dio = Dio(BaseOptions(receiveTimeout: const Duration(minutes: 5)));
-  final res = await dio.get<List<int>>(url, options: Options(responseType: ResponseType.bytes));
+  final res = await dio.get<List<int>>(
+    url,
+    options: Options(responseType: ResponseType.bytes),
+    onReceiveProgress: onProgress,
+  );
   return res.data ?? const [];
 }
 
@@ -52,16 +56,20 @@ Future<void> _showUpdateDialog(
     barrierDismissible: !mandatory,
     builder: (ctx) {
       var busy = false;
+      var progress = 0.0;
       String? error;
       return StatefulBuilder(builder: (ctx, setLocal) {
         Future<void> doUpdate() async {
           setLocal(() {
             busy = true;
+            progress = 0;
             error = null;
           });
           try {
             if (Platform.isAndroid) {
-              final bytes = await _downloadApk(url);
+              final bytes = await _downloadApk(url, (received, total) {
+                if (total > 0) setLocal(() => progress = received / total);
+              });
               if (bytes.isEmpty) throw Exception('download vazio');
               await _installerChannel.invokeMethod('installApk', {
                 'bytes': Uint8List.fromList(bytes),
@@ -99,11 +107,17 @@ Future<void> _showUpdateDialog(
                 ],
                 if (busy) ...[
                   const SizedBox(height: 14),
-                  Row(children: const [
-                    SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                    SizedBox(width: 10),
-                    Text('A descarregar...'),
-                  ]),
+                  Text(progress > 0
+                      ? 'A descarregar... ${(progress * 100).toStringAsFixed(0)}%'
+                      : 'A descarregar...'),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress > 0 ? progress : null,
+                      minHeight: 8,
+                    ),
+                  ),
                 ],
                 if (error != null) ...[
                   const SizedBox(height: 10),

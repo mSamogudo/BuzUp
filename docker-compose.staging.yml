@@ -53,7 +53,7 @@ services:
     env_file:
       - ${BACKEND_ENV_FILE:-./backend/.env.staging}
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.prod
+      DJANGO_SETTINGS_MODULE: config.settings.staging
       WAIT_FOR_DB: "true"
       WAIT_FOR_DB_TIMEOUT: "60"
       AUTO_MIGRATE: "true"

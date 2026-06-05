@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: buzup_db_prod
     restart: unless-stopped
+    mem_limit: 256m
     env_file:
       - ${BACKEND_ENV_FILE:-./backend/.env.prod}
     volumes:
@@ -32,6 +33,7 @@ services:
       context: ./backend
     container_name: buzup_backend_prod
     restart: unless-stopped
+    mem_limit: 450m
     command:
       [
         "gunicorn",
@@ -39,7 +41,11 @@ services:
         "--bind",
         "0.0.0.0:8000",
         "--workers",
-        "3",
+        "2",
+        "--max-requests",
+        "800",
+        "--max-requests-jitter",
+        "100",
         "--timeout",
         "120"
       ]

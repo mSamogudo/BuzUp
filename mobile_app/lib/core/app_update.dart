@@ -18,7 +18,10 @@ const _installerChannel = MethodChannel('buzup/installer');
 Future<void> checkForAppUpdate(BuildContext context, WidgetRef ref) async {
   try {
     final info = await PackageInfo.fromPlatform();
-    final code = int.tryParse(info.buildNumber) ?? 0;
+    // Split-per-ABI builds offset the versionCode (abi*1000 + buildNumber),
+    // e.g. arm64 -> 2001. Strip the ABI offset so we compare the logical
+    // build number the portal admin actually enters.
+    final code = (int.tryParse(info.buildNumber) ?? 0) % 1000;
     final res = await ref.read(passengerApiProvider).checkUpdate(currentVersionCode: code);
     if (res['update_available'] != true) return;
     if (!context.mounted) return;

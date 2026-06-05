@@ -32,6 +32,9 @@ services:
       context: ./backend
     container_name: buzup_backend_staging
     restart: unless-stopped
+    # Host is RAM-constrained (shared with other stacks): 2 workers is plenty
+    # for this traffic, and --max-requests recycles workers to cap memory creep.
+    mem_limit: 400m
     command:
       [
         "gunicorn",
@@ -39,7 +42,11 @@ services:
         "--bind",
         "0.0.0.0:8000",
         "--workers",
-        "3",
+        "2",
+        "--max-requests",
+        "800",
+        "--max-requests-jitter",
+        "100",
         "--timeout",
         "120"
       ]

@@ -180,7 +180,7 @@ load_profile_config() {
     : "${MOBILE_BUILD_MODE:=debug}"
     : "${BUZUP_MOBILE_APPLICATION_ID:=mz.coupdigital.buzup_mobile}"
   elif [ "$profile" = "staging" ]; then
-    : "${BUZUP_API_BASE_URL:=https://buzup.updigital.co.mz}"
+    : "${BUZUP_API_BASE_URL:=https://buzup-test.updigital.co.mz}"
     : "${MOBILE_FLUTTER_DEVICE:=auto}"
     : "${MOBILE_WEB_HOST:=127.0.0.1}"
     : "${MOBILE_WEB_PORT:=3016}"

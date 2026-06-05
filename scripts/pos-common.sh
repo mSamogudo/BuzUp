@@ -214,7 +214,7 @@ load_profile_config() {
     : "${POS_BUILD_MODE:=debug}"
     : "${BUZUP_POS_APPLICATION_ID:=mz.coupdigital.pos_app.dev}"
   elif [ "$profile" = "staging" ]; then
-    : "${BUZUP_API_BASE_URL:=https://buzup.updigital.co.mz}"
+    : "${BUZUP_API_BASE_URL:=https://buzup-test.updigital.co.mz}"
     : "${POS_FLUTTER_DEVICE:=android}"
     : "${POS_WEB_HOST:=127.0.0.1}"
     : "${POS_WEB_PORT:=3011}"
@@ -223,6 +223,7 @@ load_profile_config() {
     : "${POS_RELEASE_ABI:=armeabi-v7a}"
     : "${BUZUP_POS_APPLICATION_ID:=mz.coupdigital.pos_app}"
   else
+    : "${BUZUP_API_BASE_URL:=https://buzup.updigital.co.mz}"
     : "${POS_FLUTTER_DEVICE:=android}"
     : "${POS_WEB_HOST:=127.0.0.1}"
     : "${POS_WEB_PORT:=3012}"

@@ -47,6 +47,7 @@ dependencies:
   # OTA app-update check (current version) + open download link
   package_info_plus: ^8.1.0
   url_launcher: ^6.3.1
+  crypto: ^3.0.0
 
 dev_dependencies:
   flutter_test:

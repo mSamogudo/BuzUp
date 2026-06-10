@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -41,6 +42,26 @@ Future<List<int>> _downloadApk(String url, void Function(int, int) onProgress) a
   return res.data ?? const [];
 }
 
+/// Confirma que o APK descarregado e exactamente o que o backend publicou
+/// (tamanho + SHA-256). Devolve null se OK, ou uma mensagem de erro a mostrar.
+/// Impede instalar um ficheiro corrompido ou adulterado (MITM).
+String? _verifyApk(List<int> bytes, Map<String, dynamic> r) {
+  final expectedSize = (r['file_size_bytes'] as num?)?.toInt();
+  if (expectedSize != null && expectedSize > 0 && bytes.length != expectedSize) {
+    Log.warn('APK size mismatch: got ${bytes.length} expected $expectedSize');
+    return 'Ficheiro corrompido (tamanho). Atualizacao cancelada.';
+  }
+  final expectedSha = (r['checksum'] ?? '').toString().toLowerCase().trim();
+  if (expectedSha.isNotEmpty) {
+    final actualSha = sha256.convert(bytes).toString();
+    if (actualSha != expectedSha) {
+      Log.warn('APK checksum mismatch: got $actualSha expected $expectedSha');
+      return 'Ficheiro inseguro (checksum). Atualizacao cancelada.';
+    }
+  }
+  return null;
+}
+
 Future<void> _showUpdateDialog(
   BuildContext context,
   Map<String, dynamic> r,
@@ -71,6 +92,11 @@ Future<void> _showUpdateDialog(
                 if (total > 0) setLocal(() => progress = received / total);
               });
               if (bytes.isEmpty) throw Exception('download vazio');
+              final integrityError = _verifyApk(bytes, r);
+              if (integrityError != null) {
+                setLocal(() => error = integrityError);
+                return;
+              }
               await _installerChannel.invokeMethod('installApk', {
                 'bytes': Uint8List.fromList(bytes),
                 'fileName': 'buzup-pos-$newVersion.apk',

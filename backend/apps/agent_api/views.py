@@ -130,7 +130,7 @@ class AgentLoginView(APIView):
             user = authenticate(request, username=data["username"], password=data["password"])
         elif data.get("phone") and data.get("otp_code"):
             from apps.users.models import OtpChallenge
-            from apps.users.otp import verify_otp_hash, normalize_otp_phone
+            from apps.users.otp import OTP_MAX_ATTEMPTS, verify_otp_hash, normalize_otp_phone
             phone = normalize_otp_phone(data["phone"])
             challenge = OtpChallenge.objects.filter(
                 uuid=data.get("challenge_id"),
@@ -139,10 +139,22 @@ class AgentLoginView(APIView):
             ).first()
             if not challenge or timezone.now() > challenge.expires_at:
                 return Response({"detail": "Codigo invalido ou expirado."}, status=400)
+            # Limite de tentativas: sem isto, o OTP de 6 digitos era brute-forcavel
+            # dentro do TTL (ao contrario de OtpVerifyView, que ja o impunha).
+            if challenge.attempts >= OTP_MAX_ATTEMPTS:
+                challenge.status = OtpChallenge.Status.EXPIRED
+                challenge.save(update_fields=["status", "updated_at"])
+                return Response({"detail": "Tentativas excedidas."}, status=400)
             if not verify_otp_hash(data["otp_code"], challenge.code_hash):
                 challenge.attempts += 1
-                challenge.save(update_fields=["attempts", "updated_at"])
-                return Response({"detail": "Codigo incorreto."}, status=400)
+                update_fields = ["attempts", "updated_at"]
+                detail = "Codigo incorreto."
+                if challenge.attempts >= OTP_MAX_ATTEMPTS:
+                    challenge.status = OtpChallenge.Status.EXPIRED
+                    update_fields.append("status")
+                    detail = "Tentativas excedidas."
+                challenge.save(update_fields=update_fields)
+                return Response({"detail": detail}, status=400)
             challenge.status = OtpChallenge.Status.VERIFIED
             challenge.verified_at = timezone.now()
             challenge.save(update_fields=["status", "verified_at", "updated_at"])

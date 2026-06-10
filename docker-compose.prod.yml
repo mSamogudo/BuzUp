@@ -3,6 +3,14 @@
 # directory `docker compose` runs from.
 name: buzup-prod
 
+# Rotacao de logs por-container (o host nao tem /etc/docker/daemon.json e um
+# restart do daemon afetaria os outros tenants). Aplica-se a cada recreate.
+x-logging: &buzup-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
@@ -38,6 +46,7 @@ services:
       context: ./backend
     container_name: buzup_backend_prod
     restart: unless-stopped
+    logging: *buzup-logging
     # Shared 2GB host (co-tenant with 3 other prod stacks): 1 worker + 2 threads
     # keeps RSS low while still handling concurrent requests. --max-requests
     # recycles the worker to cap memory creep. Bump workers after a RAM upgrade.

@@ -4,6 +4,13 @@
 # caused a buzup command to recreate an eticketing container. Always isolated.
 name: buzup-staging
 
+# Rotacao de logs por-container (ver docker-compose.prod.yml). Aplica-se a cada recreate.
+x-logging: &buzup-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
@@ -38,6 +45,7 @@ services:
       context: ./backend
     container_name: buzup_backend_staging
     restart: unless-stopped
+    logging: *buzup-logging
     # Host is RAM-constrained (shared with other stacks): 2 workers is plenty
     # for this traffic, and --max-requests recycles workers to cap memory creep.
     mem_limit: 400m

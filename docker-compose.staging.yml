@@ -1,3 +1,9 @@
+# Explicit project name so this stack NEVER inherits the default "app" project
+# (the directory basename). Without this, `docker compose` here would claim any
+# container labelled project=app — including other stacks' orphans — which once
+# caused a buzup command to recreate an eticketing container. Always isolated.
+name: buzup-staging
+
 services:
   db:
     image: postgres:16-alpine

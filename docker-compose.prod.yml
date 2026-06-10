@@ -1,3 +1,8 @@
+# Explicit project name — see docker-compose.staging.yml. Keeps the prod stack
+# isolated from every other stack on this shared host regardless of which
+# directory `docker compose` runs from.
+name: buzup-prod
+
 services:
   db:
     image: postgres:16-alpine
@@ -33,7 +38,10 @@ services:
       context: ./backend
     container_name: buzup_backend_prod
     restart: unless-stopped
-    mem_limit: 450m
+    # Shared 2GB host (co-tenant with 3 other prod stacks): 1 worker + 2 threads
+    # keeps RSS low while still handling concurrent requests. --max-requests
+    # recycles the worker to cap memory creep. Bump workers after a RAM upgrade.
+    mem_limit: 384m
     command:
       [
         "gunicorn",
@@ -41,6 +49,8 @@ services:
         "--bind",
         "0.0.0.0:8000",
         "--workers",
+        "1",
+        "--threads",
         "2",
         "--max-requests",
         "800",

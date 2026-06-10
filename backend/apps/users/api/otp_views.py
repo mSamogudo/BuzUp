@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -144,13 +145,16 @@ class OtpVerifyView(APIView):
         if not code.isdigit() or len(code) != 6:
             return Response({"detail": "Codigo invalido."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # A missing/malformed challenge_id makes the UUID lookup raise
+        # ValueError/ValidationError; treat it like any other invalid challenge
+        # (400) instead of bubbling up as a 500 on this public (AllowAny) view.
         try:
             challenge = OtpChallenge.objects.get(
                 uuid=challenge_id,
                 phone=phone,
                 status=OtpChallenge.Status.PENDING,
             )
-        except OtpChallenge.DoesNotExist:
+        except (OtpChallenge.DoesNotExist, DjangoValidationError, ValueError):
             return Response({"detail": "Codigo expirado ou invalido."}, status=status.HTTP_400_BAD_REQUEST)
 
         if timezone.now() > challenge.expires_at:

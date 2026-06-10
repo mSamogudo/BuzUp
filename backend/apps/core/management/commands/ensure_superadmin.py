@@ -20,10 +20,12 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Superadmin already exists."))
             return
 
+        # NB: the custom User model has no `role` field (roles are M2M via
+        # UserRole); passing role= here raised TypeError. is_superuser already
+        # bypasses capability checks, so a plain superuser is enough for portal access.
         User.objects.create_superuser(
             username=username,
             email=email,
             password=password,
-            role="admin",
         )
         self.stdout.write(self.style.SUCCESS(f"Superadmin '{username}' created."))

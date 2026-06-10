@@ -243,11 +243,21 @@ load_profile_config() {
     exit 1
   fi
 
+  # Fail-safe de ambiente: cada perfil de build TEM de apontar para o seu
+  # proprio ambiente. Impede que um build prod saia a apontar para o dominio
+  # de TESTE (ou um build staging para o dominio de PRODUCAO) por engano.
+  api_host=$(extract_url_host "$BUZUP_API_BASE_URL")
   if [ "$profile" = "prod" ]; then
-    api_host=$(extract_url_host "$BUZUP_API_BASE_URL")
     case "$api_host" in
-      127.0.0.1|localhost)
-        echo "[pos] BUZUP_API_BASE_URL de producao nao pode apontar para $api_host" >&2
+      127.0.0.1|localhost|buzup-test.updigital.co.mz)
+        echo "[pos] build PROD nao pode apontar para $api_host (esperado: buzup.updigital.co.mz)" >&2
+        exit 1
+        ;;
+    esac
+  elif [ "$profile" = "staging" ]; then
+    case "$api_host" in
+      buzup.updigital.co.mz)
+        echo "[pos] build STAGING nao pode apontar para o dominio de PRODUCAO $api_host (esperado: buzup-test.updigital.co.mz)" >&2
         exit 1
         ;;
     esac

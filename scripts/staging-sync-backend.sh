@@ -22,7 +22,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SERVER_HOST="${BUZUP_STAGING_HOST:-95.216.50.19}"
 SERVER_USER="${BUZUP_STAGING_USER:-root}"
 SERVER_PASS="${BUZUP_STAGING_PASS:-zPbA95HTXf48dseEpnag}"
-REMOTE_ROOT="/opt/buzup/app/backend"
+REMOTE_ROOT="/opt/staging/buzup/app/backend"
 CONTAINER="buzup_backend_staging"
 
 NO_RESTART=false
@@ -84,10 +84,10 @@ if [ "$ALSO_FRONTEND" = true ]; then
         echo "[staging-sync] building frontend (npm run build) first..."
         (cd "$PROJECT_ROOT/frontend" && npm run build >/dev/null 2>&1)
     fi
-    echo "[staging-sync] rsync frontend/dist/ → /opt/buzup/app/frontend/dist/"
+    echo "[staging-sync] rsync frontend/dist/ → /opt/staging/buzup/app/frontend/dist/"
     sshpass -p "$SERVER_PASS" rsync -avz --no-times --no-perms --delete \
         "$PROJECT_ROOT/frontend/dist/" \
-        "$SERVER_USER@$SERVER_HOST:/opt/buzup/app/frontend/dist/" >/dev/null
+        "$SERVER_USER@$SERVER_HOST:/opt/staging/buzup/app/frontend/dist/" >/dev/null
 fi
 
 if [ -n "$MIGRATE_APP" ]; then

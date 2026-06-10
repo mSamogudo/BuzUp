@@ -4,7 +4,7 @@ import hashlib
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -117,28 +117,38 @@ def validate_card(
     except NoFareFoundError:
         return _denied(ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO, ValidationEvent.FailureReason.NO_FARE_FOUND, idempotency_key, physical_card=card, route=route, origin_stop=origin, destination_stop=destination, device=device)
 
+    # Carga + criacao do evento no MESMO atomic: assim, se dois pedidos com a
+    # mesma idempotency_key correrem em paralelo, o segundo colide na unique
+    # constraint do ValidationEvent e o rollback desfaz o debito/consumo de
+    # pacote dessa tentativa (evita duplo-debito e duplo-consumo de pacote).
     try:
-        amount_charged, charge_source, tx_ref = _charge_with_package_fallback(
-            passenger_account=card.passenger_account,
-            wallet=card.wallet,
-            route=route,
-            base_fare=quote.amount,
-            idempotency_key=idempotency_key,
-            metadata={"route": route.code, "card_uid": card_uid},
-        )
+        with transaction.atomic():
+            amount_charged, charge_source, tx_ref = _charge_with_package_fallback(
+                passenger_account=card.passenger_account,
+                wallet=card.wallet,
+                route=route,
+                base_fare=quote.amount,
+                idempotency_key=idempotency_key,
+                metadata={"route": route.code, "card_uid": card_uid},
+            )
+            return ValidationEvent.objects.create(
+                validation_type=ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO,
+                passenger_account=card.passenger_account, wallet=card.wallet,
+                physical_card=card, route=route, trip=trip,
+                origin_stop=origin, destination_stop=destination, device=device,
+                amount_debited=amount_charged, status=ValidationEvent.Status.APPROVED,
+                idempotency_key=idempotency_key, wallet_transaction_ref=tx_ref or charge_source,
+            )
     except InsufficientBalanceError:
         return _denied(ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO, ValidationEvent.FailureReason.INSUFFICIENT_BALANCE, idempotency_key, physical_card=card, wallet=card.wallet, route=route, origin_stop=origin, destination_stop=destination, device=device)
     except WalletBlockedError:
         return _denied(ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO, ValidationEvent.FailureReason.ACCOUNT_BLOCKED, idempotency_key, physical_card=card, wallet=card.wallet, route=route, device=device)
-
-    return ValidationEvent.objects.create(
-        validation_type=ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO,
-        passenger_account=card.passenger_account, wallet=card.wallet,
-        physical_card=card, route=route, trip=trip,
-        origin_stop=origin, destination_stop=destination, device=device,
-        amount_debited=amount_charged, status=ValidationEvent.Status.APPROVED,
-        idempotency_key=idempotency_key, wallet_transaction_ref=tx_ref or charge_source,
-    )
+    except IntegrityError:
+        # Corrida: outro pedido com a mesma idempotency_key ja confirmou.
+        existing = ValidationEvent.objects.filter(idempotency_key=idempotency_key).first()
+        if existing:
+            return existing
+        raise
 
 
 def validate_qr_pass(
@@ -303,24 +313,31 @@ def validate_qr_account(
     except NoFareFoundError:
         return _denied(ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO, ValidationEvent.FailureReason.NO_FARE_FOUND, idempotency_key, passenger_account=passenger, wallet=wallet, route=route, device=device)
 
+    # Carga + criacao do evento no MESMO atomic (ver validate_card): impede
+    # duplo-debito/duplo-consumo de pacote em pedidos concorrentes.
     try:
-        amount_charged, charge_source, tx_ref = _charge_with_package_fallback(
-            passenger_account=passenger, wallet=wallet, route=route,
-            base_fare=quote.amount, idempotency_key=idempotency_key,
-            metadata={"route": route.code},
-        )
+        with transaction.atomic():
+            amount_charged, charge_source, tx_ref = _charge_with_package_fallback(
+                passenger_account=passenger, wallet=wallet, route=route,
+                base_fare=quote.amount, idempotency_key=idempotency_key,
+                metadata={"route": route.code},
+            )
+            return ValidationEvent.objects.create(
+                validation_type=ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO,
+                passenger_account=passenger, wallet=wallet, route=route, trip=trip,
+                origin_stop=origin, destination_stop=destination, device=device,
+                amount_debited=amount_charged, status=ValidationEvent.Status.APPROVED,
+                idempotency_key=idempotency_key, wallet_transaction_ref=tx_ref or charge_source,
+            )
     except InsufficientBalanceError:
         return _denied(ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO, ValidationEvent.FailureReason.INSUFFICIENT_BALANCE, idempotency_key, passenger_account=passenger, wallet=wallet, route=route, origin_stop=origin, destination_stop=destination, device=device)
     except WalletBlockedError:
         return _denied(ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO, ValidationEvent.FailureReason.ACCOUNT_BLOCKED, idempotency_key, passenger_account=passenger, wallet=wallet, route=route, device=device)
-
-    return ValidationEvent.objects.create(
-        validation_type=ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO,
-        passenger_account=passenger, wallet=wallet, route=route, trip=trip,
-        origin_stop=origin, destination_stop=destination, device=device,
-        amount_debited=amount_charged, status=ValidationEvent.Status.APPROVED,
-        idempotency_key=idempotency_key, wallet_transaction_ref=tx_ref or charge_source,
-    )
+    except IntegrityError:
+        existing = ValidationEvent.objects.filter(idempotency_key=idempotency_key).first()
+        if existing:
+            return existing
+        raise
 
 
 def _denied(validation_type: str, failure: str, idempotency_key: str, **kwargs) -> ValidationEvent:

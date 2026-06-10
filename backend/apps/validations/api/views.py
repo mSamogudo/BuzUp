@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.agent_api.permissions import IsActiveAgent, get_authorized_device
 from apps.core.viewsets import BaseModelViewSet
 from apps.guest_checkouts.api.serializers import DigitalTravelPassSerializer
 from apps.guest_checkouts.purchase import PurchaseError, purchase_travel_pass, quote_for_passenger
@@ -87,21 +88,26 @@ class ValidationEventViewSet(BaseModelViewSet):
 
 
 class ValidateCardView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    # Debita a carteira do passageiro: SO um agente activo pode validar.
+    # (era AllowAny -> qualquer um podia drenar saldo). O endpoint canonico do
+    # POS e /api/agent/validations/card/; este fica protegido do mesmo modo.
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = ValidateCardSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        # O device tem de pertencer ao agente autenticado — nunca confiar no
+        # serial cru do corpo (so um device ACTIVE atribuido conta).
+        device = get_authorized_device(request.user, serial_number=data.get("device_serial") or None)
         event = validate_card(
             card_uid=data["card_uid"],
             route_id=data["route_id"],
             origin_stop_id=data.get("origin_stop_id"),
             destination_stop_id=data.get("destination_stop_id"),
             trip_id=data.get("trip_id"),
-            device_serial=data.get("device_serial", ""),
+            device_serial=device.serial_number if device else "",
             idempotency_key=data["idempotency_key"],
         )
 
@@ -109,19 +115,20 @@ class ValidateCardView(APIView):
 
 
 class ValidateQrView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    # Queima um passe digital: so um agente activo pode validar.
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = ValidateQrSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        device = get_authorized_device(request.user, serial_number=data.get("device_serial") or None)
         event = validate_qr_pass(
             token=data["token"],
             route_id=data.get("route_id"),
             trip_id=data.get("trip_id"),
-            device_serial=data.get("device_serial", ""),
+            device_serial=device.serial_number if device else "",
             idempotency_key=data["idempotency_key"],
         )
 
@@ -129,19 +136,20 @@ class ValidateQrView(APIView):
 
 
 class ValidateGuestPassView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    # Queima um passe de convidado: so um agente activo pode validar.
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = ValidateGuestPassSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        device = get_authorized_device(request.user, serial_number=data.get("device_serial") or None)
         event = validate_qr_pass(
             token=data["token"],
             route_id=data.get("route_id"),
             trip_id=data.get("trip_id"),
-            device_serial=data.get("device_serial", ""),
+            device_serial=device.serial_number if device else "",
             idempotency_key=data["idempotency_key"],
         )
 

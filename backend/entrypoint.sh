@@ -53,6 +53,21 @@ main() {
     run_manage migrate --noinput
   fi
 
+  # Semear os roles de sistema (idempotente). Sem isto, um deploy novo arranca
+  # sem roles ate alguem os correr a mao.
+  if is_true "${AUTO_SEED:-true}"; then
+    run_manage seed_roles
+  fi
+
+  # Superadmin: SO criado se explicitamente pedido E com password vinda do
+  # ambiente — nunca o default fraco "admin/admin" num deploy automatico.
+  if is_true "${AUTO_SEED_SUPERADMIN:-false}" && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+    run_manage ensure_superadmin \
+      --username "${DJANGO_SUPERUSER_USERNAME:-admin}" \
+      --email "${DJANGO_SUPERUSER_EMAIL:-admin@buzup.co.mz}" \
+      --password "$DJANGO_SUPERUSER_PASSWORD"
+  fi
+
   if is_true "${AUTO_COLLECTSTATIC:-false}"; then
     run_manage collectstatic --noinput
   fi

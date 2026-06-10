@@ -23,6 +23,10 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", defaul
 SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=True, cast=bool)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# Webhooks de pagamento: fail-closed. Em producao um callback sem segredo
+# valido (HMAC/token) e SEMPRE recusado — nunca creditar carteira sem prova.
+PAYMENT_WEBHOOK_REQUIRE_SIGNATURE = config("PAYMENT_WEBHOOK_REQUIRE_SIGNATURE", default=True, cast=bool)
+
 # Shared Redis cache (OTP rate-limiting consistent across workers).
 REDIS_URL = config("REDIS_URL", default="redis://redis:6379/1")
 CACHES = {

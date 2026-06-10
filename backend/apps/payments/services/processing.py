@@ -17,6 +17,7 @@ def process_payment_callback(
     payment_intent: PaymentIntent,
     raw_payload: dict,
     provider: str = "",
+    signature_valid: bool = True,
 ) -> PaymentCallback:
     provider_ref = _extract_value(raw_payload, (
         "provider_reference", "providerReference",
@@ -33,7 +34,7 @@ def process_payment_callback(
         payment_intent=payment_intent,
         provider_reference=provider_ref,
         raw_payload=raw_payload,
-        signature_valid=True,
+        signature_valid=signature_valid,
         processing_status="received",
     )
 

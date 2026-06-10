@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 
+from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,8 +17,42 @@ from apps.payments.api.serializers import (
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import _extract_value
 from apps.payments.services.processing import process_payment_callback
+from apps.payments.services.webhook_security import verify_webhook_signature
 
 logger = logging.getLogger(__name__)
+
+
+def _check_webhook_auth(request) -> tuple[bool, Response | None]:
+    """Autentica um callback de pagamento de fonte externa.
+
+    Devolve ``(signature_valid, reject)``. Se ``reject`` nao for None, a view
+    deve devolve-lo imediatamente (callback recusado, NADA e processado).
+
+    Regra:
+      - segredo configurado -> exige HMAC/token valido, senao 401;
+      - sem segredo + PAYMENT_WEBHOOK_REQUIRE_SIGNATURE (prod) -> 503 fail-closed;
+      - sem segredo + nao obrigatorio (dev/test) -> aceita mas signature_valid=False.
+    """
+    secret = getattr(settings, "PAYMENT_GATEWAY_WEBHOOK_SECRET", "") or ""
+    require = getattr(settings, "PAYMENT_WEBHOOK_REQUIRE_SIGNATURE", False)
+
+    if secret:
+        ok, method = verify_webhook_signature(request, secret)
+        if not ok:
+            logger.warning("[PAY][webhook_auth] recusado: assinatura/token invalido (metodo=%s)", method)
+            return False, Response({"detail": "Assinatura invalida."}, status=status.HTTP_401_UNAUTHORIZED)
+        logger.info("[PAY][webhook_auth] aceite via %s", method)
+        return True, None
+
+    if require:
+        logger.error(
+            "[PAY][webhook_auth] PAYMENT_GATEWAY_WEBHOOK_SECRET nao configurado e "
+            "assinatura obrigatoria — a recusar callback.",
+        )
+        return False, Response({"detail": "Webhook nao configurado."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    logger.warning("[PAY][webhook_auth] sem segredo configurado — callback aceite SEM verificacao (apenas dev/test).")
+    return False, None
 
 
 class PaymentIntentViewSet(BaseModelViewSet):
@@ -80,6 +115,10 @@ class PaymentCallbackView(APIView):
     authentication_classes = []
 
     def post(self, request, provider):
+        signature_valid, reject = _check_webhook_auth(request)
+        if reject is not None:
+            return reject
+
         serializer = PaymentCallbackIngestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -97,7 +136,9 @@ class PaymentCallbackView(APIView):
             **serializer.validated_data,
         }
 
-        callback = process_payment_callback(payment_intent, raw_payload, provider=provider)
+        callback = process_payment_callback(
+            payment_intent, raw_payload, provider=provider, signature_valid=signature_valid,
+        )
         payment_intent.refresh_from_db()
 
         return Response({
@@ -117,6 +158,10 @@ class MobileWalletWebhookView(APIView):
         normalized_provider = str(provider or "").upper()
         if normalized_provider not in ("MPESA", "EMOLA"):
             return Response({"detail": "Unsupported provider."}, status=status.HTTP_400_BAD_REQUEST)
+
+        signature_valid, reject = _check_webhook_auth(request)
+        if reject is not None:
+            return reject
 
         try:
             if isinstance(request.data, dict):
@@ -149,7 +194,9 @@ class MobileWalletWebhookView(APIView):
             )
             return Response({"detail": "Payment intent not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        callback = process_payment_callback(payment_intent, payload, provider=normalized_provider)
+        callback = process_payment_callback(
+            payment_intent, payload, provider=normalized_provider, signature_valid=signature_valid,
+        )
         payment_intent.refresh_from_db()
 
         return Response({

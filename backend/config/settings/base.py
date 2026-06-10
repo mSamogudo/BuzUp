@@ -127,6 +127,9 @@ CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", default="", cast=csv_confi
 
 PAYMENT_GATEWAY_PROVIDER = config("PAYMENT_GATEWAY_PROVIDER", default="AUTO")
 PAYMENT_GATEWAY_WEBHOOK_SECRET = config("PAYMENT_GATEWAY_WEBHOOK_SECRET", default="")
+# Quando True, um webhook de pagamento sem segredo configurado e recusado
+# (fail-closed). Default False para nao quebrar dev/test; forcado True em prod.
+PAYMENT_WEBHOOK_REQUIRE_SIGNATURE = config("PAYMENT_WEBHOOK_REQUIRE_SIGNATURE", default=False, cast=bool)
 PAYMENT_MOBILE_WALLET_METHODS = config("PAYMENT_MOBILE_WALLET_METHODS", default="MPESA,EMOLA")
 PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", default=180, cast=int)
 PAYLESS_BASE_URL = config("PAYLESS_BASE_URL", default="https://payless.bluteki.com/api/v2.0")

@@ -187,7 +187,8 @@ load_profile_config() {
     : "${MOBILE_BUILD_MODE:=release}"
     : "${MOBILE_SPLIT_PER_ABI:=true}"
     : "${MOBILE_RELEASE_ABI:=armeabi-v7a}"
-    : "${BUZUP_MOBILE_APPLICATION_ID:=mz.coupdigital.buzup_mobile}"
+    # sufixo .staging -> coexiste com a prod no mesmo aparelho
+    : "${BUZUP_MOBILE_APPLICATION_ID:=mz.coupdigital.buzup_mobile.staging}"
   else
     : "${BUZUP_API_BASE_URL:=https://buzup.updigital.co.mz}"
     : "${MOBILE_FLUTTER_DEVICE:=auto}"
@@ -203,6 +204,9 @@ load_profile_config() {
     echo "[mobile] defina BUZUP_API_BASE_URL em $config_file ou no ambiente" >&2
     exit 1
   fi
+
+  # Exportar para o subprocesso gradle (build.gradle.kts le esta env var).
+  export BUZUP_MOBILE_APPLICATION_ID
 
   # Fail-safe de ambiente: cada perfil de build TEM de apontar para o seu
   # proprio ambiente. Impede que um build prod saia a apontar para o dominio

@@ -20,8 +20,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "mz.coupdigital.buzup_mobile"
+        // applicationId vem do perfil de build (BUZUP_MOBILE_APPLICATION_ID,
+        // exportado pelos scripts) -> staging usa sufixo .staging para poder
+        // coexistir com a prod no mesmo aparelho. Default = prod.
+        applicationId = System.getenv("BUZUP_MOBILE_APPLICATION_ID") ?: "mz.coupdigital.buzup_mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

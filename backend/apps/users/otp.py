@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
 import secrets
 
@@ -34,10 +35,20 @@ def is_valid_otp_phone(value: str | None) -> bool:
     return phone.startswith(MOZAMBIQUE_COUNTRY_CODE) and len(phone) == 12 and phone[3] in "89"
 
 
+def _hash_otp(code: str) -> str:
+    """HMAC-SHA256 do codigo com a SECRET_KEY como pepper.
+
+    Sem o pepper, um sha256 simples de um codigo de 6 digitos e reversivel por
+    rainbow-table se a coluna code_hash vazar. Com HMAC+SECRET_KEY, o hash so e
+    reproduzivel por quem tem a SECRET_KEY do servidor.
+    """
+    pepper = str(getattr(settings, "SECRET_KEY", "") or "").encode()
+    return hmac.new(pepper, str(code).encode(), hashlib.sha256).hexdigest()
+
+
 def generate_otp() -> tuple[str, str]:
     code = f"{secrets.randbelow(1000000):06d}"
-    code_hash = hashlib.sha256(code.encode()).hexdigest()
-    return code, code_hash
+    return code, _hash_otp(code)
 
 
 def send_otp_sms(phone: str, code: str):
@@ -47,4 +58,5 @@ def send_otp_sms(phone: str, code: str):
 
 
 def verify_otp_hash(code: str, stored_hash: str) -> bool:
-    return hashlib.sha256(code.encode()).hexdigest() == stored_hash
+    # Comparacao em tempo constante (evita timing-attacks).
+    return hmac.compare_digest(_hash_otp(code), str(stored_hash or ""))

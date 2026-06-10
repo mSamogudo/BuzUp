@@ -23,6 +23,10 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = config("SECURE_HSTS_INCLUDE_SUBDOMAINS", defaul
 SECURE_HSTS_PRELOAD = config("SECURE_HSTS_PRELOAD", default=True, cast=bool)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
+# CORS: em producao NUNCA permitir todas as origens (mesmo que o .env tente
+# CORS_ALLOW_ALL_ORIGINS=True). A allowlist vem de CORS_ALLOWED_ORIGINS (env).
+CORS_ALLOW_ALL_ORIGINS = False
+
 # Webhooks de pagamento: fail-closed. Em producao um callback sem segredo
 # valido (HMAC/token) e SEMPRE recusado — nunca creditar carteira sem prova.
 PAYMENT_WEBHOOK_REQUIRE_SIGNATURE = config("PAYMENT_WEBHOOK_REQUIRE_SIGNATURE", default=True, cast=bool)

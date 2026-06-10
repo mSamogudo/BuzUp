@@ -221,7 +221,8 @@ load_profile_config() {
     : "${POS_BUILD_MODE:=release}"
     : "${POS_SPLIT_PER_ABI:=true}"
     : "${POS_RELEASE_ABI:=armeabi-v7a}"
-    : "${BUZUP_POS_APPLICATION_ID:=mz.coupdigital.pos_app}"
+    # sufixo .staging -> coexiste com a prod no mesmo terminal
+    : "${BUZUP_POS_APPLICATION_ID:=mz.coupdigital.pos_app.staging}"
   else
     : "${BUZUP_API_BASE_URL:=https://buzup.updigital.co.mz}"
     : "${POS_FLUTTER_DEVICE:=android}"
@@ -237,6 +238,9 @@ load_profile_config() {
     echo "[pos] defina BUZUP_API_BASE_URL em $config_file ou no ambiente" >&2
     exit 1
   fi
+
+  # Exportar para o subprocesso gradle (build.gradle.kts le esta env var).
+  export BUZUP_POS_APPLICATION_ID
 
   if [ "$profile" = "prod" ] && [ "$BUZUP_API_BASE_URL" = "https://api.example.com" ]; then
     echo "[pos] BUZUP_API_BASE_URL ainda esta no placeholder de producao" >&2

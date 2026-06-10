@@ -25,8 +25,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "mz.coupdigital.pos_app"
+        // applicationId vem do perfil de build (BUZUP_POS_APPLICATION_ID,
+        // exportado pelos scripts): dev=.dev, staging=.staging, prod=base.
+        applicationId = System.getenv("BUZUP_POS_APPLICATION_ID") ?: "mz.coupdigital.pos_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

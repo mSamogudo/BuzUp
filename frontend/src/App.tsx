@@ -25,6 +25,9 @@ import AgentRevenuePage from "./admin/AgentRevenuePage";
 import AuditPage from "./admin/AuditPage";
 import CheckoutPage from "./public/CheckoutPage";
 import BusPaymentPage from "./public/BusPaymentPage";
+import LandingPage from "./public/LandingPage";
+import PricingPage from "./public/PricingPage";
+import ContactPage from "./public/ContactPage";
 import PassengerPortalPage from "./passenger/PassengerPortalPage";
 import DriverPortalPage from "./driver/DriverPortalPage";
 import ProfilePage from "./profile/ProfilePage";
@@ -61,6 +64,9 @@ function AppContent() {
       <Toaster position="top-right" richColors />
       <PwaInstallPrompt />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/tarifas" element={<PricingPage />} />
+        <Route path="/contacto" element={<ContactPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/bus/:vehicleUuid" element={<BusPaymentPage />} />

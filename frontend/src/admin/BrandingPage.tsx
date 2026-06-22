@@ -85,7 +85,7 @@ export default function BrandingPage() {
             <input
               value={name ?? branding.platform_name ?? ""}
               onChange={(e) => setName(e.target.value)}
-              placeholder="BuzUp"
+              placeholder="BusUp"
             />
           </label>
         </SectionCard>

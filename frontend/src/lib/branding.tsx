@@ -16,7 +16,7 @@ export interface Branding {
 }
 
 const EMPTY: Branding = {
-  platform_name: "BuzUp",
+  platform_name: "BusUp",
   primary_logo_url: "", sidebar_logo_url: "", sidebar_mark_url: "",
   auth_logo_url: "", pos_logo_url: "", mobile_logo_url: "",
   report_logo_url: "", powered_by_logo_url: "", favicon_url: "",

@@ -59,10 +59,10 @@ export default function PwaInstallPrompt() {
 
   if (visible) {
     return (
-      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BuzUp">
+      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BusUp">
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
-          <strong>Instalar BuzUp</strong>
+          <strong>Instalar BusUp</strong>
           <span>Acesso rapido a partir do ecra inicial</span>
         </div>
         <div className="pwa-install-actions">
@@ -79,10 +79,10 @@ export default function PwaInstallPrompt() {
 
   if (iosVisible) {
     return (
-      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BuzUp">
+      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BusUp">
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
-          <strong>Instalar BuzUp</strong>
+          <strong>Instalar BusUp</strong>
           <span>Toque em Partilhar e depois "Adicionar ao Ecra Inicial"</span>
         </div>
         <button className="pwa-install-close" onClick={dismiss} type="button" aria-label="Fechar">

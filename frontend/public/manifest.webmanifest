@@ -1,6 +1,6 @@
 {
-  "name": "BuzUp",
-  "short_name": "BuzUp",
+  "name": "BusUp",
+  "short_name": "BusUp",
   "description": "Bilhetica cashless, cartoes NFC, pagamentos e validacao para transporte publico.",
   "start_url": "/",
   "scope": "/",

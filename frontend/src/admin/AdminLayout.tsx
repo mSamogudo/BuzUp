@@ -41,7 +41,7 @@ export default function AdminLayout() {
   const active = NAV_ITEMS.find((item) =>
     item.end ? location.pathname === item.path : location.pathname.startsWith(item.path),
   );
-  const pageTitle = active ? t(locale, active.i18nKey) : "BuzUp";
+  const pageTitle = active ? t(locale, active.i18nKey) : "BusUp";
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
   const sidebarBrandSrc = collapsed
@@ -258,7 +258,7 @@ export default function AdminLayout() {
       <aside className={`admin-mobile-drawer${mobileOpen ? " admin-mobile-drawer-open" : ""}`}>
         <div className="admin-mobile-head">
           <div>
-            <p className="admin-kicker">BuzUp</p>
+            <p className="admin-kicker">BusUp</p>
             <strong>{t(locale, "cashlessTransport")}</strong>
           </div>
           <button className="icon-button" onClick={() => setMobileOpen(false)} type="button"><X size={18} /></button>

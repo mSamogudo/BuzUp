@@ -1,7 +1,7 @@
 name: pos_app
 description: "BuzUp POS - app para agentes em SUNMI/Urovo"
 publish_to: 'none'
-version: 1.3.1+5
+version: 1.3.3+7
 
 environment:
   sdk: ^3.11.3

@@ -1,6 +1,6 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { Eye, Pencil, Plus, Printer, QrCode, RefreshCw, Trash2 } from "lucide-react";
-import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
+import { apiFetch, apiPost, apiPatch, apiDelete, apiUpload } from "../lib/api";
 import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
@@ -9,7 +9,7 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableAction
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 
-interface Vehicle { id: number; uuid: string; registration: string; make: string; model_name: string; seated_capacity: number; standing_capacity: number; status: string; }
+interface Vehicle { id: number; uuid: string; registration: string; make: string; model_name: string; seated_capacity: number; standing_capacity: number; status: string; livrete_url?: string; }
 
 export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
   const { token } = useAuth();
@@ -22,15 +22,29 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
   const [viewing, setViewing] = useState<Vehicle | null>(null);
   const [qrVehicle, setQrVehicle] = useState<Vehicle | null>(null);
   const [busy, setBusy] = useState(false);
+  const [livrete, setLivrete] = useState<File | null>(null);
   const [form, setForm] = useState({ registration: "", make: "", model_name: "", seated_capacity: "0", standing_capacity: "0", status: "active" });
 
-  const reset = () => { setEditId(null); setModalOpen(false); setForm({ registration: "", make: "", model_name: "", seated_capacity: "0", standing_capacity: "0", status: "active" }); };
+  const reset = () => { setEditId(null); setModalOpen(false); setLivrete(null); setForm({ registration: "", make: "", model_name: "", seated_capacity: "0", standing_capacity: "0", status: "active" }); };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true);
-    const payload = { ...form, seated_capacity: Number(form.seated_capacity), standing_capacity: Number(form.standing_capacity) };
     try {
-      if (editId) { await apiPatch(`/api/vehicles/${editId}/`, token!, payload); } else { await apiPost("/api/vehicles/", token!, payload); }
+      if (livrete) {
+        const fd = new FormData();
+        fd.append("registration", form.registration);
+        fd.append("make", form.make);
+        fd.append("model_name", form.model_name);
+        fd.append("seated_capacity", String(Number(form.seated_capacity)));
+        fd.append("standing_capacity", String(Number(form.standing_capacity)));
+        fd.append("status", form.status);
+        fd.append("livrete", livrete);
+        if (editId) await apiUpload(`/api/vehicles/${editId}/`, token!, fd, "PATCH");
+        else await apiUpload("/api/vehicles/", token!, fd, "POST");
+      } else {
+        const payload = { ...form, seated_capacity: Number(form.seated_capacity), standing_capacity: Number(form.standing_capacity) };
+        if (editId) { await apiPatch(`/api/vehicles/${editId}/`, token!, payload); } else { await apiPost("/api/vehicles/", token!, payload); }
+      }
       showToast("success", editId ? t(lc, "update") : t(lc, "create")); reset(); reload();
     } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
     finally { setBusy(false); }
@@ -65,6 +79,7 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
         { label: t(lc, "standingCapacity"), value: String(viewing.standing_capacity) },
         { label: t(lc, "totalCapacity"), value: String(viewing.seated_capacity + viewing.standing_capacity) },
         { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
+        { label: t(lc, "livrete"), value: viewing.livrete_url ? <a href={viewing.livrete_url} target="_blank" rel="noreferrer">{t(lc, "viewLivrete")}</a> : "-" },
       ] : []} />
 
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editVehicle") : t(lc, "newVehicle")}>
@@ -76,6 +91,7 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "seatedCapacity")}</span><input type="number" min="0" value={form.seated_capacity} onChange={(e) => setForm((p) => ({ ...p, seated_capacity: e.target.value }))} /></label>
             <label className="field"><span>{t(lc, "standingCapacity")}</span><input type="number" min="0" value={form.standing_capacity} onChange={(e) => setForm((p) => ({ ...p, standing_capacity: e.target.value }))} /></label>
             <label className="field"><span>{t(lc, "status")}</span><select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}><option value="active">{t(lc, "active")}</option><option value="maintenance">{t(lc, "maintenance")}</option><option value="retired">{t(lc, "retired")}</option></select></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "livrete")}</span><input type="file" accept="application/pdf,image/*" onChange={(e) => setLivrete(e.target.files?.[0] ?? null)} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "livreteHint")}</small></label>
           </div>
           <div className="admin-form-actions">
             <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>

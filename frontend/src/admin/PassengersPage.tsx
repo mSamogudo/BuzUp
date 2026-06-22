@@ -41,6 +41,9 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
   const [viewWallet, setViewWallet] = useState<WalletInfo | null>(null);
   const [viewPkgs, setViewPkgs] = useState<PkgInfo[]>([]);
   const [viewTxs, setViewTxs] = useState<TxInfo[]>([]);
+  const [viewValidations, setViewValidations] = useState<any[]>([]);
+  const [viewRoutes, setViewRoutes] = useState<string[]>([]);
+  const [viewStats, setViewStats] = useState<any | null>(null);
   const [extractModal, setExtractModal] = useState(false);
   const [extractFrom, setExtractFrom] = useState("");
   const [extractTo, setExtractTo] = useState("");
@@ -52,6 +55,14 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
   const openDetail = async (p: Passenger) => {
     setViewing(p);
     setViewCards([]); setViewWallet(null); setViewPkgs([]); setViewTxs([]);
+    setViewValidations([]); setViewRoutes([]); setViewStats(null);
+    // Detalhe completo (carteira/validacoes/rotas/estatisticas) num so pedido.
+    apiFetch(`/api/passengers/${p.id}/`, token!).then((d) => {
+      if (!d) return;
+      setViewValidations(d.recent_validations || []);
+      setViewRoutes(d.routes_used || []);
+      setViewStats(d.stats || null);
+    }).catch(() => {});
     try {
       const [cards, wallets, pkgs] = await Promise.all([
         apiFetch(`/api/cards/?passenger=${p.id}`, token!).then((d) => d.results || d).catch(() => []),
@@ -253,6 +264,47 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--app-border)" }}>
                     <div><strong style={{ fontSize: 13 }}>{p.package_name}</strong><br /><span style={{ fontSize: 11, color: "var(--app-text-muted)" }}>{p.discount_type.replace(/_/g, " ")}</span></div>
                     <div style={{ textAlign: "right" }}><StatusBadge value={p.status} /><div style={{ fontSize: 11, color: "var(--app-text-muted)" }}>{formatDateTime(p.expires_at)}</div></div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {viewStats && (
+              <div style={{ marginTop: 16, padding: "12px 0", borderTop: "1px solid var(--app-border)" }}>
+                <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "var(--app-text-muted)", marginBottom: 8 }}>{t(lc, "summary")}</h4>
+                <div className="admin-metric-grid">
+                  <MetricCard label={t(lc, "tripsTaken")} value={String(viewStats.trips_taken ?? 0)} />
+                  <MetricCard label={t(lc, "validationsTotal")} value={String(viewStats.validations_total ?? 0)} />
+                  <MetricCard label={t(lc, "cards")} value={String(viewStats.cards_count ?? 0)} />
+                  <MetricCard label={t(lc, "packages")} value={String(viewStats.travel_passes_count ?? 0)} />
+                </div>
+              </div>
+            )}
+
+            {viewRoutes.length > 0 && (
+              <div style={{ marginTop: 16, padding: "12px 0", borderTop: "1px solid var(--app-border)" }}>
+                <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "var(--app-text-muted)", marginBottom: 8 }}>{t(lc, "routesUsed")} ({viewRoutes.length})</h4>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {viewRoutes.map((r, i) => (
+                    <span key={i} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 999, background: "var(--app-surface-2, rgba(0,0,0,.05))", border: "1px solid var(--app-border)" }}>{r}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {viewValidations.length > 0 && (
+              <div style={{ marginTop: 16, padding: "12px 0", borderTop: "1px solid var(--app-border)" }}>
+                <h4 style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: "var(--app-text-muted)", marginBottom: 8 }}>{t(lc, "recentTrips")} ({viewValidations.length})</h4>
+                {viewValidations.map((v, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--app-border)" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700 }}>{v.route || v.trip || v.type}</div>
+                      <div style={{ fontSize: 10.5, color: "var(--app-text-muted)" }}>{formatDateTime(v.created_at)}{v.origin || v.destination ? ` · ${v.origin || "?"} → ${v.destination || "?"}` : ""}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <StatusBadge value={v.status} />
+                      {v.amount ? <div style={{ fontSize: 12, marginTop: 2 }}>{formatCurrency(v.amount)}</div> : null}
+                    </div>
                   </div>
                 ))}
               </div>

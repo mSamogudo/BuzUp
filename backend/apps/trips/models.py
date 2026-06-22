@@ -19,6 +19,8 @@ class Vehicle(BaseModel):
     seated_capacity = models.PositiveIntegerField(default=0)
     standing_capacity = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
+    # Livrete (documento de registo do veiculo) — PDF ou imagem.
+    livrete = models.FileField(upload_to="vehicles/livrete/", blank=True)
 
     class Meta:
         ordering = ("registration",)

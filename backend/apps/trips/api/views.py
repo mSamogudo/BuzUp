@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -34,6 +35,7 @@ from apps.trips.services import generate_daily_trips
 class VehicleViewSet(BaseModelViewSet):
     queryset = Vehicle.all_objects.all()
     serializer_class = VehicleSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     required_capabilities_by_action = {
         "list": ("vehicles.read",), "retrieve": ("vehicles.read",),
         "create": ("vehicles.manage",), "update": ("vehicles.manage",),

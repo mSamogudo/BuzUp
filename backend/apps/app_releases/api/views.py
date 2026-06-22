@@ -246,12 +246,22 @@ class CheckUpdateView(APIView):
         if not release:
             return Response({"update_available": False})
 
+        # Forcar actualizacao quando a versao instalada esta abaixo do minimo
+        # suportado do release (ou quando o release e marcado obrigatorio).
+        current = data["current_version_code"]
+        force_update = bool(release.is_mandatory) or (
+            release.min_supported_version_code
+            and current < release.min_supported_version_code
+        )
+
         return Response({
             "update_available": True,
             "release_id": release.id,
             "version_name": release.version_name,
             "version_code": release.version_code,
             "is_mandatory": release.is_mandatory,
+            "force_update": force_update,
+            "min_supported_version_code": release.min_supported_version_code,
             "release_notes": release.release_notes,
             "download_url": release.get_download_url(),
             "checksum": release.checksum,

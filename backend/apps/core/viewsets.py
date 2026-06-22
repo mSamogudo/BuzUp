@@ -77,17 +77,35 @@ class BaseModelViewSet(ModelViewSet):
             raise ValidationError({"detail": messages}) from exc
         raise ValidationError({"detail": str(exc)}) from exc
 
+    def _audit(self, action, instance, before=None):
+        """Regista a accao no audit log (fail-open)."""
+        if instance is None:
+            return
+        try:
+            from apps.audit.services import record_model_audit
+            record_model_audit(getattr(self, "request", None), action, instance, before)
+        except Exception:
+            pass
+
     def perform_create(self, serializer):
         try:
             serializer.save()
         except DjangoValidationError as exc:
             self._raise_model_validation_error(exc)
+        self._audit("create", serializer.instance)
 
     def perform_update(self, serializer):
+        from apps.audit.services import summarize_instance
+        before = summarize_instance(serializer.instance) if serializer.instance else {}
         try:
             serializer.save()
         except DjangoValidationError as exc:
             self._raise_model_validation_error(exc)
+        self._audit("update", serializer.instance, before)
+
+    def perform_destroy(self, instance):
+        self._audit("delete", instance)
+        instance.delete()
 
     @action(detail=True, methods=["post"], url_path="restore")
     def restore(self, request, *args, **kwargs):
@@ -109,5 +127,6 @@ class BaseModelViewSet(ModelViewSet):
                 {"detail": "Unable to restore this record because one or more active identifiers are already in use."}
             ) from exc
 
+        self._audit("restore", instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)

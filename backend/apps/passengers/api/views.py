@@ -6,6 +6,7 @@ from apps.core.viewsets import BaseModelViewSet
 from apps.passengers.api.serializers import (
     PassengerAccountCreateAccessSerializer,
     PassengerAccountCreateSerializer,
+    PassengerAccountDetailSerializer,
     PassengerAccountSerializer,
 )
 from apps.passengers.models import PassengerAccount
@@ -31,6 +32,8 @@ class PassengerAccountViewSet(BaseModelViewSet):
     def get_serializer_class(self):
         if self.action == "create":
             return PassengerAccountCreateSerializer
+        if self.action == "retrieve":
+            return PassengerAccountDetailSerializer
         return PassengerAccountSerializer
 
     def perform_create(self, serializer):

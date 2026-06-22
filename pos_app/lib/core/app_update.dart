@@ -67,7 +67,9 @@ Future<void> _showUpdateDialog(
   Map<String, dynamic> r,
   String currentVersion,
 ) async {
-  final mandatory = r['is_mandatory'] == true;
+  // force_update vem do backend quando a versao instalada esta abaixo da
+  // versao minima suportada (ou o release e obrigatorio) -> bloqueia o "Agora nao".
+  final mandatory = r['is_mandatory'] == true || r['force_update'] == true;
   final newVersion = (r['version_name'] ?? '').toString();
   final notes = (r['release_notes'] ?? '').toString();
   final url = (r['download_url'] ?? '').toString();

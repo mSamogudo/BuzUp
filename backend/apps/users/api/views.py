@@ -43,6 +43,27 @@ class BuzUpTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
     serializer_class = BuzUpTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        username = (request.data.get("username") or "").strip()
+        response = super().post(request, *args, **kwargs)
+        try:
+            from apps.audit.models import AuditLog
+            from apps.audit.services import client_ip
+            ok = response.status_code == 200
+            user = User.objects.filter(username=username, deleted_at__isnull=True).first() if ok else None
+            AuditLog.objects.create(
+                actor=user,
+                action="login" if ok else "login_failed",
+                entity_type="users.User",
+                entity_id=str(user.pk) if user else "",
+                after={"username": username},
+                ip_address=client_ip(request) or None,
+                device=request.META.get("HTTP_USER_AGENT", "")[:255],
+            )
+        except Exception:
+            pass
+        return response
+
 
 class BuzUpTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]

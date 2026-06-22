@@ -9,7 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 
-interface Release { id: number; uuid: string; app_type: string; version_name: string; version_code: number; is_mandatory: boolean; status: string; release_notes: string; published_at: string | null; download_url?: string; file_size_bytes?: number; }
+interface Release { id: number; uuid: string; app_type: string; version_name: string; version_code: number; is_mandatory: boolean; min_supported_version_code?: number; status: string; release_notes: string; published_at: string | null; download_url?: string; file_size_bytes?: number; }
 
 function sizeMb(b?: number) { return b ? `${(b / (1024 * 1024)).toFixed(1)} MB` : "-"; }
 
@@ -24,9 +24,9 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [apkFile, setApkFile] = useState<File | null>(null);
   const apkInputRef = useRef<HTMLInputElement | null>(null);
-  const [form, setForm] = useState({ app_type: "pos", version_name: "", version_code: "", release_notes: "", is_mandatory: "false" });
+  const [form, setForm] = useState({ app_type: "pos", version_name: "", version_code: "", release_notes: "", is_mandatory: "false", min_supported_version_code: "0" });
   const f = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const reset = () => { setEditId(null); setModalOpen(false); setApkFile(null); if (apkInputRef.current) apkInputRef.current.value = ""; setForm({ app_type: "pos", version_name: "", version_code: "", release_notes: "", is_mandatory: "false" }); };
+  const reset = () => { setEditId(null); setModalOpen(false); setApkFile(null); if (apkInputRef.current) apkInputRef.current.value = ""; setForm({ app_type: "pos", version_name: "", version_code: "", release_notes: "", is_mandatory: "false", min_supported_version_code: "0" }); };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +35,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
     try {
       if (editId) {
         // Editing only touches metadata (not the binary).
-        const payload = { ...form, version_code: Number(form.version_code), is_mandatory: form.is_mandatory === "true" };
+        const payload = { ...form, version_code: Number(form.version_code), is_mandatory: form.is_mandatory === "true", min_supported_version_code: Number(form.min_supported_version_code || 0) };
         await apiPatch(`/api/admin/app-releases/${editId}/`, token!, payload);
         showToast("success", t(lc, "update"));
       } else {
@@ -46,6 +46,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
         fd.append("version_code", String(Number(form.version_code)));
         fd.append("release_notes", form.release_notes);
         fd.append("is_mandatory", form.is_mandatory);
+        fd.append("min_supported_version_code", String(Number(form.min_supported_version_code || 0)));
         fd.append("apk_file", apkFile!);
         await apiUpload("/api/admin/app-releases/", token!, fd);
         showToast("success", t(lc, "create"));
@@ -80,7 +81,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
           { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Release) => (
             <div className="admin-inline-actions">
               <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => setViewing(r)} />
-              <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setApkFile(null); setForm({ app_type: r.app_type, version_name: r.version_name, version_code: String(r.version_code), release_notes: r.release_notes, is_mandatory: r.is_mandatory ? "true" : "false" }); }} />
+              <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setApkFile(null); setForm({ app_type: r.app_type, version_name: r.version_name, version_code: String(r.version_code), release_notes: r.release_notes, is_mandatory: r.is_mandatory ? "true" : "false", min_supported_version_code: String(r.min_supported_version_code ?? 0) }); }} />
               {r.download_url && <TableActionButton icon={<Download size={15} />} label={t(lc, "download")} onClick={() => window.open(r.download_url, "_blank", "noopener,noreferrer")} />}
               {(r.status === "draft" || r.status === "suspended") && <button className="secondary-button" onClick={() => publish(r.id)}>{t(lc, "publish")}</button>}
               {r.status === "published" && <button className="danger-button" onClick={() => suspend(r.id)}>{t(lc, "suspend")}</button>}
@@ -94,6 +95,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
         { label: "Code", value: String(viewing.version_code) },
         { label: "Tipo", value: viewing.app_type },
         { label: "Obrigatoria", value: viewing.is_mandatory ? "Sim" : "Nao" },
+        { label: t(lc, "minSupportedVersion"), value: String(viewing.min_supported_version_code ?? 0) },
         { label: "Estado", value: viewing.status },
         { label: "Notas", value: viewing.release_notes || "-" },
         { label: "Publicada", value: viewing.published_at || "-" },
@@ -106,6 +108,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "versionName")}</span><input required placeholder="1.0.0" value={form.version_name} onChange={(e) => f("version_name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "versionCode")}</span><input required type="number" min="1" value={form.version_code} onChange={(e) => f("version_code", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "mandatory")}</span><select value={form.is_mandatory} onChange={(e) => f("is_mandatory", e.target.value)}><option value="false">{t(lc, "no")}</option><option value="true">{t(lc, "yes")}</option></select></label>
+            <label className="field"><span>{t(lc, "minSupportedVersion")}</span><input type="number" min="0" value={form.min_supported_version_code} onChange={(e) => f("min_supported_version_code", e.target.value)} /><small className="field-hint">{t(lc, "minSupportedVersionHint")}</small></label>
             {!editId && (
               <label className="field admin-field-span-full">
                 <span>{t(lc, "apkFile")}</span>

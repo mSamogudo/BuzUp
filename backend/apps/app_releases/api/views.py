@@ -1,7 +1,7 @@
 import hashlib
 
 from django.db import models
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -83,6 +83,109 @@ class AppReleaseDownloadView(APIView):
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         response["Cache-Control"] = "no-store"
         return response
+
+
+APP_SLUGS = {
+    "pos": AppRelease.AppType.POS,
+    "passageiro": AppRelease.AppType.PASSENGER,
+    "passenger": AppRelease.AppType.PASSENGER,
+    "mobile": AppRelease.AppType.PASSENGER,
+}
+
+
+def _latest_published(app_type):
+    return (
+        AppRelease.objects.filter(app_type=app_type, status=AppRelease.Status.PUBLISHED)
+        .order_by("-version_code")
+        .first()
+    )
+
+
+class AppLatestDownloadView(APIView):
+    """Link de download AMIGAVEL e estavel: serve sempre a ultima versao
+    publicada da app (sem id), ex. /api/apps/pos/download/."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, slug):
+        app_type = APP_SLUGS.get(slug.lower())
+        if not app_type:
+            raise Http404("App desconhecida.")
+        release = _latest_published(app_type)
+        if not release or not release.apk_file:
+            raise Http404("Sem versao publicada.")
+        filename = f"buzup-{release.app_type}-{release.version_name}.apk"
+        response = FileResponse(
+            release.apk_file.open("rb"),
+            content_type="application/vnd.android.package-archive",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["Cache-Control"] = "no-store"
+        return response
+
+
+class AppDownloadPageView(APIView):
+    """Pagina de download partilhavel (um so link) com as duas apps."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        try:
+            from apps.branding.models import BrandingSettings
+
+            brand = BrandingSettings.load()
+            name = brand.platform_name or "BusUp"
+            logo = brand.file_url("primary_logo", request) or brand.file_url("sidebar_logo", request)
+        except Exception:
+            name, logo = "BusUp", ""
+
+        pos = _latest_published(AppRelease.AppType.POS)
+        psg = _latest_published(AppRelease.AppType.PASSENGER)
+
+        def card(titulo, desc, slug, rel):
+            if not rel:
+                return (
+                    f'<div class="card"><h2>{titulo}</h2><p>{desc}</p>'
+                    '<span class="soon">Em breve</span></div>'
+                )
+            return (
+                f'<div class="card"><h2>{titulo}</h2><p>{desc}</p>'
+                f'<a class="btn" href="/api/apps/{slug}/download/">Baixar APK '
+                f'<small>v{rel.version_name}</small></a></div>'
+            )
+
+        logo_html = f'<img src="{logo}" alt="{name}" class="logo">' if logo else f"<h1>{name}</h1>"
+        html = f"""<!doctype html><html lang="pt"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{name} - Descarregar apps</title>
+<style>
+:root{{color-scheme:light dark}}
+*{{box-sizing:border-box}}
+body{{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+background:#0D3B66;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}}
+.wrap{{width:100%;max-width:560px;text-align:center}}
+.logo{{max-height:64px;margin-bottom:8px}}
+h1{{margin:0 0 4px;font-size:28px}}
+.sub{{opacity:.8;margin-bottom:28px;font-size:14px}}
+.card{{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+border-radius:16px;padding:22px;margin:14px 0;text-align:left}}
+.card h2{{margin:0 0 4px;font-size:18px}}
+.card p{{margin:0 0 16px;opacity:.8;font-size:13px}}
+.btn{{display:inline-flex;align-items:center;gap:8px;background:#2d8cf0;color:#fff;
+text-decoration:none;font-weight:700;padding:12px 18px;border-radius:10px}}
+.btn small{{opacity:.85;font-weight:500}}
+.soon{{opacity:.6;font-size:13px}}
+.foot{{margin-top:24px;opacity:.6;font-size:12px}}
+</style></head><body><div class="wrap">
+{logo_html}
+<div class="sub">Descarregar as aplicacoes Android</div>
+{card("App Passageiro", "Para passageiros: carregar saldo, comprar bilhetes, validar viagens.", "passageiro", psg)}
+{card("App POS", "Para motoristas/agentes nos terminais SUNMI/Urovo.", "pos", pos)}
+<div class="foot">Abrir no telemovel Android e instalar o APK.</div>
+</div></body></html>"""
+        return HttpResponse(html, content_type="text/html; charset=utf-8")
 
 
 class AppReleasePublishView(APIView):

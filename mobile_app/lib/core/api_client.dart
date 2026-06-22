@@ -42,6 +42,13 @@ class ApiClient {
         final is401 = e.response?.statusCode == 401;
         final alreadyRetried = req.extra['__retried'] == true;
         final isRefreshCall = req.path.contains('/auth/token/refresh');
+        // Falha no PROPRIO login (credenciais/OTP errados) nao e sessao
+        // expirada — deixar o ecra de login mostrar o erro, sem redirecionar.
+        final isLoginAttempt = req.path.contains('/auth/otp');
+        if (is401 && isLoginAttempt) {
+          handler.next(e);
+          return;
+        }
         if (is401 && !alreadyRetried && !isRefreshCall) {
           // Try to silently refresh the access token before logging out.
           final newAccess = await _tryRefresh();

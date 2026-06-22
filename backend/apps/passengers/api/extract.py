@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from apps.passengers.models import PassengerAccount
+from apps.reports.exporters import _asset, _branding_image, _safe_image
 from apps.wallets.models import WalletTransaction
 
 
@@ -71,11 +72,29 @@ def _generate_extract_pdf(passenger, wallet, txs, dt_from, dt_to) -> bytes:
 
     c.setFillColor(accent)
     c.rect(0, height - 25 * mm, width, 25 * mm, fill=1, stroke=0)
+
+    # Logo do branding (report_logo/primary_logo) com fallback estatico.
+    logo = (
+        _branding_image("report_logo")
+        or _branding_image("primary_logo")
+        or _safe_image(_asset("tpm-tur-logo", "tpm_dark.png"))
+    )
+    text_x = 15 * mm
+    if logo:
+        try:
+            iw, ih = logo.getSize()
+            lh = 12 * mm
+            lw = iw * lh / ih
+            c.drawImage(logo, 15 * mm, height - 19 * mm, width=lw, height=lh, mask="auto")
+            text_x = 15 * mm + lw + 5 * mm
+        except Exception:
+            pass
+
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(15 * mm, height - 15 * mm, "BuzUp")
+    c.drawString(text_x, height - 15 * mm, "BuzUp")
     c.setFont("Helvetica", 8)
-    c.drawString(15 * mm, height - 20 * mm, "Extracto de Transaccoes")
+    c.drawString(text_x, height - 20 * mm, "Extracto de Transaccoes")
     c.drawRightString(width - 15 * mm, height - 15 * mm, f"Emitido: {dt_from.strftime('%d/%m/%Y')} a {dt_to.strftime('%d/%m/%Y')}")
 
     y = height - 35 * mm
@@ -156,6 +175,20 @@ def _generate_extract_pdf(passenger, wallet, txs, dt_from, dt_to) -> bytes:
     c.drawString(95 * mm, y, f"Total Debitos: {total_debit:,.2f} MZN")
     c.drawString(width - 60 * mm, y, f"Transaccoes: {len(txs)}")
 
+    up = (
+        _branding_image("powered_by_logo")
+        or _safe_image(_asset("up-digital-logo", "up_digital_dark.png"))
+    )
+    if up:
+        try:
+            iw, ih = up.getSize()
+            lh = 6 * mm
+            lw = iw * lh / ih
+            c.drawImage(up, (width - lw) / 2, 6 * mm, width=lw, height=lh, mask="auto")
+            c.save()
+            return buf.getvalue()
+        except Exception:
+            pass
     c.setFillColor(colors.HexColor("#a1a1aa"))
     c.setFont("Helvetica", 5)
     c.drawCentredString(width / 2, 8 * mm, "powered by UpDigital | buzup.co.mz")

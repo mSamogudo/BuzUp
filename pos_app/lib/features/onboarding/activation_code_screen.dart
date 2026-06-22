@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/branding.dart';
 import '../../core/feedback.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -93,10 +94,10 @@ class _ActivationCodeScreenState extends ConsumerState<ActivationCodeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
             children: [
-              Image.asset(isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
-                  height: 60,
-                  errorBuilder: (_, __, ___) => Text('TPM-TUR',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: mainColor))),
+              BrandLogo(
+                  slot: 'pos_logo',
+                  fallbackAsset: isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+                  height: 60),
               const SizedBox(height: 16),
               Icon(Icons.key, color: BuzUpColors.orange, size: 48),
               const SizedBox(height: 8),
@@ -160,10 +161,10 @@ class _ActivationCodeScreenState extends ConsumerState<ActivationCodeScreen> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Text('powered by ',
                       style: TextStyle(color: mainColor.withValues(alpha: 0.6), fontSize: 11)),
-                  Image.asset(isDark ? 'assets/up_digital_dark.png' : 'assets/up_digital_light.png',
-                      height: 18,
-                      errorBuilder: (_, __, ___) => Text('UpDigital',
-                          style: TextStyle(color: mainColor, fontWeight: FontWeight.bold))),
+                  BrandLogo(
+                      slot: 'powered_by_logo',
+                      fallbackAsset: isDark ? 'assets/up_digital_dark.png' : 'assets/up_digital_light.png',
+                      height: 18),
                 ]),
               ),
             ],

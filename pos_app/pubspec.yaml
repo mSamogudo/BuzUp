@@ -1,7 +1,7 @@
 name: pos_app
 description: "BuzUp POS - app para agentes em SUNMI/Urovo"
 publish_to: 'none'
-version: 1.2.0+3
+version: 1.3.0+4
 
 environment:
   sdk: ^3.11.3
@@ -55,9 +55,25 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.13
   json_serializable: ^6.9.0
+  flutter_launcher_icons: ^0.14.2
 
 flutter:
   uses-material-design: true
   assets:
     - assets/
     - assets/sounds/
+
+# Icone de lancamento da app POS (gerar com: dart run flutter_launcher_icons).
+# Fundo azul alinhado ao portal; mark da marca como foreground adaptativo.
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/icon/ic_launcher.png"
+  adaptive_icon_background: "#0D3B66"
+  adaptive_icon_foreground: "assets/icon/ic_launcher_foreground.png"
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false

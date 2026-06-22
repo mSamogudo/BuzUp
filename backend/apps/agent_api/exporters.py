@@ -20,6 +20,8 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
+from apps.reports.exporters import _fit_text, _is_numeric_cell
+
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -480,9 +482,14 @@ def _draw_table(c, *, x_left, y, width, title, headers, col_widths, rows, empty_
         x = x_left
         c.setFillColor(NAVY)
         for cell, w in zip(row, col_widths):
+            cw = w * scale
             txt = str(cell)
-            c.drawString(x + 2, y - line_h + 1.5 * mm, txt)
-            x += w * scale
+            fitted = _fit_text(c, txt, "Helvetica", 8, cw - 4)
+            if _is_numeric_cell(txt):
+                c.drawRightString(x + cw - 2, y - line_h + 1.5 * mm, fitted)
+            else:
+                c.drawString(x + 2, y - line_h + 1.5 * mm, fitted)
+            x += cw
         y -= line_h
     return y - 4 * mm
 

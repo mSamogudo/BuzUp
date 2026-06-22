@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/branding.dart';
 import '../../core/device_info.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -142,10 +143,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     tooltip: 'Mudar tema',
                   ),
                 ),
-                Image.asset(tpmLogo,
-                    height: 64,
-                    errorBuilder: (_, __, ___) => Text('TPM-TUR S.A.',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainColor))),
+                BrandLogo(slot: 'pos_logo', fallbackAsset: tpmLogo, height: 64),
                 const SizedBox(height: 6),
                 Container(width: 50, height: 2, color: BuzUpColors.orange),
                 const SizedBox(height: 12),
@@ -159,10 +157,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text('powered by ', style: TextStyle(color: mutedColor, fontSize: 11)),
-                      Image.asset(upLogo,
-                          height: 18,
-                          errorBuilder: (_, __, ___) => Text('UpDigital',
-                              style: TextStyle(color: mainColor, fontWeight: FontWeight.bold))),
+                      BrandLogo(slot: 'powered_by_logo', fallbackAsset: upLogo, height: 18),
                     ],
                   ),
                 ),

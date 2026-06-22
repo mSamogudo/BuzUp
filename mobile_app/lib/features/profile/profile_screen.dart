@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 
 import '../../core/api_client.dart';
+import '../../core/branding.dart';
 import '../../core/config.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -244,13 +245,12 @@ class ProfileScreen extends ConsumerWidget {
         const Center(child: Text('BuzUp Passageiro · v0.3',
             style: TextStyle(fontSize: 11, color: BuzUpColors.muted))),
         const SizedBox(height: 4),
-        Center(child: Image.asset(
-          Theme.of(context).brightness == Brightness.dark
+        Center(child: BrandLogo(
+          slot: 'powered_by_logo',
+          fallbackAsset: Theme.of(context).brightness == Brightness.dark
               ? 'assets/up_digital_dark.png'
               : 'assets/up_digital_light.png',
           height: 18,
-          errorBuilder: (_, _, _) => const Text('powered by UpDigital',
-              style: TextStyle(fontSize: 11, color: BuzUpColors.muted, letterSpacing: 0.5)),
         )),
       ],
     );

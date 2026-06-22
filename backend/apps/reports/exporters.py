@@ -74,6 +74,49 @@ def _stringify(value):
     return str(value)
 
 
+_NUM_SUFFIXES = ("MZN", "MT", "%")
+
+
+def _is_numeric_cell(txt: str) -> bool:
+    """True para valores que devem ser alinhados a direita (numeros/moeda)."""
+    s = txt.strip()
+    if not s or not any(ch.isdigit() for ch in s):
+        return False
+    for suf in _NUM_SUFFIXES:
+        if s.endswith(suf):
+            s = s[: -len(suf)].strip()
+            break
+    core = s.replace(" ", "").replace(",", "").replace(".", "").replace("-", "").replace("+", "")
+    return core.isdigit()
+
+
+def _fit_text(c, txt: str, font: str, size: float, max_w: float) -> str:
+    """Corta com reticencias SO quando o texto realmente nao cabe em max_w."""
+    if not txt or c.stringWidth(txt, font, size) <= max_w:
+        return txt
+    ell = "…"
+    lo, hi = 0, len(txt)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if c.stringWidth(txt[:mid] + ell, font, size) <= max_w:
+            lo = mid
+        else:
+            hi = mid - 1
+    return (txt[:lo] + ell) if lo > 0 else ell
+
+
+def _draw_col_headers(c, x_left, y, columns, col_widths, line_h, width):
+    c.setFillColor(NAVY)
+    c.rect(x_left, y - line_h, width, line_h, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 8)
+    x = x_left
+    for (_, label), w in zip(columns, col_widths):
+        c.drawString(x + 2, y - line_h + 1.5 * mm, _fit_text(c, label, "Helvetica-Bold", 8, w - 4))
+        x += w
+    return y - line_h
+
+
 # ---------------------------------------------------------------------------
 # PDF
 # ---------------------------------------------------------------------------
@@ -105,14 +148,22 @@ def render_pdf(
     if totals:
         y = _draw_totals(c, width, y, totals)
 
-    # Compute column widths proportionally so all fit in landscape A4.
-    total_chars = sum(max(len(label), 6) for _, label in columns) or 1
+    # Largura por CONTEUDO (nao so pelo titulo): cada coluna pesa pelo maior
+    # entre o titulo e o maior valor (amostra ate 200 linhas), limitado para
+    # nao deixar uma coluna engolir a pagina. Tudo normalizado para caber em A4.
+    sample = rows[:200]
+    weights = []
+    for key, label in columns:
+        longest = max([len(_stringify(r.get(key))) for r in sample] or [0])
+        weights.append(min(max(len(label), longest, 6), 30))
+    total_weight = sum(weights) or 1
     avail = width - 20 * mm
-    col_widths = [avail * (max(len(label), 6) / total_chars) for _, label in columns]
+    col_widths = [avail * (w / total_weight) for w in weights]
 
     y = _draw_table(c, x_left=10 * mm, y=y, width=width - 20 * mm,
                    columns=columns, col_widths=col_widths,
-                   rows=rows, page_size=page)
+                   rows=rows, page_size=page,
+                   title=title, period_from=period_from, period_to=period_to)
 
     _draw_footer(c, width)
     c.save()
@@ -175,19 +226,14 @@ def _draw_totals(c, width, y, totals):
     return y - box_h - 6 * mm
 
 
-def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size):
-    line_h = 5.5 * mm
+def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
+                title="", period_from="", period_to=""):
+    line_h = 6 * mm
     page_w, page_h = page_size
+    # A quebra de pagina tem de respeitar o rodape (14mm) + uma linha.
+    min_y = 14 * mm + line_h + 2 * mm
 
-    c.setFillColor(NAVY)
-    c.rect(x_left, y - line_h, width, line_h, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 8)
-    x = x_left
-    for (_, label), w in zip(columns, col_widths):
-        c.drawString(x + 2, y - line_h + 1.5 * mm, label[:18])
-        x += w
-    y -= line_h
+    y = _draw_col_headers(c, x_left, y, columns, col_widths, line_h, width)
 
     if not rows:
         c.setFillColor(GREY)
@@ -195,38 +241,28 @@ def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size):
         c.drawString(x_left + 4, y - 4 * mm, "Sem registos no periodo / filtros indicados.")
         return y - 8 * mm
 
-    c.setFont("Helvetica", 7.5)
     for i, row in enumerate(rows):
-        # Page break
-        if y < 20 * mm:
+        if y < min_y:
             _draw_footer(c, page_w)
             c.showPage()
-            _draw_header(c, page_w, page_h, title="(continuacao)", period_from="", period_to="")
+            _draw_header(c, page_w, page_h, title=title, period_from=period_from, period_to=period_to)
             y = page_h - 30 * mm
-            # Reprint header
-            c.setFillColor(NAVY)
-            c.rect(x_left, y - line_h, width, line_h, fill=1, stroke=0)
-            c.setFillColor(colors.white)
-            c.setFont("Helvetica-Bold", 8)
-            x = x_left
-            for (_, label), w in zip(columns, col_widths):
-                c.drawString(x + 2, y - line_h + 1.5 * mm, label[:18])
-                x += w
-            y -= line_h
-            c.setFont("Helvetica", 7.5)
+            y = _draw_col_headers(c, x_left, y, columns, col_widths, line_h, width)
 
         if i % 2 == 1:
             c.setFillColor(SOFT_BG)
             c.rect(x_left, y - line_h, width, line_h, fill=1, stroke=0)
         c.setFillColor(NAVY)
+        c.setFont("Helvetica", 8)
         x = x_left
+        baseline = y - line_h + 1.8 * mm
         for (key, _), w in zip(columns, col_widths):
             txt = _stringify(row.get(key))
-            # Truncate to fit the column visually
-            max_chars = max(6, int(w / 2.2))
-            if len(txt) > max_chars:
-                txt = txt[: max_chars - 1] + "…"
-            c.drawString(x + 2, y - line_h + 1.5 * mm, txt)
+            fitted = _fit_text(c, txt, "Helvetica", 8, w - 4)
+            if _is_numeric_cell(txt):
+                c.drawRightString(x + w - 2, baseline, fitted)
+            else:
+                c.drawString(x + 2, baseline, fitted)
             x += w
         y -= line_h
     return y - 4 * mm

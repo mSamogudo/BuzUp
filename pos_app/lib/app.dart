@@ -118,7 +118,7 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+              isDark ? 'assets/buzup_dark.png' : 'assets/buzup_light.png',
               height: 80,
               errorBuilder: (_, __, ___) => const SizedBox(height: 80),
             ),

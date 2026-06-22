@@ -6,8 +6,8 @@ const SHELL_ASSETS = [
   "/icons/buzup-icon.svg",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/assets/tpm-tur-logo/tpm_dark.png",
-  "/assets/tpm-tur-logo/tpm_light.png",
+  "/assets/buzup-logo/buzup-logo-light.svg",
+  "/assets/buzup-logo/buzup-logo-dark.svg",
   "/assets/up-digital-logo/up_digital_dark.png",
   "/assets/up-digital-logo/up_digital_light.png",
 ];

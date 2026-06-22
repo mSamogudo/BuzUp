@@ -186,7 +186,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
       {tab === "builder" && (
         <SectionCard
           title="Gerador de relatorios premium"
-          description="Escolha o tipo de relatorio, defina filtros, visualize a pre-visualizacao e descarregue em PDF ou Excel com a identidade da TPM-TUR."
+          description="Escolha o tipo de relatorio, defina filtros, visualize a pre-visualizacao e descarregue em PDF ou Excel com a identidade BuzUp."
         >
           {error && (
             <div style={{

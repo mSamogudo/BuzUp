@@ -242,7 +242,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Spacer(),
             Image.asset(
-              isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+              isDark ? 'assets/buzup_dark.png' : 'assets/buzup_light.png',
               height: 72,
               errorBuilder: (_, __, ___) => const SizedBox(height: 72),
             ),

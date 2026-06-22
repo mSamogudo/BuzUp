@@ -68,7 +68,7 @@ Staging/QA publico temporario: `https://updigital.co.mz`. Producao em `buzup.co.
 
 ## Features
 
-- Login premium split-screen com logo TPM-TUR
+- Login premium split-screen com logo BuzUp
 - Checkout publico mobile-first com bilhete PDF/QR
 - i18n PT/EN, dark/light theme com logos adaptados
 - RBAC dinamico com checkboxes de 34 permissoes

@@ -105,9 +105,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    // tpm_tur_light.png has a DARK logo (used on light backgrounds).
-    // tpm_tur_dark.png has a LIGHT/white logo (used on dark backgrounds).
-    final tpmLogo = isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png';
+    // buzup_light.png has a DARK logo (used on light backgrounds).
+    // buzup_dark.png has a LIGHT/white logo (used on dark backgrounds).
+    final brandLogo = isDark ? 'assets/buzup_dark.png' : 'assets/buzup_light.png';
     final upLogo = isDark ? 'assets/up_digital_dark.png' : 'assets/up_digital_light.png';
 
     final bg = isDark ? const Color(0xFF1A2A4E) : const Color(0xFFF7F4EE);
@@ -139,11 +139,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       tooltip: 'Mudar tema',
                     ),
                   ),
-                  // TPM-TUR logo
-                  Image.asset(tpmLogo,
+                  // BuzUp logo
+                  Image.asset(brandLogo,
                       height: 78,
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Text('TPM-TUR S.A.',
+                      errorBuilder: (_, __, ___) => Text('BuzUp',
                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: mainColor))),
                   const SizedBox(height: 4),
                   Text('TRANSPORTE & TURISMO',

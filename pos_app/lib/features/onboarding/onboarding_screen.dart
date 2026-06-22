@@ -121,7 +121,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final bg = isDark ? const Color(0xFF1A2A4E) : const Color(0xFFF7F4EE);
     final mainColor = isDark ? Colors.white : BuzUpColors.navy;
     final mutedColor = mainColor.withValues(alpha: 0.6);
-    final tpmLogo = isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png';
+    final brandLogo = isDark ? 'assets/buzup_dark.png' : 'assets/buzup_light.png';
     final upLogo = isDark ? 'assets/up_digital_dark.png' : 'assets/up_digital_light.png';
 
     return PopScope(
@@ -142,9 +142,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     tooltip: 'Mudar tema',
                   ),
                 ),
-                Image.asset(tpmLogo,
+                Image.asset(brandLogo,
                     height: 64,
-                    errorBuilder: (_, __, ___) => Text('TPM-TUR S.A.',
+                    errorBuilder: (_, __, ___) => Text('BuzUp',
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: mainColor))),
                 const SizedBox(height: 6),
                 Container(width: 50, height: 2, color: BuzUpColors.orange),

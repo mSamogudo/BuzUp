@@ -93,9 +93,9 @@ class _ActivationCodeScreenState extends ConsumerState<ActivationCodeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
             children: [
-              Image.asset(isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+              Image.asset(isDark ? 'assets/buzup_dark.png' : 'assets/buzup_light.png',
                   height: 60,
-                  errorBuilder: (_, __, ___) => Text('TPM-TUR',
+                  errorBuilder: (_, __, ___) => Text('BuzUp',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: mainColor))),
               const SizedBox(height: 16),
               Icon(Icons.key, color: BuzUpColors.orange, size: 48),

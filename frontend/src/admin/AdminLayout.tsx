@@ -42,14 +42,14 @@ export default function AdminLayout() {
   const pageTitle = active ? t(locale, active.i18nKey) : "BuzUp";
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
-  const sidebarBrandSrc = collapsed ? "/assets/tpm-tur-logo/tpm_mark.png" : "/assets/tpm-tur-logo/tpm_dark.png";
+  const sidebarBrandSrc = collapsed ? "/assets/buzup-logo/buzup-mark.svg" : "/assets/buzup-logo/buzup-logo-light.svg";
 
   return (
     <div className="admin-shell">
       <aside className={`admin-sidebar${collapsed ? " admin-sidebar-collapsed" : ""}`}>
         <div className="admin-sidebar-head">
           <div className="admin-sidebar-brand">
-            <img alt="TPM-TUR" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
+            <img alt="BuzUp" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
           </div>
           {!collapsed && (
             <button className="icon-button desktop-only sidebar-collapse-btn" onClick={() => setCollapsed((c) => !c)} type="button">

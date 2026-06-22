@@ -13,6 +13,40 @@ def get_agent_profile(user):
     return Agent.objects.filter(user=user, status=Agent.Status.ACTIVE).first()
 
 
+def provision_pos_agent(user):
+    """Garante um perfil de Agente ACTIVO para quem pode operar o POS.
+
+    Permite que basta atribuir o papel "Agente POS" (capacidade pos.operate) —
+    ou ser motorista activo / superuser — para aceder a app POS, sem ter de
+    criar manualmente um registo de Agente. Devolve o Agent ou None se nao
+    elegivel.
+    """
+    existing = get_agent_profile(user)
+    if existing:
+        return existing
+
+    from apps.core.permissions.base import has_capabilities
+    from apps.trips.models import Driver
+
+    eligible = (
+        getattr(user, "is_superuser", False)
+        or has_capabilities(user, ("pos.operate",))
+        or Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).exists()
+    )
+    if not eligible:
+        return None
+
+    full_name = (user.get_full_name() or user.username or "").strip()
+    agent, _ = Agent.objects.get_or_create(
+        user=user,
+        defaults={"full_name": full_name, "phone": getattr(user, "phone", "") or "", "status": Agent.Status.ACTIVE},
+    )
+    if agent.status != Agent.Status.ACTIVE:
+        agent.status = Agent.Status.ACTIVE
+        agent.save(update_fields=["status", "updated_at"])
+    return agent
+
+
 def get_authorized_device(user, serial_number: str | None = None) -> Device | None:
     """Return Device assigned to this user (and matching serial if provided)."""
     if not user or not user.is_authenticated:

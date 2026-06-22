@@ -41,7 +41,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.audit.services import audit, client_ip
-from apps.agent_api.permissions import IsActiveAgent, get_agent_profile, get_authorized_device
+from apps.agent_api.permissions import IsActiveAgent, get_agent_profile, get_authorized_device, provision_pos_agent
 from apps.agent_api.sales import SaleError, create_pos_sale, request_payment
 from apps.agent_api.serializers import (
     AgentDeviceHeartbeatSerializer,
@@ -166,9 +166,12 @@ class AgentLoginView(APIView):
         if not user or not user.is_active:
             return Response({"detail": "Credenciais invalidas."}, status=401)
 
-        agent = get_agent_profile(user)
+        # Auto-provisiona o perfil de Agente se o utilizador puder operar o POS
+        # (papel Agente POS / pos.operate, motorista activo, ou superuser).
+        # Assim basta atribuir o papel — sem criar o Agente manualmente.
+        agent = provision_pos_agent(user)
         if not agent:
-            return Response({"detail": "Utilizador nao tem perfil de agente activo."}, status=403)
+            return Response({"detail": "Utilizador sem permissao para operar o POS (atribua o papel Agente POS)."}, status=403)
 
         # Optional: bind login to an active POS device
         serial = (request.data.get("device_serial") or "").strip()

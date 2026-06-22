@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/api_client.dart';
+import 'core/branding.dart';
 import 'core/device_gate.dart';
 import 'core/device_info.dart';
 import 'core/providers.dart';
@@ -117,10 +118,10 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+            BrandLogo(
+              slot: 'pos_logo',
+              fallbackAsset: isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
               height: 80,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 80),
             ),
             const SizedBox(height: 24),
             const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: BuzUpColors.orange)),

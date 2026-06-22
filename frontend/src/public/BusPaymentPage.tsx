@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
 import { AlertCircle, Bus, CheckCircle, MapPin, Phone, ShoppingCart, Ticket, Users } from "lucide-react";
 import { apiPublic } from "../lib/api";
+import { useBranding, pickLogo } from "../lib/branding";
 
 interface BusStop { id: number; code: string; name: string; }
 interface ActiveTrip {
@@ -32,6 +33,7 @@ interface CheckoutResult {
 const PHONE_REGEX = /^[0-9]{9}$/;
 
 export default function BusPaymentPage() {
+  const { branding } = useBranding();
   const { vehicleUuid } = useParams<{ vehicleUuid: string }>();
   const [info, setInfo] = useState<BusInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,7 @@ export default function BusPaymentPage() {
   return (
     <div className="bus-pay">
       <header className="bus-pay-header">
-        <img alt="BuzUp" src="/assets/tpm-tur-logo/tpm_dark.png" className="bus-pay-logo" />
+        <img alt="BuzUp" src={pickLogo(branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png")} className="bus-pay-logo" />
         <div className="bus-pay-header-text">
           <strong>BuzUp</strong>
           <span>Comprar Bilhete</span>
@@ -252,7 +254,7 @@ export default function BusPaymentPage() {
 
       <footer className="bus-pay-footer">
         <span>powered by</span>
-        <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="bus-pay-footer-logo" />
+        <img alt="UpDigital" src={pickLogo(branding.powered_by_logo_url, "/assets/up-digital-logo/up_digital_dark.png")} className="bus-pay-footer-logo" />
       </footer>
     </div>
   );

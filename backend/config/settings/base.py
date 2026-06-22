@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.cards.apps.CardsConfig",
     "apps.devices.apps.DevicesConfig",
     "apps.app_releases.apps.AppReleasesConfig",
+    "apps.branding.apps.BrandingConfig",
     "apps.routes.apps.RoutesConfig",
     "apps.fares.apps.FaresConfig",
     "apps.trips.apps.TripsConfig",

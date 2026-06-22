@@ -6,6 +6,7 @@ import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "./AuthContext";
 import { useUi } from "../ui/UiPreferences";
+import { useBranding, pickLogo } from "../lib/branding";
 
 type Mode = "staff" | "otp" | "register";
 type OtpStep = "phone" | "code";
@@ -13,6 +14,7 @@ type OtpStep = "phone" | "code";
 export default function LoginPage() {
   const { locale, setLocale } = useUi();
   const { login } = useAuth();
+  const { branding } = useBranding();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<Mode>("staff");
@@ -200,7 +202,7 @@ export default function LoginPage() {
     <main className="login-page">
       <div className="login-left">
         <div className="login-left-content">
-          <img alt="TPM-TUR" className="login-hero-logo" src="/assets/tpm-tur-logo/tpm_dark.png" />
+          <img alt="TPM-TUR" className="login-hero-logo" src={pickLogo(branding.auth_logo_url, branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png")} />
           <h1>BuzUp</h1>
           <p>{t(locale, "cashlessTransport")}</p>
         </div>
@@ -371,7 +373,7 @@ export default function LoginPage() {
             </div>
             <div className="login-powered">
               <span>{t(locale, "poweredBy")}</span>
-              <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="login-powered-logo" />
+              <img alt="UpDigital" src={pickLogo(branding.powered_by_logo_url, "/assets/up-digital-logo/up_digital_dark.png")} className="login-powered-logo" />
             </div>
           </div>
         </div>

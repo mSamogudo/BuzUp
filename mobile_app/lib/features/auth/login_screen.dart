@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/branding.dart';
 import '../../core/i18n.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
@@ -241,10 +242,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             const Spacer(),
-            Image.asset(
-              isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+            BrandLogo(
+              slot: 'mobile_logo',
+              fallbackAsset: isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
               height: 72,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 72),
             ),
             const SizedBox(height: 24),
             Center(
@@ -320,17 +321,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   Text('${tr('login.poweredBy')} ',
                       style: const TextStyle(color: BuzUpColors.muted, fontSize: 11, letterSpacing: 0.6)),
-                  Image.asset(
-                    upLogo,
+                  BrandLogo(
+                    slot: 'powered_by_logo',
+                    fallbackAsset: upLogo,
                     height: 18,
-                    errorBuilder: (_, __, ___) => const Text(
-                      'UpDigital',
-                      style: TextStyle(
-                          color: BuzUpColors.muted,
-                          fontSize: 11,
-                          letterSpacing: 0.6,
-                          fontWeight: FontWeight.w700),
-                    ),
                   ),
                 ],
               ),

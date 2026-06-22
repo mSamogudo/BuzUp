@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/branding.dart';
 import '../../core/feedback.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -139,12 +140,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       tooltip: 'Mudar tema',
                     ),
                   ),
-                  // TPM-TUR logo
-                  Image.asset(tpmLogo,
-                      height: 78,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Text('TPM-TUR S.A.',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: mainColor))),
+                  // TPM-TUR logo (configuravel no portal)
+                  BrandLogo(slot: 'pos_logo', fallbackAsset: tpmLogo, height: 78, fit: BoxFit.contain),
                   const SizedBox(height: 4),
                   Text('TRANSPORTE & TURISMO',
                       style: TextStyle(fontSize: 9, letterSpacing: 1.8, color: mutedColor)),
@@ -236,10 +233,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text('powered by ',
                         style: TextStyle(color: mutedColor, fontSize: 11)),
-                    Image.asset(upLogo,
-                        height: 22,
-                        errorBuilder: (_, __, ___) => Text('UpDigital',
-                            style: TextStyle(color: mainColor, fontWeight: FontWeight.bold))),
+                    BrandLogo(slot: 'powered_by_logo', fallbackAsset: upLogo, height: 22),
                   ],
                 ),
               ),

@@ -5404,3 +5404,65 @@ html[data-theme="dark"] .otp-digit:focus {
   color: var(--app-text, #0b1530);
   font-size: 13px;
 }
+
+/* === Pagina de Marca (branding) === */
+.branding-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.branding-slot {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface, #fff);
+}
+.branding-slot-preview {
+  width: 96px;
+  height: 96px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-conic-gradient(#f3f4f6 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+  overflow: hidden;
+}
+.branding-slot-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.branding-slot-empty {
+  font-size: 12px;
+  color: var(--muted, #9ca3af);
+}
+.branding-slot-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.branding-slot-hint {
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+.branding-slot-upload {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--accent, #2563eb);
+}
+.branding-slot-upload input { display: none; }
+.branding-slot-upload span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}

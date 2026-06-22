@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/branding.dart';
 import '../../core/bus_loader.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
@@ -35,10 +36,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     return Scaffold(
       body: Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Image.asset(
-            isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+          BrandLogo(
+            slot: 'mobile_logo',
+            fallbackAsset: isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
             height: 80,
-            errorBuilder: (_, _, _) => const SizedBox(height: 80),
           ),
           const SizedBox(height: 8),
           const Text('BuzUp Passageiro',

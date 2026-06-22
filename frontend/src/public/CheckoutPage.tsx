@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, Bus, CheckCircle, Clock, MapPin, Search, Ticket } from "lucide-react";
 import { formatCurrency, formatDateTime } from "../lib/format";
+import { useBranding, pickLogo } from "../lib/branding";
 
 interface RouteOption { id: number; code: string; name: string; }
 interface StopOption { id: number; code: string; name: string; }
@@ -16,6 +17,7 @@ async function api(path: string, opts?: RequestInit) {
 }
 
 export default function CheckoutPage() {
+  const { branding } = useBranding();
   const [step, setStep] = useState<Step>("search");
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [stops, setStops] = useState<StopOption[]>([]);
@@ -89,7 +91,7 @@ export default function CheckoutPage() {
   return (
     <div className="co">
       <header className="co-header">
-        <img alt="TPM-TUR" src="/assets/tpm-tur-logo/tpm_dark.png" className="co-logo" />
+        <img alt="TPM-TUR" src={pickLogo(branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png")} className="co-logo" />
         <div className="co-header-text">
           <strong>BuzUp</strong>
           <span>Bilhete Electronico</span>
@@ -200,7 +202,7 @@ export default function CheckoutPage() {
 
       <footer className="co-footer">
         <span>powered by</span>
-        <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="co-footer-logo" />
+        <img alt="UpDigital" src={pickLogo(branding.powered_by_logo_url, "/assets/up-digital-logo/up_digital_dark.png")} className="co-footer-logo" />
       </footer>
     </div>
   );

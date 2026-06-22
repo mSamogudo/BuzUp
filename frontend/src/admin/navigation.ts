@@ -11,6 +11,7 @@ import {
   Map,
   MapPin,
   NfcIcon,
+  Palette,
   PackageCheck,
   Route,
   ShieldCheck,
@@ -52,4 +53,5 @@ export const NAV_ITEMS: NavItem[] = [
   { i18nKey: "agentRevenue", path: "/app/agent-revenue", icon: Coins },
   { i18nKey: "reports", path: "/app/reports", icon: BarChart3 },
   { i18nKey: "audit", path: "/app/audit", icon: FileText },
+  { i18nKey: "branding", path: "/app/branding", icon: Palette },
 ];

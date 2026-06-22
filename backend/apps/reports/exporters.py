@@ -42,6 +42,30 @@ def _safe_image(path: Path):
     return None
 
 
+def _branding_image(field_name: str):
+    """ImageReader do logo configurado no portal (apps.branding), ou None.
+
+    Permite que os relatorios usem os logos carregados pelo gestor, caindo para
+    os ficheiros estaticos quando nenhum logo foi definido.
+    """
+    try:
+        from apps.branding.models import BrandingSettings
+
+        f = getattr(BrandingSettings.load(), field_name, None)
+        if not f or not f.name:
+            return None
+        try:
+            return _safe_image(Path(f.path))
+        except (NotImplementedError, ValueError):
+            f.open("rb")
+            try:
+                return ImageReader(io.BytesIO(f.read()))
+            finally:
+                f.close()
+    except Exception:
+        return None
+
+
 def _stringify(value):
     if isinstance(value, datetime):
         return value.strftime("%Y-%m-%d %H:%M")
@@ -100,7 +124,12 @@ def _draw_header(c, width, height, *, title, period_from, period_to):
     c.setFillColor(NAVY)
     c.rect(0, height - band_h, width, band_h, fill=1, stroke=0)
 
-    logo = _safe_image(_asset("tpm-tur-logo", "tpm_dark.png")) or _safe_image(_asset("tpm-tur-logo", "tpm_light.png"))
+    logo = (
+        _branding_image("report_logo")
+        or _branding_image("primary_logo")
+        or _safe_image(_asset("tpm-tur-logo", "tpm_dark.png"))
+        or _safe_image(_asset("tpm-tur-logo", "tpm_light.png"))
+    )
     if logo:
         try:
             iw, ih = logo.getSize()
@@ -207,7 +236,11 @@ def _draw_footer(c, width):
     band_h = 14 * mm
     c.setFillColor(SOFT_BG)
     c.rect(0, 0, width, band_h, fill=1, stroke=0)
-    up = _safe_image(_asset("up-digital-logo", "up_digital_dark.png")) or _safe_image(_asset("up-digital-logo", "up_digital_light.png"))
+    up = (
+        _branding_image("powered_by_logo")
+        or _safe_image(_asset("up-digital-logo", "up_digital_dark.png"))
+        or _safe_image(_asset("up-digital-logo", "up_digital_light.png"))
+    )
     if up:
         try:
             iw, ih = up.getSize()

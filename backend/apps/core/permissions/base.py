@@ -21,6 +21,7 @@ ALL_CAPABILITIES = [
     "pos.operate",
     "packages.read", "packages.manage",
     "imports.manage",
+    "settings.read", "settings.manage",
 ]
 
 DEFAULT_ROLES = {

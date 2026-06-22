@@ -23,6 +23,7 @@ import UsersPage from "./admin/SystemPage";
 import ReportsPage from "./admin/ReportsPage";
 import AgentRevenuePage from "./admin/AgentRevenuePage";
 import AuditPage from "./admin/AuditPage";
+import BrandingPage from "./admin/BrandingPage";
 import CheckoutPage from "./public/CheckoutPage";
 import BusPaymentPage from "./public/BusPaymentPage";
 import PassengerPortalPage from "./passenger/PassengerPortalPage";
@@ -30,6 +31,7 @@ import DriverPortalPage from "./driver/DriverPortalPage";
 import ProfilePage from "./profile/ProfilePage";
 import TripDetailPage from "./admin/TripDetailPage";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { BrandingProvider } from "./lib/branding";
 import SplashScreen from "./ui/SplashScreen";
 import PwaInstallPrompt from "./ui/PwaInstallPrompt";
 
@@ -89,6 +91,7 @@ function AppContent() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="agent-revenue" element={<AgentRevenuePage />} />
           <Route path="audit" element={<AuditPage />} />
+          <Route path="branding" element={<BrandingPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/app" replace />} />
       </Routes>
@@ -99,7 +102,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrandingProvider>
+        <AppContent />
+      </BrandingProvider>
     </AuthProvider>
   );
 }

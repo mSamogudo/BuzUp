@@ -7,6 +7,7 @@ import { getInitials } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
 import { StatusBadge } from "../ui/common";
+import { useBranding, pickLogo } from "../lib/branding";
 import { NAV_ITEMS } from "./navigation";
 
 interface MeData { username: string; email: string; phone: string; first_name: string; last_name: string; is_superuser: boolean; roles: { name: string; code: string }[]; capabilities: string[]; }
@@ -14,6 +15,7 @@ interface MeData { username: string; email: string; phone: string; first_name: s
 export default function AdminLayout() {
   const { logout, token } = useAuth();
   const { locale, setLocale, theme, toggleTheme } = useUi();
+  const { branding } = useBranding();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -42,7 +44,9 @@ export default function AdminLayout() {
   const pageTitle = active ? t(locale, active.i18nKey) : "BuzUp";
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
-  const sidebarBrandSrc = collapsed ? "/assets/tpm-tur-logo/tpm_mark.png" : "/assets/tpm-tur-logo/tpm_dark.png";
+  const sidebarBrandSrc = collapsed
+    ? pickLogo(branding.sidebar_mark_url, "/assets/tpm-tur-logo/tpm_mark.png")
+    : pickLogo(branding.sidebar_logo_url, branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png");
 
   return (
     <div className="admin-shell">
@@ -150,7 +154,7 @@ export default function AdminLayout() {
                   <small className="admin-version-label">v0.1.0</small>
                   <div className="admin-powered-by">
                     <span>{t(locale, "poweredBy")}</span>
-                    <img alt="UpDigital" className="powered-by-logo" src="/assets/up-digital-logo/up_digital_light.png" />
+                    <img alt="UpDigital" className="powered-by-logo" src={pickLogo(branding.powered_by_logo_url, "/assets/up-digital-logo/up_digital_light.png")} />
                   </div>
                 </div>
               </div>

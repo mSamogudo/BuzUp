@@ -279,7 +279,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFE47B11), Color(0xFFF59E3D)],
+              colors: [Color(0xFF1D5FA7), Color(0xFF2D8CF0)],
             ),
             boxShadow: [
               BoxShadow(color: BuzUpColors.orange.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 6)),

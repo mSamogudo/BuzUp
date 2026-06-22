@@ -1,7 +1,7 @@
 name: buzup_mobile
 description: "BuzUp Passageiro - app movel para passageiros do transporte cashless."
 publish_to: 'none'
-version: 0.4.4+8
+version: 0.4.5+9
 
 environment:
   sdk: ^3.11.3
@@ -43,7 +43,7 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/icon/ic_launcher.png"
-  adaptive_icon_background: "#F07C24"
+  adaptive_icon_background: "#0D3B66"
   adaptive_icon_foreground: "assets/icon/ic_launcher_foreground.png"
   web:
     generate: false

@@ -30,7 +30,7 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
 const double _designWidth = 1024;
 const double _designHeight = 1535;
 const Color _navy = Color(0xFF071E49);
-const Color _orange = Color(0xFFE47B11);
+const Color _orange = Color(0xFF1D5FA7);
 const Color _red = Color(0xFFD32F2F);
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {

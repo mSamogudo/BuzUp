@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 /// BusUp design tokens — alinhados ao portal: azul primario, fundo branco
 /// (modo claro) / quase-preto (modo escuro). Laranja fica como acento pontual.
 class BuzUpColors {
-  static const orange = Color(0xFFE47B11);
-  static const orangeDark = Color(0xFFFFB066);
+  // Marca passou a AZUL: estas constantes (historicamente "orange") sao agora
+  // tons de azul para que todas as referencias antigas fiquem azuis.
+  static const orange = Color(0xFF1D5FA7);
+  static const orangeDark = Color(0xFF2D8CF0);
   static const blue = Color(0xFF1D5FA7); // primario (claro) — portal --app-accent
   static const blueDark = Color(0xFF2D8CF0); // primario (escuro) — portal dark accent
   static const blueDeep = Color(0xFF0D3B66);

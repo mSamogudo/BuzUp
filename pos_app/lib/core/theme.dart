@@ -8,8 +8,10 @@ class BuzUpColors {
   static const blue = Color(0xFF1D5FA7); // primario (claro) — portal --app-accent
   static const blueDark = Color(0xFF2D8CF0); // primario (escuro)
   static const blueDeep = Color(0xFF0D3B66);
-  static const orange = Color(0xFFE47B11);
-  static const orangeLight = Color(0xFFF59E3D);
+  // Marca passou a AZUL: estas constantes (historicamente "orange") sao agora
+  // tons de azul para que todas as referencias antigas fiquem azuis.
+  static const orange = Color(0xFF1D5FA7);
+  static const orangeLight = Color(0xFF5BA3F5);
   static const cream = Color(0xFFF7F4EE);
   static const success = Color(0xFF2A9D8F);
   static const danger = Color(0xFFD62828);

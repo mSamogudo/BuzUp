@@ -60,7 +60,7 @@ class _BusLoaderState extends State<BusLoader> with TickerProviderStateMixin {
                   wheel: _wheel.value * 2 * math.pi,
                   bounce: Curves.easeInOut.transform(_bounce.value),
                   accent: BuzUpColors.orange,
-                  body: isDark ? const Color(0xFFFFB066) : BuzUpColors.orange,
+                  body: isDark ? const Color(0xFF2D8CF0) : BuzUpColors.orange,
                   outline: isDark ? Colors.white : const Color(0xFF15191E),
                   bg: isDark ? const Color(0xFF1A1F26) : Colors.white,
                 ),

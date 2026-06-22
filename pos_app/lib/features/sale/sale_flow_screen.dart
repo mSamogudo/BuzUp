@@ -315,7 +315,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                       final t = _trips[i] as Map<String, dynamic>;
                       return Card(
                         child: ListTile(
-                          leading: const Icon(Icons.directions_bus, color: Color(0xFFE47B11)),
+                          leading: const Icon(Icons.directions_bus, color: Color(0xFF1D5FA7)),
                           title: Text('${t['route_code']} - ${t['route_name']}'),
                           subtitle: Text('${t['vehicle']} · motorista: ${t['driver']}'),
                           trailing: Chip(label: Text(t['status'] ?? '', style: const TextStyle(fontSize: 10))),
@@ -345,7 +345,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int>(
-          decoration: const InputDecoration(labelText: 'Destino', prefixIcon: Icon(Icons.location_on, color: Color(0xFFE47B11))),
+          decoration: const InputDecoration(labelText: 'Destino', prefixIcon: Icon(Icons.location_on, color: Color(0xFF1D5FA7))),
           value: _destinationId,
           items: _stops.where((s) => s['id'] != _originId).map((s) {
             final st = s as Map<String, dynamic>;
@@ -355,7 +355,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE47B11), minimumSize: const Size.fromHeight(50)),
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(50)),
           onPressed: _calculateFare,
           child: const Text('CALCULAR TARIFA', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
@@ -394,7 +394,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold)),
                 Text(
                   '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFFE47B11)),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
                 ),
               ]),
             ]),
@@ -418,7 +418,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           _cardCapturePanel(),
         const SizedBox(height: 18),
         FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE47B11), minimumSize: const Size.fromHeight(54)),
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(54)),
           icon: Icon(_paymentMethod == 'card' ? Icons.credit_card : Icons.payment),
           label: Text(
             _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO',
@@ -826,7 +826,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           return Card(
             child: ListTile(
               dense: true,
-              leading: const Icon(Icons.confirmation_number, color: Color(0xFFE47B11)),
+              leading: const Icon(Icons.confirmation_number, color: Color(0xFF1D5FA7)),
               title: Text('${tt['reference']}'),
               subtitle: Text('${tt['route_code']} · ${tt['origin_stop']} → ${tt['destination_stop']} · ${tt['fare_amount']} MZN'),
               trailing: const Text('ACTIVO', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
@@ -852,7 +852,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ),
         const SizedBox(height: 8),
         FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE47B11), minimumSize: const Size.fromHeight(50)),
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(50)),
           icon: const Icon(Icons.add),
           label: const Text('NOVA VENDA'),
           onPressed: () => setState(() {

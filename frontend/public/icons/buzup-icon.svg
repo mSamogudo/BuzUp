@@ -1,15 +1,11 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="116" fill="#0D3B66"/>
-  <rect x="98" y="132" width="316" height="210" rx="56" fill="#F4F8FB"/>
-  <path d="M148 211C148 183.386 170.386 161 198 161H314C341.614 161 364 183.386 364 211V241H148V211Z" fill="#1D5FA7"/>
-  <rect x="140" y="254" width="232" height="44" rx="18" fill="#0D3B66"/>
-  <circle cx="171" cy="354" r="30" fill="#F9A51A"/>
-  <circle cx="341" cy="354" r="30" fill="#F9A51A"/>
-  <circle cx="171" cy="354" r="12" fill="#0D3B66"/>
-  <circle cx="341" cy="354" r="12" fill="#0D3B66"/>
-  <path d="M118 347H394" stroke="#F4F8FB" stroke-width="20" stroke-linecap="round"/>
-  <path d="M174 186H338" stroke="#F4F8FB" stroke-width="22" stroke-linecap="round"/>
-  <path d="M184 219H328" stroke="#8BC7F7" stroke-width="18" stroke-linecap="round"/>
-  <path d="M161 127L204 84H308L351 127" stroke="#F9A51A" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M151 403H361" stroke="#F9A51A" stroke-width="26" stroke-linecap="round"/>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BuzUp">
+  <defs>
+    <linearGradient id="bzIcon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0D3B66"/>
+      <stop offset="1" stop-color="#1D5FA7"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bzIcon)"/>
+  <text x="32" y="40" text-anchor="middle" font-family="'Manrope','Segoe UI',system-ui,sans-serif" font-size="30" font-weight="800" fill="#FFFFFF" letter-spacing="-1">Bu</text>
+  <path d="M19 46 Q32 55 45 46" stroke="#8BC7F7" stroke-width="4.5" fill="none" stroke-linecap="round"/>
 </svg>

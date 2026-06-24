@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 
 function parseJwtPayload(token: string): Record<string, unknown> {
   try {
@@ -64,11 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAgentId(null);
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ token, refresh, passengerId, driverId, agentId, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+  // Stable value reference: consumers only re-render when auth state actually
+  // changes, not on every parent render. login/logout are already useCallback.
+  const value = useMemo(
+    () => ({ token, refresh, passengerId, driverId, agentId, login, logout }),
+    [token, refresh, passengerId, driverId, agentId, login, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

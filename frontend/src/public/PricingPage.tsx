@@ -3,20 +3,28 @@ import { Link } from "react-router-dom";
 import { Check, Minus, ArrowRight, Menu, X } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
+import { LangToggle } from "./site/LangToggle";
+import { Seo } from "../ui/Seo";
+import { PAGES, localizedPath, breadcrumbLd, faqLd, type Lang } from "../lib/seo";
 import "./site/buzup-site.css";
 
 type Bill = "monthly" | "annual";
 
-export default function PricingPage() {
+const PRICING_FAQ = [
+  { q: "Pagar com a BuzUp tem alguma taxa para o passageiro?", a: "Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BuzUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa." },
+  { q: "Preciso de smartphone para usar a BuzUp?", a: "Não é obrigatório. Pode viajar apenas com o cartão BuzUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico." },
+  { q: "Como funcionam as comissões para operadores?", a: "Aplicamos uma pequena percentagem sobre cada viagem paga através da plataforma. A taxa desce à medida que sobe de plano e pode ser negociada por volume no plano Frota+." },
+  { q: "Posso mudar de plano mais tarde?", a: "Sim. Faça upgrade ou downgrade a qualquer momento — as alterações entram em vigor no ciclo de faturação seguinte, sem penalizações." },
+  { q: "Quem fornece e instala os validadores?", a: "A BuzUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos." },
+];
+
+export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
   const { toggleTheme } = useUi();
-  const { locale, setLocale, t } = useMkt();
+  const { locale, t } = useMkt(lang);
+  const lp = (p: string) => localizedPath(p, lang);
   const [open, setOpen] = useState(false);
   const [bill, setBill] = useState<Bill>("monthly");
   const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    document.title = t("BuzUp — Tarifas e planos");
-  }, [locale]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -45,10 +53,18 @@ export default function PricingPage() {
 
   return (
     <div className="bz bz-pricing" ref={rootRef}>
+      <Seo
+        page={PAGES.pricing}
+        lang={lang}
+        jsonLd={[
+          breadcrumbLd([{ name: "Início", path: "/" }, { name: t("Tarifas"), path: "/tarifas" }]),
+          faqLd(PRICING_FAQ.map((f) => ({ q: t(f.q), a: t(f.a) }))),
+        ]}
+      />
       {/* NAV */}
       <nav className="nav scrolled">
         <div className="wrap nav-inner">
-          <Link to="/" className="brand" aria-label="BuzUp">
+          <Link to={lp("/")} className="brand" aria-label="BuzUp">
             <svg className="nfc" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M6 8.5a8 8 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               <path d="M10 6.5a12 12 0 0 1 0 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -57,11 +73,11 @@ export default function PricingPage() {
             <span><b>Buz</b><span className="up">Up</span></span>
           </Link>
           <div className="nav-links">
-            <Link to="/#funcionalidades">{t("Funcionalidades")}</Link>
-            <Link to="/#como-funciona">{t("Como funciona")}</Link>
-            <Link to="/#cartao">{t("Cartão")}</Link>
-            <Link to="/tarifas" className="active">{t("Tarifas")}</Link>
-            <Link to="/contacto">{t("Contacto")}</Link>
+            <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
+            <Link to={`${lp("/")}#como-funciona`}>{t("Como funciona")}</Link>
+            <Link to={`${lp("/")}#cartao`}>{t("Cartão")}</Link>
+            <Link to={lp("/tarifas")} className="active">{t("Tarifas")}</Link>
+            <Link to={lp("/contacto")}>{t("Contacto")}</Link>
           </div>
           <div className="nav-cta">
             <div className="nav-tools">
@@ -69,13 +85,10 @@ export default function PricingPage() {
                 <svg className="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
                 <svg className="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" /></svg>
               </button>
-              <div className="langtog" role="group" aria-label="Idioma / Language">
-                <button className={locale === "pt" ? "active" : ""} onClick={() => setLocale("pt")}>PT</button>
-                <button className={locale === "en" ? "active" : ""} onClick={() => setLocale("en")}>EN</button>
-              </div>
+              <LangToggle lang={lang} ptPath="/tarifas" enPath="/en/tarifas" />
             </div>
-            <Link to="/contacto" className="btn btn-ghost btn-sm">{t("Falar com vendas")}</Link>
-            <Link to="/#download" className="btn btn-primary btn-sm">{t("Baixar a app")}</Link>
+            <Link to={lp("/contacto")} className="btn btn-ghost btn-sm">{t("Falar com vendas")}</Link>
+            <Link to={`${lp("/")}#download`} className="btn btn-primary btn-sm">{t("Baixar a app")}</Link>
             <button className="menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu /></button>
           </div>
         </div>
@@ -88,12 +101,12 @@ export default function PricingPage() {
             <span className="brand"><b>Buz</b><span className="up">Up</span></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
-          <Link to="/#funcionalidades" onClick={close}>{t("Funcionalidades")}</Link>
-          <Link to="/#como-funciona" onClick={close}>{t("Como funciona")}</Link>
-          <Link to="/#cartao" onClick={close}>{t("Cartão")}</Link>
-          <Link to="/tarifas" onClick={close}>{t("Tarifas")}</Link>
-          <Link to="/contacto" onClick={close}>{t("Contacto")}</Link>
-          <Link to="/#download" className="btn btn-primary" onClick={close}>{t("Baixar a app")}</Link>
+          <Link to={`${lp("/")}#funcionalidades`} onClick={close}>{t("Funcionalidades")}</Link>
+          <Link to={`${lp("/")}#como-funciona`} onClick={close}>{t("Como funciona")}</Link>
+          <Link to={`${lp("/")}#cartao`} onClick={close}>{t("Cartão")}</Link>
+          <Link to={lp("/tarifas")} onClick={close}>{t("Tarifas")}</Link>
+          <Link to={lp("/contacto")} onClick={close}>{t("Contacto")}</Link>
+          <Link to={`${lp("/")}#download`} className="btn btn-primary" onClick={close}>{t("Baixar a app")}</Link>
         </div>
       </div>
 
@@ -184,7 +197,7 @@ export default function PricingPage() {
                 <li className="off"><Minus /> {t("Gestão de frota")}</li>
                 <li className="off"><Minus /> {t("Acesso à API")}</li>
               </ul>
-              <Link to="/contacto" className="btn btn-ghost">{t("Começar grátis")}</Link>
+              <Link to={lp("/contacto")} className="btn btn-ghost">{t("Começar grátis")}</Link>
             </article>
 
             <article className="plan feat reveal d1">
@@ -201,7 +214,7 @@ export default function PricingPage() {
                 <li><Check /> {t("Vários operadores na conta")}</li>
                 <li><Check /> {t("Suporte prioritário")}</li>
               </ul>
-              <Link to="/contacto" className="btn btn-white">{t("Escolher Operador")}</Link>
+              <Link to={lp("/contacto")} className="btn btn-white">{t("Escolher Operador")}</Link>
             </article>
 
             <article className="plan reveal d2">
@@ -217,7 +230,7 @@ export default function PricingPage() {
                 <li><Check /> {t("Comissão negociada por volume")}</li>
                 <li><Check /> {t("Onboarding e formação")}</li>
               </ul>
-              <Link to="/contacto" className="btn btn-ghost">{t("Pedir proposta")}</Link>
+              <Link to={lp("/contacto")} className="btn btn-ghost">{t("Pedir proposta")}</Link>
             </article>
           </div>
         </div>
@@ -276,7 +289,7 @@ export default function PricingPage() {
             <div className="inner">
               <h2>{t("Vamos desenhar o plano certo para a sua operação.")}</h2>
               <p>{t("Fale com a equipa BuzUp e receba uma proposta à medida da sua frota. Respondemos em menos de 24 horas.")}</p>
-              <Link to="/contacto" className="btn btn-white">{t("Agendar demonstração")} <ArrowRight /></Link>
+              <Link to={lp("/contacto")} className="btn btn-white">{t("Agendar demonstração")} <ArrowRight /></Link>
             </div>
           </div>
         </div>
@@ -297,10 +310,10 @@ export default function PricingPage() {
             </div>
             <div className="foot-col">
               <h5>{t("Produto")}</h5>
-              <Link to="/#funcionalidades">{t("Funcionalidades")}</Link>
-              <Link to="/#como-funciona">{t("Como funciona")}</Link>
-              <Link to="/#cartao">{t("Cartão BuzUp")}</Link>
-              <Link to="/tarifas">{t("Tarifas")}</Link>
+              <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
+              <Link to={`${lp("/")}#como-funciona`}>{t("Como funciona")}</Link>
+              <Link to={`${lp("/")}#cartao`}>{t("Cartão BuzUp")}</Link>
+              <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
             </div>
             <div className="foot-col">
               <h5>{t("Empresa")}</h5>
@@ -311,7 +324,7 @@ export default function PricingPage() {
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
-              <Link to="/contacto">{t("Central de ajuda")}</Link>
+              <Link to={lp("/contacto")}>{t("Central de ajuda")}</Link>
               <a href="mailto:ola@buzup.co.mz">ola@buzup.co.mz</a>
               <a href="tel:+258840000000">+258 84 000 0000</a>
               <a href="#">{t("Pontos de recarga")}</a>

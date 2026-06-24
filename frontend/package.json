@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:static": "npm run build && react-snap",
+    "prerender": "react-snap",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -14,6 +16,7 @@
     "lucide-react": "^0.511.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
     "react-is": "^19.2.6",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^6.30.1",
@@ -24,7 +27,28 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "react-snap": "^1.23.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
+  },
+  "reactSnap": {
+    "source": "dist",
+    "minifyHtml": {
+      "collapseWhitespace": false,
+      "removeComments": false
+    },
+    "inlineCss": false,
+    "puppeteerArgs": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox"
+    ],
+    "include": [
+      "/",
+      "/tarifas",
+      "/contacto",
+      "/en",
+      "/en/tarifas",
+      "/en/contacto"
+    ]
   }
 }

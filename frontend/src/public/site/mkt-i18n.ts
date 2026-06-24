@@ -14,6 +14,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Tarifas": "Pricing",
   "Contacto": "Contact",
   "Baixar a app": "Download the app",
+  "Entrar": "Log in",
   "Falar com vendas": "Talk to sales",
   "Produto": "Product",
   "Empresa": "Company",
@@ -265,8 +266,15 @@ export const MKT_PT_EN: Record<string, string> = {
   "BuzUp — Contacto": "BuzUp — Contact",
 };
 
-export function useMkt() {
-  const { locale, setLocale } = useUi();
+/**
+ * Marketing-copy translator.
+ * Public pages pass the locale derived from the URL (`/` = pt, `/en` = en)
+ * so the rendered language matches the canonical URL — required for crawlable
+ * hreflang. When no locale is forced it falls back to the app-wide preference.
+ */
+export function useMkt(forced?: "pt" | "en") {
+  const { locale: ctxLocale, setLocale } = useUi();
+  const locale = forced ?? ctxLocale;
   const t = (pt: string): string => (locale === "en" ? MKT_PT_EN[pt] ?? pt : pt);
   return { locale, setLocale, t };
 }

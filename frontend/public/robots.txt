@@ -1,0 +1,20 @@
+# BuzUp robots.txt
+User-agent: *
+Allow: /
+Allow: /tarifas
+Allow: /contacto
+Allow: /en
+Allow: /en/tarifas
+Allow: /en/contacto
+
+# Private / app areas — keep out of the index
+Disallow: /app/
+Disallow: /portal
+Disallow: /driver
+Disallow: /profile
+Disallow: /login
+Disallow: /checkout
+Disallow: /bus/
+Disallow: /api/
+
+Sitemap: https://buzup.updigital.co.mz/sitemap.xml

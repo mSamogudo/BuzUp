@@ -3,19 +3,19 @@ import { Link } from "react-router-dom";
 import { Mail, Phone, MapPin, Check, ArrowRight, Menu, X } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
+import { LangToggle } from "./site/LangToggle";
+import { Seo } from "../ui/Seo";
+import { PAGES, localizedPath, breadcrumbLd, organizationLd, type Lang } from "../lib/seo";
 import "./site/buzup-site.css";
 
-export default function ContactPage() {
+export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
   const { toggleTheme } = useUi();
-  const { locale, setLocale, t } = useMkt();
+  const { t } = useMkt(lang);
+  const lp = (p: string) => localizedPath(p, lang);
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    document.title = t("BuzUp — Contacto");
-  }, [locale]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -58,10 +58,18 @@ export default function ContactPage() {
 
   return (
     <div className="bz bz-contact" ref={rootRef}>
+      <Seo
+        page={PAGES.contact}
+        lang={lang}
+        jsonLd={[
+          breadcrumbLd([{ name: "Início", path: "/" }, { name: t("Contacto"), path: "/contacto" }]),
+          organizationLd(),
+        ]}
+      />
       {/* NAV */}
       <nav className="nav scrolled">
         <div className="wrap nav-inner">
-          <Link to="/" className="brand" aria-label="BuzUp">
+          <Link to={lp("/")} className="brand" aria-label="BuzUp">
             <svg className="nfc" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M6 8.5a8 8 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               <path d="M10 6.5a12 12 0 0 1 0 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -70,11 +78,11 @@ export default function ContactPage() {
             <span><b>Buz</b><span className="up">Up</span></span>
           </Link>
           <div className="nav-links">
-            <Link to="/#funcionalidades">{t("Funcionalidades")}</Link>
-            <Link to="/#como-funciona">{t("Como funciona")}</Link>
-            <Link to="/#cartao">{t("Cartão")}</Link>
-            <Link to="/tarifas">{t("Tarifas")}</Link>
-            <Link to="/contacto" className="active">{t("Contacto")}</Link>
+            <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
+            <Link to={`${lp("/")}#como-funciona`}>{t("Como funciona")}</Link>
+            <Link to={`${lp("/")}#cartao`}>{t("Cartão")}</Link>
+            <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
+            <Link to={lp("/contacto")} className="active">{t("Contacto")}</Link>
           </div>
           <div className="nav-cta">
             <div className="nav-tools">
@@ -82,13 +90,10 @@ export default function ContactPage() {
                 <svg className="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
                 <svg className="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4.2" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" /></svg>
               </button>
-              <div className="langtog" role="group" aria-label="Idioma / Language">
-                <button className={locale === "pt" ? "active" : ""} onClick={() => setLocale("pt")}>PT</button>
-                <button className={locale === "en" ? "active" : ""} onClick={() => setLocale("en")}>EN</button>
-              </div>
+              <LangToggle lang={lang} ptPath="/contacto" enPath="/en/contacto" />
             </div>
-            <Link to="/contacto" className="btn btn-ghost btn-sm">{t("Falar com vendas")}</Link>
-            <Link to="/#download" className="btn btn-primary btn-sm">{t("Baixar a app")}</Link>
+            <Link to={lp("/contacto")} className="btn btn-ghost btn-sm">{t("Falar com vendas")}</Link>
+            <Link to={`${lp("/")}#download`} className="btn btn-primary btn-sm">{t("Baixar a app")}</Link>
             <button className="menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu /></button>
           </div>
         </div>
@@ -101,12 +106,12 @@ export default function ContactPage() {
             <span className="brand"><b>Buz</b><span className="up">Up</span></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
-          <Link to="/#funcionalidades" onClick={close}>{t("Funcionalidades")}</Link>
-          <Link to="/#como-funciona" onClick={close}>{t("Como funciona")}</Link>
-          <Link to="/#cartao" onClick={close}>{t("Cartão")}</Link>
-          <Link to="/tarifas" onClick={close}>{t("Tarifas")}</Link>
-          <Link to="/contacto" onClick={close}>{t("Contacto")}</Link>
-          <Link to="/#download" className="btn btn-primary" onClick={close}>{t("Baixar a app")}</Link>
+          <Link to={`${lp("/")}#funcionalidades`} onClick={close}>{t("Funcionalidades")}</Link>
+          <Link to={`${lp("/")}#como-funciona`} onClick={close}>{t("Como funciona")}</Link>
+          <Link to={`${lp("/")}#cartao`} onClick={close}>{t("Cartão")}</Link>
+          <Link to={lp("/tarifas")} onClick={close}>{t("Tarifas")}</Link>
+          <Link to={lp("/contacto")} onClick={close}>{t("Contacto")}</Link>
+          <Link to={`${lp("/")}#download`} className="btn btn-primary" onClick={close}>{t("Baixar a app")}</Link>
         </div>
       </div>
 
@@ -210,21 +215,21 @@ export default function ContactPage() {
             </div>
             <div className="foot-col">
               <h5>{t("Produto")}</h5>
-              <Link to="/#funcionalidades">{t("Funcionalidades")}</Link>
-              <Link to="/#como-funciona">{t("Como funciona")}</Link>
-              <Link to="/#cartao">{t("Cartão BuzUp")}</Link>
-              <Link to="/tarifas">{t("Tarifas")}</Link>
+              <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
+              <Link to={`${lp("/")}#como-funciona`}>{t("Como funciona")}</Link>
+              <Link to={`${lp("/")}#cartao`}>{t("Cartão BuzUp")}</Link>
+              <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
             </div>
             <div className="foot-col">
               <h5>{t("Empresa")}</h5>
               <a href="#">{t("Sobre a UpDigital")}</a>
-              <Link to="/tarifas#operadores">{t("Operadores parceiros")}</Link>
+              <Link to={`${lp("/tarifas")}#operadores`}>{t("Operadores parceiros")}</Link>
               <a href="#">{t("Carreiras")}</a>
               <a href="#">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
-              <Link to="/contacto">{t("Central de ajuda")}</Link>
+              <Link to={lp("/contacto")}>{t("Central de ajuda")}</Link>
               <a href="mailto:ola@buzup.co.mz">ola@buzup.co.mz</a>
               <a href="tel:+258840000000">+258 84 000 0000</a>
               <a href="#">{t("Pontos de recarga")}</a>

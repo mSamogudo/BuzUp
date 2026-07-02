@@ -42,7 +42,7 @@ export default function AdminLayout() {
   const pageTitle = active ? t(locale, active.i18nKey) : "BuzUp";
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
-  const sidebarBrandSrc = collapsed ? "/assets/buzup-logo/buzup-mark.svg" : "/assets/buzup-logo/buzup-logo-light.svg";
+  const sidebarBrandSrc = collapsed ? "/assets/buzup-logo/buzup-mark.png" : "/assets/buzup-logo/buzup-logo.png";
 
   return (
     <div className="admin-shell">

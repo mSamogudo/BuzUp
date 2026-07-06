@@ -376,8 +376,8 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
               <Link to={lp("/contacto")}>{t("Central de ajuda")}</Link>
-              <a href="mailto:ola@buzup.co.mz">ola@buzup.co.mz</a>
-              <a href="tel:+258840000000">+258 84 000 0000</a>
+              <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">www.updigital.co.mz</a>
               <a href="#">{t("Pontos de recarga")}</a>
             </div>
           </div>

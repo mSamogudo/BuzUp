@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, Check, ArrowRight, Menu, X } from "lucide-react";
+import { Mail, Globe, MapPin, Check, ArrowRight, Menu, X } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
 import { LangToggle } from "./site/LangToggle";
@@ -127,15 +127,15 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
             <ul className="methods">
               <li>
                 <span className="ic"><Mail /></span>
-                <div><small>{t("Email")}</small><b>ola@buzup.co.mz</b></div>
+                <div><small>{t("Email")}</small><b>sales@updigital.co.mz</b></div>
               </li>
               <li>
-                <span className="ic"><Phone /></span>
-                <div><small>{t("Telefone")}</small><b>+258 84 000 0000</b></div>
+                <span className="ic"><Globe /></span>
+                <div><small>{t("Website")}</small><b>www.updigital.co.mz</b></div>
               </li>
               <li>
                 <span className="ic"><MapPin /></span>
-                <div><small>{t("Escritório")}</small><b>{t("Maputo, Moçambique")}</b></div>
+                <div><small>{t("Escritório")}</small><b>{t("Av. Alberto Massavanhane, 1265, Matola — Moçambique")}</b></div>
               </li>
             </ul>
 
@@ -230,8 +230,8 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
               <Link to={lp("/contacto")}>{t("Central de ajuda")}</Link>
-              <a href="mailto:ola@buzup.co.mz">ola@buzup.co.mz</a>
-              <a href="tel:+258840000000">+258 84 000 0000</a>
+              <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">www.updigital.co.mz</a>
               <a href="#">{t("Pontos de recarga")}</a>
             </div>
           </div>

@@ -236,7 +236,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Telefone": "Phone",
   "Website": "Website",
   "Escritório": "Office",
-  "Av. Alberto Massavanhane, 1265, Matola — Moçambique": "Av. Alberto Massavanhane, 1265, Matola — Mozambique",
+  "Av. Alberto Massavanhane, nº 1265 R/c, Matola": "Av. Alberto Massavanhane, no. 1265 ground floor, Matola",
   "Resposta < 24h": "Reply < 24h",
   "Demo sem compromisso": "No-obligation demo",
   "Mensagem enviada!": "Message sent!",

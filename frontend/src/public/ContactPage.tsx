@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Globe, MapPin, Check, ArrowRight, Menu, X } from "lucide-react";
+import { Mail, Phone, Globe, MapPin, Check, ArrowRight, Menu, X } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
 import { LangToggle } from "./site/LangToggle";
@@ -130,12 +130,16 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
                 <div><small>{t("Email")}</small><b>sales@updigital.co.mz</b></div>
               </li>
               <li>
+                <span className="ic"><Phone /></span>
+                <div><small>{t("Telefone")}</small><b>+258 86 693 0017<br />+258 85 300 4449</b></div>
+              </li>
+              <li>
                 <span className="ic"><Globe /></span>
                 <div><small>{t("Website")}</small><b>www.updigital.co.mz</b></div>
               </li>
               <li>
                 <span className="ic"><MapPin /></span>
-                <div><small>{t("Escritório")}</small><b>{t("Av. Alberto Massavanhane, 1265, Matola — Moçambique")}</b></div>
+                <div><small>{t("Escritório")}</small><b>{t("Av. Alberto Massavanhane, nº 1265 R/c, Matola")}</b></div>
               </li>
             </ul>
 
@@ -231,6 +235,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
               <h5>{t("Suporte")}</h5>
               <Link to={lp("/contacto")}>{t("Central de ajuda")}</Link>
               <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
+              <a href="tel:+258866930017">+258 86 693 0017</a>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">www.updigital.co.mz</a>
               <a href="#">{t("Pontos de recarga")}</a>
             </div>

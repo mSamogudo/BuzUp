@@ -82,7 +82,9 @@ services:
       - static_data:/app/staticfiles
       - media_data:/app/media
     networks:
-      - buzup_internal
+      buzup_internal:
+        aliases:
+          - buzup_backend
     depends_on:
       db:
         condition: service_healthy
@@ -111,7 +113,9 @@ services:
     expose:
       - "80"
     networks:
-      - buzup_internal
+      buzup_internal:
+        aliases:
+          - buzup_frontend
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
       interval: 20s

@@ -1,4 +1,4 @@
-from django.urls import include, path
+from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 
 from apps.app_releases.api.views import (
@@ -19,7 +19,12 @@ router.register("admin/device-app-updates", DeviceAppUpdateViewSet, basename="de
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("baixar/", AppDownloadPageView.as_view(), name="app-download-page"),
+    re_path(r"^baixar/?$", AppDownloadPageView.as_view(), name="app-download-page"),
+    re_path(
+        r"^(?P<slug>pos|passageiro|passenger|mobile)/?$",
+        AppLatestDownloadView.as_view(),
+        name="app-short-download",
+    ),
     path("apps/<slug:slug>/download/", AppLatestDownloadView.as_view(), name="app-latest-download"),
     path("app-releases/check/", CheckUpdateView.as_view(), name="app-release-check"),
     path("app-releases/<int:pk>/download/", AppReleaseDownloadView.as_view(), name="app-release-download"),

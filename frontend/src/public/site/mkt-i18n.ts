@@ -240,7 +240,6 @@ export const MKT_PT_EN: Record<string, string> = {
   "Resposta < 24h": "Reply < 24h",
   "Demo sem compromisso": "No-obligation demo",
   "Mensagem enviada!": "Message sent!",
-  "Obrigado. A equipa BuzUp entrará em contacto em breve.": "Thank you. The BuzUp team will be in touch soon.",
   "Nome": "Name",
   "Empresa / Organização": "Company / Organisation",
   "Eu sou…": "I am…",

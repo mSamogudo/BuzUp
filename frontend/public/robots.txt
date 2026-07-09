@@ -1,4 +1,4 @@
-# BuzUp robots.txt
+# BusUp robots.txt
 User-agent: *
 Allow: /
 Allow: /tarifas

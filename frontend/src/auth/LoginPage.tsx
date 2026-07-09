@@ -45,11 +45,11 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ phone: resetPhone }),
       });
-      showToast("success", "Se o telefone estiver associado, recebera uma SMS com a nova senha.");
+      showToast("success", "Se o telefone estiver associado, receberá uma SMS com a nova senha.");
       setResetOpen(false);
       setResetPhone("");
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao solicitar reposicao.");
+      showToast("danger", err instanceof Error ? err.message : "Erro ao solicitar reposição.");
     } finally {
       setResetBusy(false);
     }
@@ -120,7 +120,7 @@ export default function LoginPage() {
         navigate("/portal", { replace: true });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Codigo invalido.");
+      setError(err instanceof Error ? err.message : "Código inválido.");
       setOtpDigits(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
@@ -380,12 +380,12 @@ export default function LoginPage() {
       {resetOpen && (
         <>
           <div className="admin-modal-overlay" onClick={() => !resetBusy && setResetOpen(false)} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label="Reposicao de senha">
+          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label="Reposição de senha">
             <div className="admin-modal-card">
               <div className="admin-modal-head">
                 <div>
-                  <h3>Reposicao de senha</h3>
-                  <p>Indique o telefone associado a sua conta.</p>
+                  <h3>Reposição de senha</h3>
+                  <p>Indique o telefone associado à sua conta.</p>
                 </div>
                 <button className="icon-button" disabled={resetBusy} onClick={() => setResetOpen(false)} type="button"><X size={18} /></button>
               </div>

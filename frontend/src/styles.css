@@ -4168,7 +4168,7 @@ html[data-theme="dark"] .recharts-legend-item-text {
 
 /* Premium Login */
 .login-page { display: flex; height: 100vh; overflow: hidden; }
-.login-left { flex: 1; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0D3B66 0%, #1D5FA7 50%, #0D3B66 100%); background-size: 200% 200%; animation: ambientGradient 8s ease infinite; color: #fff; padding: 40px; min-width: 0; }
+.login-left { flex: 1; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--app-accent-deep) 0%, var(--app-accent) 50%, var(--app-accent-deep) 100%); background-size: 200% 200%; animation: ambientGradient 8s ease infinite; color: #fff; padding: 40px; min-width: 0; }
 .login-left-content { text-align: center; animation: fadeIn 600ms ease; }
 .login-hero-logo { width: min(380px, 80vw); height: auto; max-height: 96px; margin-bottom: 24px; object-fit: contain; filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.18)); }
 .login-left h1 { font-family: Manrope, Inter, sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 8px; }
@@ -4182,9 +4182,9 @@ html[data-theme="dark"] .recharts-legend-item-text {
 .login-field { position: relative; display: flex; align-items: center; }
 .login-field-icon { position: absolute; left: 14px; color: var(--app-text-muted, #71717a); pointer-events: none; opacity: 0.4; z-index: 1; transition: all 200ms ease; }
 .login-field input { width: 100%; min-height: 48px; padding: 0 16px 0 44px; border: 1px solid var(--app-border, #e4e4e7); border-radius: 10px; font-size: 14px; background: var(--app-surface, #fff); color: var(--app-text, #18181b); transition: all 200ms ease; }
-.login-field input:focus { outline: none; border-color: var(--app-accent, #1D5FA7); box-shadow: 0 0 0 3px rgba(29, 95, 167, 0.12); }
+.login-field input:focus { outline: none; border-color: var(--app-accent, #1D5FA7); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12); }
 .login-field input:focus ~ .login-field-icon { opacity: 1; color: var(--app-accent, #1D5FA7); }
-.login-submit { width: 100%; min-height: 48px; border: none; border-radius: 10px; background: linear-gradient(135deg, #0D3B66, #1D5FA7); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 200ms ease; margin-top: 8px; }
+.login-submit { width: 100%; min-height: 48px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--app-accent-deep), var(--app-accent)); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 200ms ease; margin-top: 8px; }
 .login-submit:hover { box-shadow: 0 4px 16px rgba(13, 59, 102, 0.4); transform: translateY(-1px); }
 .login-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 .login-error { padding: 10px 14px; background: rgba(214, 40, 40, 0.08); border: 1px solid rgba(214, 40, 40, 0.2); border-radius: 8px; color: #D62828; font-size: 13px; }
@@ -4269,7 +4269,7 @@ html[data-theme="dark"] .recharts-legend-item-text {
 .otp-digit:focus {
   outline: none;
   border-color: var(--app-accent, #1D5FA7);
-  box-shadow: 0 0 0 3px rgba(29, 95, 167, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.15);
 }
 
 .otp-timer {
@@ -4330,6 +4330,22 @@ html[data-theme="dark"] .otp-digit:focus {
   .login-mode-toggle { flex-direction: column; gap: 2px; }
   .otp-digit { width: 42px; height: 50px; font-size: 20px; }
   .otp-code-grid { gap: 6px; }
+}
+
+/* Login — keyboard focus rings (inputs already have them; buttons didn't) */
+.login-submit:focus-visible,
+.login-mode-btn:focus-visible,
+.otp-link-btn:focus-visible,
+.locale-flag-button:focus-visible {
+  outline: 2px solid var(--app-accent, #1D5FA7);
+  outline-offset: 2px;
+}
+
+/* The login-left ambient gradient loops forever — hold it still for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .login-left { animation: none; }
+  .login-left-content,
+  .login-form-wrap { animation: none; opacity: 1; }
 }
 
 /* Premium Checkout */

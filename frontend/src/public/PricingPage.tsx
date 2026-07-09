@@ -13,11 +13,11 @@ import "./site/buzup-site.css";
 type Bill = "monthly" | "annual";
 
 const PRICING_FAQ = [
-  { q: "Pagar com a BuzUp tem alguma taxa para o passageiro?", a: "Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BuzUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa." },
-  { q: "Preciso de smartphone para usar a BuzUp?", a: "Não é obrigatório. Pode viajar apenas com o cartão BuzUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico." },
+  { q: "Pagar com a BusUp tem alguma taxa para o passageiro?", a: "Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BusUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa." },
+  { q: "Preciso de smartphone para usar a BusUp?", a: "Não é obrigatório. Pode viajar apenas com o cartão BusUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico." },
   { q: "Como funcionam as comissões para operadores?", a: "Aplicamos uma pequena percentagem sobre cada viagem paga através da plataforma. A taxa desce à medida que sobe de plano e pode ser negociada por volume no plano Frota+." },
   { q: "Posso mudar de plano mais tarde?", a: "Sim. Faça upgrade ou downgrade a qualquer momento — as alterações entram em vigor no ciclo de faturação seguinte, sem penalizações." },
-  { q: "Quem fornece e instala os validadores?", a: "A BuzUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos." },
+  { q: "Quem fornece e instala os validadores?", a: "A BusUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos." },
 ];
 
 export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
@@ -67,7 +67,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
       {/* NAV */}
       <nav className="nav scrolled">
         <div className="wrap nav-inner">
-          <Link to={lp("/")} className="brand" aria-label="BuzUp">
+          <Link to={lp("/")} className="brand" aria-label="BusUp">
             <BrandLogo />
           </Link>
           <div className="nav-links">
@@ -123,7 +123,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="head center reveal">
             <span className="eyebrow" style={{ justifyContent: "center" }}>{t("Para passageiros")}</span>
             <h2>{t("Escolha o bilhete certo para si.")}</h2>
-            <p>{t("Pague por viagem ou poupe com um passe. Tudo gerido na app BuzUp, do seu telemóvel.")}</p>
+            <p>{t("Pague por viagem ou poupe com um passe. Tudo gerido na app BusUp, do seu telemóvel.")}</p>
           </div>
           <div className="ticket-grid">
             <div className="ticket reveal">
@@ -161,7 +161,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
           </div>
           <p className="muted reveal d1" style={{ textAlign: "center", marginTop: "26px", fontWeight: 500 }}>
-            {t("Recargas por")} <b style={{ color: "var(--ink)" }}>M-Pesa</b>, <b style={{ color: "var(--ink)" }}>e-Mola</b>{t(", cartão bancário ou nos pontos BuzUp — sem qualquer taxa de carregamento.")}
+            {t("Recargas por")} <b style={{ color: "var(--ink)" }}>M-Pesa</b>, <b style={{ color: "var(--ink)" }}>e-Mola</b>{t(", cartão bancário ou nos pontos BusUp — sem qualquer taxa de carregamento.")}
           </p>
         </div>
       </section>
@@ -271,11 +271,11 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
             <h2>{t("Ainda com dúvidas?")}</h2>
           </div>
           <div className="faq__list reveal d1">
-            <details className="faq__item"><summary>{t("Pagar com a BuzUp tem alguma taxa para o passageiro?")}<i /></summary><p>{t("Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BuzUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa.")}</p></details>
-            <details className="faq__item"><summary>{t("Preciso de smartphone para usar a BuzUp?")}<i /></summary><p>{t("Não é obrigatório. Pode viajar apenas com o cartão BuzUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico.")}</p></details>
+            <details className="faq__item"><summary>{t("Pagar com a BusUp tem alguma taxa para o passageiro?")}<i /></summary><p>{t("Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BusUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa.")}</p></details>
+            <details className="faq__item"><summary>{t("Preciso de smartphone para usar a BusUp?")}<i /></summary><p>{t("Não é obrigatório. Pode viajar apenas com o cartão BusUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico.")}</p></details>
             <details className="faq__item"><summary>{t("Como funcionam as comissões para operadores?")}<i /></summary><p>{t("Aplicamos uma pequena percentagem sobre cada viagem paga através da plataforma. A taxa desce à medida que sobe de plano e pode ser negociada por volume no plano Frota+.")}</p></details>
             <details className="faq__item"><summary>{t("Posso mudar de plano mais tarde?")}<i /></summary><p>{t("Sim. Faça upgrade ou downgrade a qualquer momento — as alterações entram em vigor no ciclo de faturação seguinte, sem penalizações.")}</p></details>
-            <details className="faq__item"><summary>{t("Quem fornece e instala os validadores?")}<i /></summary><p>{t("A BuzUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos.")}</p></details>
+            <details className="faq__item"><summary>{t("Quem fornece e instala os validadores?")}<i /></summary><p>{t("A BusUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos.")}</p></details>
           </div>
         </div>
       </section>
@@ -286,7 +286,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="cta-card reveal">
             <div className="inner">
               <h2>{t("Vamos desenhar o plano certo para a sua operação.")}</h2>
-              <p>{t("Fale com a equipa BuzUp e receba uma proposta à medida da sua frota. Respondemos em menos de 24 horas.")}</p>
+              <p>{t("Fale com a equipa BusUp e receba uma proposta à medida da sua frota. Respondemos em menos de 24 horas.")}</p>
               <Link to={lp("/contacto")} className="btn btn-white">{t("Agendar demonstração")} <ArrowRight /></Link>
             </div>
           </div>
@@ -307,7 +307,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
               <h5>{t("Produto")}</h5>
               <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
               <Link to={`${lp("/")}#como-funciona`}>{t("Como funciona")}</Link>
-              <Link to={`${lp("/")}#cartao`}>{t("Cartão BuzUp")}</Link>
+              <Link to={`${lp("/")}#cartao`}>{t("Cartão BusUp")}</Link>
               <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
             </div>
             <div className="foot-col">
@@ -315,7 +315,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Sobre a UpDigital")}</a>
               <a href="#operadores">{t("Operadores parceiros")}</a>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Carreiras")}</a>
-              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BuzUp">{t("Imprensa")}</a>
+              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BusUp">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
@@ -327,7 +327,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
           </div>
           <div className="foot-bottom">
-            <span>{t("© 2026 BuzUp · UpDigital. Todos os direitos reservados.")}</span>
+            <span>{t("© 2026 BusUp · UpDigital. Todos os direitos reservados.")}</span>
             <a className="powered" href="https://www.updigital.co.mz" target="_blank" rel="noopener" aria-label="Powered by UpDigital">
               <span className="pb-label">Powered by</span>
               <img src="/assets/up-digital-logo/up_digital_light.png" alt="UpDigital" />

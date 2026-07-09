@@ -295,7 +295,7 @@ img {
   background: #050608;
 }
 
-/* ---- background atmosphere (BuzUp blue) ---- */
+/* ---- background atmosphere (BusUp blue) ---- */
 .splash-screen::before {
   content: "";
   position: absolute;

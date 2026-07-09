@@ -69,13 +69,13 @@ export function WaitlistModal() {
           <div className="wl-success">
             <div className="wl-ico ok"><Check /></div>
             <h3 id="wl-title">{t("Está na lista!")}</h3>
-            <p>{t("Avisamos assim que a app BuzUp estiver disponível para descarregar.")}</p>
+            <p>{t("Avisamos assim que a app BusUp estiver disponível para descarregar.")}</p>
             <button type="button" className="btn btn-primary" onClick={close}>{t("Fechar")}</button>
           </div>
         ) : (
           <>
             <div className="wl-ico"><BellRing /></div>
-            <h3 id="wl-title">{t("A app BuzUp está quase a chegar.")}</h3>
+            <h3 id="wl-title">{t("A app BusUp está quase a chegar.")}</h3>
             <p className="wl-lead">{t("Deixe o seu email e será dos primeiros a saber quando estiver disponível na App Store e Google Play.")}</p>
             <form ref={formRef} onSubmit={onSubmit} noValidate className="wl-form">
               <div className="hp-field" aria-hidden="true">

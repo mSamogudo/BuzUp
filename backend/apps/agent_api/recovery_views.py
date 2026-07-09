@@ -287,7 +287,7 @@ class AgentRecoverCardAssociateView(APIView):
                 reference=ref,
                 amount=fee,
                 payer_phone=data["payer_phone"],
-                description=f"BuzUp: recuperacao cartao {new_card.card_number}",
+                description=f"BusUp: recuperacao cartao {new_card.card_number}",
             )
             pi.provider = result.provider
             pi.metadata = {**(pi.metadata or {}),
@@ -406,7 +406,7 @@ def finalize_card_recovery(pi) -> int:
             send_sms(
                 passenger.phone_number,
                 (
-                    f"BuzUp: Recuperacao concluida. O seu novo cartao {new_card.card_number} "
+                    f"BusUp: Recuperacao concluida. O seu novo cartao {new_card.card_number} "
                     f"esta activo. Os cartoes anteriores foram bloqueados."
                 ),
                 purpose="CARD_RECOVERY_CONFIRMED",

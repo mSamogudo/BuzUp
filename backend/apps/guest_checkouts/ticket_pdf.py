@@ -224,7 +224,7 @@ def _pdf_y(y_from_top: float) -> float:
 
 def _route_label(tp: DigitalTravelPass) -> str:
     # Only the route at the top — origin/destination are printed below.
-    return tp.route_code or tp.route_name or "BuzUp"
+    return tp.route_code or tp.route_name or "BusUp"
 
 
 def _asset_path(folder: str, filename: str) -> Path:

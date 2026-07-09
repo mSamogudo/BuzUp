@@ -1,6 +1,6 @@
 """PDF + Excel exporters for the agent revenue admin module.
 
-Branded with BuzUp and powered-by UpDigital. Logos are
+Branded with BusUp and powered-by UpDigital. Logos are
 loaded from `backend/static/assets/` and embedded into the documents.
 """
 from __future__ import annotations
@@ -64,7 +64,7 @@ def session_pdf(record) -> bytes:
     """Generate a PDF for a single AgentDayClose.
 
     Layout:
-      - Header band w/ BuzUp logo, title, date
+      - Header band w/ BusUp logo, title, date
       - Agent + period info
       - 4 KPI boxes (sales/topups/validations/totals)
       - Table for sales, topups, validations
@@ -361,7 +361,7 @@ def summary_xlsx(data: dict) -> bytes:
 # ---------------------------------------------------------------------------
 
 def _draw_header(c: canvas.Canvas, width: float, height: float, *, title: str) -> None:
-    """Top band: BuzUp mark + title + 'BuzUp - Plataforma cashless'."""
+    """Top band: BusUp mark + title + 'BusUp - Plataforma cashless'."""
     band_h = 22 * mm
     c.setFillColor(NAVY)
     c.rect(0, height - band_h, width, band_h, fill=1, stroke=0)
@@ -379,9 +379,9 @@ def _draw_header(c: canvas.Canvas, width: float, height: float, *, title: str) -
 
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 13)
-    c.drawString(60 * mm, height - 10 * mm, "BuzUp - Receita do Agente")
+    c.drawString(60 * mm, height - 10 * mm, "BusUp - Receita do Agente")
     c.setFont("Helvetica", 9)
-    c.drawString(60 * mm, height - 15 * mm, "BuzUp | Transporte cashless de Mocambique")
+    c.drawString(60 * mm, height - 15 * mm, "BusUp | Transporte cashless de Mocambique")
 
     c.setFillColor(ORANGE)
     c.setFont("Helvetica-Bold", 11)
@@ -406,7 +406,7 @@ def _draw_footer(c: canvas.Canvas, width: float) -> None:
             pass
     c.setFillColor(GREY)
     c.setFont("Helvetica", 8)
-    c.drawString(10 * mm, band_h / 2 - 2, "BuzUp | Documento gerado automaticamente.")
+    c.drawString(10 * mm, band_h / 2 - 2, "BusUp | Documento gerado automaticamente.")
     c.drawString(10 * mm, band_h / 2 - 9, "powered by")
 
 

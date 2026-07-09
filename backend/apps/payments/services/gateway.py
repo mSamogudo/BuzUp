@@ -141,7 +141,7 @@ def _get_provider_config(provider: str) -> dict:
         "shortcode": shortcode,
         "wallet_code": wallet_code,
         "service": str(getattr(settings, f"{normalized}_SERVICE", "buzup") or "buzup").strip(),
-        "description": str(getattr(settings, f"{normalized}_DESCRIPTION", "Pagamento BuzUp") or "Pagamento BuzUp").strip(),
+        "description": str(getattr(settings, f"{normalized}_DESCRIPTION", "Pagamento BusUp") or "Pagamento BusUp").strip(),
         "sms_content": str(getattr(settings, "EMOLA_SMS_CONTENT", "") or "").strip(),
         "supports_query": bool(query_url),
     }
@@ -324,7 +324,7 @@ class MobileWalletGateway:
                 "shortcode": str(self.config["shortcode"]),
             }
         elif self.config["transport"] == "PAYLESS" and self.provider == "EMOLA":
-            sms_content = self.config["sms_content"] or f"Confirme o pagamento de {amount} MT no BuzUp."
+            sms_content = self.config["sms_content"] or f"Confirme o pagamento de {amount} MT no BusUp."
             request_payload = {
                 "amount": _serialize_amount(Decimal(str(amount))),
                 "msisdn": msisdn,

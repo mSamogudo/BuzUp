@@ -89,9 +89,9 @@ export default function CheckoutPage() {
   return (
     <div className="co">
       <header className="co-header">
-        <img alt="BuzUp" src="/assets/buzup-logo/buzup-logo.png" className="co-logo" />
+        <img alt="BusUp" src="/assets/buzup-logo/buzup-logo.png" className="co-logo" />
         <div className="co-header-text">
-          <strong>BuzUp</strong>
+          <strong>BusUp</strong>
           <span>Bilhete Electronico</span>
         </div>
       </header>

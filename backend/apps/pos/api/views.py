@@ -181,7 +181,7 @@ class PosCardTopupView(APIView):
         gateway = get_payment_gateway(payer_phone=payer_phone)
         result = gateway.initiate_payment(
             reference=ref, amount=amount, payer_phone=payer_phone,
-            description=f"Recarga BuzUp Cartao {data['card_uid'][:8]}",
+            description=f"Recarga BusUp Cartao {data['card_uid'][:8]}",
         )
 
         pi.provider = result.provider

@@ -73,7 +73,7 @@ def _generate_extract_pdf(passenger, wallet, txs, dt_from, dt_to) -> bytes:
     c.rect(0, height - 25 * mm, width, 25 * mm, fill=1, stroke=0)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(15 * mm, height - 15 * mm, "BuzUp")
+    c.drawString(15 * mm, height - 15 * mm, "BusUp")
     c.setFont("Helvetica", 8)
     c.drawString(15 * mm, height - 20 * mm, "Extracto de Transaccoes")
     c.drawRightString(width - 15 * mm, height - 15 * mm, f"Emitido: {dt_from.strftime('%d/%m/%Y')} a {dt_to.strftime('%d/%m/%Y')}")

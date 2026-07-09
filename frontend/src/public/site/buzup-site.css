@@ -1,6 +1,6 @@
 /* ============================================================
-   BuzUp — public marketing pages (landing / pricing / contact)
-   Design imported from Claude Design project "BuzUp".
+   BusUp — public marketing pages (landing / pricing / contact)
+   Design imported from Claude Design project "BusUp".
    ALL selectors scoped under .bz so nothing leaks into the app.
    Page modifiers: .bz-home / .bz-pricing / .bz-contact
    Dark theme reuses the app's html[data-theme="dark"].

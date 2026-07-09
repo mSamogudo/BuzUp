@@ -19,7 +19,7 @@ _PROVIDER_LABELS = {
     "real_test_mode": "Teste (real)",
     "card": "Cartao",
     "cash": "Numerario",
-    "wallet": "Carteira BuzUp",
+    "wallet": "Carteira BusUp",
 }
 
 

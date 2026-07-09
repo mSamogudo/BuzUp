@@ -87,7 +87,7 @@ class TopupView(APIView):
             reference=ref,
             amount=amount,
             payer_phone=payer_phone,
-            description=f"Recarga BuzUp {amount} MZN",
+            description=f"Recarga BusUp {amount} MZN",
         )
 
         pi.provider = result.provider

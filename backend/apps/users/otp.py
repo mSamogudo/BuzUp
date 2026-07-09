@@ -42,7 +42,7 @@ def generate_otp() -> tuple[str, str]:
 
 def send_otp_sms(phone: str, code: str):
     from apps.sms.services.sender import send_sms
-    msg = f"BuzUp: O seu codigo de verificacao e {code}. Valido por {OTP_TTL_MINUTES} minutos."
+    msg = f"BusUp: O seu codigo de verificacao e {code}. Valido por {OTP_TTL_MINUTES} minutos."
     return send_sms(phone, msg, purpose="OTP")
 
 

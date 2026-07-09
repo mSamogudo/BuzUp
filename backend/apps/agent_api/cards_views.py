@@ -269,7 +269,7 @@ class AgentWalletTopupView(APIView):
             reference=ref,
             amount=amount,
             payer_phone=gw_phone,
-            description=f"Recarga BuzUp {amount} MZN",
+            description=f"Recarga BusUp {amount} MZN",
         )
         pi.provider = result.provider
         pi.metadata = {
@@ -478,7 +478,7 @@ class AgentPackagePurchaseView(APIView):
             reference=ref,
             amount=amount,
             payer_phone=gw_phone,
-            description=f"Pacote BuzUp: {package.name} ({amount} MZN)",
+            description=f"Pacote BusUp: {package.name} ({amount} MZN)",
         )
         pi.provider = result.provider
         pi.metadata = {

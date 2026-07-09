@@ -39,7 +39,7 @@ export default function AdminLayout() {
   const active = NAV_ITEMS.find((item) =>
     item.end ? location.pathname === item.path : location.pathname.startsWith(item.path),
   );
-  const pageTitle = active ? t(locale, active.i18nKey) : "BuzUp";
+  const pageTitle = active ? t(locale, active.i18nKey) : "BusUp";
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
   const sidebarBrandSrc = collapsed ? "/assets/buzup-logo/buzup-mark.png" : "/assets/buzup-logo/buzup-logo.png";
@@ -49,7 +49,7 @@ export default function AdminLayout() {
       <aside className={`admin-sidebar${collapsed ? " admin-sidebar-collapsed" : ""}`}>
         <div className="admin-sidebar-head">
           <div className="admin-sidebar-brand">
-            <img alt="BuzUp" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
+            <img alt="BusUp" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
           </div>
           {!collapsed && (
             <button className="icon-button desktop-only sidebar-collapse-btn" onClick={() => setCollapsed((c) => !c)} type="button">
@@ -254,7 +254,7 @@ export default function AdminLayout() {
       <aside className={`admin-mobile-drawer${mobileOpen ? " admin-mobile-drawer-open" : ""}`}>
         <div className="admin-mobile-head">
           <div>
-            <p className="admin-kicker">BuzUp</p>
+            <p className="admin-kicker">BusUp</p>
             <strong>{t(locale, "cashlessTransport")}</strong>
           </div>
           <button className="icon-button" onClick={() => setMobileOpen(false)} type="button"><X size={18} /></button>

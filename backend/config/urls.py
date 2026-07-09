@@ -4,8 +4,8 @@ from django.conf.urls.static import static
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
-admin.site.site_header = "BuzUp"
-admin.site.site_title = "BuzUp Admin"
+admin.site.site_header = "BusUp"
+admin.site.site_title = "BusUp Admin"
 admin.site.index_title = "Painel administrativo"
 
 urlpatterns = [

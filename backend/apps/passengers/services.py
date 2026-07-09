@@ -48,7 +48,7 @@ def ensure_passenger_access_account(passenger: PassengerAccount, notify_by_sms: 
         send_sms(
             phone,
             (
-                "BuzUp: A sua conta foi criada. Aceda ao portal, escolha Entrar como "
+                "BusUp: A sua conta foi criada. Aceda ao portal, escolha Entrar como "
                 f"Passageiro e use este telefone para receber o codigo OTP. Cartao digital {digital_card.card_number}."
             ),
             purpose="PASSENGER_ACCOUNT_CREATED",

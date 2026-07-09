@@ -56,7 +56,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       {/* NAV */}
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <div className="wrap nav-inner">
-          <Link to={lp("/")} className="brand" aria-label="BuzUp">
+          <Link to={lp("/")} className="brand" aria-label="BusUp">
             <BrandLogo />
           </Link>
           <div className="nav-links">
@@ -106,7 +106,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="hero-copy">
             <span className="eyebrow reveal">{t("Transporte público sem contacto")}</span>
             <h1 className="reveal d1">{t("Pague a sua viagem com um")} <span className="accent">{t("simples toque.")}</span></h1>
-            <p className="sub reveal d2">{t("A BuzUp é a forma mais rápida e segura de pagar o transporte público em Moçambique. Recarregue, toque e viaje — sem filas, sem trocos, sem papel.")}</p>
+            <p className="sub reveal d2">{t("A BusUp é a forma mais rápida e segura de pagar o transporte público em Moçambique. Recarregue, toque e viaje — sem filas, sem trocos, sem papel.")}</p>
             <div className="hero-actions reveal d2">
               <button type="button" className="btn btn-primary" onClick={openWaitlist}>{t("Baixar a app")} <ArrowRight /></button>
               <a href="#como-funciona" className="btn btn-ghost">{t("Ver como funciona")}</a>
@@ -125,7 +125,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
           </div>
           <div className="hero-visual reveal d2">
-            <img src="/assets/buzup/hero-person.png" alt="Passageiro a usar a BuzUp com telemóvel, validador e cartão sem contacto" width={1122} height={1402} style={{ height: "766px" }} />
+            <img src="/assets/buzup/hero-person.png" alt="Passageiro a usar a BusUp com telemóvel, validador e cartão sem contacto" width={1122} height={1402} style={{ height: "766px" }} />
           </div>
         </div>
       </header>
@@ -152,7 +152,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section" id="funcionalidades">
         <div className="wrap">
           <div className="head reveal">
-            <span className="eyebrow">{t("Porquê a BuzUp")}</span>
+            <span className="eyebrow">{t("Porquê a BusUp")}</span>
             <h2>{t("Tudo o que a sua viagem precisa, num só toque.")}</h2>
             <p>{t("Uma plataforma completa para passageiros e operadores — do pagamento sem contacto ao controlo em tempo real.")}</p>
           </div>
@@ -187,7 +187,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section how" id="como-funciona">
         <div className="wrap how-grid">
           <div className="how-visual reveal">
-            <img src="/assets/buzup/validator-pole.png" alt="Validador BuzUp a confirmar viagem válida com cartão sem contacto" width={753} height={1402} style={{ height: "534px" }} loading="lazy" decoding="async" />
+            <img src="/assets/buzup/validator-pole.png" alt="Validador BusUp a confirmar viagem válida com cartão sem contacto" width={753} height={1402} style={{ height: "534px" }} loading="lazy" decoding="async" />
           </div>
           <div className="how-copy">
             <div className="head reveal" style={{ marginBottom: "34px" }}>
@@ -197,11 +197,11 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             <div className="steps">
               <div className="step reveal">
                 <div className="num">1</div>
-                <div><h3>{t("Crie a sua conta")}</h3><p>{t("Descarregue a app BuzUp e registe-se em segundos, direto do telemóvel.")}</p></div>
+                <div><h3>{t("Crie a sua conta")}</h3><p>{t("Descarregue a app BusUp e registe-se em segundos, direto do telemóvel.")}</p></div>
               </div>
               <div className="step reveal d1">
                 <div className="num">2</div>
-                <div><h3>{t("Recarregue o saldo")}</h3><p>{t("Carregue por M-Pesa, e-Mola, cartão bancário ou nos pontos BuzUp.")}</p></div>
+                <div><h3>{t("Recarregue o saldo")}</h3><p>{t("Carregue por M-Pesa, e-Mola, cartão bancário ou nos pontos BusUp.")}</p></div>
               </div>
               <div className="step reveal d2">
                 <div className="num">3</div>
@@ -221,7 +221,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
         <div className="wrap app-grid">
           <div className="app-copy">
             <div className="head reveal" style={{ marginBottom: "6px" }}>
-              <span className="eyebrow">{t("A app BuzUp")}</span>
+              <span className="eyebrow">{t("A app BusUp")}</span>
               <h2>{t("Toda a sua mobilidade numa só app.")}</h2>
               <p>{t("Saldo, recargas, bilhetes e histórico — uma experiência simples, rápida e elegante, feita para o dia a dia.")}</p>
             </div>
@@ -233,7 +233,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </ul>
           </div>
           <div className="app-visual reveal d1">
-            <img src="/assets/buzup/phone-float.png" alt="App BuzUp com saldo, transações e compra de bilhetes" width={1024} height={1536} style={{ height: "699px" }} loading="lazy" decoding="async" />
+            <img src="/assets/buzup/phone-float.png" alt="App BusUp com saldo, transações e compra de bilhetes" width={1024} height={1536} style={{ height: "699px" }} loading="lazy" decoding="async" />
           </div>
         </div>
       </section>
@@ -242,13 +242,13 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section cardsec" id="cartao">
         <div className="wrap cardsec-grid">
           <div className="cardsec-visual reveal">
-            <img src="/assets/buzup/validator-card.png" alt="Ecossistema BuzUp: app, validador e cartão sem contacto" width={1024} height={1536} style={{ height: "636px" }} loading="lazy" decoding="async" />
+            <img src="/assets/buzup/validator-card.png" alt="Ecossistema BusUp: app, validador e cartão sem contacto" width={1024} height={1536} style={{ height: "636px" }} loading="lazy" decoding="async" />
           </div>
           <div className="cardsec-copy">
             <div className="head reveal" style={{ marginBottom: "6px" }}>
-              <span className="eyebrow">{t("O cartão BuzUp")}</span>
+              <span className="eyebrow">{t("O cartão BusUp")}</span>
               <h2>{t("Sem smartphone? Sem problema.")}</h2>
-              <p>{t("O cartão BuzUp funciona de forma independente. Recarregue numa agência ou ponto BuzUp e viaje com um único toque — acessível a todos os passageiros.")}</p>
+              <p>{t("O cartão BusUp funciona de forma independente. Recarregue numa agência ou ponto BusUp e viaje com um único toque — acessível a todos os passageiros.")}</p>
             </div>
             <div className="chips">
               <span className="chip reveal"><Zap /> {t("Toque e siga")}</span>
@@ -334,13 +334,13 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
         <div className="wrap">
           <div className="cta-card reveal">
             <div className="inner">
-              <h2>{t("Comece a viajar com a BuzUp hoje.")}</h2>
+              <h2>{t("Comece a viajar com a BusUp hoje.")}</h2>
               <p>{t("Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.")}</p>
             </div>
             <div className="cta-actions">
               <button type="button" className="btn btn-white" onClick={openWaitlist}><Apple /> {t("Descarregar para iOS")}</button>
               <button type="button" className="btn btn-white" onClick={openWaitlist}><Play /> {t("Descarregar para Android")}</button>
-              <Link to={lp("/contacto")} className="btn btn-ghost on-dark">{t("Falar com a equipa BuzUp")}</Link>
+              <Link to={lp("/contacto")} className="btn btn-ghost on-dark">{t("Falar com a equipa BusUp")}</Link>
             </div>
           </div>
         </div>
@@ -360,7 +360,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <h5>{t("Produto")}</h5>
               <a href="#funcionalidades">{t("Funcionalidades")}</a>
               <a href="#como-funciona">{t("Como funciona")}</a>
-              <a href="#cartao">{t("Cartão BuzUp")}</a>
+              <a href="#cartao">{t("Cartão BusUp")}</a>
               <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
             </div>
             <div className="foot-col">
@@ -368,7 +368,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Sobre a UpDigital")}</a>
               <Link to={`${lp("/tarifas")}#operadores`}>{t("Operadores parceiros")}</Link>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Carreiras")}</a>
-              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BuzUp">{t("Imprensa")}</a>
+              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BusUp">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
@@ -380,7 +380,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
           </div>
           <div className="foot-bottom">
-            <span>{t("© 2026 BuzUp · UpDigital. Todos os direitos reservados.")}</span>
+            <span>{t("© 2026 BusUp · UpDigital. Todos os direitos reservados.")}</span>
             <a className="powered" href="https://www.updigital.co.mz" target="_blank" rel="noopener" aria-label="Powered by UpDigital">
               <span className="pb-label">Powered by</span>
               <img src="/assets/up-digital-logo/up_digital_light.png" alt="UpDigital" />

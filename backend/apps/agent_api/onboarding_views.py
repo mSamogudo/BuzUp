@@ -166,7 +166,7 @@ class AgentPassengerOnboardView(APIView):
                 reference=ref,
                 amount=fee,
                 payer_phone=data["payer_phone"],
-                description=f"BuzUp: emissao cartao {card.card_number}",
+                description=f"BusUp: emissao cartao {card.card_number}",
             )
             pi.provider = result.provider
             pi.metadata = {**(pi.metadata or {}),

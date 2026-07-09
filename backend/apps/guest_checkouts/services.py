@@ -53,7 +53,7 @@ def _deliver_pass_sms(gc: GuestCheckout, travel_pass: DigitalTravelPass):
     base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").rstrip("/")
     ticket_url = f"{base}/api/public/ticket/{raw_token}/" if base else f"/api/public/ticket/{raw_token}/"
     message = (
-        f"BuzUp: Bilhete {gc.route_name or gc.route_code} "
+        f"BusUp: Bilhete {gc.route_name or gc.route_code} "
         f"{gc.origin_stop} -> {gc.destination_stop}. "
         f"Ref: {gc.reference}. "
         f"Link: {ticket_url}"

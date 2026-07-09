@@ -35,9 +35,9 @@ def _notify_transaction(wallet: Wallet, tx: WalletTransaction):
         from apps.sms.services.sender import send_sms
 
         if tx.direction == WalletTransaction.Direction.CREDIT:
-            msg = f"BuzUp: Recarga de {tx.amount:,.2f} MZN confirmada. Novo saldo: {tx.balance_after:,.2f} MZN. Ref: {tx.reference}"
+            msg = f"BusUp: Recarga de {tx.amount:,.2f} MZN confirmada. Novo saldo: {tx.balance_after:,.2f} MZN. Ref: {tx.reference}"
         else:
-            msg = f"BuzUp: Debito de {tx.amount:,.2f} MZN. Novo saldo: {tx.balance_after:,.2f} MZN. Ref: {tx.reference}"
+            msg = f"BusUp: Debito de {tx.amount:,.2f} MZN. Novo saldo: {tx.balance_after:,.2f} MZN. Ref: {tx.reference}"
 
         send_sms(phone, msg, purpose="TRANSACTION_NOTIFICATION")
     except Exception:

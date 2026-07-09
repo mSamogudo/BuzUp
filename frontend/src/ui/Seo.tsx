@@ -38,7 +38,7 @@ export function Seo({ page, lang, jsonLd, image }: SeoProps) {
 
       {/* Open Graph */}
       <meta property="og:type" content="website" />
-      <meta property="og:site_name" content="BuzUp" />
+      <meta property="og:site_name" content="BusUp" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />

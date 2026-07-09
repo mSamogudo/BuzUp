@@ -276,7 +276,7 @@ class PassengerPortalTopupView(APIView):
             reference=ref,
             amount=amount,
             payer_phone=payer_phone,
-            description=f"Recarga BuzUp {amount} MZN",
+            description=f"Recarga BusUp {amount} MZN",
         )
         pi.provider = result.provider
         pi.metadata = {
@@ -719,7 +719,7 @@ class PublicPasswordResetView(APIView):
         temp = _generate_temp_password()
         user.set_password(temp)
         user.save(update_fields=["password", "updated_at"])
-        send_sms(phone, f"BuzUp: senha temporaria {temp}. Altere apos o login.", purpose="PASSWORD_RESET")
+        send_sms(phone, f"BusUp: senha temporaria {temp}. Altere apos o login.", purpose="PASSWORD_RESET")
         return Response({"detail": "Se o telefone estiver associado a uma conta, enviaremos uma senha temporaria."})
 
 
@@ -738,7 +738,7 @@ class AdminUserPasswordResetView(APIView):
         temp = _generate_temp_password()
         user.set_password(temp)
         user.save(update_fields=["password", "updated_at"])
-        send_sms(user.phone, f"BuzUp: senha temporaria {temp}. Altere apos o login.", purpose="ADMIN_PASSWORD_RESET")
+        send_sms(user.phone, f"BusUp: senha temporaria {temp}. Altere apos o login.", purpose="ADMIN_PASSWORD_RESET")
         return Response({"detail": f"Senha temporaria enviada para {user.phone}.", "phone": user.phone})
 
 

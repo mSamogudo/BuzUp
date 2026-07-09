@@ -1,5 +1,5 @@
 /* ============================================================
-   BuzUp — SEO config for public marketing pages.
+   BusUp — SEO config for public marketing pages.
    Per-page titles/descriptions (PT + EN), canonical/hreflang
    URLs and JSON-LD structured-data builders.
    ============================================================ */
@@ -44,36 +44,36 @@ export const PAGES = {
     ptPath: "/",
     enPath: "/en",
     title: {
-      pt: "BuzUp — Pague a sua viagem com um toque",
-      en: "BuzUp — Pay for your ride with a tap",
+      pt: "BusUp — Pague a sua viagem com um toque",
+      en: "BusUp — Pay for your ride with a tap",
     },
     description: {
-      pt: "BuzUp é a bilhética cashless de Moçambique: pague o transporte público com um toque. Recarregue por M-Pesa ou e-Mola, toque o cartão ou telemóvel e viaje sem filas.",
-      en: "BuzUp is Mozambique's cashless transit ticketing: pay for public transport with a tap. Top up via M-Pesa or e-Mola, tap your card or phone and travel without queues.",
+      pt: "BusUp é a bilhética cashless de Moçambique: pague o transporte público com um toque. Recarregue por M-Pesa ou e-Mola, toque o cartão ou telemóvel e viaje sem filas.",
+      en: "BusUp is Mozambique's cashless transit ticketing: pay for public transport with a tap. Top up via M-Pesa or e-Mola, tap your card or phone and travel without queues.",
     },
   },
   pricing: {
     ptPath: "/tarifas",
     enPath: "/en/tarifas",
     title: {
-      pt: "Tarifas e planos BuzUp — preços para passageiros e operadores",
-      en: "BuzUp pricing & plans — for passengers and operators",
+      pt: "Tarifas e planos BusUp — preços para passageiros e operadores",
+      en: "BusUp pricing & plans — for passengers and operators",
     },
     description: {
-      pt: "Preços simples e transparentes da BuzUp. Bilhetes diários, semanais e mensais para passageiros e planos escaláveis para operadores de transporte. Sem taxas escondidas.",
-      en: "Simple, transparent BuzUp pricing. Daily, weekly and monthly tickets for passengers and scalable plans for transport operators. No hidden fees.",
+      pt: "Preços simples e transparentes da BusUp. Bilhetes diários, semanais e mensais para passageiros e planos escaláveis para operadores de transporte. Sem taxas escondidas.",
+      en: "Simple, transparent BusUp pricing. Daily, weekly and monthly tickets for passengers and scalable plans for transport operators. No hidden fees.",
     },
   },
   contact: {
     ptPath: "/contacto",
     enPath: "/en/contacto",
     title: {
-      pt: "Contacto BuzUp — fale com a equipa em Maputo",
-      en: "Contact BuzUp — talk to the team in Maputo",
+      pt: "Contacto BusUp — fale com a equipa em Maputo",
+      en: "Contact BusUp — talk to the team in Maputo",
     },
     description: {
-      pt: "Fale com a equipa BuzUp em Maputo, Moçambique. Peça uma demonstração para a sua operação de transporte ou tire dúvidas — resposta em menos de 24 horas.",
-      en: "Talk to the BuzUp team in Maputo, Mozambique. Request a demo for your transport operation or ask questions — reply in under 24 hours.",
+      pt: "Fale com a equipa BusUp em Maputo, Moçambique. Peça uma demonstração para a sua operação de transporte ou tire dúvidas — resposta em menos de 24 horas.",
+      en: "Talk to the BusUp team in Maputo, Mozambique. Request a demo for your transport operation or ask questions — reply in under 24 hours.",
     },
   },
 } satisfies Record<string, PageSeo>;
@@ -84,7 +84,7 @@ export function organizationLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "BuzUp",
+    name: "BusUp",
     url: SITE_URL,
     logo: `${SITE_URL}/icons/icon-512.png`,
     description:
@@ -104,7 +104,7 @@ export function websiteLd() {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "BuzUp",
+    name: "BusUp",
     url: SITE_URL,
     inLanguage: ["pt-MZ", "en"],
   };

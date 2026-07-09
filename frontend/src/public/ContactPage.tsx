@@ -108,7 +108,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
       {/* NAV */}
       <nav className="nav scrolled">
         <div className="wrap nav-inner">
-          <Link to={lp("/")} className="brand" aria-label="BuzUp">
+          <Link to={lp("/")} className="brand" aria-label="BusUp">
             <BrandLogo />
           </Link>
           <div className="nav-links">
@@ -156,7 +156,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="ct-aside reveal">
             <span className="eyebrow">{t("Contacto")}</span>
             <h1>{t("Vamos pôr a sua cidade a viajar com um toque.")}</h1>
-            <p className="lead">{t("Conte-nos sobre a sua operação ou tire as suas dúvidas. A equipa BuzUp responde em menos de 24 horas.")}</p>
+            <p className="lead">{t("Conte-nos sobre a sua operação ou tire as suas dúvidas. A equipa BusUp responde em menos de 24 horas.")}</p>
 
             <ul className="methods">
               <li>
@@ -188,7 +188,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
             <div className={`ct-success${sent ? " show" : ""}`}>
               <div className="ico"><Check /></div>
               <h3>{t("Mensagem enviada!")}</h3>
-              <p>{t("A equipa BuzUp responde em menos de 24 horas, normalmente no mesmo dia útil.")}</p>
+              <p>{t("A equipa BusUp responde em menos de 24 horas, normalmente no mesmo dia útil.")}</p>
             </div>
 
             {!sent && (
@@ -278,7 +278,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
               <h5>{t("Produto")}</h5>
               <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
               <Link to={`${lp("/")}#como-funciona`}>{t("Como funciona")}</Link>
-              <Link to={`${lp("/")}#cartao`}>{t("Cartão BuzUp")}</Link>
+              <Link to={`${lp("/")}#cartao`}>{t("Cartão BusUp")}</Link>
               <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
             </div>
             <div className="foot-col">
@@ -286,7 +286,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Sobre a UpDigital")}</a>
               <Link to={`${lp("/tarifas")}#operadores`}>{t("Operadores parceiros")}</Link>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Carreiras")}</a>
-              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BuzUp">{t("Imprensa")}</a>
+              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BusUp">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
@@ -298,7 +298,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
           </div>
           <div className="foot-bottom">
-            <span>{t("© 2026 BuzUp · UpDigital. Todos os direitos reservados.")}</span>
+            <span>{t("© 2026 BusUp · UpDigital. Todos os direitos reservados.")}</span>
             <a className="powered" href="https://www.updigital.co.mz" target="_blank" rel="noopener" aria-label="Powered by UpDigital">
               <span className="pb-label">Powered by</span>
               <img src="/assets/up-digital-logo/up_digital_light.png" alt="UpDigital" />

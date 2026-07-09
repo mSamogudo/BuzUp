@@ -6,11 +6,11 @@ brand
 
 ## Users
 
-Public-transport passengers in Mozambique — daily commuters (workers, students), families, and tourists — plus fleet operators and municipalities as secondary audiences. Primary context: mobile-first, on the go, often one-handed, sometimes on slow connections. Primary language Portuguese (pt), secondary English (en). Most arrive on the landing page to understand what BuzUp is and download the app or get a card; a smaller set lands on pricing (bilhetes/tarifas) or contact.
+Public-transport passengers in Mozambique — daily commuters (workers, students), families, and tourists — plus fleet operators and municipalities as secondary audiences. Primary context: mobile-first, on the go, often one-handed, sometimes on slow connections. Primary language Portuguese (pt), secondary English (en). Most arrive on the landing page to understand what BusUp is and download the app or get a card; a smaller set lands on pricing (bilhetes/tarifas) or contact.
 
 ## Product Purpose
 
-BuzUp is a contactless payment platform for public transport in Mozambique (a UpDigital product). Tap a card or phone at the on-board validator to pay in under a second; recharge via M-Pesa, e-Mola, or bank card; buy daily/weekly/monthly digital tickets and track balance, trips, and history in real time. The public marketing surface exists to convert visitors into app downloads / card sign-ups and to establish trust that a tap-to-pay transit product is fast, safe, and legitimate. Success = downloads, card requests, operator/municipality leads.
+BusUp is a contactless payment platform for public transport in Mozambique (a UpDigital product). Tap a card or phone at the on-board validator to pay in under a second; recharge via M-Pesa, e-Mola, or bank card; buy daily/weekly/monthly digital tickets and track balance, trips, and history in real time. The public marketing surface exists to convert visitors into app downloads / card sign-ups and to establish trust that a tap-to-pay transit product is fast, safe, and legitimate. Success = downloads, card requests, operator/municipality leads.
 
 ## Brand Personality
 

@@ -112,7 +112,7 @@ class GuestCheckoutCreateView(APIView):
             reference=pi.reference,
             amount=total,
             payer_phone=data["payer_phone"],
-            description=f"BuzUp bilhete {data['route_code']}",
+            description=f"BusUp bilhete {data['route_code']}",
         )
 
         pi.provider = result.provider

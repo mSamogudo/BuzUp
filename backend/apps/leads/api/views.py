@@ -53,7 +53,7 @@ def _notify_sales(lead: ContactLead) -> None:
         return
 
     label = lead.get_source_display()
-    subject = f"[BuzUp] {label}: {lead.name or lead.email}"
+    subject = f"[BusUp] {label}: {lead.name or lead.email}"
     body = "\n".join(
         line for line in [
             f"Origem: {label}",

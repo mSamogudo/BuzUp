@@ -1,6 +1,6 @@
 """PDF + Excel renderers for the unified report builder.
 
-Both renderers share the BuzUp / UpDigital branding used in the
+Both renderers share the BusUp / UpDigital branding used in the
 agent revenue admin exports (see `apps.agent_api.exporters`). We deliberately
 mirror the look and feel so the operator gets consistent reports across all
 admin areas.
@@ -113,9 +113,9 @@ def _draw_header(c, width, height, *, title, period_from, period_to):
 
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 13)
-    c.drawString(60 * mm, height - 10 * mm, "BuzUp | Relatorio Administrativo")
+    c.drawString(60 * mm, height - 10 * mm, "BusUp | Relatorio Administrativo")
     c.setFont("Helvetica", 9)
-    c.drawString(60 * mm, height - 15 * mm, "BuzUp | Transporte cashless de Mocambique")
+    c.drawString(60 * mm, height - 15 * mm, "BusUp | Transporte cashless de Mocambique")
 
     c.setFillColor(ORANGE)
     c.setFont("Helvetica-Bold", 11)
@@ -219,7 +219,7 @@ def _draw_footer(c, width):
             pass
     c.setFillColor(GREY)
     c.setFont("Helvetica", 8)
-    c.drawString(10 * mm, band_h / 2 - 2, "BuzUp | Documento gerado automaticamente.")
+    c.drawString(10 * mm, band_h / 2 - 2, "BusUp | Documento gerado automaticamente.")
     c.drawString(10 * mm, band_h / 2 - 9, "powered by")
 
 

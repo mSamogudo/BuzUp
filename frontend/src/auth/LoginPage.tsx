@@ -200,8 +200,8 @@ export default function LoginPage() {
     <main className="login-page">
       <div className="login-left">
         <div className="login-left-content">
-          <img alt="BuzUp" className="login-hero-logo" src="/assets/buzup-logo/buzup-logo.png" />
-          <h1>BuzUp</h1>
+          <img alt="BusUp" className="login-hero-logo" src="/assets/buzup-logo/buzup-logo.png" />
+          <h1>BusUp</h1>
           <p>{t(locale, "cashlessTransport")}</p>
         </div>
       </div>

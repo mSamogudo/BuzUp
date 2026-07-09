@@ -11,7 +11,7 @@ export default function SplashScreen() {
           <img
             className="splash-wordmark"
             src="/assets/buzup-logo/buzup-logo.png"
-            alt="BuzUp"
+            alt="BusUp"
           />
         </div>
 

@@ -76,7 +76,7 @@ def assign_card_to_passenger(card: Card, passenger: PassengerAccount, notify_sms
     if notify_sms and passenger.phone_number:
         try:
             from apps.sms.services.sender import send_sms
-            send_sms(passenger.phone_number, f"BuzUp: Cartao {card.card_number} activado e vinculado a sua conta.", purpose="CARD_ASSIGNED")
+            send_sms(passenger.phone_number, f"BusUp: Cartao {card.card_number} activado e vinculado a sua conta.", purpose="CARD_ASSIGNED")
         except Exception:
             pass
 

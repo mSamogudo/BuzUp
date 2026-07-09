@@ -1,5 +1,5 @@
 /* ============================================================
-   BuzUp marketing pages — PT→EN dictionary + hook
+   BusUp marketing pages — PT→EN dictionary + hook
    Ported from the design site.js DICT. Reuses the app's
    UiPreferences locale (pt|en) so the langtog stays in sync
    with the rest of the app.
@@ -19,7 +19,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Produto": "Product",
   "Empresa": "Company",
   "Suporte": "Support",
-  "Cartão BuzUp": "BuzUp Card",
+  "Cartão BusUp": "BusUp Card",
   "Sobre a UpDigital": "About UpDigital",
   "Operadores parceiros": "Partner operators",
   "Carreiras": "Careers",
@@ -27,13 +27,13 @@ export const MKT_PT_EN: Record<string, string> = {
   "Central de ajuda": "Help center",
   "Pontos de recarga": "Top-up points",
   "O transporte público de Moçambique, mais rápido, seguro e sem papel.": "Mozambique's public transport — faster, safer and paperless.",
-  "© 2026 BuzUp · UpDigital. Todos os direitos reservados.": "© 2026 BuzUp · UpDigital. All rights reserved.",
+  "© 2026 BusUp · UpDigital. Todos os direitos reservados.": "© 2026 BusUp · UpDigital. All rights reserved.",
 
   /* home — hero */
   "Transporte público sem contacto": "Contactless public transport",
   "Pague a sua viagem com um": "Pay for your ride with a",
   "simples toque.": "simple tap.",
-  "A BuzUp é a forma mais rápida e segura de pagar o transporte público em Moçambique. Recarregue, toque e viaje — sem filas, sem trocos, sem papel.": "BuzUp is the fastest, safest way to pay for public transport in Mozambique. Top up, tap and travel — no queues, no change, no paper.",
+  "A BusUp é a forma mais rápida e segura de pagar o transporte público em Moçambique. Recarregue, toque e viaje — sem filas, sem trocos, sem papel.": "BusUp is the fastest, safest way to pay for public transport in Mozambique. Top up, tap and travel — no queues, no change, no paper.",
   "Ver como funciona": "See how it works",
   "Disponível na": "Available on",
   "Disponível no": "Available on",
@@ -47,7 +47,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "bilhetes digitais e histórico sempre consigo.": "digital tickets and history always with you.",
 
   /* home — benefits */
-  "Porquê a BuzUp": "Why BuzUp",
+  "Porquê a BusUp": "Why BusUp",
   "Tudo o que a sua viagem precisa, num só toque.": "Everything your ride needs, in a single tap.",
   "Uma plataforma completa para passageiros e operadores — do pagamento sem contacto ao controlo em tempo real.": "A complete platform for passengers and operators — from contactless payment to real-time control.",
   "Pagamento sem contacto": "Contactless payment",
@@ -62,16 +62,16 @@ export const MKT_PT_EN: Record<string, string> = {
   /* home — how */
   "Comece a viajar em quatro passos.": "Start travelling in four steps.",
   "Crie a sua conta": "Create your account",
-  "Descarregue a app BuzUp e registe-se em segundos, direto do telemóvel.": "Download the BuzUp app and sign up in seconds, right from your phone.",
+  "Descarregue a app BusUp e registe-se em segundos, direto do telemóvel.": "Download the BusUp app and sign up in seconds, right from your phone.",
   "Recarregue o saldo": "Top up your balance",
-  "Carregue por M-Pesa, e-Mola, cartão bancário ou nos pontos BuzUp.": "Top up via M-Pesa, e-Mola, bank card or at BuzUp points.",
+  "Carregue por M-Pesa, e-Mola, cartão bancário ou nos pontos BusUp.": "Top up via M-Pesa, e-Mola, bank card or at BusUp points.",
   "Toque para viajar": "Tap to travel",
   "Aproxime o cartão ou o telemóvel do validador a bordo. Viagem válida!": "Tap your card or phone on the onboard validator. Ride valid!",
   "Acompanhe tudo": "Track everything",
   "Veja viagens, saldo e bilhetes em tempo real, sempre na palma da mão.": "See trips, balance and tickets in real time, always in your hand.",
 
   /* home — app */
-  "A app BuzUp": "The BuzUp app",
+  "A app BusUp": "The BusUp app",
   "Toda a sua mobilidade numa só app.": "All your mobility in a single app.",
   "Saldo, recargas, bilhetes e histórico — uma experiência simples, rápida e elegante, feita para o dia a dia.": "Balance, top-ups, tickets and history — a simple, fast and elegant experience, made for everyday life.",
   "Saldo e recarga rápida": "Balance and quick top-up",
@@ -84,9 +84,9 @@ export const MKT_PT_EN: Record<string, string> = {
   "Associe, bloqueie e recarregue o seu cartão físico.": "Link, block and top up your physical card.",
 
   /* home — card section */
-  "O cartão BuzUp": "The BuzUp card",
+  "O cartão BusUp": "The BusUp card",
   "Sem smartphone? Sem problema.": "No smartphone? No problem.",
-  "O cartão BuzUp funciona de forma independente. Recarregue numa agência ou ponto BuzUp e viaje com um único toque — acessível a todos os passageiros.": "The BuzUp card works on its own. Top it up at an agency or BuzUp point and travel with a single tap — accessible to every passenger.",
+  "O cartão BusUp funciona de forma independente. Recarregue numa agência ou ponto BusUp e viaje com um único toque — acessível a todos os passageiros.": "The BusUp card works on its own. Top it up at an agency or BusUp point and travel with a single tap — accessible to every passenger.",
   "Toque e siga": "Tap and go",
   "Recarregável": "Rechargeable",
   "Seguro": "Secure",
@@ -134,11 +134,11 @@ export const MKT_PT_EN: Record<string, string> = {
   "Vários cartões, uma só conta.": "Several cards, one account.",
 
   /* home — cta */
-  "Comece a viajar com a BuzUp hoje.": "Start travelling with BuzUp today.",
+  "Comece a viajar com a BusUp hoje.": "Start travelling with BusUp today.",
   "Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.": "Join thousands of passengers who've swapped change for a simple tap.",
   "Descarregar para iOS": "Download for iOS",
   "Descarregar para Android": "Download for Android",
-  "Falar com a equipa BuzUp": "Talk to the BuzUp team",
+  "Falar com a equipa BusUp": "Talk to the BusUp team",
 
   /* pricing */
   "Tarifas e planos": "Pricing and plans",
@@ -146,7 +146,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "passageiros e operadores.": "passengers and operators.",
   "Sem taxas escondidas, sem surpresas. Os passageiros pagam pela viagem; os operadores escalam quando precisam.": "No hidden fees, no surprises. Passengers pay per ride; operators scale when they need to.",
   "Para passageiros": "For passengers",
-  "Pague por viagem ou poupe com um passe. Tudo gerido na app BuzUp, do seu telemóvel.": "Pay per ride or save with a pass. All managed in the BuzUp app, from your phone.",
+  "Pague por viagem ou poupe com um passe. Tudo gerido na app BusUp, do seu telemóvel.": "Pay per ride or save with a pass. All managed in the BusUp app, from your phone.",
   "Avulsa": "Single",
   "por viagem": "per ride",
   "Pague só quando viaja, debitado do saldo a cada toque.": "Pay only when you travel, charged from your balance at each tap.",
@@ -162,7 +162,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Um mês inteiro de mobilidade livre, com o melhor valor por viagem.": "A whole month of free mobility, with the best value per trip.",
   "Válido 30 dias": "Valid 30 days",
   "Recargas por": "Top-ups via",
-  ", cartão bancário ou nos pontos BuzUp — sem qualquer taxa de carregamento.": ", bank card or at BuzUp points — with no loading fee whatsoever.",
+  ", cartão bancário ou nos pontos BusUp — sem qualquer taxa de carregamento.": ", bank card or at BusUp points — with no loading fee whatsoever.",
 
   "Para operadores e parceiros": "For operators and partners",
   "A plataforma que põe a sua frota a receber sem dinheiro físico.": "The platform that gets your fleet paid without cash.",
@@ -215,24 +215,24 @@ export const MKT_PT_EN: Record<string, string> = {
 
   "Perguntas frequentes": "Frequently asked questions",
   "Ainda com dúvidas?": "Still have questions?",
-  "Pagar com a BuzUp tem alguma taxa para o passageiro?": "Does paying with BuzUp carry any fee for passengers?",
-  "Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BuzUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa.": "No. Top-ups via M-Pesa, e-Mola, card or at BuzUp points carry no loading fee. You pay only for the ticket or single trip.",
-  "Preciso de smartphone para usar a BuzUp?": "Do I need a smartphone to use BuzUp?",
-  "Não é obrigatório. Pode viajar apenas com o cartão BuzUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico.": "Not required. You can travel with just the BuzUp card, rechargeable at any point or agency. The app gives you extra control over balance, tickets and history.",
+  "Pagar com a BusUp tem alguma taxa para o passageiro?": "Does paying with BusUp carry any fee for passengers?",
+  "Não. As recargas por M-Pesa, e-Mola, cartão ou nos pontos BusUp não têm taxa de carregamento. Paga apenas o valor do bilhete ou da viagem avulsa.": "No. Top-ups via M-Pesa, e-Mola, card or at BusUp points carry no loading fee. You pay only for the ticket or single trip.",
+  "Preciso de smartphone para usar a BusUp?": "Do I need a smartphone to use BusUp?",
+  "Não é obrigatório. Pode viajar apenas com o cartão BusUp, recarregável em qualquer ponto ou agência. A app dá-lhe controlo extra do saldo, bilhetes e histórico.": "Not required. You can travel with just the BusUp card, rechargeable at any point or agency. The app gives you extra control over balance, tickets and history.",
   "Como funcionam as comissões para operadores?": "How do operator commissions work?",
   "Aplicamos uma pequena percentagem sobre cada viagem paga através da plataforma. A taxa desce à medida que sobe de plano e pode ser negociada por volume no plano Frota+.": "We apply a small percentage on each ride paid through the platform. The rate drops as you move up plans and can be negotiated by volume on the Fleet+ plan.",
   "Posso mudar de plano mais tarde?": "Can I change plans later?",
   "Sim. Faça upgrade ou downgrade a qualquer momento — as alterações entram em vigor no ciclo de faturação seguinte, sem penalizações.": "Yes. Upgrade or downgrade anytime — changes take effect in the next billing cycle, with no penalties.",
   "Quem fornece e instala os validadores?": "Who supplies and installs the validators?",
-  "A BuzUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos.": "BuzUp supplies the onboard validators and supports installation and team training. On the Operator and Fleet+ plans, equipment and onboarding are included.",
+  "A BusUp fornece os validadores a bordo e apoia a instalação e formação das equipas. Nos planos Operador e Frota+ o equipamento e o onboarding estão incluídos.": "BusUp supplies the onboard validators and supports installation and team training. On the Operator and Fleet+ plans, equipment and onboarding are included.",
 
   "Vamos desenhar o plano certo para a sua operação.": "Let's design the right plan for your operation.",
-  "Fale com a equipa BuzUp e receba uma proposta à medida da sua frota. Respondemos em menos de 24 horas.": "Talk to the BuzUp team and get a proposal tailored to your fleet. We reply in under 24 hours.",
+  "Fale com a equipa BusUp e receba uma proposta à medida da sua frota. Respondemos em menos de 24 horas.": "Talk to the BusUp team and get a proposal tailored to your fleet. We reply in under 24 hours.",
   "Agendar demonstração": "Book a demo",
 
   /* contact */
   "Vamos pôr a sua cidade a viajar com um toque.": "Let's get your city travelling with a tap.",
-  "Conte-nos sobre a sua operação ou tire as suas dúvidas. A equipa BuzUp responde em menos de 24 horas.": "Tell us about your operation or ask your questions. The BuzUp team replies in under 24 hours.",
+  "Conte-nos sobre a sua operação ou tire as suas dúvidas. A equipa BusUp responde em menos de 24 horas.": "Tell us about your operation or ask your questions. The BusUp team replies in under 24 hours.",
   "Telefone": "Phone",
   "Website": "Website",
   "Escritório": "Office",
@@ -264,7 +264,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Saltar para o conteúdo": "Skip to content",
 
   /* contact — validation & states */
-  "A equipa BuzUp responde em menos de 24 horas, normalmente no mesmo dia útil.": "The BuzUp team replies within 24 hours, usually the same business day.",
+  "A equipa BusUp responde em menos de 24 horas, normalmente no mesmo dia útil.": "The BusUp team replies within 24 hours, usually the same business day.",
   "Indique o seu nome.": "Please enter your name.",
   "Indique o seu email.": "Please enter your email.",
   "Email inválido. Verifique o endereço.": "Invalid email. Please check the address.",
@@ -277,18 +277,18 @@ export const MKT_PT_EN: Record<string, string> = {
   "Em breve no": "Coming soon to",
   "Fechar": "Close",
   "opcional": "optional",
-  "A app BuzUp está quase a chegar.": "The BuzUp app is almost here.",
+  "A app BusUp está quase a chegar.": "The BusUp app is almost here.",
   "Deixe o seu email e será dos primeiros a saber quando estiver disponível na App Store e Google Play.": "Leave your email and be among the first to know when it lands on the App Store and Google Play.",
   "Avisem-me": "Notify me",
   "A registar…": "Signing up…",
   "Está na lista!": "You're on the list!",
-  "Avisamos assim que a app BuzUp estiver disponível para descarregar.": "We'll let you know the moment the BuzUp app is ready to download.",
+  "Avisamos assim que a app BusUp estiver disponível para descarregar.": "We'll let you know the moment the BusUp app is ready to download.",
   "Não foi possível registar. Tente novamente.": "Couldn't sign you up. Please try again.",
 
   /* titles */
-  "BuzUp — Pague a sua viagem com um toque": "BuzUp — Pay for your ride with a tap",
-  "BuzUp — Tarifas e planos": "BuzUp — Pricing and plans",
-  "BuzUp — Contacto": "BuzUp — Contact",
+  "BusUp — Pague a sua viagem com um toque": "BusUp — Pay for your ride with a tap",
+  "BusUp — Tarifas e planos": "BusUp — Pricing and plans",
+  "BusUp — Contacto": "BusUp — Contact",
 };
 
 /**

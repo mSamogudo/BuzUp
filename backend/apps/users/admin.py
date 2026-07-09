@@ -14,7 +14,7 @@ class UserAdmin(BaseUserAdmin):
     list_display = ("username", "email", "phone", "is_active", "is_staff")
     list_filter = ("is_active", "is_staff")
     fieldsets = BaseUserAdmin.fieldsets + (
-        ("BuzUp", {"fields": ("phone",)}),
+        ("BusUp", {"fields": ("phone",)}),
     )
     inlines = [UserRoleInline]
 

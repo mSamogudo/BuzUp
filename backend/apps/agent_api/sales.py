@@ -422,7 +422,7 @@ def request_payment(gc: GuestCheckout, pi: PaymentIntent) -> dict:
         reference=pi.reference,
         amount=pi.amount,
         payer_phone=pi.payer_phone,
-        description=f"BuzUp bilhete {gc.route_code}",
+        description=f"BusUp bilhete {gc.route_code}",
     )
 
     pi.provider = result.provider

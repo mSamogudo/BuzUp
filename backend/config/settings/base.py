@@ -143,7 +143,7 @@ MPESA_API_SECRET = config("MPESA_API_SECRET", default="")
 MPESA_SERVICE_PROVIDER_CODE = config("MPESA_SERVICE_PROVIDER_CODE", default="")
 MPESA_SHORTCODE = config("MPESA_SHORTCODE", default="")
 MPESA_SERVICE = config("MPESA_SERVICE", default="buzup")
-MPESA_DESCRIPTION = config("MPESA_DESCRIPTION", default="Pagamento BuzUp")
+MPESA_DESCRIPTION = config("MPESA_DESCRIPTION", default="Pagamento BusUp")
 MPESA_CALLBACK_URL = config("MPESA_CALLBACK_URL", default="")
 
 EMOLA_TRANSPORT = config("EMOLA_TRANSPORT", default="PAYLESS")
@@ -154,9 +154,9 @@ EMOLA_BEARER_TOKEN = config("EMOLA_BEARER_TOKEN", default="")
 EMOLA_API_KEY = config("EMOLA_API_KEY", default="")
 EMOLA_API_SECRET = config("EMOLA_API_SECRET", default="")
 EMOLA_WALLET_CODE = config("EMOLA_WALLET_CODE", default="")
-EMOLA_SMS_CONTENT = config("EMOLA_SMS_CONTENT", default="Confirme o pagamento BuzUp na sua carteira E-Mola.")
+EMOLA_SMS_CONTENT = config("EMOLA_SMS_CONTENT", default="Confirme o pagamento BusUp na sua carteira E-Mola.")
 EMOLA_SERVICE = config("EMOLA_SERVICE", default="buzup")
-EMOLA_DESCRIPTION = config("EMOLA_DESCRIPTION", default="Pagamento BuzUp")
+EMOLA_DESCRIPTION = config("EMOLA_DESCRIPTION", default="Pagamento BusUp")
 
 BLUTEKI_BASE_URL = config("BLUTEKI_BASE_URL", default="")
 BLUTEKI_API_KEY = config("BLUTEKI_API_KEY", default="")
@@ -198,11 +198,11 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="BuzUp <no-reply@updigital.co.mz>")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="BusUp <no-reply@updigital.co.mz>")
 CONTACT_NOTIFY_EMAIL = config("CONTACT_NOTIFY_EMAIL", default="sales@updigital.co.mz")
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "BuzUp API",
+    "TITLE": "BusUp API",
     "DESCRIPTION": "Cashless online platform for public transport mobility.",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,

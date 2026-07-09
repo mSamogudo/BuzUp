@@ -347,7 +347,7 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .ctable tr:last-child td{border-bottom:none}
 .bz .ctable .y,.bz .ctable .n{position:relative}
 .bz .ctable .y::after{content:"";display:inline-block;width:18px;height:18px;
-  background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230057FF' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E")}
+  background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230069E9' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E")}
 .bz .ctable .n::after{content:"";display:inline-block;width:14px;height:2px;background:#C4CAD6;border-radius:2px;vertical-align:middle}
 
 /* FAQ */

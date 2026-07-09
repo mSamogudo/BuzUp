@@ -7,7 +7,12 @@ export function PublicLayout() {
   return (
     <>
       <Outlet />
-      <WaitlistModal />
+      {/* The .bz wrapper is required: the dialog styles and the design tokens
+          (--blue etc.) are all scoped under .bz. Without it the dialog and its
+          honeypot render as unstyled raw HTML. */}
+      <div className="bz">
+        <WaitlistModal />
+      </div>
     </>
   );
 }

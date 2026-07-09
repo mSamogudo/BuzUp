@@ -242,14 +242,14 @@ export default function LoginPage() {
                 <p>{t(locale, "loginSubtitle")}</p>
               </div>
               <form className="login-form" onSubmit={handleStaffLogin}>
-                {error && <div className="login-error">{error}</div>}
+                {error && <div className="login-error" role="alert">{error}</div>}
                 <label className="login-field">
                   <User size={18} className="login-field-icon" />
-                  <input type="text" placeholder={t(locale, "username")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
+                  <input type="text" aria-label={t(locale, "username")} placeholder={t(locale, "username")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
                 </label>
                 <label className="login-field">
                   <Lock size={18} className="login-field-icon" />
-                  <input type="password" placeholder={t(locale, "password")} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+                  <input type="password" aria-label={t(locale, "password")} placeholder={t(locale, "password")} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
                 </label>
                 <button type="submit" className="login-submit" disabled={loading}>
                   {loading ? t(locale, "entering") : t(locale, "enter")}
@@ -274,12 +274,13 @@ export default function LoginPage() {
 
               {otpStep === "phone" ? (
                 <form className="login-form" onSubmit={handleOtpRequest}>
-                  {error && <div className="login-error">{error}</div>}
+                  {error && <div className="login-error" role="alert">{error}</div>}
                   {mode === "register" && (
                     <label className="login-field">
                       <User size={18} className="login-field-icon" />
                       <input
                         type="text"
+                        aria-label={t(locale, "fullName")}
                         placeholder={t(locale, "fullName")}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
@@ -292,6 +293,7 @@ export default function LoginPage() {
                     <Phone size={18} className="login-field-icon" />
                     <input
                       type="tel"
+                      aria-label={t(locale, "phoneNumber")}
                       placeholder={t(locale, "phoneNumber") + " (84/85/86/87...)"}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -305,7 +307,7 @@ export default function LoginPage() {
                 </form>
               ) : (
                 <div className="login-form">
-                  {error && <div className="login-error">{error}</div>}
+                  {error && <div className="login-error" role="alert">{error}</div>}
                   <p className="otp-sent-label">
                     {t(locale, "otpSent")} <strong>{phone}</strong>
                   </p>
@@ -371,7 +373,8 @@ export default function LoginPage() {
             </div>
             <div className="login-powered">
               <span>{t(locale, "poweredBy")}</span>
-              <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="login-powered-logo" />
+              <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="login-powered-logo login-powered-logo-light" />
+              <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_light.png" className="login-powered-logo login-powered-logo-dark" />
             </div>
           </div>
         </div>
@@ -395,6 +398,7 @@ export default function LoginPage() {
                     <Phone size={18} className="login-field-icon" />
                     <input
                       type="tel"
+                      aria-label={t(locale, "phoneNumber")}
                       placeholder={t(locale, "phoneNumber")}
                       value={resetPhone}
                       onChange={(e) => setResetPhone(e.target.value)}

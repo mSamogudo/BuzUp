@@ -4185,7 +4185,7 @@ html[data-theme="dark"] .recharts-legend-item-text {
 .login-field input:focus { outline: none; border-color: var(--app-accent, #1D5FA7); box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12); }
 .login-field input:focus ~ .login-field-icon { opacity: 1; color: var(--app-accent, #1D5FA7); }
 .login-submit { width: 100%; min-height: 48px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--app-accent-deep), var(--app-accent)); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 200ms ease; margin-top: 8px; }
-.login-submit:hover { box-shadow: 0 4px 16px rgba(13, 59, 102, 0.4); transform: translateY(-1px); }
+.login-submit:hover { box-shadow: 0 4px 16px rgba(var(--app-accent-rgb), 0.4); transform: translateY(-1px); }
 .login-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 .login-error { padding: 10px 14px; background: rgba(214, 40, 40, 0.08); border: 1px solid rgba(214, 40, 40, 0.2); border-radius: 8px; color: #D62828; font-size: 13px; }
 .login-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--app-border, #e4e4e7); }
@@ -4332,6 +4332,18 @@ html[data-theme="dark"] .otp-digit:focus {
   .otp-code-grid { gap: 6px; }
 }
 
+/* Powered-by logo: dark-ink logo on light theme, light logo on dark theme */
+.login-powered-logo-dark { display: none; }
+html[data-theme="dark"] .login-powered-logo-light { display: none; }
+html[data-theme="dark"] .login-powered-logo-dark { display: block; }
+
+/* Login error banner needs a brighter red to stay legible on the dark panel */
+html[data-theme="dark"] .login-error {
+  color: #ff6b6b;
+  background: rgba(214, 40, 40, 0.14);
+  border-color: rgba(255, 107, 107, 0.32);
+}
+
 /* Login — keyboard focus rings (inputs already have them; buttons didn't) */
 .login-submit:focus-visible,
 .login-mode-btn:focus-visible,
@@ -4341,11 +4353,12 @@ html[data-theme="dark"] .otp-digit:focus {
   outline-offset: 2px;
 }
 
-/* The login-left ambient gradient loops forever — hold it still for reduced motion */
+/* The login-left ambient gradient + locale-toggle pulse loop forever — hold them still for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .login-left { animation: none; }
   .login-left-content,
   .login-form-wrap { animation: none; opacity: 1; }
+  .locale-flag-button-active { animation: none; }
 }
 
 /* Premium Checkout */

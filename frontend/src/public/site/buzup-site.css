@@ -101,10 +101,10 @@ html{scroll-behavior:smooth}
 .bz .brand .up{color:var(--blue)}
 .bz .nav-links{display:flex;align-items:center;gap:34px}
 .bz .nav-links a{font-weight:600;font-size:15px;color:#2b3650;position:relative;padding:4px 0}
-.bz .nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;width:0;height:2px;background:var(--blue);transition:width .25s}
+.bz .nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;width:100%;height:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .25s}
 .bz .nav-links a:hover{color:var(--ink)}
 .bz .nav-links a.active{color:var(--ink)}
-.bz .nav-links a.active::after,.bz .nav-links a:hover::after{width:100%}
+.bz .nav-links a.active::after,.bz .nav-links a:hover::after{transform:scaleX(1)}
 .bz .nav-cta{display:flex;align-items:center;gap:14px}
 .bz .menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--ink)}
 .bz .menu-btn svg{width:26px;height:26px}

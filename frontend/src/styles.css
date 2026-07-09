@@ -886,16 +886,14 @@ body::-webkit-scrollbar,
 }
 
 .sidebar-logo {
-  width: min(180px, 100%);
-  height: auto;
-  max-height: 52px;
+  width: 176px;
+  height: 56px;
   object-fit: contain;
 }
 
 .sidebar-logo-collapsed {
   width: 58px;
-  height: auto;
-  max-height: 38px;
+  height: 42px;
   object-fit: contain;
 }
 
@@ -1361,9 +1359,9 @@ body::-webkit-scrollbar,
   max-height: 42px;
   padding: 5px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.08);
   object-fit: contain;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+  box-shadow: none;
 }
 
 .admin-sidebar-collapsed .admin-nav-item[data-tooltip]::before,

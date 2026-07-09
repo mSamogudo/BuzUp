@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Phone, Globe, MapPin, Check, ArrowRight, Menu, X } from "lucide-react";
+import { Mail, Phone, Globe, MapPin, Check, ArrowRight, Menu, X, Loader2 } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
+import { submitContactLead } from "../lib/api";
 import { useMkt } from "./site/mkt-i18n";
 import { LangToggle } from "./site/LangToggle";
+import { BrandLogo } from "./site/BrandLogo";
 import { Seo } from "../ui/Seo";
 import { PAGES, localizedPath, breadcrumbLd, organizationLd, type Lang } from "../lib/seo";
 import "./site/buzup-site.css";
@@ -14,6 +16,9 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
   const lp = (p: string) => localizedPath(p, lang);
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
   const rootRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -37,24 +42,57 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
 
   const close = () => setOpen(false);
 
-  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = formRef.current;
-    if (!form) return;
-    let ok = true;
-    form.querySelectorAll<HTMLInputElement>("input[required]").forEach((inp) => {
-      const bad =
-        !inp.value.trim() ||
-        (inp.type === "email" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(inp.value));
-      inp.closest(".field")?.classList.toggle("err", bad);
-      if (bad) ok = false;
-    });
-    if (!ok) return;
-    setSent(true);
+    if (!form || submitting) return;
+    setServerError("");
+
+    const data = new FormData(form);
+    const get = (k: string) => String(data.get(k) ?? "").trim();
+    const name = get("name");
+    const email = get("email");
+
+    const nextErrors: { name?: string; email?: string } = {};
+    if (!name) nextErrors.name = t("Indique o seu nome.");
+    if (!email) nextErrors.email = t("Indique o seu email.");
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+      nextErrors.email = t("Email inválido. Verifique o endereço.");
+
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      form.querySelector<HTMLElement>(`[name="${Object.keys(nextErrors)[0]}"]`)?.focus();
+      return;
+    }
+    setErrors({});
+
+    setSubmitting(true);
+    try {
+      await submitContactLead({
+        source: "contact",
+        name,
+        email,
+        organization: get("org"),
+        phone: get("phone"),
+        profile: get("profile"),
+        message: get("message"),
+        locale: lang,
+        website: get("website"), // honeypot
+      });
+      setSent(true);
+    } catch (err) {
+      setServerError(
+        err instanceof Error && err.message
+          ? err.message
+          : t("Não foi possível enviar. Tente novamente ou escreva para sales@updigital.co.mz.")
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const clearErr = (e: React.FormEvent<HTMLInputElement>) =>
-    e.currentTarget.closest(".field")?.classList.remove("err");
+  const clearErr = (field: "name" | "email") =>
+    setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
   return (
     <div className="bz bz-contact" ref={rootRef}>
@@ -66,16 +104,12 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
           organizationLd(),
         ]}
       />
+      <a className="skip-link" href="#main">{t("Saltar para o conteúdo")}</a>
       {/* NAV */}
       <nav className="nav scrolled">
         <div className="wrap nav-inner">
           <Link to={lp("/")} className="brand" aria-label="BuzUp">
-            <svg className="nfc" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 8.5a8 8 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M10 6.5a12 12 0 0 1 0 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M14 4.5a16 16 0 0 1 0 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span><b>Buz</b><span className="up">Up</span></span>
+            <BrandLogo />
           </Link>
           <div className="nav-links">
             <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
@@ -103,7 +137,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
       <div className={`drawer${open ? " open" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
         <div className="drawer-panel">
           <div className="row">
-            <span className="brand"><b>Buz</b><span className="up">Up</span></span>
+            <span className="brand"><BrandLogo /></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
           <Link to={`${lp("/")}#funcionalidades`} onClick={close}>{t("Funcionalidades")}</Link>
@@ -116,7 +150,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
       </div>
 
       {/* CONTACT */}
-      <main className="ct">
+      <main className="ct" id="main" tabIndex={-1}>
         <div className="wrap ct-grid">
           {/* left */}
           <div className="ct-aside reveal">
@@ -154,38 +188,57 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
             <div className={`ct-success${sent ? " show" : ""}`}>
               <div className="ico"><Check /></div>
               <h3>{t("Mensagem enviada!")}</h3>
-              <p>{t("Obrigado. A equipa BuzUp entrará em contacto em breve.")}</p>
+              <p>{t("A equipa BuzUp responde em menos de 24 horas, normalmente no mesmo dia útil.")}</p>
             </div>
 
             {!sent && (
               <form className="ct-form" ref={formRef} onSubmit={onSubmit} noValidate>
+                {/* Honeypot — hidden from users + assistive tech; bots fill it. */}
+                <div className="hp-field" aria-hidden="true">
+                  <label htmlFor="website">Website</label>
+                  <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" />
+                </div>
+
                 <div className="fields">
-                  <div className="field">
+                  <div className={`field${errors.name ? " err" : ""}`}>
                     <label htmlFor="name">{t("Nome")}</label>
-                    <input type="text" id="name" name="name" placeholder={t("O seu nome")} required onInput={clearErr} />
+                    <input
+                      type="text" id="name" name="name" placeholder={t("O seu nome")} required
+                      aria-invalid={errors.name ? true : undefined}
+                      aria-describedby={errors.name ? "err-name" : undefined}
+                      onInput={() => clearErr("name")}
+                    />
+                    {errors.name && <span className="err-msg" id="err-name" role="alert">{errors.name}</span>}
                   </div>
                   <div className="field">
                     <label htmlFor="org">{t("Empresa / Organização")}</label>
-                    <input type="text" id="org" name="org" placeholder={t("Nome da organização")} onInput={clearErr} />
+                    <input type="text" id="org" name="org" placeholder={t("Nome da organização")} />
                   </div>
-                  <div className="field">
+                  <div className={`field${errors.email ? " err" : ""}`}>
                     <label htmlFor="email">{t("Email")}</label>
-                    <input type="email" id="email" name="email" placeholder={t("email@empresa.com")} required onInput={clearErr} />
+                    <input
+                      type="email" id="email" name="email" placeholder={t("email@empresa.com")} required
+                      inputMode="email" autoComplete="email"
+                      aria-invalid={errors.email ? true : undefined}
+                      aria-describedby={errors.email ? "err-email" : undefined}
+                      onInput={() => clearErr("email")}
+                    />
+                    {errors.email && <span className="err-msg" id="err-email" role="alert">{errors.email}</span>}
                   </div>
                   <div className="field">
                     <label htmlFor="phone">{t("Telefone")}</label>
-                    <input type="tel" id="phone" name="phone" placeholder="+258 ..." onInput={clearErr} />
+                    <input type="tel" id="phone" name="phone" placeholder="+258 ..." autoComplete="tel" />
                   </div>
                   <div className="field full">
                     <label htmlFor="profile">{t("Eu sou…")}</label>
-                    <select id="profile" name="profile">
+                    <select id="profile" name="profile" defaultValue="">
                       <option value="">{t("Selecione…")}</option>
-                      <option>{t("Passageiro")}</option>
-                      <option>{t("Operador de transporte")}</option>
-                      <option>{t("Município / Entidade pública")}</option>
-                      <option>{t("Parceiro / Ponto de recarga")}</option>
-                      <option>{t("Imprensa")}</option>
-                      <option>{t("Outro")}</option>
+                      <option value="passageiro">{t("Passageiro")}</option>
+                      <option value="operador">{t("Operador de transporte")}</option>
+                      <option value="municipio">{t("Município / Entidade pública")}</option>
+                      <option value="parceiro">{t("Parceiro / Ponto de recarga")}</option>
+                      <option value="imprensa">{t("Imprensa")}</option>
+                      <option value="outro">{t("Outro")}</option>
                     </select>
                   </div>
                   <div className="field full">
@@ -194,10 +247,17 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-lg submit">
-                  {t("Enviar mensagem")} <ArrowRight />
+                {serverError && <p className="form-error" role="alert">{serverError}</p>}
+
+                <button type="submit" className="btn btn-primary btn-lg submit" disabled={submitting}>
+                  {submitting
+                    ? <>{t("A enviar…")} <Loader2 className="spin" /></>
+                    : <>{t("Enviar mensagem")} <ArrowRight /></>}
                 </button>
-                <p className="fine">{t("Ao enviar, concorda com a nossa")} <a href="#">{t("Política de Privacidade")}</a>.</p>
+                <p className="fine">
+                  {t("Ao enviar, concorda com a nossa")}{" "}
+                  <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Política de Privacidade")}</a>.
+                </p>
               </form>
             )}
           </div>
@@ -210,10 +270,7 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="foot-top">
             <div className="foot-brand">
               <span className="brand">
-                <svg className="nfc" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 8.5a8 8 0 0 1 0 7M10 6.5a12 12 0 0 1 0 11M14 4.5a16 16 0 0 1 0 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <span><b>Buz</b><span className="up">Up</span></span>
+                <BrandLogo tone="onDark" />
               </span>
               <p>{t("O transporte público de Moçambique, mais rápido, seguro e sem papel.")}</p>
             </div>
@@ -226,10 +283,10 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
             <div className="foot-col">
               <h5>{t("Empresa")}</h5>
-              <a href="#">{t("Sobre a UpDigital")}</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Sobre a UpDigital")}</a>
               <Link to={`${lp("/tarifas")}#operadores`}>{t("Operadores parceiros")}</Link>
-              <a href="#">{t("Carreiras")}</a>
-              <a href="#">{t("Imprensa")}</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Carreiras")}</a>
+              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BuzUp">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
@@ -237,12 +294,12 @@ export default function ContactPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
               <a href="tel:+258866930017">+258 86 693 0017</a>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">www.updigital.co.mz</a>
-              <a href="#">{t("Pontos de recarga")}</a>
+              <Link to={lp("/contacto")}>{t("Pontos de recarga")}</Link>
             </div>
           </div>
           <div className="foot-bottom">
             <span>{t("© 2026 BuzUp · UpDigital. Todos os direitos reservados.")}</span>
-            <a className="powered" href="#" aria-label="Powered by UpDigital">
+            <a className="powered" href="https://www.updigital.co.mz" target="_blank" rel="noopener" aria-label="Powered by UpDigital">
               <span className="pb-label">Powered by</span>
               <img src="/assets/up-digital-logo/up_digital_light.png" alt="UpDigital" />
             </a>

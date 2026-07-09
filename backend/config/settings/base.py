@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.agent_api.apps.AgentApiConfig",
     "apps.mobile_api.apps.MobileApiConfig",
+    "apps.leads.apps.LeadsConfig",
 ]
 
 MIDDLEWARE = [
@@ -184,7 +185,21 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {
+        "contact": config("CONTACT_THROTTLE_RATE", default="8/hour"),
+    },
 }
+
+# Email / lead notifications ------------------------------------------------
+# Dev defaults to the console backend so no SMTP is required to boot the stack.
+EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="BuzUp <no-reply@updigital.co.mz>")
+CONTACT_NOTIFY_EMAIL = config("CONTACT_NOTIFY_EMAIL", default="sales@updigital.co.mz")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "BuzUp API",

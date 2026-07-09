@@ -10,6 +10,7 @@ import PwaInstallPrompt from "./ui/PwaInstallPrompt";
 import LandingPage from "./public/LandingPage";
 import PricingPage from "./public/PricingPage";
 import ContactPage from "./public/ContactPage";
+import { PublicLayout } from "./public/site/PublicLayout";
 import LoginPage from "./auth/LoginPage";
 import AdminLayout from "./admin/AdminLayout";
 
@@ -88,12 +89,14 @@ function AppContent() {
       <PwaInstallPrompt />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<LandingPage lang="pt" />} />
-          <Route path="/tarifas" element={<PricingPage lang="pt" />} />
-          <Route path="/contacto" element={<ContactPage lang="pt" />} />
-          <Route path="/en" element={<LandingPage lang="en" />} />
-          <Route path="/en/tarifas" element={<PricingPage lang="en" />} />
-          <Route path="/en/contacto" element={<ContactPage lang="en" />} />
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage lang="pt" />} />
+            <Route path="/tarifas" element={<PricingPage lang="pt" />} />
+            <Route path="/contacto" element={<ContactPage lang="pt" />} />
+            <Route path="/en" element={<LandingPage lang="en" />} />
+            <Route path="/en/tarifas" element={<PricingPage lang="en" />} />
+            <Route path="/en/contacto" element={<ContactPage lang="en" />} />
+          </Route>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/bus/:vehicleUuid" element={<BusPaymentPage />} />

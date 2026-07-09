@@ -1,4 +1,4 @@
-const CACHE_NAME = "buzup-shell-v3";
+const CACHE_NAME = "buzup-shell-v5";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
@@ -7,6 +7,7 @@ const SHELL_ASSETS = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/assets/buzup-logo/buzup-logo.png",
+  "/assets/buzup-logo/buzup-logo-dark.png",
   "/assets/buzup-logo/buzup-mark.png",
   "/assets/up-digital-logo/up_digital_dark.png",
   "/assets/up-digital-logo/up_digital_light.png",

@@ -141,6 +141,26 @@ export async function apiOtpVerify(
   return res.json();
 }
 
+export interface ContactLeadPayload {
+  source: "contact" | "waitlist";
+  email: string;
+  name?: string;
+  organization?: string;
+  phone?: string;
+  profile?: string;
+  message?: string;
+  locale?: string;
+  /** Honeypot — must stay empty. Bots fill it; real users never see it. */
+  website?: string;
+}
+
+export async function submitContactLead(payload: ContactLeadPayload) {
+  return apiPublic("/api/public/contact/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function apiPublic(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,

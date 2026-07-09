@@ -18,7 +18,8 @@ RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
 COPY entrypoint.sh /usr/local/bin/backend-entrypoint
-RUN chmod +x /usr/local/bin/backend-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/backend-entrypoint \
+    && chmod +x /usr/local/bin/backend-entrypoint
 
 COPY . .
 

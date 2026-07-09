@@ -8,6 +8,8 @@ import {
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
 import { LangToggle } from "./site/LangToggle";
+import { BrandLogo } from "./site/BrandLogo";
+import { openWaitlist } from "./site/waitlist";
 import { Seo } from "../ui/Seo";
 import { PAGES, localizedPath, organizationLd, websiteLd, type Lang } from "../lib/seo";
 import "./site/buzup-site.css";
@@ -50,16 +52,12 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
   return (
     <div className="bz bz-home" ref={rootRef}>
       <Seo page={PAGES.landing} lang={lang} jsonLd={[organizationLd(), websiteLd()]} />
+      <a className="skip-link" href="#main">{t("Saltar para o conteúdo")}</a>
       {/* NAV */}
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <div className="wrap nav-inner">
           <Link to={lp("/")} className="brand" aria-label="BuzUp">
-            <svg className="nfc" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 8.5a8 8 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M10 6.5a12 12 0 0 1 0 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M14 4.5a16 16 0 0 1 0 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span><b>Buz</b><span className="up">Up</span></span>
+            <BrandLogo />
           </Link>
           <div className="nav-links">
             <a href="#funcionalidades">{t("Funcionalidades")}</a>
@@ -77,7 +75,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <LangToggle lang={lang} ptPath="/" enPath="/en" />
             </div>
             <Link to="/login" className="btn btn-ghost btn-sm">{t("Entrar")}</Link>
-            <a href="#download" className="btn btn-primary btn-sm">{t("Baixar a app")}</a>
+            <button type="button" className="btn btn-primary btn-sm" onClick={openWaitlist}>{t("Baixar a app")}</button>
             <button className="menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu /></button>
           </div>
         </div>
@@ -87,7 +85,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <div className={`drawer${open ? " open" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
         <div className="drawer-panel">
           <div className="row">
-            <span className="brand"><b>Buz</b><span className="up">Up</span></span>
+            <span className="brand"><BrandLogo /></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
           <a href="#funcionalidades" onClick={close}>{t("Funcionalidades")}</a>
@@ -96,32 +94,34 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
           <Link to={lp("/tarifas")} onClick={close}>{t("Tarifas")}</Link>
           <Link to={lp("/contacto")} onClick={close}>{t("Contacto")}</Link>
           <Link to="/login" className="btn btn-ghost" onClick={close}>{t("Entrar")}</Link>
-          <a href="#download" className="btn btn-primary" onClick={close}>{t("Baixar a app")}</a>
+          <button type="button" className="btn btn-primary" onClick={() => { close(); openWaitlist(); }}>{t("Baixar a app")}</button>
         </div>
       </div>
 
       <span id="top" />
 
       {/* HERO */}
-      <header className="hero">
+      <header className="hero" id="main" tabIndex={-1}>
         <div className="wrap hero-grid">
           <div className="hero-copy">
             <span className="eyebrow reveal">{t("Transporte público sem contacto")}</span>
             <h1 className="reveal d1">{t("Pague a sua viagem com um")} <span className="accent">{t("simples toque.")}</span></h1>
             <p className="sub reveal d2">{t("A BuzUp é a forma mais rápida e segura de pagar o transporte público em Moçambique. Recarregue, toque e viaje — sem filas, sem trocos, sem papel.")}</p>
             <div className="hero-actions reveal d2">
-              <a href="#download" className="btn btn-primary">{t("Baixar a app")} <ArrowRight /></a>
+              <button type="button" className="btn btn-primary" onClick={openWaitlist}>{t("Baixar a app")} <ArrowRight /></button>
               <a href="#como-funciona" className="btn btn-ghost">{t("Ver como funciona")}</a>
             </div>
             <div className="stores reveal d3">
-              <a href="#download" className="store">
+              <button type="button" className="store" onClick={openWaitlist}>
                 <Apple />
-                <span><small>{t("Disponível na")}</small><strong>App Store</strong></span>
-              </a>
-              <a href="#download" className="store">
+                <span><small>{t("Em breve na")}</small><strong>App Store</strong></span>
+                <span className="soon">{t("Em breve")}</span>
+              </button>
+              <button type="button" className="store" onClick={openWaitlist}>
                 <Play />
-                <span><small>{t("Disponível no")}</small><strong>Google Play</strong></span>
-              </a>
+                <span><small>{t("Em breve no")}</small><strong>Google Play</strong></span>
+                <span className="soon">{t("Em breve")}</span>
+              </button>
             </div>
           </div>
           <div className="hero-visual reveal d2">
@@ -187,7 +187,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section how" id="como-funciona">
         <div className="wrap how-grid">
           <div className="how-visual reveal">
-            <img src="/assets/buzup/validator-pole.png" alt="Validador BuzUp a confirmar viagem válida com cartão sem contacto" width={753} height={1402} style={{ height: "534px" }} />
+            <img src="/assets/buzup/validator-pole.png" alt="Validador BuzUp a confirmar viagem válida com cartão sem contacto" width={753} height={1402} style={{ height: "534px" }} loading="lazy" decoding="async" />
           </div>
           <div className="how-copy">
             <div className="head reveal" style={{ marginBottom: "34px" }}>
@@ -233,7 +233,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </ul>
           </div>
           <div className="app-visual reveal d1">
-            <img src="/assets/buzup/phone-float.png" alt="App BuzUp com saldo, transações e compra de bilhetes" width={1024} height={1536} style={{ height: "699px" }} />
+            <img src="/assets/buzup/phone-float.png" alt="App BuzUp com saldo, transações e compra de bilhetes" width={1024} height={1536} style={{ height: "699px" }} loading="lazy" decoding="async" />
           </div>
         </div>
       </section>
@@ -242,7 +242,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section cardsec" id="cartao">
         <div className="wrap cardsec-grid">
           <div className="cardsec-visual reveal">
-            <img src="/assets/buzup/validator-card.png" alt="Ecossistema BuzUp: app, validador e cartão sem contacto" width={1024} height={1536} style={{ height: "636px" }} />
+            <img src="/assets/buzup/validator-card.png" alt="Ecossistema BuzUp: app, validador e cartão sem contacto" width={1024} height={1536} style={{ height: "636px" }} loading="lazy" decoding="async" />
           </div>
           <div className="cardsec-copy">
             <div className="head reveal" style={{ marginBottom: "6px" }}>
@@ -257,7 +257,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <span className="chip reveal d3"><Users /> {t("Para toda a família")}</span>
             </div>
             <div style={{ marginTop: "32px" }} className="reveal d2">
-              <a href="#download" className="btn btn-primary">{t("Obter o cartão")} <ArrowRight /></a>
+              <Link to={lp("/contacto")} className="btn btn-primary">{t("Obter o cartão")} <ArrowRight /></Link>
             </div>
           </div>
         </div>
@@ -338,8 +338,8 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <p>{t("Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.")}</p>
             </div>
             <div className="cta-actions">
-              <a href="#" className="btn btn-white"><Apple /> {t("Descarregar para iOS")}</a>
-              <a href="#" className="btn btn-white"><Play /> {t("Descarregar para Android")}</a>
+              <button type="button" className="btn btn-white" onClick={openWaitlist}><Apple /> {t("Descarregar para iOS")}</button>
+              <button type="button" className="btn btn-white" onClick={openWaitlist}><Play /> {t("Descarregar para Android")}</button>
               <Link to={lp("/contacto")} className="btn btn-ghost on-dark">{t("Falar com a equipa BuzUp")}</Link>
             </div>
           </div>
@@ -352,10 +352,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="foot-top">
             <div className="foot-brand">
               <span className="brand">
-                <svg className="nfc" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 8.5a8 8 0 0 1 0 7M10 6.5a12 12 0 0 1 0 11M14 4.5a16 16 0 0 1 0 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <span><b>Buz</b><span className="up">Up</span></span>
+                <BrandLogo tone="onDark" />
               </span>
               <p>{t("O transporte público de Moçambique, mais rápido, seguro e sem papel.")}</p>
             </div>
@@ -368,10 +365,10 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
             <div className="foot-col">
               <h5>{t("Empresa")}</h5>
-              <a href="#">{t("Sobre a UpDigital")}</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Sobre a UpDigital")}</a>
               <Link to={`${lp("/tarifas")}#operadores`}>{t("Operadores parceiros")}</Link>
-              <a href="#">{t("Carreiras")}</a>
-              <a href="#">{t("Imprensa")}</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Carreiras")}</a>
+              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BuzUp">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
@@ -379,12 +376,12 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
               <a href="tel:+258866930017">+258 86 693 0017</a>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">www.updigital.co.mz</a>
-              <a href="#">{t("Pontos de recarga")}</a>
+              <Link to={lp("/contacto")}>{t("Pontos de recarga")}</Link>
             </div>
           </div>
           <div className="foot-bottom">
             <span>{t("© 2026 BuzUp · UpDigital. Todos os direitos reservados.")}</span>
-            <a className="powered" href="#" aria-label="Powered by UpDigital">
+            <a className="powered" href="https://www.updigital.co.mz" target="_blank" rel="noopener" aria-label="Powered by UpDigital">
               <span className="pb-label">Powered by</span>
               <img src="/assets/up-digital-logo/up_digital_light.png" alt="UpDigital" />
             </a>

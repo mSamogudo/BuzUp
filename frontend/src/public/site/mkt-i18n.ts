@@ -261,6 +261,31 @@ export const MKT_PT_EN: Record<string, string> = {
   "email@empresa.com": "email@company.com",
   "Conte-nos como podemos ajudar…": "Tell us how we can help…",
 
+  /* a11y */
+  "Saltar para o conteúdo": "Skip to content",
+
+  /* contact — validation & states */
+  "A equipa BuzUp responde em menos de 24 horas, normalmente no mesmo dia útil.": "The BuzUp team replies within 24 hours, usually the same business day.",
+  "Indique o seu nome.": "Please enter your name.",
+  "Indique o seu email.": "Please enter your email.",
+  "Email inválido. Verifique o endereço.": "Invalid email. Please check the address.",
+  "Não foi possível enviar. Tente novamente ou escreva para sales@updigital.co.mz.": "Couldn't send. Please try again or write to sales@updigital.co.mz.",
+  "A enviar…": "Sending…",
+
+  /* app waitlist */
+  "Em breve": "Coming soon",
+  "Em breve na": "Coming soon to",
+  "Em breve no": "Coming soon to",
+  "Fechar": "Close",
+  "opcional": "optional",
+  "A app BuzUp está quase a chegar.": "The BuzUp app is almost here.",
+  "Deixe o seu email e será dos primeiros a saber quando estiver disponível na App Store e Google Play.": "Leave your email and be among the first to know when it lands on the App Store and Google Play.",
+  "Avisem-me": "Notify me",
+  "A registar…": "Signing up…",
+  "Está na lista!": "You're on the list!",
+  "Avisamos assim que a app BuzUp estiver disponível para descarregar.": "We'll let you know the moment the BuzUp app is ready to download.",
+  "Não foi possível registar. Tente novamente.": "Couldn't sign you up. Please try again.",
+
   /* titles */
   "BuzUp — Pague a sua viagem com um toque": "BuzUp — Pay for your ride with a tap",
   "BuzUp — Tarifas e planos": "BuzUp — Pricing and plans",

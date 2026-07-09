@@ -4,6 +4,8 @@ import { Check, Minus, ArrowRight, Menu, X } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
 import { LangToggle } from "./site/LangToggle";
+import { BrandLogo } from "./site/BrandLogo";
+import { openWaitlist } from "./site/waitlist";
 import { Seo } from "../ui/Seo";
 import { PAGES, localizedPath, breadcrumbLd, faqLd, type Lang } from "../lib/seo";
 import "./site/buzup-site.css";
@@ -61,16 +63,12 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
           faqLd(PRICING_FAQ.map((f) => ({ q: t(f.q), a: t(f.a) }))),
         ]}
       />
+      <a className="skip-link" href="#main">{t("Saltar para o conteúdo")}</a>
       {/* NAV */}
       <nav className="nav scrolled">
         <div className="wrap nav-inner">
           <Link to={lp("/")} className="brand" aria-label="BuzUp">
-            <svg className="nfc" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 8.5a8 8 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M10 6.5a12 12 0 0 1 0 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              <path d="M14 4.5a16 16 0 0 1 0 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span><b>Buz</b><span className="up">Up</span></span>
+            <BrandLogo />
           </Link>
           <div className="nav-links">
             <Link to={`${lp("/")}#funcionalidades`}>{t("Funcionalidades")}</Link>
@@ -88,7 +86,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
               <LangToggle lang={lang} ptPath="/tarifas" enPath="/en/tarifas" />
             </div>
             <Link to={lp("/contacto")} className="btn btn-ghost btn-sm">{t("Falar com vendas")}</Link>
-            <Link to={`${lp("/")}#download`} className="btn btn-primary btn-sm">{t("Baixar a app")}</Link>
+            <button type="button" className="btn btn-primary btn-sm" onClick={openWaitlist}>{t("Baixar a app")}</button>
             <button className="menu-btn" onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu /></button>
           </div>
         </div>
@@ -98,7 +96,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
       <div className={`drawer${open ? " open" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
         <div className="drawer-panel">
           <div className="row">
-            <span className="brand"><b>Buz</b><span className="up">Up</span></span>
+            <span className="brand"><BrandLogo /></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
           <Link to={`${lp("/")}#funcionalidades`} onClick={close}>{t("Funcionalidades")}</Link>
@@ -106,12 +104,12 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
           <Link to={`${lp("/")}#cartao`} onClick={close}>{t("Cartão")}</Link>
           <Link to={lp("/tarifas")} onClick={close}>{t("Tarifas")}</Link>
           <Link to={lp("/contacto")} onClick={close}>{t("Contacto")}</Link>
-          <Link to={`${lp("/")}#download`} className="btn btn-primary" onClick={close}>{t("Baixar a app")}</Link>
+          <button type="button" className="btn btn-primary" onClick={() => { close(); openWaitlist(); }}>{t("Baixar a app")}</button>
         </div>
       </div>
 
       {/* PAGE HERO */}
-      <header className="pagehero">
+      <header className="pagehero" id="main" tabIndex={-1}>
         <div className="wrap">
           <span className="eyebrow reveal">{t("Tarifas e planos")}</span>
           <h1 className="reveal d1">{t("Preços simples para")} <span className="accent">{t("passageiros e operadores.")}</span></h1>
@@ -301,10 +299,7 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
           <div className="foot-top">
             <div className="foot-brand">
               <span className="brand">
-                <svg className="nfc" width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 8.5a8 8 0 0 1 0 7M10 6.5a12 12 0 0 1 0 11M14 4.5a16 16 0 0 1 0 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <span><b>Buz</b><span className="up">Up</span></span>
+                <BrandLogo tone="onDark" />
               </span>
               <p>{t("O transporte público de Moçambique, mais rápido, seguro e sem papel.")}</p>
             </div>
@@ -317,10 +312,10 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
             <div className="foot-col">
               <h5>{t("Empresa")}</h5>
-              <a href="#">{t("Sobre a UpDigital")}</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Sobre a UpDigital")}</a>
               <a href="#operadores">{t("Operadores parceiros")}</a>
-              <a href="#">{t("Carreiras")}</a>
-              <a href="#">{t("Imprensa")}</a>
+              <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">{t("Carreiras")}</a>
+              <a href="mailto:sales@updigital.co.mz?subject=Imprensa%20BuzUp">{t("Imprensa")}</a>
             </div>
             <div className="foot-col">
               <h5>{t("Suporte")}</h5>
@@ -328,12 +323,12 @@ export default function PricingPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
               <a href="tel:+258866930017">+258 86 693 0017</a>
               <a href="https://www.updigital.co.mz" target="_blank" rel="noopener">www.updigital.co.mz</a>
-              <a href="#">{t("Pontos de recarga")}</a>
+              <Link to={lp("/contacto")}>{t("Pontos de recarga")}</Link>
             </div>
           </div>
           <div className="foot-bottom">
             <span>{t("© 2026 BuzUp · UpDigital. Todos os direitos reservados.")}</span>
-            <a className="powered" href="#" aria-label="Powered by UpDigital">
+            <a className="powered" href="https://www.updigital.co.mz" target="_blank" rel="noopener" aria-label="Powered by UpDigital">
               <span className="pb-label">Powered by</span>
               <img src="/assets/up-digital-logo/up_digital_light.png" alt="UpDigital" />
             </a>

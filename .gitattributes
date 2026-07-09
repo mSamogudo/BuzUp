@@ -1,0 +1,3 @@
+# Force LF on shell scripts so Docker Linux containers can exec them
+*.sh text eol=lf
+entrypoint.sh text eol=lf

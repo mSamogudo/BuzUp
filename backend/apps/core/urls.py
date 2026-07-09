@@ -21,6 +21,7 @@ urlpatterns = [
     path("", include("apps.reports.api.urls")),
     path("", include("apps.packages.api.urls")),
     path("", include("apps.pos.api.urls")),
+    path("", include("apps.leads.api.urls")),
     path("", include("apps.users.api.urls_admin")),
     path("agent/", include("apps.agent_api.urls")),
     path("mobile/", include("apps.mobile_api.urls")),

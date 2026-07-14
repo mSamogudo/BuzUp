@@ -135,7 +135,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Vários cartões, uma só conta.": "Several cards, one account.",
 
   /* home — cta */
-  "Comece a viajar com a BusUp hoje.": "Start travelling with BusUp today.",
+  "Seja dos primeiros a viajar com a BusUp.": "Be among the first to travel with BusUp.",
   "Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.": "Join thousands of passengers who've swapped change for a simple tap.",
   "Descarregar para iOS": "Download for iOS",
   "Descarregar para Android": "Download for Android",

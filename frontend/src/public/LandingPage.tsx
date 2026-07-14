@@ -2,8 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Wallet, Ticket, Activity, Timer, Smartphone, Leaf,
-  Zap, RefreshCw, ShieldCheck, Users, Briefcase, GraduationCap,
-  Bus, Building2, MapPin, Check, Apple, Play, Menu, X,
+  Zap, RefreshCw, ShieldCheck, Users, Check, Apple, Play, Menu, X,
 } from "lucide-react";
 import { useUi } from "../ui/UiPreferences";
 import { useMkt } from "./site/mkt-i18n";
@@ -147,15 +146,15 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
         <div className="wrap trust-grid">
           <div className="trust-item reveal">
             <div className="ic"><Timer /></div>
-            <div><h4>{t("Menos de 1 segundo")}</h4><p>{t("por validação a bordo, com tecnologia sem contacto.")}</p></div>
+            <div><strong>{t("Menos de 1 segundo")}</strong><p>{t("por validação a bordo, com tecnologia sem contacto.")}</p></div>
           </div>
           <div className="trust-item reveal d1">
             <div className="ic"><Smartphone /></div>
-            <div><h4>{t("Recargas 24/7")}</h4><p>{t("adicione saldo a qualquer hora, direto do telemóvel.")}</p></div>
+            <div><strong>{t("Recargas 24/7")}</strong><p>{t("adicione saldo a qualquer hora, direto do telemóvel.")}</p></div>
           </div>
           <div className="trust-item reveal d2">
             <div className="ic"><Leaf /></div>
-            <div><h4>{t("100% sem papel")}</h4><p>{t("bilhetes digitais e histórico sempre consigo.")}</p></div>
+            <div><strong>{t("100% sem papel")}</strong><p>{t("bilhetes digitais e histórico sempre consigo.")}</p></div>
           </div>
         </div>
       </section>
@@ -201,27 +200,27 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             <img src="/assets/buzup/validator-pole.png" alt="Validador BusUp a confirmar uma viagem válida com cartão sem contacto" width={1086} height={1448} loading="lazy" decoding="async" />
           </div>
           <div className="how-copy">
-            <div className="head reveal" style={{ marginBottom: "34px" }}>
+            <div className="head reveal mb-34">
               <h2>{t("Comece a viajar em quatro passos.")}</h2>
             </div>
-            <div className="steps">
-              <div className="step reveal">
+            <ol className="steps">
+              <li className="step reveal">
                 <div className="num">1</div>
                 <div><h3>{t("Crie a sua conta")}</h3><p>{t("Descarregue a app BusUp e registe-se em segundos, direto do telemóvel.")}</p></div>
-              </div>
-              <div className="step reveal d1">
+              </li>
+              <li className="step reveal d1">
                 <div className="num">2</div>
                 <div><h3>{t("Recarregue o saldo")}</h3><p>{t("Carregue por M-Pesa, e-Mola, cartão bancário ou nos pontos BusUp.")}</p></div>
-              </div>
-              <div className="step reveal d2">
+              </li>
+              <li className="step reveal d2">
                 <div className="num">3</div>
                 <div><h3>{t("Toque para viajar")}</h3><p>{t("Aproxime o cartão ou o telemóvel do validador a bordo. Viagem válida!")}</p></div>
-              </div>
-              <div className="step reveal d3">
+              </li>
+              <li className="step reveal d3">
                 <div className="num">4</div>
                 <div><h3>{t("Acompanhe tudo")}</h3><p>{t("Veja viagens, saldo e bilhetes em tempo real, sempre na palma da mão.")}</p></div>
-              </div>
-            </div>
+              </li>
+            </ol>
           </div>
         </div>
       </section>
@@ -230,7 +229,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section" id="app">
         <div className="wrap app-grid">
           <div className="app-copy">
-            <div className="head reveal" style={{ marginBottom: "6px" }}>
+            <div className="head reveal mb-6">
               <h2>{t("Toda a sua mobilidade numa só app.")}</h2>
               <p>{t("Saldo, recargas, bilhetes e histórico — uma experiência simples, rápida e elegante, feita para o dia a dia.")}</p>
             </div>
@@ -254,7 +253,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             <img src="/assets/buzup/validator-card.png" alt="Validador e cartão BusUp sem contacto" width={1122} height={1402} loading="lazy" decoding="async" />
           </div>
           <div className="cardsec-copy">
-            <div className="head reveal" style={{ marginBottom: "6px" }}>
+            <div className="head reveal mb-6">
               <h2>{t("Sem smartphone? Sem problema.")}</h2>
               <p>{t("O cartão BusUp funciona de forma independente. Recarregue numa agência ou ponto BusUp e viaje com um único toque — acessível a todos os passageiros.")}</p>
             </div>
@@ -326,19 +325,19 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
           </div>
           <div className="seg-group reveal">
             <h3 className="seg-label">{t("Para passageiros")}</h3>
-            <div className="seg-grid">
-              <div className="seg reveal"><div className="ic"><Briefcase /></div><div><strong>{t("Trabalhadores")}</strong><span>{t("Deslocações diárias sem filas.")}</span></div></div>
-              <div className="seg reveal d1"><div className="ic"><GraduationCap /></div><div><strong>{t("Estudantes")}</strong><span>{t("Tarifas e bilhetes acessíveis.")}</span></div></div>
-              <div className="seg reveal d2"><div className="ic"><MapPin /></div><div><strong>{t("Turistas")}</strong><span>{t("Viaje na cidade sem complicações.")}</span></div></div>
-              <div className="seg reveal d3"><div className="ic"><Users /></div><div><strong>{t("Famílias")}</strong><span>{t("Vários cartões, uma só conta.")}</span></div></div>
-            </div>
+            <ul className="seg-pills">
+              <li className="seg-pill">{t("Trabalhadores")}</li>
+              <li className="seg-pill">{t("Estudantes")}</li>
+              <li className="seg-pill">{t("Turistas")}</li>
+              <li className="seg-pill">{t("Famílias")}</li>
+            </ul>
           </div>
           <div className="seg-group reveal d1">
             <h3 className="seg-label">{t("Para operadores e cidades")}</h3>
-            <div className="seg-grid duo">
-              <div className="seg reveal"><div className="ic"><Bus /></div><div><strong>{t("Operadores")}</strong><span>{t("Receitas e frota sob controlo.")}</span></div></div>
-              <div className="seg reveal d1"><div className="ic"><Building2 /></div><div><strong>{t("Municípios")}</strong><span>{t("Transporte público modernizado.")}</span></div></div>
-            </div>
+            <ul className="seg-pills">
+              <li className="seg-pill">{t("Operadores")}</li>
+              <li className="seg-pill">{t("Municípios")}</li>
+            </ul>
           </div>
         </div>
       </section>
@@ -348,7 +347,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
         <div className="wrap">
           <div className="cta-card reveal">
             <div className="inner">
-              <h2>{t("Comece a viajar com a BusUp hoje.")}</h2>
+              <h2>{t("Seja dos primeiros a viajar com a BusUp.")}</h2>
               <p>{t("Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.")}</p>
             </div>
             <div className="cta-actions">

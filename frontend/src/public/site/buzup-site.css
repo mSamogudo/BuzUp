@@ -151,6 +151,9 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 /* ---------- section head ---------- */
 .bz .head{max-width:680px;margin-bottom:48px}
 .bz .head.center{margin-left:auto;margin-right:auto;text-align:center}
+/* tighter head gaps for sections whose following content carries its own top margin */
+.bz .head.mb-6{margin-bottom:6px}
+.bz .head.mb-34{margin-bottom:34px}
 .bz .head h2{font-size:clamp(30px,3.4vw,42px);margin:16px 0 0}
 .bz .head p{font-size:18px;color:var(--muted);margin-top:16px;font-weight:500}
 .bz-home .head{margin-bottom:56px}
@@ -185,7 +188,7 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .trust-item{display:flex;gap:16px;align-items:flex-start}
 .bz .trust-item .ic{flex:none;width:46px;height:46px;border-radius:13px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;color:var(--blue);box-shadow:var(--shadow-sm)}
 .bz .trust-item .ic svg{width:22px;height:22px}
-.bz .trust-item h4{font-size:19px;font-family:var(--font-display);font-weight:600}
+.bz .trust-item strong{display:block;font-size:19px;font-family:var(--font-display);font-weight:600}
 .bz .trust-item p{font-size:14.5px;color:var(--muted);font-weight:500;margin-top:2px}
 
 /* ---------- benefits ---------- */
@@ -197,7 +200,9 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .card:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:transparent}
 .bz .card .ic{width:54px;height:54px;border-radius:15px;background:linear-gradient(160deg,#EAF0FF,#DCE6FF);color:var(--blue);display:grid;place-items:center;margin-bottom:22px}
 .bz .card .ic svg{width:26px;height:26px}
-.bz .card h3{font-size:21px;font-weight:600}
+/* lock title baseline so cards whose title wraps to 2 lines don't push their
+   body copy onto a different baseline than single-line-title cards */
+.bz .card h3{font-size:21px;font-weight:600;min-height:2.16em}
 .bz .card p{color:var(--muted);font-size:15px;margin-top:10px;font-weight:500}
 
 /* ---------- how it works ---------- */
@@ -209,7 +214,7 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .how-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:60px;align-items:center;position:relative;z-index:2}
 .bz .how-visual{position:relative;display:flex;justify-content:center}
 .bz .how-visual img{width:72%;height:auto;max-height:534px;object-fit:contain;filter:drop-shadow(0 30px 70px rgba(0,0,0,.5));animation:bzfloaty 8s ease-in-out infinite}
-.bz .steps{display:flex;flex-direction:column;gap:8px}
+.bz .steps{list-style:none;display:flex;flex-direction:column;gap:8px}
 .bz .step{display:flex;gap:22px;padding:22px 4px;border-bottom:1px solid var(--line-light);position:relative}
 .bz .step:last-child{border-bottom:none}
 .bz .step .num{flex:none;width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);
@@ -224,11 +229,11 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .app-visual::before{content:"";position:absolute;inset:8% 6%;border-radius:40px;
   background:radial-gradient(circle at 50% 45%,rgba(0,105,233,.14),transparent 60%);z-index:0}
 .bz .app-visual img{width:88%;height:auto;max-height:699px;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 36px 70px rgba(6,18,47,.22));animation:bzfloaty 7.5s ease-in-out infinite}
-.bz .flist{display:flex;flex-direction:column;gap:14px;margin-top:30px}
-.bz .flist li{display:flex;gap:16px;align-items:flex-start;list-style:none;padding:16px 18px;border-radius:var(--radius-sm);
-  border:1px solid var(--line);background:#fff;transition:border-color .25s,transform .25s,box-shadow .25s}
-.bz .flist li:hover{border-color:transparent;transform:translateX(4px);box-shadow:var(--shadow)}
-.bz .flist .tick{flex:none;width:30px;height:30px;border-radius:9px;background:#EAF0FF;color:var(--blue);display:grid;place-items:center}
+/* de-boxed feature list (paired with the phone image) — deliberately NOT a card
+   grid, to break the icon-tile rhythm shared with benefits/segments */
+.bz .flist{list-style:none;display:flex;flex-direction:column;gap:20px;margin-top:30px}
+.bz .flist li{display:flex;gap:14px;align-items:flex-start}
+.bz .flist .tick{flex:none;width:28px;height:28px;border-radius:50%;background:#EAF0FF;color:var(--blue);display:grid;place-items:center}
 .bz .flist .tick svg{width:17px;height:17px}
 .bz .flist strong{font-weight:700;font-size:16px}
 .bz .flist span{display:block;color:var(--muted);font-size:14px;font-weight:500;margin-top:2px}
@@ -271,15 +276,9 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .seg-group + .seg-group{margin-top:34px}
 .bz .seg-label{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--muted);
   margin-bottom:16px;letter-spacing:0}
-.bz .seg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:18px}
-.bz .seg-grid.duo{max-width:740px}
-.bz .seg{display:flex;align-items:center;gap:16px;padding:22px 24px;border:1px solid var(--line);border-radius:var(--radius-sm);
-  background:#fff;transition:transform .25s,box-shadow .25s,border-color .25s}
-.bz .seg:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:transparent}
-.bz .seg .ic{flex:none;width:46px;height:46px;border-radius:13px;background:#EAF0FF;color:var(--blue);display:grid;place-items:center}
-.bz .seg .ic svg{width:23px;height:23px}
-.bz .seg strong{font-size:16.5px;font-weight:700;font-family:var(--font-display)}
-.bz .seg span{display:block;font-size:13.5px;color:var(--muted);font-weight:500;margin-top:1px}
+.bz .seg-pills{list-style:none;display:flex;flex-wrap:wrap;gap:12px}
+.bz .seg-pill{display:inline-flex;align-items:center;padding:11px 20px;border-radius:999px;
+  border:1px solid var(--line);background:#fff;font-family:var(--font-display);font-weight:600;font-size:16px}
 
 /* ---------- page hero (pricing) ---------- */
 .bz .pagehero{position:relative;padding:150px 0 70px;text-align:center;overflow:hidden}
@@ -537,10 +536,9 @@ html[data-theme="dark"] .bz .nav-links a:hover,
 html[data-theme="dark"] .bz .nav-links a.active{color:#fff}
 html[data-theme="dark"] .bz .store,
 html[data-theme="dark"] .bz .card,
-html[data-theme="dark"] .bz .flist li,
 html[data-theme="dark"] .bz .chip,
 html[data-theme="dark"] .bz .plan,
-html[data-theme="dark"] .bz .seg,
+html[data-theme="dark"] .bz .seg-pill,
 html[data-theme="dark"] .bz .ticket,
 html[data-theme="dark"] .bz .ctable,
 html[data-theme="dark"] .bz .faq__item,
@@ -551,7 +549,6 @@ html[data-theme="dark"] .bz .plan.feat{background:#0A1530}
 html[data-theme="dark"] .bz .card .ic{background:linear-gradient(160deg,#16264F,#10204A);color:#9CC0FF}
 html[data-theme="dark"] .bz .trust-item .ic,
 html[data-theme="dark"] .bz .flist .tick,
-html[data-theme="dark"] .bz .seg .ic,
 html[data-theme="dark"] .bz .methods .ic{background:#16264F;color:#9CC0FF}
 html[data-theme="dark"] .bz .eyebrow{color:#7FA8FF}
 html[data-theme="dark"] .bz .assure .chip{background:var(--surface)}

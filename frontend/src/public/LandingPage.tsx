@@ -73,7 +73,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             <BrandLogo tone="auto" />
           </Link>
           <div className="nav-links">
-            <a href="#funcionalidades">{t("Funcionalidades")}</a>
             <a href="#como-funciona">{t("Como funciona")}</a>
             <a href="#cartao">{t("Cartão")}</a>
             <Link to={lp("/tarifas")}>{t("Tarifas")}</Link>
@@ -101,7 +100,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             <span className="brand"><BrandLogo tone="auto" /></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
-          <a href="#funcionalidades" onClick={close}>{t("Funcionalidades")}</a>
           <a href="#como-funciona" onClick={close}>{t("Como funciona")}</a>
           <a href="#cartao" onClick={close}>{t("Cartão")}</a>
           <Link to={lp("/tarifas")} onClick={close}>{t("Tarifas")}</Link>

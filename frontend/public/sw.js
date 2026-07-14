@@ -1,4 +1,4 @@
-const CACHE_NAME = "buzup-shell-v6";
+const CACHE_NAME = "buzup-shell-v7";
 const SHELL_ASSETS = [
   "/",
   "/index.html",

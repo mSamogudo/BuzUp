@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Wallet, Ticket, Activity, Timer, Smartphone, Leaf,
@@ -29,9 +29,23 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    // Content is visible by default. Opt into the hide-then-reveal ONLY on a real,
+    // interactive browser — never under react-snap prerender (headless), automation,
+    // or when IntersectionObserver is missing — so the static HTML and slow/no-JS
+    // clients always ship visible content. Added pre-paint and imperatively (no React
+    // re-render) so there's no visible flash and it never clobbers the observer's
+    // `.in` classes.
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const canReveal =
+      typeof window !== "undefined" &&
+      !navigator.webdriver &&
+      !/HeadlessChrome/i.test(ua) &&
+      "IntersectionObserver" in window;
+    if (!canReveal) return;
+    root.classList.add("js-reveal");
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((en) => {
@@ -112,20 +126,18 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="#como-funciona" className="btn btn-ghost">{t("Ver como funciona")}</a>
             </div>
             <div className="stores reveal d3">
-              <button type="button" className="store" onClick={openWaitlist}>
+              <button type="button" className="store soon" onClick={openWaitlist} aria-label={`${t("Em breve na")} App Store — ${t("inscreva-se para ser avisado")}`}>
                 <Apple />
                 <span><small>{t("Em breve na")}</small><strong>App Store</strong></span>
-                <span className="soon">{t("Em breve")}</span>
               </button>
-              <button type="button" className="store" onClick={openWaitlist}>
+              <button type="button" className="store soon" onClick={openWaitlist} aria-label={`${t("Em breve no")} Google Play — ${t("inscreva-se para ser avisado")}`}>
                 <Play />
                 <span><small>{t("Em breve no")}</small><strong>Google Play</strong></span>
-                <span className="soon">{t("Em breve")}</span>
               </button>
             </div>
           </div>
           <div className="hero-visual reveal d2">
-            <img src="/assets/buzup/hero-person.png" alt="Agente BusUp apresenta a app e o cartão sem contacto" width={1086} height={1448} fetchPriority="high" decoding="async" />
+            <img src="/assets/buzup/hero-person.png" alt="Agente BusUp apresenta a app e o cartão sem contacto" width={1086} height={1448} decoding="async" {...({ fetchpriority: "high" } as Record<string, string>)} />
           </div>
         </div>
       </header>
@@ -152,7 +164,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section" id="funcionalidades">
         <div className="wrap">
           <div className="head reveal">
-            <span className="eyebrow">{t("Porquê a BusUp")}</span>
             <h2>{t("Tudo o que a sua viagem precisa, num só toque.")}</h2>
             <p>{t("Uma plataforma completa para passageiros e operadores — do pagamento sem contacto ao controlo em tempo real.")}</p>
           </div>
@@ -191,7 +202,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
           </div>
           <div className="how-copy">
             <div className="head reveal" style={{ marginBottom: "34px" }}>
-              <span className="eyebrow on-dark">{t("Como funciona")}</span>
               <h2>{t("Comece a viajar em quatro passos.")}</h2>
             </div>
             <div className="steps">
@@ -221,7 +231,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
         <div className="wrap app-grid">
           <div className="app-copy">
             <div className="head reveal" style={{ marginBottom: "6px" }}>
-              <span className="eyebrow">{t("A app BusUp")}</span>
               <h2>{t("Toda a sua mobilidade numa só app.")}</h2>
               <p>{t("Saldo, recargas, bilhetes e histórico — uma experiência simples, rápida e elegante, feita para o dia a dia.")}</p>
             </div>
@@ -246,7 +255,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
           </div>
           <div className="cardsec-copy">
             <div className="head reveal" style={{ marginBottom: "6px" }}>
-              <span className="eyebrow">{t("O cartão BusUp")}</span>
               <h2>{t("Sem smartphone? Sem problema.")}</h2>
               <p>{t("O cartão BusUp funciona de forma independente. Recarregue numa agência ou ponto BusUp e viaje com um único toque — acessível a todos os passageiros.")}</p>
             </div>
@@ -267,7 +275,6 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section tarifas" id="tarifas">
         <div className="wrap">
           <div className="head center reveal">
-            <span className="eyebrow" style={{ justifyContent: "center" }}>{t("Tarifas e bilhetes")}</span>
             <h2>{t("Escolha o bilhete certo para si.")}</h2>
             <p>{t("Preços simples e transparentes. Sem taxas escondidas, sem surpresas.")}</p>
           </div>
@@ -307,7 +314,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <a href="#download" className="btn btn-ghost">{t("Comprar bilhete")}</a>
             </div>
           </div>
-          <p className="payg reveal d1">{t("Prefere pagar por viagem? A")} <b>{t("viagem avulsa")}</b> {t("custa apenas")} <b>20,00 MZN</b>{t(", debitada do seu saldo a cada validação.")}</p>
+          <p className="payg reveal d1">{t("Prefere pagar por viagem? A")} <b>{t("viagem avulsa")}</b> {t("custa apenas")} <b>8,00 MZN</b>{t(", debitada do seu saldo a cada validação.")}</p>
         </div>
       </section>
 
@@ -315,16 +322,23 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section" id="segmentos" style={{ background: "var(--soft)" }}>
         <div className="wrap">
           <div className="head center reveal">
-            <span className="eyebrow" style={{ justifyContent: "center" }}>{t("Para quem é")}</span>
             <h2>{t("Feita para toda a cidade em movimento.")}</h2>
           </div>
-          <div className="seg-grid">
-            <div className="seg reveal"><div className="ic"><Briefcase /></div><div><strong>{t("Trabalhadores")}</strong><span>{t("Deslocações diárias sem filas.")}</span></div></div>
-            <div className="seg reveal d1"><div className="ic"><GraduationCap /></div><div><strong>{t("Estudantes")}</strong><span>{t("Tarifas e bilhetes acessíveis.")}</span></div></div>
-            <div className="seg reveal d2"><div className="ic"><Bus /></div><div><strong>{t("Operadores")}</strong><span>{t("Receitas e frota sob controlo.")}</span></div></div>
-            <div className="seg reveal"><div className="ic"><Building2 /></div><div><strong>{t("Municípios")}</strong><span>{t("Transporte público modernizado.")}</span></div></div>
-            <div className="seg reveal d1"><div className="ic"><MapPin /></div><div><strong>{t("Turistas")}</strong><span>{t("Viaje na cidade sem complicações.")}</span></div></div>
-            <div className="seg reveal d2"><div className="ic"><Users /></div><div><strong>{t("Famílias")}</strong><span>{t("Vários cartões, uma só conta.")}</span></div></div>
+          <div className="seg-group reveal">
+            <h3 className="seg-label">{t("Para passageiros")}</h3>
+            <div className="seg-grid">
+              <div className="seg reveal"><div className="ic"><Briefcase /></div><div><strong>{t("Trabalhadores")}</strong><span>{t("Deslocações diárias sem filas.")}</span></div></div>
+              <div className="seg reveal d1"><div className="ic"><GraduationCap /></div><div><strong>{t("Estudantes")}</strong><span>{t("Tarifas e bilhetes acessíveis.")}</span></div></div>
+              <div className="seg reveal d2"><div className="ic"><MapPin /></div><div><strong>{t("Turistas")}</strong><span>{t("Viaje na cidade sem complicações.")}</span></div></div>
+              <div className="seg reveal d3"><div className="ic"><Users /></div><div><strong>{t("Famílias")}</strong><span>{t("Vários cartões, uma só conta.")}</span></div></div>
+            </div>
+          </div>
+          <div className="seg-group reveal d1">
+            <h3 className="seg-label">{t("Para operadores e cidades")}</h3>
+            <div className="seg-grid duo">
+              <div className="seg reveal"><div className="ic"><Bus /></div><div><strong>{t("Operadores")}</strong><span>{t("Receitas e frota sob controlo.")}</span></div></div>
+              <div className="seg reveal d1"><div className="ic"><Building2 /></div><div><strong>{t("Municípios")}</strong><span>{t("Transporte público modernizado.")}</span></div></div>
+            </div>
           </div>
         </div>
       </section>
@@ -338,8 +352,8 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
               <p>{t("Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.")}</p>
             </div>
             <div className="cta-actions">
-              <button type="button" className="btn btn-white" onClick={openWaitlist}><Apple /> {t("Descarregar para iOS")}</button>
-              <button type="button" className="btn btn-white" onClick={openWaitlist}><Play /> {t("Descarregar para Android")}</button>
+              <button type="button" className="btn btn-white" onClick={openWaitlist}><Apple /> {t("Avisem-me quando abrir (iOS)")}</button>
+              <button type="button" className="btn btn-white" onClick={openWaitlist}><Play /> {t("Avisem-me quando abrir (Android)")}</button>
               <Link to={lp("/contacto")} className="btn btn-ghost on-dark">{t("Falar com a equipa BusUp")}</Link>
             </div>
           </div>

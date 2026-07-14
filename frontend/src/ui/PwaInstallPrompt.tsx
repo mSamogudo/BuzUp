@@ -63,7 +63,7 @@ export default function PwaInstallPrompt() {
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
           <strong>Instalar BusUp</strong>
-          <span>Acesso rapido a partir do ecra inicial</span>
+          <span>Acesso rápido a partir do ecrã inicial</span>
         </div>
         <div className="pwa-install-actions">
           <button className="pwa-install-btn" onClick={install} type="button" disabled={installing}>
@@ -83,7 +83,7 @@ export default function PwaInstallPrompt() {
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
           <strong>Instalar BusUp</strong>
-          <span>Toque em Partilhar e depois "Adicionar ao Ecra Inicial"</span>
+          <span>Toque em Partilhar e depois "Adicionar ao Ecrã Inicial"</span>
         </div>
         <button className="pwa-install-close" onClick={dismiss} type="button" aria-label="Fechar">
           <X size={16} />

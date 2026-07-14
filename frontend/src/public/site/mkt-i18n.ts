@@ -120,6 +120,7 @@ export const MKT_PT_EN: Record<string, string> = {
   /* home — segmentos */
   "Para quem é": "Who it's for",
   "Feita para toda a cidade em movimento.": "Made for the whole city on the move.",
+  "Para operadores e cidades": "For operators and cities",
   "Trabalhadores": "Workers",
   "Deslocações diárias sem filas.": "Daily commutes without queues.",
   "Estudantes": "Students",
@@ -138,6 +139,8 @@ export const MKT_PT_EN: Record<string, string> = {
   "Junte-se a milhares de passageiros que já trocaram o troco por um simples toque.": "Join thousands of passengers who've swapped change for a simple tap.",
   "Descarregar para iOS": "Download for iOS",
   "Descarregar para Android": "Download for Android",
+  "Avisem-me quando abrir (iOS)": "Notify me at launch (iOS)",
+  "Avisem-me quando abrir (Android)": "Notify me at launch (Android)",
   "Falar com a equipa BusUp": "Talk to the BusUp team",
 
   /* pricing */
@@ -275,6 +278,7 @@ export const MKT_PT_EN: Record<string, string> = {
   "Em breve": "Coming soon",
   "Em breve na": "Coming soon to",
   "Em breve no": "Coming soon to",
+  "inscreva-se para ser avisado": "sign up to be notified",
   "Fechar": "Close",
   "opcional": "optional",
   "A app BusUp está quase a chegar.": "The BusUp app is almost here.",

@@ -50,7 +50,6 @@ html{scroll-behavior:smooth}
   font-family:var(--font-body);font-weight:600;font-size:12.5px;letter-spacing:.04em;
   text-transform:uppercase;color:var(--blue);display:inline-flex;align-items:center;gap:9px;
 }
-.bz .eyebrow.on-dark{color:#8FB4FF}
 .bz .section{padding:120px 0}
 .bz .section--tight{padding:84px 0}
 .bz .muted{color:var(--muted)}
@@ -149,7 +148,7 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .head h2{font-size:clamp(30px,3.4vw,42px);margin:16px 0 0}
 .bz .head p{font-size:18px;color:var(--muted);margin-top:16px;font-weight:500}
 .bz-home .head{margin-bottom:56px}
-.bz-home .head h2{font-size:clamp(31px,3.6vw,46px);margin:18px 0 0}
+.bz-home .head h2{font-size:clamp(31px,3.6vw,46px);margin:0}
 .bz-home .head p{margin-top:18px}
 
 /* ---------- hero (home) ---------- */
@@ -263,7 +262,11 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 .bz .payg b{color:var(--ink);font-weight:700}
 
 /* ---------- segments ---------- */
-.bz .seg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.bz .seg-group + .seg-group{margin-top:34px}
+.bz .seg-label{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--muted);
+  margin-bottom:16px;letter-spacing:0}
+.bz .seg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:18px}
+.bz .seg-grid.duo{max-width:740px}
 .bz .seg{display:flex;align-items:center;gap:16px;padding:22px 24px;border:1px solid var(--line);border-radius:var(--radius-sm);
   background:#fff;transition:transform .25s,box-shadow .25s,border-color .25s}
 .bz .seg:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:transparent}
@@ -424,11 +427,10 @@ html[data-theme="dark"] .bz .ico-moon{display:none}
 html[data-theme="dark"] .bz .form-error{background:rgba(229,72,77,.12);border-color:rgba(229,72,77,.4);color:#FF9B9E}
 html[data-theme="dark"] .bz .err-msg{color:#FF9B9E}
 
-/* ---------- store badge "Em breve" ---------- */
-.bz .store{position:relative}
-.bz .store .soon{position:absolute;top:-9px;right:-8px;font-size:10px;font-weight:800;letter-spacing:.04em;
-  text-transform:uppercase;color:#fff;background:var(--blue);padding:3px 8px;border-radius:999px;
-  box-shadow:0 6px 14px -6px rgba(0,105,233,.7)}
+/* ---------- store badge: coming-soon (pre-launch, opens waitlist) ---------- */
+.bz .store.soon{border-style:dashed;background:var(--soft)}
+.bz .store.soon small{color:var(--blue);font-weight:700}
+html[data-theme="dark"] .bz .store.soon{background:var(--soft)}
 
 /* ---------- waitlist dialog ---------- */
 .bz .wl-dialog{border:none;background:transparent;padding:0;max-width:min(92vw,460px);width:100%;color:var(--ink)}
@@ -491,9 +493,13 @@ html[data-theme="dark"] .bz .wl-ico.ok{background:rgba(31,157,85,.16)}
 .bz .powered img{height:26px;width:auto;display:block;transition:opacity .2s}
 .bz .powered:hover img{opacity:.82}
 
-/* ---------- reveal ---------- */
-.bz .reveal{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
-.bz .reveal.in{opacity:1;transform:none}
+/* ---------- reveal ----------
+   Visible by default (no-JS / react-snap prerender / slow-JS clients all render
+   content). The hidden start-state applies ONLY once .js-reveal is set on the
+   root by a real interactive browser, so content is never gated behind JS. */
+.bz .reveal{transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.bz.js-reveal .reveal{opacity:0;transform:translateY(28px)}
+.bz.js-reveal .reveal.in{opacity:1;transform:none}
 .bz .reveal.d1{transition-delay:.08s}
 .bz .reveal.d2{transition-delay:.16s}
 .bz .reveal.d3{transition-delay:.24s}
@@ -576,7 +582,7 @@ html[data-theme="dark"] .bz .field option{background:#0E1834;color:var(--ink)}
   .bz .how-grid,.bz .app-grid,.bz .cardsec-grid,.bz-home .cta-card{grid-template-columns:1fr;gap:36px}
   .bz .how-visual{order:-1}
   .bz .how-visual img,.bz .app-visual img{width:70%;max-width:420px}
-  .bz .plan-grid,.bz .seg-grid{grid-template-columns:1fr}
+  .bz .plan-grid{grid-template-columns:1fr}
   .bz .ticket-grid{grid-template-columns:repeat(2,1fr)}
   .bz .ctable{overflow-x:auto}
   .bz .ct-grid{grid-template-columns:1fr;gap:44px}

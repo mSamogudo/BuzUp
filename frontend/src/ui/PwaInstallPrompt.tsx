@@ -8,11 +8,14 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = "buzup_pwa_dismissed_at";
 const DISMISS_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const SCROLL_GATE_PX = 600;
+const TIME_GATE_MS = 8000;
 
 export default function PwaInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [visible, setVisible] = useState(false);
-  const [iosVisible, setIosVisible] = useState(false);
+  const [iosEligible, setIosEligible] = useState(false);
+  const [gate, setGate] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
@@ -22,18 +25,32 @@ export default function PwaInstallPrompt() {
 
     const handler = (e: Event) => {
       e.preventDefault();
-      const ev = e as BeforeInstallPromptEvent;
-      setDeferred(ev);
-      setVisible(true);
+      setDeferred(e as BeforeInstallPromptEvent);
     };
     window.addEventListener("beforeinstallprompt", handler);
+    if (isIos() && !isStandalone()) setIosEligible(true);
 
-    if (isIos() && !isStandalone()) {
-      const t = setTimeout(() => setIosVisible(true), 1500);
-      return () => { clearTimeout(t); window.removeEventListener("beforeinstallprompt", handler); };
-    }
+    // Don't interrupt the hero: reveal only after the user scrolls past it or
+    // after a grace period, whichever comes first — so the prompt never lands
+    // on first paint over the landing's own CTAs.
+    let opened = false;
+    const open = () => {
+      if (opened) return;
+      opened = true;
+      setGate(true);
+      window.removeEventListener("scroll", onScroll);
+    };
+    const onScroll = () => {
+      if (window.scrollY > SCROLL_GATE_PX) open();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    const timer = setTimeout(open, TIME_GATE_MS);
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(timer);
+    };
   }, []);
 
   async function install() {
@@ -43,7 +60,7 @@ export default function PwaInstallPrompt() {
       await deferred.prompt();
       const choice = await deferred.userChoice;
       if (choice.outcome === "accepted") {
-        setVisible(false);
+        setDeferred(null);
       } else {
         dismiss();
       }
@@ -53,21 +70,23 @@ export default function PwaInstallPrompt() {
 
   function dismiss() {
     localStorage.setItem(DISMISS_KEY, String(Date.now()));
-    setVisible(false);
-    setIosVisible(false);
+    setDismissed(true);
   }
 
-  if (visible) {
+  const showAndroid = gate && !dismissed && !!deferred;
+  const showIos = gate && !dismissed && iosEligible && !deferred;
+
+  if (showAndroid) {
     return (
-      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BusUp">
+      <div className="pwa-install-banner" role="dialog" aria-label="Adicionar a BusUp ao ecrã inicial">
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
-          <strong>Instalar BusUp</strong>
-          <span>Acesso rápido a partir do ecrã inicial</span>
+          <strong>BusUp no seu ecrã inicial</strong>
+          <span>Acesso rápido, sem esperar pela loja de apps</span>
         </div>
         <div className="pwa-install-actions">
           <button className="pwa-install-btn" onClick={install} type="button" disabled={installing}>
-            <Download size={14} /> Instalar
+            <Download size={14} /> Adicionar
           </button>
           <button className="pwa-install-close" onClick={dismiss} type="button" aria-label="Fechar">
             <X size={16} />
@@ -77,12 +96,12 @@ export default function PwaInstallPrompt() {
     );
   }
 
-  if (iosVisible) {
+  if (showIos) {
     return (
-      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BusUp">
+      <div className="pwa-install-banner" role="dialog" aria-label="Adicionar a BusUp ao ecrã inicial">
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
-          <strong>Instalar BusUp</strong>
+          <strong>BusUp no seu ecrã inicial</strong>
           <span>Toque em Partilhar e depois "Adicionar ao Ecrã Inicial"</span>
         </div>
         <button className="pwa-install-close" onClick={dismiss} type="button" aria-label="Fechar">

@@ -71,7 +71,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <div className="wrap nav-inner">
           <Link to={lp("/")} className="brand" aria-label="BusUp">
-            <BrandLogo />
+            <BrandLogo tone="auto" />
           </Link>
           <div className="nav-links">
             <a href="#funcionalidades">{t("Funcionalidades")}</a>
@@ -99,7 +99,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <div className={`drawer${open ? " open" : ""}`} onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
         <div className="drawer-panel">
           <div className="row">
-            <span className="brand"><BrandLogo /></span>
+            <span className="brand"><BrandLogo tone="auto" /></span>
             <button className="close-btn" onClick={close} aria-label="Fechar menu"><X /></button>
           </div>
           <a href="#funcionalidades" onClick={close}>{t("Funcionalidades")}</a>

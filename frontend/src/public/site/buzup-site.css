@@ -95,6 +95,12 @@ html{scroll-behavior:smooth}
 .bz .brand-logo{display:block;height:42px;width:auto;object-fit:contain}
 .bz .drawer-panel .brand-logo{height:40px}
 .bz .foot-brand .brand-logo{height:44px}
+/* theme-aware wordmark (nav/drawer): navy on light, white on dark, so it never
+   vanishes against the dark hero in dark mode */
+.bz .brand-logo-swap{display:inline-flex}
+.bz .brand-logo-swap .logo-dark{display:none}
+html[data-theme="dark"] .bz .brand-logo-swap .logo-light{display:none}
+html[data-theme="dark"] .bz .brand-logo-swap .logo-dark{display:block}
 .bz .brand .nfc{color:var(--blue)}
 .bz .brand b{color:var(--ink);font-weight:700}
 .bz .brand .up{color:var(--blue)}
@@ -597,6 +603,11 @@ html[data-theme="dark"] .bz .field option{background:#0E1834;color:var(--ink)}
   .bz .foot-top{grid-template-columns:1fr}
   .bz .hero h1{font-size:38px}
   .bz .cta-card{padding:44px 24px}
+  /* let the home CTA shrink into narrow phones: allow the grid track and its
+     children to go below min-content, and let the long CTA buttons wrap */
+  .bz-home .cta-card{grid-template-columns:minmax(0,1fr)}
+  .bz .cta-card .inner,.bz .cta-actions{min-width:0}
+  .bz .cta-actions .btn{white-space:normal;min-width:0;width:100%}
   .bz .ticket-grid{grid-template-columns:1fr}
   .bz .ct{padding-top:120px}
   .bz .ct-form-wrap{padding:26px}

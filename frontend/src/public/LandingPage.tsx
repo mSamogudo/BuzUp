@@ -125,7 +125,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </div>
           </div>
           <div className="hero-visual reveal d2">
-            <img src="/assets/buzup/hero-person.png" alt="Passageiro a usar a BusUp com telemóvel, validador e cartão sem contacto" width={927} height={1409} style={{ height: "766px" }} fetchPriority="high" decoding="async" />
+            <img src="/assets/buzup/hero-person.png" alt="Agente BusUp apresenta a app e o cartão sem contacto" width={1086} height={1448} fetchPriority="high" decoding="async" />
           </div>
         </div>
       </header>
@@ -187,7 +187,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section how" id="como-funciona">
         <div className="wrap how-grid">
           <div className="how-visual reveal">
-            <img src="/assets/buzup/validator-pole.png" alt="Validador BusUp a confirmar viagem válida com cartão sem contacto" width={801} height={1448} style={{ height: "534px" }} loading="lazy" decoding="async" />
+            <img src="/assets/buzup/validator-pole.png" alt="Validador BusUp a confirmar uma viagem válida com cartão sem contacto" width={1086} height={1448} loading="lazy" decoding="async" />
           </div>
           <div className="how-copy">
             <div className="head reveal" style={{ marginBottom: "34px" }}>
@@ -233,7 +233,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
             </ul>
           </div>
           <div className="app-visual reveal d1">
-            <img src="/assets/buzup/phone-float.png" alt="App BusUp com saldo, transações e compra de bilhetes" width={1023} height={1122} style={{ height: "699px" }} loading="lazy" decoding="async" />
+            <img src="/assets/buzup/phone-float.png" alt="App BusUp com saldo, transações e compra de bilhetes" width={1122} height={1402} loading="lazy" decoding="async" />
           </div>
         </div>
       </section>
@@ -242,7 +242,7 @@ export default function LandingPage({ lang = "pt" }: { lang?: Lang }) {
       <section className="section cardsec" id="cartao">
         <div className="wrap cardsec-grid">
           <div className="cardsec-visual reveal">
-            <img src="/assets/buzup/validator-card.png" alt="Ecossistema BusUp: app, validador e cartão sem contacto" width={984} height={1529} style={{ height: "636px" }} loading="lazy" decoding="async" />
+            <img src="/assets/buzup/validator-card.png" alt="Validador e cartão BusUp sem contacto" width={1122} height={1402} loading="lazy" decoding="async" />
           </div>
           <div className="cardsec-copy">
             <div className="head reveal" style={{ marginBottom: "6px" }}>

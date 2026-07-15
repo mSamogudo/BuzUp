@@ -615,3 +615,17 @@ html[data-theme="dark"] .bz .field option{background:#0E1834;color:var(--ink)}
   .bz .ct-form .fields{grid-template-columns:1fr}
   .bz .billing{flex-wrap:wrap;justify-content:center}
 }
+
+/* ---------- motion additions (balanced pass) ---------- */
+/* tactile press feedback on every CTA */
+.bz .btn:active{transform:translateY(0) scale(.97)}
+/* primary CTA arrow nudges forward on hover — directional affordance */
+.bz .btn svg{transition:transform .2s cubic-bezier(.2,.7,.2,1)}
+.bz .btn-primary:hover svg{transform:translateX(3px)}
+/* feature/trust icon tiles lift subtly with their card on hover */
+.bz .ic{transition:transform .3s cubic-bezier(.2,.7,.2,1),background .3s,color .3s,box-shadow .3s}
+.bz .card:hover .ic,.bz .trust-item:hover .ic{transform:translateY(-3px)}
+@media (prefers-reduced-motion:reduce){
+  .bz .btn svg,.bz .ic{transition:none}
+  .bz .btn-primary:hover svg,.bz .card:hover .ic,.bz .trust-item:hover .ic{transform:none}
+}

@@ -11,7 +11,11 @@ export const SITE_URL =
   (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, "") ||
   "https://buzup.updigital.co.mz";
 
-export const OG_IMAGE = `${SITE_URL}/assets/buzup/hero-person.png`;
+/** Dedicated 1.91:1 social-share card (landscape). hero-person.png is portrait and crops badly in link previews. */
+export const OG_IMAGE = `${SITE_URL}/assets/og-card.png`;
+export const OG_IMAGE_W = 1503;
+export const OG_IMAGE_H = 790;
+export const OG_IMAGE_ALT = "BusUp — pague a viagem no transporte público de Moçambique com um toque";
 
 export interface PageSeo {
   /** PT (canonical) path, e.g. "/tarifas" */

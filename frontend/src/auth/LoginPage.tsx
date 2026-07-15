@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from "react";
-import { Lock, Phone, Shield, Smartphone, User, UserPlus, X } from "lucide-react";
+import { Check, ChevronLeft, Eye, EyeOff, Moon, Phone, RefreshCw, Shield, ShieldCheck, Smartphone, Sun, User, UserPlus, X, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiLogin, apiOtpRequest, apiOtpVerify, apiPublic } from "../lib/api";
 import { t } from "../lib/i18n";
@@ -11,7 +11,7 @@ type Mode = "staff" | "otp" | "register";
 type OtpStep = "phone" | "code";
 
 export default function LoginPage() {
-  const { locale, setLocale } = useUi();
+  const { locale, setLocale, theme, toggleTheme } = useUi();
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -20,8 +20,14 @@ export default function LoginPage() {
   // Staff login state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // delight: a "tap" ripple keyed per press so the NFC motif echoes on the primary CTA
+  const [tapKey, setTapKey] = useState(0);
+  const [otpShake, setOtpShake] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const fireTap = () => setTapKey((k) => k + 1);
 
   // OTP state
   const [phone, setPhone] = useState("");
@@ -52,6 +58,25 @@ export default function LoginPage() {
       showToast("danger", err instanceof Error ? err.message : "Erro ao solicitar reposição.");
     } finally {
       setResetBusy(false);
+    }
+  }
+
+  function handleResetKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape" && !resetBusy) {
+      setResetOpen(false);
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const focusables = e.currentTarget.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled])");
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
     }
   }
 
@@ -109,19 +134,18 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await apiOtpVerify(phone, challengeId, code, mode === "register" ? fullName.trim() : undefined);
+      const route = res.agent_id ? "/agent" : res.driver_id ? "/driver" : "/portal";
+      // guaranteed success beat: let the "Confirmado" state land even on a fast connection
+      setVerified(true);
+      await new Promise((r) => setTimeout(r, 420));
       login(res.access, res.refresh);
-      if (res.agent_id) {
-        navigate("/agent", { replace: true });
-      } else if (res.driver_id) {
-        navigate("/driver", { replace: true });
-      } else if (res.passenger_id) {
-        navigate("/portal", { replace: true });
-      } else {
-        navigate("/portal", { replace: true });
-      }
+      navigate(route, { replace: true });
+      return;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Código inválido.");
       setOtpDigits(["", "", "", "", "", ""]);
+      setOtpShake(true);
+      setTimeout(() => setOtpShake(false), 420);
       inputRefs.current[0]?.focus();
     } finally {
       setLoading(false);
@@ -194,200 +218,269 @@ export default function LoginPage() {
     setError("");
     setOtpStep("phone");
     setOtpDigits(["", "", "", "", "", ""]);
+    setVerified(false);
   }
 
+  const eyebrow =
+    mode === "staff" ? t(locale, "loginEyebrowStaff") : mode === "register" ? t(locale, "loginEyebrowRegister") : t(locale, "loginEyebrow");
+  const heading =
+    mode === "staff" ? t(locale, "welcomeBack") : mode === "register" ? t(locale, "createPassengerAccount") : t(locale, "welcomePassenger");
+  const subtitle =
+    mode === "staff" ? t(locale, "loginSubtitle") : mode === "register" ? t(locale, "passengerRegisterSubtitle") : t(locale, "otpSubtitle");
+
   return (
-    <main className="login-page">
-      <div className="login-left">
-        <div className="login-left-content">
-          <img alt="BusUp" className="login-hero-logo" src="/assets/buzup-logo/buzup-logo.png" />
-          <h1>BusUp</h1>
-          <p>{t(locale, "cashlessTransport")}</p>
+    <main className="lgn">
+      {/* top bar */}
+      <div className="lgn-top">
+        <a href="/" className="lgn-brand" aria-label="BusUp">
+          <img className="lgn-brand-img lgn-brand-light" src="/assets/buzup-logo/buzup-logo-dark.png" alt="BusUp" />
+          <img className="lgn-brand-img lgn-brand-dark" src="/assets/buzup-logo/buzup-logo.png" alt="BusUp" />
+        </a>
+        <div className="lgn-top-tools">
+          <a href="/" className="lgn-backlink" aria-label={t(locale, "backToSite")}>
+            <ChevronLeft size={16} />
+            <span className="lgn-backlink-txt">{t(locale, "backToSite")}</span>
+          </a>
+          <button
+            type="button"
+            className="lgn-ttbtn"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Tema claro" : "Tema escuro"}
+            title="Tema"
+          >
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <div className="lgn-langtog" role="group" aria-label="Idioma / Language">
+            <button className={locale === "pt" ? "lgn-lang-active" : ""} onClick={() => setLocale("pt")} type="button">PT</button>
+            <button className={locale === "en" ? "lgn-lang-active" : ""} onClick={() => setLocale("en")} type="button">EN</button>
+          </div>
         </div>
       </div>
-      <div className="login-right">
-        <div className="login-form-wrap">
-          {/* Mode Toggle */}
-          <div className="login-mode-toggle">
-            <button
-              type="button"
-              className={`login-mode-btn${mode === "staff" ? " login-mode-btn-active" : ""}`}
-              onClick={() => switchMode("staff")}
-            >
-              <Shield size={16} />
-              {t(locale, "staffLogin")}
+
+      {/* LEFT: form */}
+      <section className="lgn-auth">
+        <div className="lgn-auth-inner">
+          <div className="lgn-modes" role="group" aria-label="Tipo de acesso">
+            <button type="button" className={`lgn-mode${mode === "staff" ? " lgn-mode-active" : ""}`} onClick={() => switchMode("staff")}>
+              <Shield size={15} />{t(locale, "modeStaff")}
             </button>
-            <button
-              type="button"
-              className={`login-mode-btn${mode === "otp" ? " login-mode-btn-active" : ""}`}
-              onClick={() => switchMode("otp")}
-            >
-              <Smartphone size={16} />
-              {t(locale, "otpLogin")}
+            <button type="button" className={`lgn-mode${mode === "otp" ? " lgn-mode-active" : ""}`} onClick={() => switchMode("otp")}>
+              <Smartphone size={15} />{t(locale, "modePassenger")}
             </button>
-            <button
-              type="button"
-              className={`login-mode-btn${mode === "register" ? " login-mode-btn-active" : ""}`}
-              onClick={() => switchMode("register")}
-            >
-              <UserPlus size={16} />
-              {t(locale, "registerPassenger")}
+            <button type="button" className={`lgn-mode${mode === "register" ? " lgn-mode-active" : ""}`} onClick={() => switchMode("register")}>
+              <UserPlus size={15} />{t(locale, "modeRegister")}
             </button>
           </div>
+
+          <span className="lgn-eyebrow">{eyebrow}</span>
+          <h1>{heading}</h1>
+          <p className="lgn-sub">{subtitle}</p>
 
           {mode === "staff" ? (
-            <>
-              <div className="login-form-header">
-                <h2>{t(locale, "login")}</h2>
-                <p>{t(locale, "loginSubtitle")}</p>
+            <form className="lgn-form" onSubmit={handleStaffLogin} noValidate>
+              {error && <div className="lgn-error" role="alert">{error}</div>}
+              <div className="lgn-field">
+                <label htmlFor="lgn-username">{t(locale, "username")}</label>
+                <input
+                  id="lgn-username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                />
               </div>
-              <form className="login-form" onSubmit={handleStaffLogin}>
-                {error && <div className="login-error" role="alert">{error}</div>}
-                <label className="login-field">
-                  <User size={18} className="login-field-icon" />
-                  <input type="text" aria-label={t(locale, "username")} placeholder={t(locale, "username")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
-                </label>
-                <label className="login-field">
-                  <Lock size={18} className="login-field-icon" />
-                  <input type="password" aria-label={t(locale, "password")} placeholder={t(locale, "password")} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
-                </label>
-                <button type="submit" className="login-submit" disabled={loading}>
-                  {loading ? t(locale, "entering") : t(locale, "enter")}
-                </button>
-                <div style={{ textAlign: "center", marginTop: 8 }}>
+              <div className="lgn-field lgn-pass">
+                <label htmlFor="lgn-password">{t(locale, "password")}</label>
+                <div className="lgn-input-wrap">
+                  <input
+                    id="lgn-password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    required
+                  />
                   <button
                     type="button"
-                    className="otp-link-btn"
-                    onClick={() => { setResetOpen(true); setResetPhone(""); }}
+                    className="lgn-pass-toggle"
+                    onClick={() => setShowPassword((s) => !s)}
+                    aria-label={t(locale, showPassword ? "hidePassword" : "showPassword")}
+                    aria-pressed={showPassword}
                   >
-                    Esqueci a senha
+                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                   </button>
                 </div>
-              </form>
-            </>
-          ) : (
-            <>
-              <div className="login-form-header">
-                <h2>{mode === "register" ? t(locale, "createPassengerAccount") : t(locale, "welcomePassenger")}</h2>
-                <p>{mode === "register" ? t(locale, "passengerRegisterSubtitle") : t(locale, "otpSubtitle")}</p>
+                <button type="button" className="lgn-inline-link lgn-forgot" onClick={() => { setResetOpen(true); setResetPhone(""); }}>
+                  {t(locale, "forgotPassword")}
+                </button>
               </div>
-
-              {otpStep === "phone" ? (
-                <form className="login-form" onSubmit={handleOtpRequest}>
-                  {error && <div className="login-error" role="alert">{error}</div>}
-                  {mode === "register" && (
-                    <label className="login-field">
-                      <User size={18} className="login-field-icon" />
-                      <input
-                        type="text"
-                        aria-label={t(locale, "fullName")}
-                        placeholder={t(locale, "fullName")}
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        autoComplete="name"
-                        required
-                      />
-                    </label>
-                  )}
-                  <label className="login-field">
-                    <Phone size={18} className="login-field-icon" />
-                    <input
-                      type="tel"
-                      aria-label={t(locale, "phoneNumber")}
-                      placeholder={t(locale, "phoneNumber") + " (84/85/86/87...)"}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      autoComplete="tel"
-                      required
-                    />
-                  </label>
-                  <button type="submit" className="login-submit" disabled={loading || !phone.trim() || (mode === "register" && !fullName.trim())}>
-                    {loading ? t(locale, "sending") : t(locale, "sendCode")}
-                  </button>
-                </form>
-              ) : (
-                <div className="login-form">
-                  {error && <div className="login-error" role="alert">{error}</div>}
-                  <p className="otp-sent-label">
-                    {t(locale, "otpSent")} <strong>{phone}</strong>
-                  </p>
-                  <div className="otp-code-grid">
-                    {otpDigits.map((digit, i) => (
-                      <input
-                        key={i}
-                        ref={(el) => { inputRefs.current[i] = el; }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        className="otp-digit"
-                        value={digit}
-                        onChange={(e) => handleDigitChange(i, e.target.value)}
-                        onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                        onPaste={handleDigitPaste}
-                        autoComplete={i === 0 ? "one-time-code" : "off"}
-                        pattern="[0-9]*"
-                        aria-label={`${t(locale, "otpCode")} ${i + 1}`}
-                        autoFocus={i === 0}
-                      />
-                    ))}
-                  </div>
-                  {countdown > 0 && (
-                    <p className="otp-timer">
-                      {t(locale, "otpExpires")} {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    className="login-submit"
-                    disabled={loading || otpDigits.some((d) => !d)}
-                    onClick={() => void handleOtpVerify()}
-                  >
-                    {loading ? t(locale, "verifying") : t(locale, "verifyCode")}
-                  </button>
-                  <div className="otp-actions">
-                    <button
-                      type="button"
-                      className="otp-link-btn"
-                      onClick={() => { setOtpStep("phone"); setError(""); }}
-                    >
-                      {t(locale, "changePhone")}
-                    </button>
-                    <button
-                      type="button"
-                      className="otp-link-btn"
-                      onClick={handleResend}
-                      disabled={loading}
-                    >
-                      {t(locale, "otpResend")}
-                    </button>
-                  </div>
+              <button type="submit" className={`lgn-btn lgn-submit${loading ? " lgn-loading" : ""}`} disabled={loading} onPointerDown={fireTap}>
+                <span className="lgn-btn-label">{t(locale, "enter")}</span>
+                <span className="lgn-spin" aria-hidden="true" />
+                {tapKey > 0 && <span key={tapKey} className="lgn-tap-ripple" aria-hidden="true" />}
+              </button>
+              <p className="lgn-signup">
+                {t(locale, "noAccountYet")}{" "}
+                <button type="button" className="lgn-inline-link lgn-strong" onClick={() => switchMode("register")}>{t(locale, "createAccountLink")}</button>
+              </p>
+              <div className="lgn-assure">
+                <ShieldCheck size={15} />
+                {t(locale, "secureEncrypted")}
+              </div>
+            </form>
+          ) : otpStep === "phone" ? (
+            <form className="lgn-form" onSubmit={handleOtpRequest} noValidate>
+              {error && <div className="lgn-error" role="alert">{error}</div>}
+              {mode === "register" && (
+                <div className="lgn-field">
+                  <label htmlFor="lgn-fullname">{t(locale, "fullName")}</label>
+                  <input
+                    id="lgn-fullname"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    autoComplete="name"
+                    required
+                  />
                 </div>
               )}
-            </>
+              <div className="lgn-field">
+                <label htmlFor="lgn-phone">{t(locale, "phoneNumber")}</label>
+                <input
+                  id="lgn-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="84 / 85 / 86 / 87..."
+                  autoComplete="tel"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className={`lgn-btn lgn-submit${loading ? " lgn-loading" : ""}`}
+                disabled={loading || !phone.trim() || (mode === "register" && !fullName.trim())}
+                onPointerDown={fireTap}
+              >
+                <span className="lgn-btn-label">{t(locale, "sendCode")}</span>
+                <span className="lgn-spin" aria-hidden="true" />
+                {tapKey > 0 && <span key={tapKey} className="lgn-tap-ripple" aria-hidden="true" />}
+              </button>
+              <p className="lgn-signup">
+                {mode === "register" ? t(locale, "haveAccountAlready") : t(locale, "noAccountYet")}{" "}
+                <button
+                  type="button"
+                  className="lgn-inline-link lgn-strong"
+                  onClick={() => switchMode(mode === "register" ? "otp" : "register")}
+                >
+                  {mode === "register" ? t(locale, "signInLink") : t(locale, "createAccountLink")}
+                </button>
+              </p>
+              <div className="lgn-assure">
+                <ShieldCheck size={15} />
+                {t(locale, "secureEncrypted")}
+              </div>
+            </form>
+          ) : (
+            <div className="lgn-form">
+              {error && <div className="lgn-error" role="alert">{error}</div>}
+              <p className="lgn-otp-sent">
+                {t(locale, "otpSent")} <strong>{phone}</strong>
+              </p>
+              <span className="lgn-sr-only" aria-live="polite">
+                {verified ? t(locale, "otpVerified") : loading ? t(locale, "verifying") : ""}
+              </span>
+              <div className={`lgn-otp-grid${loading ? " lgn-otp-verifying" : ""}${verified ? " lgn-otp-done" : ""}${otpShake ? " lgn-otp-shake" : ""}`}>
+                {otpDigits.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => { inputRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    className={`lgn-otp-digit${digit ? " lgn-otp-filled" : ""}`}
+                    value={digit}
+                    onChange={(e) => handleDigitChange(i, e.target.value)}
+                    onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                    onPaste={handleDigitPaste}
+                    autoComplete={i === 0 ? "one-time-code" : "off"}
+                    pattern="[0-9]*"
+                    aria-label={`${t(locale, "otpCode")} ${i + 1}`}
+                    autoFocus={i === 0}
+                  />
+                ))}
+              </div>
+              {verified ? (
+                <p className="lgn-otp-confirmed"><Check size={16} />{t(locale, "otpVerified")}</p>
+              ) : countdown > 0 ? (
+                <p className="lgn-otp-timer">
+                  {t(locale, "otpExpires")} {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                className={`lgn-btn lgn-submit${loading ? " lgn-loading" : ""}`}
+                disabled={loading || otpDigits.some((d) => !d)}
+                onClick={() => void handleOtpVerify()}
+                onPointerDown={fireTap}
+              >
+                <span className="lgn-btn-label">{t(locale, "verifyCode")}</span>
+                <span className="lgn-spin" aria-hidden="true" />
+                {tapKey > 0 && <span key={tapKey} className="lgn-tap-ripple" aria-hidden="true" />}
+              </button>
+              <div className="lgn-otp-actions">
+                <button type="button" className="lgn-inline-link" onClick={() => { setOtpStep("phone"); setError(""); }}>
+                  {t(locale, "changePhone")}
+                </button>
+                <button type="button" className="lgn-inline-link" onClick={handleResend} disabled={loading}>
+                  {t(locale, "otpResend")}
+                </button>
+              </div>
+            </div>
           )}
 
-          <div className="login-footer">
-            <div className="locale-flag-toggle" role="group">
-              <button className={`locale-flag-button${locale === "pt" ? " locale-flag-button-active" : ""}`} onClick={() => setLocale("pt")} type="button">PT</button>
-              <button className={`locale-flag-button${locale === "en" ? " locale-flag-button-active" : ""}`} onClick={() => setLocale("en")} type="button">EN</button>
-            </div>
-            <div className="login-powered">
-              <span>{t(locale, "poweredBy")}</span>
-              <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="login-powered-logo login-powered-logo-light" />
-              <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_light.png" className="login-powered-logo login-powered-logo-dark" />
-            </div>
+          <div className="lgn-powered">
+            <span>{t(locale, "poweredBy")}</span>
+            <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_dark.png" className="lgn-powered-logo lgn-powered-light" />
+            <img alt="UpDigital" src="/assets/up-digital-logo/up_digital_light.png" className="lgn-powered-logo lgn-powered-dark" />
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* RIGHT: brand panel */}
+      <aside className="lgn-brandside">
+        <div className="lgn-rings" aria-hidden="true"><span /><span /><span /><span /></div>
+        <div className="lgn-bs-inner">
+          <span className="lgn-eyebrow lgn-eyebrow-blue">{t(locale, "brandsideEyebrow")}</span>
+          <h2>{t(locale, "brandsideTitle")}</h2>
+          <p className="lgn-lead">{t(locale, "brandsideLead")}</p>
+          <ul className="lgn-tpoints">
+            <li className="lgn-tpoint">
+              <span className="lgn-tpoint-ic"><Zap size={20} /></span>
+              <span className="lgn-tpoint-txt"><b>{t(locale, "tp1Title")}</b><span>{t(locale, "tp1Sub")}</span></span>
+            </li>
+            <li className="lgn-tpoint">
+              <span className="lgn-tpoint-ic"><RefreshCw size={20} /></span>
+              <span className="lgn-tpoint-txt"><b>{t(locale, "tp2Title")}</b><span>{t(locale, "tp2Sub")}</span></span>
+            </li>
+            <li className="lgn-tpoint">
+              <span className="lgn-tpoint-ic"><ShieldCheck size={20} /></span>
+              <span className="lgn-tpoint-txt"><b>{t(locale, "tp3Title")}</b><span>{t(locale, "tp3Sub")}</span></span>
+            </li>
+          </ul>
+        </div>
+      </aside>
 
       {resetOpen && (
         <>
           <div className="admin-modal-overlay" onClick={() => !resetBusy && setResetOpen(false)} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label="Reposição de senha">
+          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-labelledby="lgn-reset-title" onKeyDown={handleResetKeyDown}>
             <div className="admin-modal-card">
               <div className="admin-modal-head">
                 <div>
-                  <h3>Reposição de senha</h3>
+                  <h3 id="lgn-reset-title">Reposição de senha</h3>
                   <p>Indique o telefone associado à sua conta.</p>
                 </div>
                 <button className="icon-button" disabled={resetBusy} onClick={() => setResetOpen(false)} type="button"><X size={18} /></button>

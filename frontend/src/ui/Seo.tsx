@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { abs, OG_IMAGE, type Lang, type PageSeo } from "../lib/seo";
+import { abs, OG_IMAGE, OG_IMAGE_ALT, OG_IMAGE_H, OG_IMAGE_W, type Lang, type PageSeo } from "../lib/seo";
 
 interface SeoProps {
   page: PageSeo;
@@ -22,6 +22,7 @@ export function Seo({ page, lang, jsonLd, image }: SeoProps) {
   const canonical = abs(path);
   const ptUrl = abs(page.ptPath);
   const enUrl = abs(page.enPath);
+  const usingDefaultImage = !image;
   const ogImage = image ? (image.startsWith("http") ? image : abs(image)) : OG_IMAGE;
   const ogLocale = lang === "en" ? "en" : "pt_MZ";
 
@@ -43,6 +44,9 @@ export function Seo({ page, lang, jsonLd, image }: SeoProps) {
       <meta property="og:description" content={description} />
       <meta property="og:url" content={canonical} />
       <meta property="og:image" content={ogImage} />
+      {usingDefaultImage && <meta property="og:image:width" content={String(OG_IMAGE_W)} />}
+      {usingDefaultImage && <meta property="og:image:height" content={String(OG_IMAGE_H)} />}
+      {usingDefaultImage && <meta property="og:image:alt" content={OG_IMAGE_ALT} />}
       <meta property="og:locale" content={ogLocale} />
 
       {/* Twitter */}
@@ -50,6 +54,7 @@ export function Seo({ page, lang, jsonLd, image }: SeoProps) {
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={ogImage} />
+      {usingDefaultImage && <meta name="twitter:image:alt" content={OG_IMAGE_ALT} />}
 
       {jsonLd?.map((block, i) => (
         <script key={i} type="application/ld+json">

@@ -125,6 +125,37 @@ class AppLatestDownloadView(APIView):
         return response
 
 
+class AppLatestInfoView(APIView):
+    """Metadados publicos (JSON) da ultima versao publicada de cada app.
+
+    Alimenta a pagina de download do portal (React) para mostrar versao,
+    tamanho e notas em tempo real, sem expor o painel de gestao."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def _info(self, slug, app_type):
+        rel = _latest_published(app_type)
+        if not rel:
+            return {"available": False, "slug": slug}
+        return {
+            "available": True,
+            "slug": slug,
+            "version_name": rel.version_name,
+            "version_code": rel.version_code,
+            "file_size_bytes": rel.file_size_bytes,
+            "release_notes": rel.release_notes,
+            "published_at": rel.published_at,
+            "download_url": f"/api/apps/{slug}/download/",
+        }
+
+    def get(self, request):
+        return Response({
+            "passageiro": self._info("passageiro", AppRelease.AppType.PASSENGER),
+            "pos": self._info("pos", AppRelease.AppType.POS),
+        })
+
+
 class AppDownloadPageView(APIView):
     """Pagina de download partilhavel (um so link) com as duas apps."""
 

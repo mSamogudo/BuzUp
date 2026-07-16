@@ -26,6 +26,8 @@ import AuditPage from "./admin/AuditPage";
 import BrandingPage from "./admin/BrandingPage";
 import CheckoutPage from "./public/CheckoutPage";
 import BusPaymentPage from "./public/BusPaymentPage";
+import LandingPage from "./public/LandingPage";
+import DownloadPage from "./public/DownloadPage";
 import PassengerPortalPage from "./passenger/PassengerPortalPage";
 import DriverPortalPage from "./driver/DriverPortalPage";
 import ProfilePage from "./profile/ProfilePage";
@@ -63,6 +65,8 @@ function AppContent() {
       <Toaster position="top-right" richColors />
       <PwaInstallPrompt />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/bus/:vehicleUuid" element={<BusPaymentPage />} />
@@ -93,7 +97,7 @@ function AppContent() {
           <Route path="audit" element={<AuditPage />} />
           <Route path="branding" element={<BrandingPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/app" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );

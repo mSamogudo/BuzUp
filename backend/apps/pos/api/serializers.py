@@ -22,6 +22,42 @@ class PosSessionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class AdminPosSessionSerializer(serializers.ModelSerializer):
+    agent = serializers.SerializerMethodField()
+    device = serializers.SerializerMethodField()
+    allocated_route = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PosSession
+        fields = ("id", "agent", "device", "allocated_route", "status", "opened_at", "closed_at")
+        read_only_fields = fields
+
+    def get_agent(self, obj):
+        if not obj.agent_id:
+            return None
+        return {
+            "id": obj.agent_id,
+            "username": obj.agent.username,
+            "name": obj.agent.get_full_name() or "",
+        }
+
+    def get_device(self, obj):
+        if not obj.device_id:
+            return None
+        return {
+            "id": obj.device_id,
+            "serial_number": obj.device.serial_number,
+        }
+
+    def get_allocated_route(self, obj):
+        if not obj.allocated_route_id:
+            return None
+        return {
+            "id": obj.allocated_route_id,
+            "code": obj.allocated_route.code,
+        }
+
+
 class OpenSessionSerializer(serializers.Serializer):
     device_serial = serializers.CharField(max_length=128)
     route_id = serializers.IntegerField(required=False, allow_null=True)

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Eye, RefreshCw } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { formatDateTime } from "../lib/format";
@@ -21,6 +21,7 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
   const { locale: lc } = useUi();
   const [action, setAction] = useState("");
   const [search, setSearch] = useState("");
+  const [actor, setActor] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [viewing, setViewing] = useState<AuditEntry | null>(null);
@@ -36,6 +37,21 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
   }, [token, action, search, dateFrom, dateTo]);
   const { data: rows, loading, reload } = useAsyncData<AuditEntry[]>(loader, [token]);
 
+  // Opcoes do select de accao: lista fixa + accoes distintas presentes nos dados carregados.
+  const actionOptions = useMemo(() => {
+    const set = new Set(ACTIONS.filter(Boolean));
+    (rows || []).forEach((r) => { if (r.action) set.add(r.action); });
+    return Array.from(set).sort();
+  }, [rows]);
+
+  // O endpoint /api/audit-logs/ aceita `actor` apenas como ID numerico;
+  // o filtro por nome do actor e aplicado client-side sobre os dados carregados.
+  const filteredRows = useMemo(() => {
+    const q = actor.trim().toLowerCase();
+    if (!q) return rows || [];
+    return (rows || []).filter((r) => (r.actor_name || "").toLowerCase().includes(q));
+  }, [rows, actor]);
+
   return (
     <PageFrame kicker={t(lc, "security")} title={t(lc, "audit")}
       action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>}>
@@ -43,10 +59,12 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
         <div className="admin-form-grid" style={{ marginBottom: 12 }}>
           <label className="field"><span>{t(lc, "action")}</span>
             <select value={action} onChange={(e) => setAction(e.target.value)}>
-              {ACTIONS.map((a) => <option key={a} value={a}>{a ? t(lc, `audit_${a}` as never) : t(lc, "all")}</option>)}
+              <option value="">{t(lc, "all")}</option>
+              {actionOptions.map((a) => <option key={a} value={a}>{ACTIONS.includes(a) ? t(lc, `audit_${a}` as never) : a}</option>)}
             </select>
           </label>
           <label className="field"><span>{t(lc, "search")}</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t(lc, "auditSearchHint")} /></label>
+          <label className="field"><span>{t(lc, "actor")}</span><input value={actor} onChange={(e) => setActor(e.target.value)} placeholder="Nome do actor" /></label>
           <label className="field"><span>{t(lc, "from")}</span><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
           <label className="field"><span>{t(lc, "to")}</span><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
           <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
@@ -62,7 +80,7 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
           { header: t(lc, "actions"), className: "table-actions-cell", render: (r: AuditEntry) => (
             <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
           )},
-        ]} rows={rows || []} rowKey={(r) => String(r.id)} loading={loading} emptyMessage={t(lc, "noAudit")} />
+        ]} rows={filteredRows} rowKey={(r) => String(r.id)} loading={loading} emptyMessage={t(lc, "noAudit")} />
       </SectionCard>
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing ? `${viewing.action} · ${viewing.entity_type}` : ""} fields={viewing ? [

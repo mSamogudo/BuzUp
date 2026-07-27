@@ -8,7 +8,7 @@ import { t } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
 import { StatusBadge } from "../ui/common";
 import { useBranding, pickLogo } from "../lib/branding";
-import { NAV_ITEMS } from "./navigation";
+import { NAV_ITEMS, visibleNavItems } from "./navigation";
 
 interface MeData { username: string; email: string; phone: string; first_name: string; last_name: string; is_superuser: boolean; roles: { name: string; code: string }[]; capabilities: string[]; }
 
@@ -37,6 +37,10 @@ export default function AdminLayout() {
   useEffect(() => {
     if (token) apiFetch("/api/auth/me/", token).then(setMe).catch(() => {});
   }, [token]);
+
+  // Menu filtrado por capacidades: quem não pode abrir uma área não a vê
+  // (o servidor continua a validar com 403 — isto é usabilidade, não segurança).
+  const navItems = visibleNavItems(NAV_ITEMS, me?.capabilities ?? [], me?.is_superuser ?? true);
 
   const active = NAV_ITEMS.find((item) =>
     item.end ? location.pathname === item.path : location.pathname.startsWith(item.path),
@@ -68,7 +72,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="admin-nav">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const itemLabel = t(locale, item.i18nKey);
             const isActive = item.end ? location.pathname === item.path : location.pathname.startsWith(item.path);
@@ -264,7 +268,7 @@ export default function AdminLayout() {
           <button className="icon-button" onClick={() => setMobileOpen(false)} type="button"><X size={18} /></button>
         </div>
         <nav className="admin-mobile-nav-grid">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.end ? location.pathname === item.path : location.pathname.startsWith(item.path);
             return (

@@ -4,6 +4,7 @@ from uuid import uuid4
 
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +16,9 @@ from apps.packages.services import PackageError, subscribe_passenger
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
 from apps.payments.services.processing import confirm_payment_immediately
+from apps.core.permissions import HasCapabilities
 from apps.pos.api.serializers import (
+    AdminPosSessionSerializer,
     OpenSessionSerializer,
     PosCardTopupSerializer,
     PosCardValidateSerializer,
@@ -28,6 +31,18 @@ from apps.routes.models import Route
 from apps.validations.api.serializers import ValidationEventSerializer
 from apps.validations.services import validate_card, validate_qr_pass
 from apps.wallets.services import InsufficientBalanceError
+
+
+class AdminPosSessionListView(ListAPIView):
+    """Listagem read-only de sessoes POS para o backoffice."""
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("devices.read",)
+    serializer_class = AdminPosSessionSerializer
+    queryset = (
+        PosSession.objects.select_related("agent", "device", "allocated_route")
+        .order_by("-opened_at")
+    )
 
 
 class OpenSessionView(APIView):

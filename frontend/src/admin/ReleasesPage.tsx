@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useMemo, useRef, useState, type FormEvent } from "react";
 import { Download, Eye, Pencil, Plus, RefreshCw } from "lucide-react";
 import { apiFetch, apiPatch, apiUpload } from "../lib/api";
 import { formatDateTime } from "../lib/format";
@@ -6,10 +6,19 @@ import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
-import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
+import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TabBar, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 
 interface Release { id: number; uuid: string; app_type: string; version_name: string; version_code: number; is_mandatory: boolean; min_supported_version_code?: number; status: string; release_notes: string; published_at: string | null; download_url?: string; file_size_bytes?: number; }
+
+interface DeviceUpdate {
+  id: number; uuid: string; device_id: number; device_serial: string;
+  app_release_id: number; release_version: string;
+  current_version_code: number | null; target_version_code: number;
+  status: string; prompted_at: string | null; deferred_until: string | null;
+  downloaded_at: string | null; installed_at: string | null;
+  failed_reason: string; created_at: string;
+}
 
 function sizeMb(b?: number) { return b ? `${(b / (1024 * 1024)).toFixed(1)} MB` : "-"; }
 
@@ -18,6 +27,15 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
   const { locale: lc } = useUi();
   const loader = useCallback(() => apiFetch("/api/admin/app-releases/", token!).then((d) => d.results || d), [token]);
   const { data: rows, loading, reload } = useAsyncData<Release[]>(loader, [token]);
+  const [tab, setTab] = useState<"releases" | "installs">("releases");
+  const installsLoader = useCallback(() => apiFetch("/api/admin/device-app-updates/", token!).then((d) => d.results || d), [token]);
+  const { data: installs, loading: loadingInstalls, reload: reloadInstalls } = useAsyncData<DeviceUpdate[]>(installsLoader, [token]);
+  // O serializer de DeviceAppUpdate nao devolve app_type; cruzamos com as releases carregadas.
+  const appTypeByRelease = useMemo(() => {
+    const map = new Map<number, string>();
+    (rows || []).forEach((r) => map.set(r.id, r.app_type));
+    return map;
+  }, [rows]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [viewing, setViewing] = useState<any>(null);
@@ -69,9 +87,15 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "devices")} title={t(lc, "releases")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
+        <button className="icon-text-button" onClick={() => { reload(); reloadInstalls(); }} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
         <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newRelease")}</button>
       </>}>
+      <TabBar items={[
+        { key: "releases", label: t(lc, "releases") },
+        { key: "installs", label: "Instalacoes" },
+      ]} value={tab} onChange={(k) => setTab(k as "releases" | "installs")} />
+
+      {tab === "releases" && (
       <SectionCard title={t(lc, "releases")}>
         <DataTable columns={[
           { header: t(lc, "version"), render: (r: Release) => <TablePrimaryCell title={`v${r.version_name} (${r.version_code})`} subtitle={`${r.app_type.toUpperCase()} · ${sizeMb(r.file_size_bytes)}`} meta={r.is_mandatory ? t(lc, "mandatory") : t(lc, "optional")} /> },
@@ -89,6 +113,24 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
           )},
         ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noReleases")} />
       </SectionCard>
+      )}
+
+      {tab === "installs" && (
+      <SectionCard title="Instalacoes nos terminais" description="Estado das actualizacoes de app propostas a cada terminal (POS/passageiro).">
+        <DataTable columns={[
+          { header: "Terminal", render: (r: DeviceUpdate) => <TablePrimaryCell title={r.device_serial || `#${r.device_id}`} subtitle={`Terminal #${r.device_id}`} /> },
+          { header: "App / Versao", render: (r: DeviceUpdate) => <TablePrimaryCell
+              title={`v${r.release_version} (${r.target_version_code})`}
+              subtitle={(appTypeByRelease.get(r.app_release_id) || "app").toUpperCase()}
+              meta={r.current_version_code != null ? `Instalada: ${r.current_version_code}` : undefined} /> },
+          { header: "Estado", render: (r: DeviceUpdate) => <StatusBadge value={r.status} /> },
+          { header: "Sugerida em", render: (r: DeviceUpdate) => formatDateTime(r.prompted_at) },
+          { header: "Descarregada em", render: (r: DeviceUpdate) => formatDateTime(r.downloaded_at) },
+          { header: "Instalada em", render: (r: DeviceUpdate) => formatDateTime(r.installed_at) },
+          { header: "Detalhe", render: (r: DeviceUpdate) => r.failed_reason || (r.deferred_until ? `Adiada ate ${formatDateTime(r.deferred_until)}` : "-") },
+        ]} rows={installs || []} rowKey={(r) => r.uuid || String(r.id)} loading={loadingInstalls} emptyMessage="Sem registos de instalacao." />
+      </SectionCard>
+      )}
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.name || viewing?.serial_number || viewing?.version_name || viewing?.code || ""} fields={viewing ? [
         { label: "Versao", value: viewing.version_name },

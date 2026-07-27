@@ -207,6 +207,16 @@ class AgentSerializer(serializers.ModelSerializer):
 
 
 class RouteScheduleSerializer(serializers.ModelSerializer):
+    # FKs escritos por id (route_id, vehicle_id...): sem isto o DRF gera
+    # ReadOnlyField para *_id e o create/update nunca persistia as relacoes.
+    route_id = serializers.PrimaryKeyRelatedField(
+        source="route", queryset=RouteSchedule._meta.get_field("route").related_model.objects.all())
+    vehicle_id = serializers.PrimaryKeyRelatedField(
+        source="vehicle", queryset=Vehicle.objects.all(), required=False, allow_null=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        source="driver", queryset=Driver.objects.all(), required=False, allow_null=True)
+    agent_id = serializers.PrimaryKeyRelatedField(
+        source="agent", queryset=Agent.objects.all(), required=False, allow_null=True)
     route_code = serializers.CharField(source="route.code", read_only=True)
     route_name = serializers.CharField(source="route.name", read_only=True)
     vehicle_registration = serializers.CharField(source="vehicle.registration", read_only=True, default="")

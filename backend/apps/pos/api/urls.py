@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.pos.api.views import (
     ActiveSessionView,
+    AdminPosSessionListView,
     CloseSessionView,
     OpenSessionView,
     PosCardTopupView,
@@ -11,6 +12,7 @@ from apps.pos.api.views import (
 )
 
 urlpatterns = [
+    path("pos/sessions/", AdminPosSessionListView.as_view(), name="pos-session-admin-list"),
     path("pos/sessions/open/", OpenSessionView.as_view(), name="pos-session-open"),
     path("pos/sessions/close/", CloseSessionView.as_view(), name="pos-session-close"),
     path("pos/sessions/active/", ActiveSessionView.as_view(), name="pos-session-active"),

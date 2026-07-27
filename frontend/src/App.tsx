@@ -16,6 +16,10 @@ import PassengersPage from "./admin/PassengersPage";
 import PhysicalCardsPage from "./admin/PhysicalCardsPage";
 import DigitalCardsPage from "./admin/DigitalCardsPage";
 import FinancialPage from "./admin/FinancialPage";
+import WalletsPage from "./admin/WalletsPage";
+import SchedulesPage from "./admin/SchedulesPage";
+import GuestCheckoutsPage from "./admin/GuestCheckoutsPage";
+import PosSessionsPage from "./admin/PosSessionsPage";
 import DevicesPage from "./admin/DevicesPage";
 import MapPage from "./admin/MapPage";
 import ReleasesPage from "./admin/ReleasesPage";
@@ -81,6 +85,7 @@ function AppContent() {
           <Route path="stops" element={<StopsPage />} />
           <Route path="trips" element={<TripsPage />} />
           <Route path="trips/:tripId" element={<TripDetailPage />} />
+          <Route path="schedules" element={<SchedulesPage />} />
           <Route path="vehicles" element={<VehiclesPage />} />
           <Route path="drivers" element={<DriversPage />} />
           <Route path="fares" element={<FaresPage />} />
@@ -89,6 +94,9 @@ function AppContent() {
           <Route path="cards/physical" element={<PhysicalCardsPage />} />
           <Route path="cards/digital" element={<DigitalCardsPage />} />
           <Route path="financial" element={<FinancialPage />} />
+          <Route path="wallets" element={<WalletsPage />} />
+          <Route path="guest-checkouts" element={<GuestCheckoutsPage />} />
+          <Route path="pos-sessions" element={<PosSessionsPage />} />
           <Route path="devices" element={<DevicesPage />} />
           <Route path="map" element={<MapPage />} />
           <Route path="releases" element={<ReleasesPage />} />

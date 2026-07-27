@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, FileSpreadsheet, FileText, RefreshCw, Search, Sliders } from "lucide-react";
 import { apiFetch } from "../lib/api";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -17,6 +17,40 @@ interface ReconData {
   wallet_transactions: { topups: { count: number; total: string }; fare_debits: { count: number; total: string } };
   guest_checkouts: { passes_issued: number; passes_used: number; passes_active: number };
   circulation: { total_balance: string; negative_wallets: number };
+}
+
+interface OpTripSummary {
+  guest_checkout: { count: number; tickets: number; revenue: string };
+  app_passes: { count: number; revenue: string };
+  wallet_validations: { count: number; revenue: string };
+  direct_payments: { count: number; revenue: string };
+  validations: { approved: number; denied: number };
+  total_revenue: string;
+}
+interface OpTripRow {
+  trip_id: number; route_id: number; route_code: string; route_name: string;
+  vehicle_id: number | null; vehicle_registration: string;
+  driver_id: number | null; driver_name: string; status: string;
+  opened_at: string | null; closed_at: string | null; pause_seconds: number;
+  summary: OpTripSummary;
+}
+interface OperationalData {
+  period: { from: string; to: string };
+  totals: {
+    guest_checkout_revenue: string; app_pass_revenue: string;
+    wallet_validation_revenue: string; direct_payment_revenue: string;
+    total_revenue: string; validations_approved: number; validations_denied: number;
+  };
+  by_vehicle: { vehicle_id: number | null; vehicle_registration: string; trips: number; total_revenue: string }[];
+  by_route: { route_id: number; route_code: string; route_name: string; trips: number; total_revenue: string }[];
+  trips: OpTripRow[];
+}
+interface ValidationsData {
+  period: { from: string; to: string };
+  by_status: { status: string; count: number }[];
+  by_type: { validation_type: string; count: number }[];
+  by_failure_reason: { failure_reason: string; count: number }[];
+  by_device: { device__serial_number: string; device__device_type: string; count: number; approved: number; revenue: string | null }[];
 }
 
 interface ReportSpec { key: string; title: string; columns: { key: string; label: string }[]; }
@@ -39,8 +73,35 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
   const reconLoader = useCallback(() => apiFetch("/api/admin/reconciliation/payments/", token!), [token]);
   const { data: rev, loading: loadingR, reload: reloadR } = useAsyncData<RevenueData>(revLoader, [token]);
   const { data: recon, loading: loadingC, reload: reloadC } = useAsyncData<ReconData>(reconLoader, [token]);
-  const reload = () => { reloadR(); reloadC(); };
-  const [tab, setTab] = useState<"builder" | "revenue" | "recon">("builder");
+  const [tab, setTab] = useState<"builder" | "revenue" | "recon" | "operational" | "validations">("builder");
+
+  // -------- Receita operacional (/api/admin/reports/operational-revenue/) --------
+  const [opFrom, setOpFrom] = useState(todayISO());
+  const [opTo, setOpTo] = useState(todayISO());
+  const [opRouteId, setOpRouteId] = useState("");
+  const opLoader = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (opFrom) qs.set("date_from", opFrom);
+    if (opTo) qs.set("date_to", opTo);
+    if (opRouteId) qs.set("route_id", opRouteId);
+    return apiFetch(`/api/admin/reports/operational-revenue/?${qs.toString()}`, token!);
+  }, [token, opFrom, opTo, opRouteId]);
+  const { data: op, loading: loadingOp, reload: reloadOp } = useAsyncData<OperationalData>(opLoader, [token]);
+
+  // -------- Validacoes (/api/admin/reports/validations/) --------
+  const [valFrom, setValFrom] = useState(todayISO());
+  const [valTo, setValTo] = useState(todayISO());
+  const [valRouteId, setValRouteId] = useState("");
+  const valLoader = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (valFrom) qs.set("date_from", valFrom);
+    if (valTo) qs.set("date_to", valTo);
+    if (valRouteId) qs.set("route_id", valRouteId);
+    return apiFetch(`/api/admin/reports/validations/?${qs.toString()}`, token!);
+  }, [token, valFrom, valTo, valRouteId]);
+  const { data: val, loading: loadingV, reload: reloadV } = useAsyncData<ValidationsData>(valLoader, [token]);
+
+  const reload = () => { reloadR(); reloadC(); reloadOp(); reloadV(); };
 
   // -------- Report builder state --------
   const [specs, setSpecs] = useState<ReportSpec[]>([]);
@@ -180,8 +241,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
       <TabBar items={[
         { key: "builder", label: "Gerador de relatorios" },
         { key: "revenue", label: t(lc, "revenueToday") },
+        { key: "operational", label: "Receita operacional" },
+        { key: "validations", label: "Validacoes" },
         { key: "recon", label: t(lc, "reconciliation") },
-      ]} value={tab} onChange={(k) => setTab(k as "builder" | "revenue" | "recon")} />
+      ]} value={tab} onChange={(k) => setTab(k as "builder" | "revenue" | "recon" | "operational" | "validations")} />
 
       {tab === "builder" && (
         <SectionCard
@@ -391,6 +454,120 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
                   ]} rows={rev.validations.by_route} rowKey={(r) => r.route__code} loading={false} emptyMessage="" filterable={false} />
                 </>
               )}
+            </>
+          )}
+        </SectionCard>
+      )}
+
+      {tab === "operational" && (
+        <SectionCard title="Receita operacional" description="Receita por viagem, rota e autocarro no periodo escolhido (bilhetes de convidado, passes da app, carteira e pagamentos directos).">
+          <div className="admin-form-grid" style={{ marginBottom: 12 }}>
+            <label className="field"><span>De</span><input type="date" value={opFrom} onChange={(e) => setOpFrom(e.target.value)} /></label>
+            <label className="field"><span>Ate</span><input type="date" value={opTo} onChange={(e) => setOpTo(e.target.value)} /></label>
+            <label className="field"><span>Rota</span>
+              <select value={opRouteId} onChange={(e) => setOpRouteId(e.target.value)}>
+                <option value="">Todas as rotas</option>
+                {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
+              </select>
+            </label>
+            <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
+              <button className="primary-button" type="button" onClick={reloadOp}>Aplicar</button>
+            </div>
+          </div>
+          {loadingOp ? <SkeletonCard count={4} /> : !op ? <div className="admin-empty-state">{t(lc, "noData")}</div> : (
+            <>
+              <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
+                <MetricCard label="Receita total" value={formatCurrency(op.totals.total_revenue)} />
+                <MetricCard label="Bilhetes convidado" value={formatCurrency(op.totals.guest_checkout_revenue)} />
+                <MetricCard label="Passes da app" value={formatCurrency(op.totals.app_pass_revenue)} />
+                <MetricCard label="Carteira (validacoes)" value={formatCurrency(op.totals.wallet_validation_revenue)} />
+                <MetricCard label="Pagamentos directos" value={formatCurrency(op.totals.direct_payment_revenue)} />
+                <MetricCard label="Validacoes" value={String(op.totals.validations_approved)} detail={`${op.totals.validations_denied} negadas`} />
+              </div>
+              {op.by_route.length > 0 && (
+                <>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por rota</h4>
+                  <DataTable columns={[
+                    { header: "Rota", render: (r: OperationalData["by_route"][number]) => `${r.route_code} ${r.route_name}` },
+                    { header: "Viagens", render: (r: OperationalData["by_route"][number]) => String(r.trips) },
+                    { header: t(lc, "total"), render: (r: OperationalData["by_route"][number]) => formatCurrency(r.total_revenue) },
+                  ]} rows={op.by_route} rowKey={(r) => String(r.route_id)} loading={false} emptyMessage="" filterable={false} />
+                </>
+              )}
+              {op.by_vehicle.length > 0 && (
+                <>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por autocarro</h4>
+                  <DataTable columns={[
+                    { header: "Autocarro", render: (r: OperationalData["by_vehicle"][number]) => r.vehicle_registration || "Sem autocarro" },
+                    { header: "Viagens", render: (r: OperationalData["by_vehicle"][number]) => String(r.trips) },
+                    { header: t(lc, "total"), render: (r: OperationalData["by_vehicle"][number]) => formatCurrency(r.total_revenue) },
+                  ]} rows={op.by_vehicle} rowKey={(r) => String(r.vehicle_id ?? 0)} loading={false} emptyMessage="" filterable={false} />
+                </>
+              )}
+              <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Viagens</h4>
+              <DataTable columns={[
+                { header: "Viagem", render: (r: OpTripRow) => <TablePrimaryCell title={`#${r.trip_id}`} subtitle={`${r.route_code} ${r.route_name}`} /> },
+                { header: "Autocarro", render: (r: OpTripRow) => r.vehicle_registration || "-" },
+                { header: "Motorista", render: (r: OpTripRow) => r.driver_name || "-" },
+                { header: t(lc, "status"), render: (r: OpTripRow) => <StatusBadge value={r.status} /> },
+                { header: "Abertura", render: (r: OpTripRow) => r.opened_at ? formatDateTime(r.opened_at) : "-" },
+                { header: "Fecho", render: (r: OpTripRow) => r.closed_at ? formatDateTime(r.closed_at) : "-" },
+                { header: "Validacoes (A/N)", render: (r: OpTripRow) => `${r.summary.validations.approved} / ${r.summary.validations.denied}` },
+                { header: t(lc, "total"), render: (r: OpTripRow) => formatCurrency(r.summary.total_revenue) },
+              ]} rows={op.trips} rowKey={(r) => String(r.trip_id)} loading={false} emptyMessage="Sem viagens no periodo indicado." />
+            </>
+          )}
+        </SectionCard>
+      )}
+
+      {tab === "validations" && (
+        <SectionCard title="Relatorio de validacoes" description="Validacoes no periodo escolhido, por estado, tipo, motivo de recusa e terminal.">
+          <div className="admin-form-grid" style={{ marginBottom: 12 }}>
+            <label className="field"><span>De</span><input type="date" value={valFrom} onChange={(e) => setValFrom(e.target.value)} /></label>
+            <label className="field"><span>Ate</span><input type="date" value={valTo} onChange={(e) => setValTo(e.target.value)} /></label>
+            <label className="field"><span>Rota</span>
+              <select value={valRouteId} onChange={(e) => setValRouteId(e.target.value)}>
+                <option value="">Todas as rotas</option>
+                {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
+              </select>
+            </label>
+            <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
+              <button className="primary-button" type="button" onClick={reloadV}>Aplicar</button>
+            </div>
+          </div>
+          {loadingV ? <SkeletonCard count={4} /> : !val ? <div className="admin-empty-state">{t(lc, "noData")}</div> : (
+            <>
+              <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
+                <MetricCard label="Total de validacoes" value={String(val.by_status.reduce((s, r) => s + r.count, 0))} />
+                {val.by_status.map((s) => (
+                  <MetricCard key={s.status} label={s.status.toUpperCase()} value={String(s.count)} />
+                ))}
+              </div>
+              {val.by_type.length > 0 && (
+                <>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por tipo</h4>
+                  <DataTable columns={[
+                    { header: "Tipo", render: (r: ValidationsData["by_type"][number]) => <StatusBadge value={r.validation_type} /> },
+                    { header: "Quantidade", render: (r: ValidationsData["by_type"][number]) => String(r.count) },
+                  ]} rows={val.by_type} rowKey={(r) => r.validation_type} loading={false} emptyMessage="" filterable={false} />
+                </>
+              )}
+              {val.by_failure_reason.length > 0 && (
+                <>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Motivos de recusa</h4>
+                  <DataTable columns={[
+                    { header: "Motivo", render: (r: ValidationsData["by_failure_reason"][number]) => r.failure_reason || "-" },
+                    { header: "Quantidade", render: (r: ValidationsData["by_failure_reason"][number]) => String(r.count) },
+                  ]} rows={val.by_failure_reason} rowKey={(r) => r.failure_reason || "-"} loading={false} emptyMessage="" filterable={false} />
+                </>
+              )}
+              <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por terminal</h4>
+              <DataTable columns={[
+                { header: "Terminal", render: (r: ValidationsData["by_device"][number]) => <TablePrimaryCell title={r.device__serial_number} subtitle={r.device__device_type} /> },
+                { header: "Validacoes", render: (r: ValidationsData["by_device"][number]) => String(r.count) },
+                { header: "Aprovadas", render: (r: ValidationsData["by_device"][number]) => String(r.approved) },
+                { header: "Receita", render: (r: ValidationsData["by_device"][number]) => formatCurrency(r.revenue ?? "0") },
+              ]} rows={val.by_device} rowKey={(r) => r.device__serial_number} loading={false} emptyMessage="Sem validacoes com terminal no periodo." />
             </>
           )}
         </SectionCard>

@@ -10,7 +10,7 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 
 interface VE { id: number; uuid: string; validation_type: string; status: string; failure_reason: string; amount_debited: string; route_code: string; device_serial: string; created_at: string; }
 
-export default function ValidationsPage({ embedded }: { embedded?: boolean }) {
+export default function ValidationsPage() {
   const { token } = useAuth();
   const { locale: lc } = useUi();
   const loader = useCallback(() => apiFetch("/api/admin/validations/", token!).then((d) => d.results || d), [token]);

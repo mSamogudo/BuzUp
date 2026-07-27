@@ -86,9 +86,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       await store.saveTokens(access: access, refresh: refresh);
       await store.saveAgent(id: agentId, name: agentName);
+      await store.saveDriverId(res['driver_id'] as int?);
       await AppFeedback.success();
       ref.invalidate(isLoggedInProvider);
       ref.invalidate(agentMeProvider);
+      ref.invalidate(isDriverProvider);
+      ref.invalidate(driverTripsProvider);
       if (mounted) context.go('/home');
     } on DioException catch (e) {
       await AppFeedback.error();

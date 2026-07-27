@@ -20,6 +20,7 @@ import 'features/onboarding/onboarding_screen.dart';
 import 'features/passengers/passenger_onboard_screen.dart';
 import 'features/passengers/passenger_recovery_screen.dart';
 import 'features/sale/sale_flow_screen.dart';
+import 'features/trips/driver_trips_screen.dart';
 import 'features/verify/verify_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -36,6 +37,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/verify', builder: (_, __) => const DeviceGate(child: VerifyScreen())),
       GoRoute(path: '/history', builder: (_, __) => const DeviceGate(child: HistoryScreen())),
       GoRoute(path: '/day-close', builder: (_, __) => const DeviceGate(child: DayCloseScreen())),
+      GoRoute(path: '/driver/trips', builder: (_, __) => const DeviceGate(child: DriverTripsScreen())),
       GoRoute(path: '/cards', builder: (_, __) => const DeviceGate(child: CardLookupScreen())),
       GoRoute(path: '/cards/capture', builder: (_, __) => const DeviceGate(child: CardCaptureScreen())),
       GoRoute(path: '/passengers/onboard', builder: (_, __) => const DeviceGate(child: PassengerOnboardScreen())),

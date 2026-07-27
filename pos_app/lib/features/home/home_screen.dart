@@ -52,6 +52,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       double? lat;
       double? lng;
+      double? speedKmh;
+      double? heading;
       if (Platform.isAndroid) {
         final perm = await Geolocator.checkPermission();
         if (perm == LocationPermission.always || perm == LocationPermission.whileInUse) {
@@ -60,12 +62,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ).timeout(const Duration(seconds: 5), onTimeout: () => throw TimeoutException('gps'));
           lat = pos.latitude;
           lng = pos.longitude;
+          // Alimenta a seta/velocidade do autocarro no mapa dos passageiros.
+          if (pos.speed >= 0) speedKmh = pos.speed * 3.6;
+          if (pos.heading >= 0) heading = pos.heading;
         }
       }
       await ref.read(agentApiProvider).heartbeat(
             serialNumber: _deviceSerial,
             latitude: lat,
             longitude: lng,
+            speedKmh: speedKmh,
+            heading: heading,
             appVersion: '1.0.0',
           );
     } catch (_) {}
@@ -177,6 +184,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
+                  // Cartao da viagem do motorista (so para quem tem o perfil)
+                  if (me['driver'] != null)
+                    SliverToBoxAdapter(
+                      child: FadeIn(
+                        delay: const Duration(milliseconds: 120),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                          child: _driverTripCard(cardBg, txtMain, txtMuted, borderColor),
+                        ),
+                      ),
+                    ),
                   // Primary action
                   SliverToBoxAdapter(
                     child: FadeIn(
@@ -204,6 +222,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         FadeIn(delay: const Duration(milliseconds: 240), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.qr_code_scanner, 'Validar bilhete', () async { AppFeedback.click(); await context.push('/verify'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 280), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.list_alt, 'Historico', () async { AppFeedback.click(); await context.push('/history'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 360), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.lock_clock, 'Fecho do dia', () async { AppFeedback.click(); await context.push('/day-close'); _loadSummary(); })),
+                        if (me['driver'] != null)
+                          FadeIn(delay: const Duration(milliseconds: 400), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.departure_board, 'Minhas viagens', () async { AppFeedback.click(); await context.push('/driver/trips'); _loadSummary(); })),
                       ],
                     ),
                   ),
@@ -259,6 +279,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: const Icon(Icons.trending_up, color: BuzUpColors.orange, size: 22),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Cartao "viagem em mao" do motorista: mostra a viagem activa (ou a
+  /// proxima) e leva ao ecra de viagens. As accoes vivem la — aqui e so o
+  /// estado, sempre visivel mal se entra na app.
+  Widget _driverTripCard(Color cardBg, Color txtMain, Color txtMuted, Color border) {
+    final activeAsync = ref.watch(activeDriverTripProvider);
+    final nextAsync = ref.watch(nextDriverTripProvider);
+
+    final active = activeAsync.valueOrNull;
+    final next = nextAsync.valueOrNull;
+    final trip = active ?? next;
+
+    String subtitle;
+    Color accent;
+    if (activeAsync.isLoading) {
+      subtitle = 'A carregar viagens...';
+      accent = BuzUpColors.blue;
+    } else if (active != null) {
+      subtitle = active['status'] == 'paused' ? 'Viagem pausada' : 'Viagem em curso';
+      accent = BuzUpColors.success;
+    } else if (next != null) {
+      final dep = DateTime.tryParse((next['planned_departure_at'] ?? '').toString())?.toLocal();
+      subtitle = dep == null
+          ? 'Proxima viagem'
+          : 'Proxima partida ${dep.hour.toString().padLeft(2, '0')}:${dep.minute.toString().padLeft(2, '0')}';
+      accent = BuzUpColors.blue;
+    } else {
+      subtitle = 'Sem viagens alocadas';
+      accent = BuzUpColors.blue;
+    }
+
+    return Material(
+      color: cardBg,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () async {
+          AppFeedback.click();
+          await context.push('/driver/trips');
+          ref.invalidate(driverTripsProvider);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: active != null ? accent.withValues(alpha: 0.55) : border),
+          ),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.directions_bus, color: accent, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(subtitle, style: TextStyle(color: txtMuted, fontSize: 11, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  trip == null ? 'Minhas viagens' : '${trip['route_code'] ?? ''} · ${trip['route_name'] ?? ''}',
+                  style: TextStyle(color: txtMain, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: -0.2),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ]),
+            ),
+            Icon(Icons.arrow_forward, color: txtMuted, size: 20),
+          ]),
+        ),
       ),
     );
   }

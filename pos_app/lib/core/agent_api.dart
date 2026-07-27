@@ -106,8 +106,11 @@ class AgentApi {
     await _http.post('/api/agent/auth/logout/', data: {'refresh': refresh});
   }
 
-  Future<Map<String, dynamic>> me() async {
-    final res = await _http.get<Map<String, dynamic>>('/api/agent/me/');
+  Future<Map<String, dynamic>> me({String? serial}) async {
+    final res = await _http.get<Map<String, dynamic>>(
+      '/api/agent/me/',
+      query: serial != null && serial.isNotEmpty ? {'serial': serial} : null,
+    );
     return res.data ?? const {};
   }
 
@@ -150,13 +153,15 @@ class AgentApi {
     }
   }
 
-  Future<void> heartbeat({String? serialNumber, double? latitude, double? longitude, String? appVersion}) async {
+  Future<void> heartbeat({String? serialNumber, double? latitude, double? longitude, double? speedKmh, double? heading, String? appVersion}) async {
     await _http.post(
       '/api/agent/devices/heartbeat/',
       data: {
         if (serialNumber != null) 'serial_number': serialNumber,
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,
+        if (speedKmh != null) 'speed': double.parse(speedKmh.toStringAsFixed(2)),
+        if (heading != null) 'heading': double.parse(heading.toStringAsFixed(2)),
         if (appVersion != null) 'app_version': appVersion,
       },
     );
@@ -173,6 +178,24 @@ class AgentApi {
 
   Future<Map<String, dynamic>> trip(int tripId) async {
     final res = await _http.get<Map<String, dynamic>>('/api/agent/trips/$tripId/');
+    return res.data ?? const {};
+  }
+
+  // ----- Viagens do motorista -----
+  // Endpoints /api/driver/* (mesma auth JWT): viagens alocadas ao motorista
+  // ligado ao utilizador autenticado e o ciclo iniciar/pausar/retomar/terminar.
+  Future<List<dynamic>> driverTrips() async {
+    final res = await _http.get<List<dynamic>>('/api/driver/trips/');
+    return res.data ?? const [];
+  }
+
+  Future<Map<String, dynamic>> driverTripAction(int tripId, String action, {String? deviceSerial}) async {
+    final res = await _http.post<Map<String, dynamic>>(
+      '/api/driver/trips/$tripId/$action/',
+      data: {
+        if (deviceSerial != null && deviceSerial.isNotEmpty) 'device_serial': deviceSerial,
+      },
+    );
     return res.data ?? const {};
   }
 

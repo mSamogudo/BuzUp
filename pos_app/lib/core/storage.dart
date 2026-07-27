@@ -10,6 +10,7 @@ class SecureStore {
   static const _kAgentId = 'buzup.agent_id';
   static const _kAgentName = 'buzup.agent_name';
   static const _kDeviceSerial = 'buzup.device_serial';
+  static const _kDriverId = 'buzup.driver_id';
 
   Future<void> saveTokens({required String access, required String refresh}) async {
     await _storage.write(key: _kAccess, value: access);
@@ -30,6 +31,19 @@ class SecureStore {
   }
 
   Future<String?> getAgentName() => _storage.read(key: _kAgentName);
+
+  Future<void> saveDriverId(int? id) async {
+    if (id == null) {
+      await _storage.delete(key: _kDriverId);
+    } else {
+      await _storage.write(key: _kDriverId, value: id.toString());
+    }
+  }
+
+  Future<int?> getDriverId() async {
+    final v = await _storage.read(key: _kDriverId);
+    return v != null ? int.tryParse(v) : null;
+  }
 
   Future<void> saveDeviceSerial(String serial) => _storage.write(key: _kDeviceSerial, value: serial);
   Future<String?> getDeviceSerial() => _storage.read(key: _kDeviceSerial);

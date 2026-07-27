@@ -27,10 +27,12 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
   String? _error;
   bool _torch = false;
   bool _nfcArmed = false;
+  Map<String, dynamic>? _activeTrip;
 
   @override
   void initState() {
     super.initState();
+    _prefillFromActiveTrip();
     _tabs = TabController(length: 3, vsync: this);
     _tabs.addListener(() {
       if (_tabs.index == 2) {
@@ -51,6 +53,23 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
     _routeCtrl.dispose();
     NfcCardReader.stop();
     super.dispose();
+  }
+
+  /// Motorista com viagem em mao: a rota vem da viagem activa, sem digitar
+  /// nada; a validacao fica ligada a propria viagem (conta no fecho).
+  Future<void> _prefillFromActiveTrip() async {
+    try {
+      final trip = await ref.read(activeDriverTripProvider.future);
+      if (trip == null || !mounted) return;
+      setState(() {
+        _activeTrip = trip;
+        if (_routeCtrl.text.trim().isEmpty) {
+          _routeCtrl.text = (trip['route'] ?? trip['route_id'] ?? '').toString();
+        }
+      });
+    } catch (_) {
+      // Sem perfil de motorista ou sem rede: segue o fluxo manual normal.
+    }
   }
 
   Future<void> _armNfc() async {
@@ -85,9 +104,13 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
     });
     try {
       final serial = await ref.read(secureStoreProvider).getDeviceSerial();
+      final activeTripRoute = (_activeTrip?['route'] ?? _activeTrip?['route_id'])?.toString();
       final res = await ref.read(agentApiProvider).validateCard(
             cardUid: uid,
             routeId: routeId,
+            // So amarra a viagem se a rota digitada continuar a ser a da
+            // viagem activa (o operador pode validar outra rota manualmente).
+            tripId: activeTripRoute == routeId.toString() ? (_activeTrip?['id'] as int?) : null,
             deviceSerial: serial,
           );
       await (res['valid'] == true ? AppFeedback.success() : AppFeedback.error());
@@ -268,6 +291,28 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
           style: TextStyle(fontSize: 12, color: Color(0xFF6B6356)),
         ),
         const SizedBox(height: 12),
+        if (_activeTrip != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: BuzUpColors.success.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: BuzUpColors.success.withValues(alpha: 0.35)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.directions_bus, color: BuzUpColors.success, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Viagem activa: ${_activeTrip?['route_code'] ?? ''} · ${_activeTrip?['route_name'] ?? ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 10),
+        ],
         TextField(
           controller: _routeCtrl,
           keyboardType: TextInputType.number,

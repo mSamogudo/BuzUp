@@ -8,6 +8,7 @@ import 'core/providers.dart';
 import 'core/theme.dart';
 import 'features/auth/login_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/map/map_screen.dart';
 import 'features/packages/packages_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/shell/main_shell.dart';
@@ -56,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (ctx, state, child) => MainShell(child: child),
         routes: [
           GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/map', builder: (_, _) => const MapScreen()),
           GoRoute(path: '/tickets', builder: (_, _) => const TicketsListScreen()),
           GoRoute(path: '/packages', builder: (_, _) => const PackagesScreen()),
           GoRoute(path: '/transactions', builder: (_, _) => const TransactionsScreen()),

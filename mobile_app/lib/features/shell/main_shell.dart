@@ -14,20 +14,22 @@ class MainShell extends ConsumerWidget {
   final Widget child;
 
   int _indexFor(String path) {
-    if (path.startsWith('/tickets')) return 1;
-    if (path.startsWith('/packages')) return 2;
-    if (path.startsWith('/transactions')) return 3;
-    if (path.startsWith('/profile')) return 4;
+    if (path.startsWith('/map')) return 1;
+    if (path.startsWith('/tickets')) return 2;
+    if (path.startsWith('/packages')) return 3;
+    if (path.startsWith('/transactions')) return 4;
+    if (path.startsWith('/profile')) return 5;
     return 0;
   }
 
   void _onSelect(BuildContext context, int idx) {
     switch (idx) {
       case 0: context.go('/home'); break;
-      case 1: context.go('/tickets'); break;
-      case 2: context.go('/packages'); break;
-      case 3: context.go('/transactions'); break;
-      case 4: context.go('/profile'); break;
+      case 1: context.go('/map'); break;
+      case 2: context.go('/tickets'); break;
+      case 3: context.go('/packages'); break;
+      case 4: context.go('/transactions'); break;
+      case 5: context.go('/profile'); break;
     }
   }
 
@@ -48,6 +50,11 @@ class MainShell extends ConsumerWidget {
             icon: const Icon(Icons.home_outlined),
             selectedIcon: const Icon(Icons.home, color: BuzUpColors.orange),
             label: tr('nav.home'),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map, color: BuzUpColors.orange),
+            label: tr('nav.map'),
           ),
           NavigationDestination(
             icon: const Icon(Icons.confirmation_number_outlined),

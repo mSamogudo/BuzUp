@@ -1,7 +1,7 @@
 name: buzup_mobile
 description: "BuzUp Passageiro - app movel para passageiros do transporte cashless."
 publish_to: 'none'
-version: 0.4.5+9
+version: 0.4.6+10
 
 environment:
   sdk: ^3.11.3
@@ -25,6 +25,11 @@ dependencies:
   qr_flutter: ^4.1.0
   package_info_plus: ^8.1.0
   crypto: ^3.0.0
+
+  # Mapa de rastreio das viaturas (tiles OSM/CARTO, sem API key)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:

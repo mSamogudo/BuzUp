@@ -133,6 +133,20 @@ class PassengerApi {
 
   // ----- Tickets (travel passes) -----
 
+  // ----- Mapa de rastreio -----
+
+  /// Posicoes das viaturas com viagem activa (para o mapa).
+  Future<Map<String, dynamic>> vehicleLocations() async {
+    final res = await _http.get<Map<String, dynamic>>('/api/mobile/vehicles/locations/');
+    return res.data ?? const {};
+  }
+
+  /// Paragens ordenadas de uma rota (lat/lng) para desenhar a polyline.
+  Future<Map<String, dynamic>> routeGeometry(int routeId) async {
+    final res = await _http.get<Map<String, dynamic>>('/api/mobile/routes/$routeId/geometry/');
+    return res.data ?? const {};
+  }
+
   /// Public list of routes + stops + active trips. Used by the buy-ticket flow.
   Future<Map<String, dynamic>> publicTrips({int? routeId}) async {
     final res = await _http.get<Map<String, dynamic>>(

@@ -40,10 +40,24 @@ const Map<String, String> _pt = {
 
   // nav (bottom bar)
   'nav.home': 'Inicio',
+  'nav.map': 'Mapa',
   'nav.tickets': 'Bilhetes',
   'nav.packages': 'Pacotes',
   'nav.transactions': 'Movimentos',
   'nav.profile': 'Perfil',
+
+  // mapa de rastreio
+  'track.title': 'Autocarros em circulacao',
+  'track.none': 'Sem autocarros em circulacao agora.',
+  'track.loadError': 'Nao foi possivel carregar as posicoes.',
+  'track.searchHint': 'Procurar rota ou matricula',
+  'track.myLocation': 'Minha localizacao',
+  'track.locationDenied': 'Permissao de localizacao recusada.',
+  'track.updated': 'Actualizado',
+  'track.speed': 'Velocidade',
+  'track.vehicle': 'Viatura',
+  'track.live': 'em circulacao',
+  'track.tapHint': 'Toque num autocarro para ver a rota.',
 
   // splash
   'splash.starting': 'A iniciar...',
@@ -211,10 +225,24 @@ const Map<String, String> _en = {
   'currency.mzn': 'MZN',
 
   'nav.home': 'Home',
+  'nav.map': 'Map',
   'nav.tickets': 'Tickets',
   'nav.packages': 'Plans',
   'nav.transactions': 'Activity',
   'nav.profile': 'Profile',
+
+  // live map
+  'track.title': 'Buses in service',
+  'track.none': 'No buses in service right now.',
+  'track.loadError': 'Could not load bus positions.',
+  'track.searchHint': 'Search route or plate',
+  'track.myLocation': 'My location',
+  'track.locationDenied': 'Location permission denied.',
+  'track.updated': 'Updated',
+  'track.speed': 'Speed',
+  'track.vehicle': 'Vehicle',
+  'track.live': 'in service',
+  'track.tapHint': 'Tap a bus to see its route.',
 
   'splash.starting': 'Starting...',
 

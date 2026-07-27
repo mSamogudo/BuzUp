@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>BusUp — Flyer Institucional</title>
+<style>
+  :root{
+    --navy:#0D3B66;
+    --navy2:#0A2E50;
+    --blue:#2D8CF0;
+    --blue2:#1D5FA7;
+    --ink:#0F1B2D;
+    --muted:#5B6B7F;
+    --line:#E4EBF3;
+    --bg:#F6F9FD;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A4;margin:0;}
+  .page{
+    width:210mm;height:297mm;position:relative;overflow:hidden;background:#fff;
+    page-break-after:always;display:flex;flex-direction:column;
+  }
+  .page:last-child{page-break-after:auto;}
+
+  /* ---------- PAGE 1 ---------- */
+  .hero{
+    background:linear-gradient(150deg,var(--navy) 0%,var(--navy2) 55%,#08243f 100%);
+    color:#fff;padding:12mm 14mm 9mm 14mm;position:relative;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-40mm;top:-40mm;width:110mm;height:110mm;
+    background:radial-gradient(circle,rgba(45,140,240,.35),transparent 62%);
+  }
+  .brandrow{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;}
+  .brandrow img.logo{height:15mm;}
+  .badge{
+    font-size:8.5pt;letter-spacing:.14em;text-transform:uppercase;color:#BFD8F5;
+    border:1px solid rgba(191,216,245,.45);border-radius:40px;padding:3mm 5mm;font-weight:700;
+  }
+  .hero h1{font-size:28pt;line-height:1.07;margin-top:8mm;font-weight:800;position:relative;z-index:2;max-width:150mm;}
+  .hero h1 .hl{color:var(--blue);}
+  .hero p.lead{font-size:12pt;line-height:1.48;color:#D6E4F5;margin-top:5mm;max-width:150mm;position:relative;z-index:2;}
+  .payline{display:flex;gap:3mm;margin-top:6mm;flex-wrap:wrap;position:relative;z-index:2;}
+  .chip{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:30px;
+    padding:2.6mm 5mm;font-size:9.5pt;font-weight:600;color:#EAF3FF;}
+  .chip b{color:var(--blue);}
+
+  .body{padding:7mm 14mm 0 14mm;flex:1;}
+  .sectitle{font-size:9.5pt;letter-spacing:.16em;text-transform:uppercase;color:var(--blue2);font-weight:800;margin-bottom:5mm;}
+  .sectitle span{display:inline-block;border-bottom:3px solid var(--blue);padding-bottom:1.5mm;}
+
+  .valgrid{display:grid;grid-template-columns:1fr 1fr;gap:4mm;}
+  .val{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:5mm 5mm 4.5mm;display:flex;gap:4mm;}
+  .val .ic{flex:0 0 11mm;height:11mm;border-radius:10px;background:linear-gradient(145deg,var(--blue),var(--blue2));
+    display:flex;align-items:center;justify-content:center;}
+  .val .ic svg{width:6mm;height:6mm;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .val h3{font-size:12pt;margin-bottom:1.5mm;font-weight:800;}
+  .val p{font-size:9.7pt;line-height:1.42;color:var(--muted);}
+
+  .why{margin-top:7mm;background:linear-gradient(135deg,#EAF3FF,#F6FAFF);border:1px solid #D6E7FB;border-radius:16px;padding:6mm 6mm 6.5mm;}
+  .why h2{font-size:15pt;color:var(--navy);font-weight:800;margin-bottom:2mm;}
+  .why .whysub{font-size:10pt;color:var(--muted);margin-bottom:5mm;}
+  .whygrid{display:grid;grid-template-columns:1fr 1fr;gap:3mm 8mm;}
+  .whyitem{display:flex;gap:3.5mm;align-items:flex-start;font-size:10pt;line-height:1.4;}
+  .whyitem .tick{flex:0 0 5.5mm;height:5.5mm;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;margin-top:.3mm;}
+  .whyitem .tick svg{width:3.2mm;height:3.2mm;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .whyitem b{color:var(--ink);}
+
+  .footer{background:var(--navy);color:#CFE0F3;padding:7mm 14mm;display:flex;justify-content:space-between;align-items:center;font-size:9pt;}
+  .footer .fbrand{display:flex;align-items:center;gap:4mm;}
+  .footer img{height:8mm;}
+  .footer .site{color:var(--blue);font-weight:700;font-size:11pt;}
+
+  /* ---------- PAGE 2 ---------- */
+  .p2head{background:linear-gradient(150deg,var(--navy),var(--navy2));color:#fff;padding:10mm 14mm 7mm;}
+  .p2head h2{font-size:20pt;font-weight:800;}
+  .p2head h2 .hl{color:var(--blue);}
+  .p2head p{font-size:10.5pt;color:#D6E4F5;margin-top:3mm;max-width:160mm;}
+  .p2body{padding:7mm 14mm 0;flex:1;}
+
+  .apps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5mm;}
+  .app{border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;}
+  .app .cap{background:linear-gradient(145deg,var(--blue),var(--blue2));color:#fff;padding:5mm;text-align:center;}
+  .app .cap .aic{width:12mm;height:12mm;margin:0 auto 3mm;background:rgba(255,255,255,.16);border-radius:11px;display:flex;align-items:center;justify-content:center;}
+  .app .cap .aic svg{width:7mm;height:7mm;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .app .cap h3{font-size:12pt;font-weight:800;}
+  .app .cap .tag{font-size:8.5pt;opacity:.9;margin-top:1mm;}
+  .app ul{list-style:none;padding:4mm 5mm 4mm 5mm;}
+  .app li{font-size:9.2pt;line-height:1.32;color:var(--ink);padding-left:5mm;position:relative;margin-bottom:2.1mm;}
+  .app li::before{content:"";position:absolute;left:0;top:1.6mm;width:2.4mm;height:2.4mm;border-radius:50%;background:var(--blue);}
+
+  .feat{margin-top:6mm;}
+  .featgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm;}
+  .fcell{display:flex;gap:3.5mm;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3.5mm;}
+  .fcell .fi{flex:0 0 8mm;height:8mm;border-radius:8px;background:#E7F1FD;display:flex;align-items:center;justify-content:center;}
+  .fcell .fi svg{width:4.6mm;height:4.6mm;stroke:var(--blue2);fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;}
+  .fcell span{font-size:9.2pt;font-weight:600;line-height:1.25;}
+
+  .cta{margin-top:6mm;background:linear-gradient(135deg,var(--navy),var(--blue2));border-radius:16px;padding:6.5mm;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:8mm;}
+  .cta h2{font-size:16pt;font-weight:800;line-height:1.15;}
+  .cta p{font-size:10pt;color:#D6E4F5;margin-top:2mm;max-width:110mm;}
+  .cta .qr{flex:0 0 30mm;text-align:center;}
+  .cta .qr .box{width:30mm;height:30mm;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:2mm;}
+  .cta .qr small{display:block;margin-top:2mm;font-size:8pt;color:#D6E4F5;}
+
+  .contact{padding:6mm 14mm;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-end;}
+  .contact .c1 img{height:11mm;margin-bottom:3mm;}
+  .contact .c1 p{font-size:9pt;color:var(--muted);line-height:1.5;}
+  .contact .c2{text-align:right;font-size:9pt;color:var(--muted);line-height:1.7;}
+  .contact .c2 b{color:var(--ink);}
+  .contact .c2 .site{color:var(--blue2);font-weight:800;font-size:11pt;}
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1 ================= -->
+<section class="page">
+  <div class="hero">
+    <div class="brandrow">
+      <img class="logo" src="__LOGO_DARK__" alt="BusUp">
+      <div class="badge">Transporte · Cashless</div>
+    </div>
+    <h1>O transporte público da sua cidade,<br><span class="hl">agora sem dinheiro físico.</span></h1>
+    <p class="lead">O <b>BusUp</b> é a plataforma que digitaliza o pagamento nos autocarros e chapas do município.
+      O passageiro paga com o telemóvel ou com cartão — <b>sem troco, sem filas, sem perdas</b> — e o município
+      passa a ver, em tempo real, cada viagem e cada metical.</p>
+    <div class="payline">
+      <div class="chip"><b>QR Code</b> no telemóvel</div>
+      <div class="chip"><b>Cartão NFC</b> sem app</div>
+      <div class="chip"><b>M-Pesa</b></div>
+      <div class="chip"><b>e-Mola</b></div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="sectitle"><span>O QUE O BUSUP RESOLVE</span></div>
+    <div class="valgrid">
+      <div class="val">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><h3>Fim do dinheiro na mão</h3><p>Sem troco nem notas a circular. Menos furtos, menos erros e mais higiene a bordo.</p></div>
+      </div>
+      <div class="val">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div>
+        <div><h3>Receita 100% rastreável</h3><p>Cada bilhete fica registado. Combate direto à evasão de receita e ao desvio de fundos.</p></div>
+      </div>
+      <div class="val">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 20v-6M6 20v-4M18 20v-9M3 20h18"/></svg></div>
+        <div><h3>Dados para decidir</h3><p>Fluxo de passageiros por rota, horário e veículo — informação real para planear o transporte urbano.</p></div>
+      </div>
+      <div class="val">
+        <div class="ic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div><h3>Inclusão de todos</h3><p>Quem não tem smartphone usa um cartão recarregável. Ninguém fica de fora do sistema.</p></div>
+      </div>
+    </div>
+
+    <div class="why">
+      <h2>Porquê o BusUp no seu Município</h2>
+      <div class="whysub">Uma cidade mais moderna, transparente e eficiente no transporte — com controlo total nas suas mãos.</div>
+      <div class="whygrid">
+        <div class="whyitem"><span class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><div><b>Transparência total</b> — receita do transporte auditável ao cêntimo.</div></div>
+        <div class="whyitem"><span class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><div><b>Combate à corrupção</b> — o dinheiro deixa de passar de mão em mão.</div></div>
+        <div class="whyitem"><span class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><div><b>Imagem inovadora</b> — a cidade referência em transporte digital.</div></div>
+        <div class="whyitem"><span class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><div><b>Relatórios oficiais</b> — mapas de receita e uso prontos a exportar.</div></div>
+        <div class="whyitem"><span class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><div><b>Rápido de implementar</b> — funciona nos autocarros atuais, sem obra.</div></div>
+        <div class="whyitem"><span class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg></span><div><b>Feito em Moçambique</b> — suporte local e pagamentos nacionais.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="fbrand">
+      <img src="__LOGO_DARK__" alt="BusUp">
+      <span>Transporte público inteligente · cashless</span>
+    </div>
+    <div class="site">busup.updigital.co.mz</div>
+  </div>
+</section>
+
+<!-- ================= PAGE 2 ================= -->
+<section class="page">
+  <div class="p2head">
+    <h2>Uma plataforma, <span class="hl">três ferramentas</span> que trabalham juntas.</h2>
+    <p>Do passageiro ao gestor do município — tudo ligado, em tempo real, no mesmo sistema.</p>
+  </div>
+
+  <div class="p2body">
+    <div class="apps">
+      <div class="app">
+        <div class="cap">
+          <div class="aic"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+          <h3>App Passageiro</h3>
+          <div class="tag">Android · telemóvel</div>
+        </div>
+        <ul>
+          <li>Carteira digital com saldo em Meticais</li>
+          <li>Recarga por M-Pesa e e-Mola</li>
+          <li>QR Code para embarcar num segundo</li>
+          <li>Histórico de viagens e transações</li>
+          <li>Rotas e cartões associados</li>
+        </ul>
+      </div>
+      <div class="app">
+        <div class="cap">
+          <div class="aic"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M9 18h6"/></svg></div>
+          <h3>App POS</h3>
+          <div class="tag">Agente / Motorista</div>
+        </div>
+        <ul>
+          <li>Venda e validação de bilhetes</li>
+          <li>Leitura por QR e por cartão NFC</li>
+          <li>Sinal sonoro de sucesso/erro</li>
+          <li>Funciona em terminais SUNMI/Urovo</li>
+          <li>Atualização automática (OTA)</li>
+        </ul>
+      </div>
+      <div class="app">
+        <div class="cap">
+          <div class="aic"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8M12 18v4"/></svg></div>
+          <h3>Portal de Gestão</h3>
+          <div class="tag">Município · Operador</div>
+        </div>
+        <ul>
+          <li>Rotas, viagens e veículos (com livrete)</li>
+          <li>Gestão de motoristas e passageiros</li>
+          <li>Relatórios PDF de receita e uso</li>
+          <li>Auditoria completa de operações</li>
+          <li>Marca e apps configuráveis</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feat">
+      <div class="sectitle"><span>TUDO O QUE O BUSUP FAZ</span></div>
+      <div class="featgrid">
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><span>Pagamento cashless</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01"/></svg></div><span>Bilhete por QR Code</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h4M6 13h2"/></svg></div><span>Cartão NFC recarregável</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><path d="M4 17V7a2 2 0 012-2h9l5 5v7a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 9h5"/></svg></div><span>Recarga M-Pesa / e-Mola</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg></div><span>Relatórios em tempo real</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><span>Auditoria e segurança</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div><span>Gestão de rotas e viagens</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7M5.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM18.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5z"/></svg></div><span>Frota e livrete de veículos</span></div>
+        <div class="fcell"><div class="fi"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z"/></svg></div><span>Passageiros e motoristas</span></div>
+      </div>
+    </div>
+
+    <div class="cta">
+      <div>
+        <h2>Traga o BusUp para o seu Município.</h2>
+        <p>Modernize o transporte urbano, aumente a receita e ofereça aos cidadãos uma viagem mais simples e digna. Agende uma demonstração.</p>
+      </div>
+      <div class="qr">
+        <div class="box"><img src="__QR__" alt="QR download" style="width:100%;height:100%;object-fit:contain;"></div>
+        <small>Aponte a câmara e baixe a app</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="contact">
+    <div class="c1">
+      <img src="__LOGO_LIGHT__" alt="BusUp">
+      <p>Plataforma de bilhética cashless para transporte público.<br>Desenvolvido em Moçambique.</p>
+    </div>
+    <div class="c2">
+      <div class="site">updigital.co.mz</div>
+      <b>Contacto comercial</b><br>
+      [ +258 ___ ___ ___ ]<br>
+      [ comercial@updigital.co.mz ]
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

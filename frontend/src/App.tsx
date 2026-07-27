@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import LoginPage from "./auth/LoginPage";
@@ -26,7 +26,8 @@ import AuditPage from "./admin/AuditPage";
 import BrandingPage from "./admin/BrandingPage";
 import CheckoutPage from "./public/CheckoutPage";
 import BusPaymentPage from "./public/BusPaymentPage";
-import LandingPage from "./public/LandingPage";
+// Lazy: o visitante anónimo da landing não deve descarregar o portal inteiro.
+const LandingPage = lazy(() => import("./public/LandingPage"));
 import DownloadPage from "./public/DownloadPage";
 import PassengerPortalPage from "./passenger/PassengerPortalPage";
 import DriverPortalPage from "./driver/DriverPortalPage";
@@ -65,7 +66,7 @@ function AppContent() {
       <Toaster position="top-right" richColors />
       <PwaInstallPrompt />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />

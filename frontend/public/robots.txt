@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /$
+Allow: /baixar
+Disallow: /app
+Disallow: /portal
+Disallow: /driver
+Disallow: /login
+Disallow: /checkout
+Disallow: /profile

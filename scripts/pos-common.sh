@@ -313,9 +313,12 @@ flutter_build_apk_internal() {
     split_per_abi_flag=""
   fi
 
+  # Terminais/telefones sao todos ARM; x86_64 so serve emuladores Intel e
+  # engordava o APK universal em ~20MB.
   (
     cd "$POS_DIR"
     flutter build apk "$build_mode_flag" $split_per_abi_flag \
+      --target-platform android-arm,android-arm64 \
       --dart-define=BUZUP_API_BASE="$BUZUP_API_BASE_URL"
   )
 }

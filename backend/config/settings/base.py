@@ -188,6 +188,11 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Só para endpoints com throttle_scope explícito (ex.: posições do mapa,
+    # que as apps consultam em polling).
+    "DEFAULT_THROTTLE_RATES": {
+        "vehicle-locations": "12/min",
+    },
 }
 
 SPECTACULAR_SETTINGS = {

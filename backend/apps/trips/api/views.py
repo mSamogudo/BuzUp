@@ -186,6 +186,17 @@ class DriverTripActionView(APIView):
         try:
             if self.action == "start":
                 trip = start_trip_activity(trip, driver, request.user)
+                # Dispositivos livres: o terminal que inicia a viagem passa a
+                # ser a fonte da posicao do autocarro no mapa dos passageiros.
+                serial = (request.data.get("device_serial") or "").strip()
+                if serial:
+                    from apps.devices.models import Device
+                    device = Device.objects.filter(serial_number=serial).exclude(
+                        status=Device.Status.BLOCKED,
+                    ).first()
+                    if device:
+                        trip.device = device
+                        trip.save(update_fields=["device", "updated_at"])
             elif self.action == "pause":
                 trip = pause_trip_activity(trip, driver, request.user)
             elif self.action == "resume":

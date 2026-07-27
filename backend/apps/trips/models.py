@@ -116,6 +116,11 @@ class Trip(BaseModel):
     driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True, related_name="trips")
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name="trips")
     schedule = models.ForeignKey(RouteSchedule, on_delete=models.SET_NULL, null=True, blank=True, related_name="trips")
+    # Terminal que iniciou a viagem (dispositivos livres): e a fonte da posicao
+    # GPS "do autocarro" no mapa dos passageiros.
+    device = models.ForeignKey(
+        "devices.Device", on_delete=models.SET_NULL, null=True, blank=True, related_name="trips",
+    )
     planned_departure_at = models.DateTimeField(null=True, blank=True)
     actual_departure_at = models.DateTimeField(null=True, blank=True)
     planned_arrival_at = models.DateTimeField(null=True, blank=True)

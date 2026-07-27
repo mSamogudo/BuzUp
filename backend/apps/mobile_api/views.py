@@ -331,3 +331,99 @@ class MobileNotificationReadAllView(APIView):
     def post(self, request):
         n = Notification.objects.filter(user=request.user, read_at__isnull=True).update(read_at=timezone.now())
         return Response({"detail": "ok", "marked": n})
+
+
+# ----------------------------------------------------------------------------
+# Mapa de rastreio (posicoes das viaturas em viagem)
+# ----------------------------------------------------------------------------
+
+LOCATION_MAX_AGE_MINUTES = 10
+
+
+class MobileVehicleLocationsView(APIView):
+    """Posicoes das viaturas COM VIAGEM ACTIVA para o mapa do passageiro.
+
+    A posicao vem do terminal POS que iniciou a viagem (Trip.device), pelo que
+    so aparecem autocarros realmente em operacao — e nunca posicoes com mais
+    de LOCATION_MAX_AGE_MINUTES (terminal offline nao fica "fantasma" no mapa).
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "vehicle-locations"
+
+    def get(self, request):
+        from apps.trips.models import Trip
+
+        cutoff = timezone.now() - timezone.timedelta(minutes=LOCATION_MAX_AGE_MINUTES)
+        trips = (
+            Trip.objects.select_related("route", "vehicle", "device")
+            .filter(
+                status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED, Trip.Status.PAUSED],
+                device__isnull=False,
+                device__last_latitude__isnull=False,
+                device__last_location_at__gte=cutoff,
+            )
+            .order_by("-device__last_location_at")
+        )
+        results = []
+        for trip in trips:
+            d = trip.device
+            results.append({
+                "trip_id": trip.id,
+                "trip_status": trip.status,
+                "route_id": trip.route_id,
+                "route_code": trip.route.code,
+                "route_name": trip.route.name,
+                "vehicle_registration": trip.vehicle.registration if trip.vehicle_id else "",
+                "latitude": float(d.last_latitude),
+                "longitude": float(d.last_longitude),
+                "speed_kmh": float(d.last_speed) if d.last_speed is not None else None,
+                "heading": float(d.last_heading) if d.last_heading is not None else None,
+                "updated_at": d.last_location_at,
+            })
+        return Response({"count": len(results), "results": results})
+
+    def get_throttles(self):
+        from rest_framework.throttling import ScopedRateThrottle
+
+        return [ScopedRateThrottle()]
+
+
+class MobileRouteGeometryView(APIView):
+    """Paragens ordenadas de uma rota (lat/lng) para desenhar a polyline."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, route_id: int):
+        from apps.routes.models import Route, RouteStop
+
+        route = Route.objects.filter(pk=route_id).first()
+        if not route:
+            return Response({"detail": "Rota nao encontrada."}, status=404)
+
+        direction = (request.query_params.get("direction") or "outbound").lower()
+        stops_qs = (
+            RouteStop.objects.select_related("stop")
+            .filter(route=route, stop__status="active")
+            .order_by("sequence")
+        )
+        if direction in {"outbound", "inbound"}:
+            stops_qs = stops_qs.filter(direction=direction)
+        stops = [
+            {
+                "id": rs.stop_id,
+                "name": rs.stop.name,
+                "sequence": rs.sequence,
+                "latitude": float(rs.stop.latitude) if rs.stop.latitude is not None else None,
+                "longitude": float(rs.stop.longitude) if rs.stop.longitude is not None else None,
+            }
+            for rs in stops_qs
+            if rs.stop.latitude is not None and rs.stop.longitude is not None
+        ]
+        return Response({
+            "route_id": route.id,
+            "code": route.code,
+            "name": route.name,
+            "direction": direction,
+            "stops": stops,
+        })

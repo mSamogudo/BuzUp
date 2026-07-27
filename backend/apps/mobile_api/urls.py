@@ -19,6 +19,8 @@ from apps.mobile_api.views import (
     MobileTicketListView,
     MobileTicketPdfView,
     MobileTripHistoryView,
+    MobileRouteGeometryView,
+    MobileVehicleLocationsView,
 )
 
 
@@ -36,6 +38,9 @@ urlpatterns = [
     path("payments/<str:reference>/status/", MobilePaymentStatusView.as_view(), name="mobile-payment-status"),
 
     path("trips/history/", MobileTripHistoryView.as_view(), name="mobile-trip-history"),
+
+    path("vehicles/locations/", MobileVehicleLocationsView.as_view(), name="mobile-vehicle-locations"),
+    path("routes/<int:route_id>/geometry/", MobileRouteGeometryView.as_view(), name="mobile-route-geometry"),
 
     path("notifications/", MobileNotificationListView.as_view(), name="mobile-notifications"),
     path("notifications/read-all/", MobileNotificationReadAllView.as_view(), name="mobile-notifications-read-all"),

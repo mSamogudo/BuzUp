@@ -227,7 +227,7 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B00), Color(0xFFFF8C2E)],
+          colors: [Color(0xFF1D5FA7), Color(0xFF2D8CF0)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         boxShadow: [

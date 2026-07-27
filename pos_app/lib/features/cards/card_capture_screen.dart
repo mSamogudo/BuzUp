@@ -166,7 +166,7 @@ class _CardCaptureScreenState extends ConsumerState<CardCaptureScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFF6B00), Color(0xFFFF8C2E)],
+                  colors: [Color(0xFF1D5FA7), Color(0xFF2D8CF0)],
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(14),

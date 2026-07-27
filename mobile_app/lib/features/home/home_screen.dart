@@ -102,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B00), Color(0xFFFF8C2E)],
+          colors: [Color(0xFF1D5FA7), Color(0xFF2D8CF0)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(18),
@@ -218,7 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF6B00), Color(0xFFFF8C2E)],
+              colors: [Color(0xFF1D5FA7), Color(0xFF2D8CF0)],
               begin: Alignment.topLeft, end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(14),

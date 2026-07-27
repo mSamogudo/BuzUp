@@ -48,13 +48,18 @@ def provision_pos_agent(user):
 
 
 def get_authorized_device(user, serial_number: str | None = None) -> Device | None:
-    """Return Device assigned to this user (and matching serial if provided)."""
+    """Resolve o dispositivo da operacao.
+
+    Politica: dispositivos LIVRES — qualquer agente/motorista opera qualquer
+    terminal nao bloqueado. Com serial, resolve por serial; sem serial, cai na
+    alocacao administrativa (opcional, so informativa)."""
     if not user or not user.is_authenticated:
         return None
-    qs = Device.objects.filter(assigned_agent=user)
     if serial_number:
-        qs = qs.filter(serial_number=serial_number)
-    return qs.exclude(status=Device.Status.BLOCKED).first()
+        return (Device.objects.filter(serial_number=serial_number)
+                .exclude(status=Device.Status.BLOCKED).first())
+    return (Device.objects.filter(assigned_agent=user)
+            .exclude(status=Device.Status.BLOCKED).first())
 
 
 class IsActiveAgent(BasePermission):

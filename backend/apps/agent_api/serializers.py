@@ -33,6 +33,8 @@ class AgentDeviceHeartbeatSerializer(serializers.Serializer):
     app_version = serializers.CharField(max_length=32, required=False, allow_blank=True)
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    speed = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, allow_null=True)
+    heading = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, allow_null=True)
     metadata = serializers.DictField(required=False, default=dict)
 
 

@@ -51,9 +51,6 @@ def create_pos_sale(
     if device and device.status == Device.Status.BLOCKED:
         raise SaleError("Dispositivo bloqueado. Contacte o administrador.")
 
-    if device and device.assigned_agent_id != getattr(agent, "user_id", None):
-        raise SaleError("Dispositivo nao esta atribuido a este agente.")
-
     phone = normalize_otp_phone(passenger_phone)
     if not phone:
         raise SaleError("Telefone do passageiro invalido.")
@@ -190,8 +187,6 @@ def create_card_sale(
 
     if device and device.status == Device.Status.BLOCKED:
         raise SaleError("Dispositivo bloqueado. Contacte o administrador.")
-    if device and device.assigned_agent_id != getattr(agent, "user_id", None):
-        raise SaleError("Dispositivo nao esta atribuido a este agente.")
     if quantity < 1 or quantity > 10:
         raise SaleError("Quantidade deve estar entre 1 e 10.")
 

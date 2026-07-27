@@ -181,12 +181,17 @@ class AgentLoginView(APIView):
                 return Response({"detail": "Dispositivo nao registado no sistema."}, status=403)
             if device.status != Device.Status.ACTIVE:
                 return Response({"detail": "Dispositivo nao esta activo. Aguarde activacao pelo administrador.", "device_status": device.status}, status=403)
-            if device.assigned_agent_id and device.assigned_agent_id != user.id:
-                return Response({"detail": "Dispositivo nao esta alocado a este agente."}, status=403)
+            # Dispositivos livres: a alocacao administrativa e opcional e nao
+            # restringe quem pode entrar no terminal.
 
         refresh = RefreshToken.for_user(user)
         refresh["agent_id"] = agent.id
         refresh["phone"] = user.phone
+
+        # Perfil de motorista (se existir): a app usa isto para mostrar as
+        # funcoes de viagem (iniciar/pausar/terminar) alem das de agente.
+        from apps.trips.models import Driver
+        driver = Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).first()
 
         audit(
             "AGENT_LOGIN",
@@ -200,6 +205,9 @@ class AgentLoginView(APIView):
             "refresh": str(refresh),
             "agent_id": agent.id,
             "agent_name": agent.full_name,
+            "is_driver": driver is not None,
+            "driver_id": driver.id if driver else None,
+            "driver_name": driver.full_name if driver else None,
         })
 
 
@@ -221,9 +229,14 @@ class AgentMeView(APIView):
     permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def get(self, request):
+        from apps.trips.models import Driver
+
         agent = get_agent_profile(request.user)
-        device = Device.objects.filter(assigned_agent=request.user).exclude(status=Device.Status.BLOCKED).first()
+        # Dispositivos livres: o terminal identifica-se pelo serial que a app
+        # envia; a alocacao administrativa fica so como fallback informativo.
+        device = get_authorized_device(request.user, serial_number=(request.query_params.get("serial") or "").strip() or None)
         session = PosSession.objects.filter(agent=request.user, status=PosSession.Status.ACTIVE).select_related("device", "allocated_route").first()
+        driver = Driver.objects.filter(user=request.user, status=Driver.Status.ACTIVE).first()
         return Response({
             "agent": {
                 "id": agent.id,
@@ -231,6 +244,13 @@ class AgentMeView(APIView):
                 "phone": agent.phone,
                 "status": agent.status,
             },
+            "driver": {
+                "id": driver.id,
+                "full_name": driver.full_name,
+                "phone": driver.phone,
+                "license_number": driver.license_number,
+                "status": driver.status,
+            } if driver else None,
             "user": {
                 "username": request.user.username,
                 "first_name": request.user.first_name,
@@ -258,6 +278,9 @@ class AgentMeView(APIView):
                     or request.user.is_staff
                     or request.user.is_superuser
                 ),
+                # Funcoes de viagem (iniciar/pausar/terminar) so para quem tem
+                # perfil de motorista activo.
+                "trips_operate": driver is not None,
             },
         })
 
@@ -400,8 +423,8 @@ class PosDeviceActivateView(APIView):
                 after={"reason": "wrong_code"},
             )
             return Response({"detail": "Codigo de activacao incorrecto."}, status=400)
-        if not device.assigned_agent_id:
-            return Response({"detail": "Aguarde o administrador alocar o dispositivo a um agente."}, status=409)
+        # Dispositivos livres: a activacao exige apenas o codigo dado pelo
+        # administrador — sem alocacao previa a um agente.
 
         device.status = Device.Status.ACTIVE
         device.activated_at = timezone.now()
@@ -466,9 +489,15 @@ class AgentDeviceHeartbeatView(APIView):
             device.last_latitude = data["latitude"]
             device.last_longitude = data.get("longitude")
             device.last_location_at = timezone.now()
+            # Velocidade/rumo alimentam a seta do autocarro no mapa dos
+            # passageiros; opcionais para compatibilidade com apps antigas.
+            if data.get("speed") is not None:
+                device.last_speed = data["speed"]
+            if data.get("heading") is not None:
+                device.last_heading = data["heading"]
         device.save(update_fields=[
             "last_seen_at", "last_latitude", "last_longitude", "last_location_at",
-            "app_version", "updated_at",
+            "last_speed", "last_heading", "app_version", "updated_at",
         ])
 
         audit(

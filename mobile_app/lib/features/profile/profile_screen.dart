@@ -224,6 +224,8 @@ class ProfileScreen extends ConsumerWidget {
         const SizedBox(height: 14),
         // Actions
         _section(context, 'Documentos', [
+          _action(Icons.receipt_long_outlined, 'Movimentos',
+              () => context.push('/transactions')),
           _action(Icons.event_note, 'Extracto da conta',
               () => context.push('/extract')),
           _action(Icons.receipt_long, 'Taxas e tarifas',

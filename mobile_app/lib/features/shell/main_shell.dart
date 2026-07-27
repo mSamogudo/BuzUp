@@ -17,8 +17,10 @@ class MainShell extends ConsumerWidget {
     if (path.startsWith('/map')) return 1;
     if (path.startsWith('/tickets')) return 2;
     if (path.startsWith('/packages')) return 3;
+    // Movimentos saiu da barra (congestionava) — vive no Perfil; quando
+    // aberto, a barra realca Perfil.
     if (path.startsWith('/transactions')) return 4;
-    if (path.startsWith('/profile')) return 5;
+    if (path.startsWith('/profile')) return 4;
     return 0;
   }
 
@@ -28,8 +30,7 @@ class MainShell extends ConsumerWidget {
       case 1: context.go('/map'); break;
       case 2: context.go('/tickets'); break;
       case 3: context.go('/packages'); break;
-      case 4: context.go('/transactions'); break;
-      case 5: context.go('/profile'); break;
+      case 4: context.go('/profile'); break;
     }
   }
 
@@ -65,11 +66,6 @@ class MainShell extends ConsumerWidget {
             icon: const Icon(Icons.card_giftcard_outlined),
             selectedIcon: const Icon(Icons.card_giftcard, color: BuzUpColors.orange),
             label: tr('nav.packages'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.receipt_long_outlined),
-            selectedIcon: const Icon(Icons.receipt_long, color: BuzUpColors.orange),
-            label: tr('nav.transactions'),
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_outline),

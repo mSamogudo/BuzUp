@@ -8,6 +8,20 @@ from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.sms.services.sender import send_sms
 
 
+def _validity_window(gc: GuestCheckout) -> tuple:
+    """Janela de validade do passe.
+
+    Sem partida marcada (compra a bordo), vale 24h como antes. Com partida
+    marcada — o caso interurbano, comprado dias antes — vale desde 3h antes
+    da partida ate 12h depois: um bilhete para dia 5 nao pode nascer expirado.
+    """
+    now = timezone.now()
+    departure = getattr(gc.trip, "planned_departure_at", None) if gc.trip_id else None
+    if not departure:
+        return now, now + timedelta(hours=24)
+    return min(now, departure - timedelta(hours=3)), departure + timedelta(hours=12)
+
+
 def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
     passes = []
     with transaction.atomic():
@@ -18,7 +32,12 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
         gc.status = GuestCheckout.Status.ISSUED
         gc.save(update_fields=["status", "updated_at"])
 
-        for _ in range(gc.quantity):
+        valid_from, valid_until = _validity_window(gc)
+        departure = getattr(gc.trip, "planned_departure_at", None) if gc.trip_id else None
+        # Um passe por passageiro quando ha dados nominais; senao, por unidade.
+        people = list(gc.passengers or [])
+        for i in range(gc.quantity):
+            person = people[i] if i < len(people) else {}
             raw_token, token_hash = DigitalTravelPass.generate_token()
             travel_pass = DigitalTravelPass.objects.create(
                 guest_checkout=gc,
@@ -30,12 +49,17 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
                 origin_stop_ref=gc.origin_stop_ref,
                 destination_stop_ref=gc.destination_stop_ref,
                 trip=gc.trip,
+                passenger_name=(person.get("name") or gc.buyer_name or "")[:255],
+                document_type=person.get("document_type") or "",
+                document_number=(person.get("document_number") or "")[:64],
+                seat_number=(person.get("seat") or "")[:8],
+                departure_at=departure,
                 fare_amount=gc.unit_amount,
                 token=raw_token,
                 token_hash=token_hash,
                 delivery_channel=DigitalTravelPass.DeliveryChannel.SMS,
-                valid_from=timezone.now(),
-                valid_until=timezone.now() + timedelta(hours=24),
+                valid_from=valid_from,
+                valid_until=valid_until,
             )
             travel_pass._raw_token = raw_token
             passes.append(travel_pass)

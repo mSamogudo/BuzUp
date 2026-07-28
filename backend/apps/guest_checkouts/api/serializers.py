@@ -20,9 +20,27 @@ class GuestCheckoutSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PassengerInputSerializer(serializers.Serializer):
+    """Passageiro nominal (viagens interurbanas/transfronteiricas)."""
+
+    name = serializers.CharField(max_length=255)
+    document_type = serializers.ChoiceField(
+        choices=DigitalTravelPass.DocumentType.choices, required=False, allow_blank=True, default="",
+    )
+    document_number = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
+    seat = serializers.CharField(max_length=8, required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if attrs.get("document_type") and not attrs.get("document_number"):
+            raise serializers.ValidationError({"document_number": "Indique o numero do documento."})
+        return attrs
+
+
 class GuestCheckoutCreateSerializer(serializers.Serializer):
     payer_phone = serializers.CharField(max_length=20)
     buyer_name = serializers.CharField(max_length=255, required=False, default="", allow_blank=True)
+    buyer_email = serializers.EmailField(required=False, allow_blank=True, default="")
+    passengers = PassengerInputSerializer(many=True, required=False, default=list)
     route_code = serializers.CharField(max_length=32)
     route_name = serializers.CharField(max_length=255, required=False, default="", allow_blank=True)
     origin_stop = serializers.CharField(max_length=255)

@@ -22,6 +22,11 @@ class GuestCheckout(BaseModel):
     reference = models.CharField(max_length=64, unique=True, db_index=True)
     payer_phone = models.CharField(max_length=20)
     buyer_name = models.CharField(max_length=255, blank=True)
+    buyer_email = models.EmailField(blank=True)
+    # Passageiros da compra (interurbano): [{name, document_type, document_number}].
+    # Fica no checkout porque e recolhido ANTES do pagamento; e a fonte dos
+    # passes emitidos quando o pagamento confirma.
+    passengers = models.JSONField(default=list, blank=True)
     route_code = models.CharField(max_length=32, blank=True)
     route_name = models.CharField(max_length=255, blank=True)
     origin_stop = models.CharField(max_length=255, blank=True)
@@ -76,6 +81,13 @@ class DigitalTravelPass(BaseModel):
         APP = "app", "App"
         LINK = "link", "Link"
 
+    class DocumentType(models.TextChoices):
+        BI = "bi", "Bilhete de Identidade"
+        PASSPORT = "passport", "Passaporte"
+        DIRE = "dire", "DIRE"
+        CEDULA = "cedula", "Cedula"
+        OTHER = "other", "Outro"
+
     guest_checkout = models.ForeignKey(
         GuestCheckout, on_delete=models.PROTECT,
         null=True, blank=True, related_name="travel_passes",
@@ -105,6 +117,14 @@ class DigitalTravelPass(BaseModel):
         "routes.Stop", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="travel_passes_destination",
     )
+    # Identificacao do passageiro: obrigatoria em rotas internacionais
+    # (o bilhete e nominal e conferido na fronteira).
+    passenger_name = models.CharField(max_length=255, blank=True)
+    document_type = models.CharField(max_length=16, choices=DocumentType.choices, blank=True)
+    document_number = models.CharField(max_length=64, blank=True)
+    seat_number = models.CharField(max_length=8, blank=True)
+    # Copia da partida: o passe tem de sobreviver a alteracoes/remocao da viagem.
+    departure_at = models.DateTimeField(null=True, blank=True)
     fare_amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     token = models.CharField(max_length=128, unique=True, db_index=True)

@@ -84,10 +84,13 @@ def _draw_template(c: canvas.Canvas) -> None:
 def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> None:
     issued_at = tp.valid_from or tp.created_at
     valid_until = tp.valid_until
+    # Bilhete de partida marcada (interurbano): a data que interessa no topo e
+    # a da VIAGEM, nao a da emissao.
+    header_dt = tp.departure_at or issued_at
 
     _text(c, 199, 467, ref, size=25, font="Helvetica-Bold", color=NAVY)
-    _text(c, 674, 437, issued_at.strftime("%d/%m/%Y"), size=28, font="Helvetica-Bold", color=NAVY)
-    _text(c, 674, 467, issued_at.strftime("%H:%M"), size=28, font="Helvetica-Bold", color=NAVY)
+    _text(c, 674, 437, header_dt.strftime("%d/%m/%Y"), size=28, font="Helvetica-Bold", color=NAVY)
+    _text(c, 674, 467, header_dt.strftime("%H:%M"), size=28, font="Helvetica-Bold", color=NAVY)
 
     _center_text_fit(
         c,
@@ -123,6 +126,36 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
 
     valid_value = valid_until.strftime("%d/%m/%Y %H:%M") if valid_until else "-"
     _text_fit(c, 446, 1013, valid_value, max_width=295, max_size=34, min_size=25, color=NAVY)
+
+    _draw_passenger_block(c, tp)
+
+
+def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
+    """Bloco nominal a esquerda do QR (area livre do template).
+
+    So aparece em bilhetes nominais — o urbano ao portador continua limpo.
+    """
+    if not (tp.passenger_name or tp.document_number or tp.seat_number):
+        return
+
+    x = 78
+    y = 1080
+    label_size = 18
+    rows: list[tuple[str, str]] = []
+    if tp.passenger_name:
+        rows.append(("PASSAGEIRO", tp.passenger_name))
+    if tp.document_number:
+        doc_label = dict(DigitalTravelPass.DocumentType.choices).get(tp.document_type, "DOCUMENTO")
+        rows.append((doc_label.upper(), tp.document_number))
+    if tp.seat_number:
+        rows.append(("LUGAR", tp.seat_number))
+
+    for label, value in rows:
+        c.setFillColor(ORANGE)
+        c.setFont("Helvetica-Bold", label_size)
+        c.drawString(x, _baseline(y, label_size), label)
+        _text_fit(c, x, y + 24, value, max_width=250, max_size=29, min_size=18, color=NAVY)
+        y += 70
 
 
 def _draw_qr(c: canvas.Canvas, data: str, ref: str) -> None:

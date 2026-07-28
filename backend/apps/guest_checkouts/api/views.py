@@ -2,6 +2,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -14,7 +15,9 @@ from apps.guest_checkouts.api.serializers import (
     GuestCheckoutPublicSerializer,
     GuestCheckoutSerializer,
 )
+from apps.guest_checkouts.capacity import sale_state, seats_available
 from apps.guest_checkouts.models import GuestCheckout
+from apps.guest_checkouts.seatmap import occupied_seats, seat_map
 from apps.fares.services import NoFareFoundError, quote_fare
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
@@ -47,12 +50,15 @@ class GuestCheckoutCreateView(APIView):
         destination = Stop.objects.filter(pk=data.get("destination_stop_id")).first() if data.get("destination_stop_id") else None
         trip = None
         if data.get("trip_id"):
-            trip = Trip.objects.select_related("route").filter(
+            # Inclui SCHEDULED: e assim que se compra hoje um lugar para uma
+            # partida de daqui a dias (interurbano). A janela de venda e a
+            # lotacao sao validadas mais abaixo, com o lugar bloqueado.
+            trip = Trip.objects.select_related("route", "vehicle").filter(
                 pk=data["trip_id"],
-                status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
+                status__in=[Trip.Status.SCHEDULED, Trip.Status.BOARDING, Trip.Status.DEPARTED],
             ).first()
             if trip is None:
-                return Response({"detail": "Autocarro nao esta disponivel para compra."}, status=status.HTTP_404_NOT_FOUND)
+                return Response({"detail": "Partida nao disponivel para compra."}, status=status.HTTP_404_NOT_FOUND)
             if trip.route.code != data["route_code"]:
                 return Response({"detail": "A viagem nao pertence a rota seleccionada."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -75,25 +81,65 @@ class GuestCheckoutCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        total = unit_amount * data["quantity"]
+        passengers = data.get("passengers") or []
+        quantity = data["quantity"]
+        if passengers and len(passengers) != quantity:
+            return Response(
+                {"detail": "Indique os dados de cada passageiro."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        total = unit_amount * quantity
         ref = f"GC-{uuid4().hex[:12].upper()}"
-        gc = GuestCheckout.objects.create(
-            reference=ref,
-            payer_phone=data["payer_phone"],
-            buyer_name=data.get("buyer_name", ""),
-            route_code=data["route_code"],
-            route_name=data.get("route_name", ""),
-            origin_stop=origin.name if origin else data["origin_stop"],
-            destination_stop=destination.name if destination else data["destination_stop"],
-            origin_stop_ref=origin,
-            destination_stop_ref=destination,
-            quantity=data["quantity"],
-            unit_amount=unit_amount,
-            total_amount=total,
-            status=GuestCheckout.Status.PAYMENT_PENDING,
-            expires_at=timezone.now() + timedelta(minutes=30),
-            trip=trip,
-        )
+
+        # Reserva do lugar: bloqueia a linha da viagem para que dois
+        # compradores simultaneos nao levem o mesmo ultimo lugar.
+        with transaction.atomic():
+            if trip is not None:
+                # of=("self",): a viatura e nullable (LEFT JOIN) e o Postgres
+                # recusa FOR UPDATE sobre o lado nullable de um outer join.
+                trip = (Trip.objects.select_related("route", "vehicle")
+                        .select_for_update(of=("self",)).get(pk=trip.pk))
+                can_sell, reason = sale_state(trip)
+                if not can_sell:
+                    return Response({"detail": reason}, status=status.HTTP_409_CONFLICT)
+                available = seats_available(trip)
+                if available is not None and quantity > available:
+                    return Response(
+                        {"detail": f"Restam apenas {available} lugares nesta partida."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                chosen = [p.get("seat") for p in passengers if p.get("seat")]
+                if chosen:
+                    if len(set(chosen)) != len(chosen):
+                        return Response({"detail": "Lugar repetido na mesma compra."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    taken = occupied_seats(trip)
+                    clash = sorted(set(chosen) & taken)
+                    if clash:
+                        return Response(
+                            {"detail": f"Lugar(es) ja ocupado(s): {', '.join(clash)}. Escolha outro."},
+                            status=status.HTTP_409_CONFLICT,
+                        )
+            gc = GuestCheckout.objects.create(
+                reference=ref,
+                payer_phone=data["payer_phone"],
+                buyer_name=data.get("buyer_name", ""),
+                buyer_email=data.get("buyer_email", ""),
+                passengers=passengers,
+                route_code=data["route_code"],
+                route_name=data.get("route_name", ""),
+                origin_stop=origin.name if origin else data["origin_stop"],
+                destination_stop=destination.name if destination else data["destination_stop"],
+                origin_stop_ref=origin,
+                destination_stop_ref=destination,
+                quantity=quantity,
+                unit_amount=unit_amount,
+                total_amount=total,
+                status=GuestCheckout.Status.PAYMENT_PENDING,
+                expires_at=timezone.now() + timedelta(minutes=30),
+                trip=trip,
+            )
 
         idempotency_key = f"gc-{ref}"
         pi = PaymentIntent.objects.create(
@@ -176,8 +222,13 @@ class PublicTripSearchView(APIView):
             if route_id and not segments_by_route:
                 return Response({"detail": "Nao existe direccao valida entre a origem e o destino nesta rota."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Inclui SCHEDULED para a venda antecipada (interurbano). Sem data,
+        # mantem-se o comportamento urbano: so o que ja esta a circular.
+        wanted_statuses = [Trip.Status.BOARDING, Trip.Status.DEPARTED]
+        if date_str:
+            wanted_statuses.append(Trip.Status.SCHEDULED)
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
-            status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
+            status__in=wanted_statuses,
             vehicle__isnull=False,
         )
 
@@ -193,7 +244,7 @@ class PublicTripSearchView(APIView):
                 day_start = timezone.make_aware(timezone.datetime.combine(day, timezone.datetime.min.time()))
                 qs = qs.filter(planned_departure_at__gte=day_start, planned_departure_at__lt=day_start + timedelta(days=1))
 
-        qs = qs.order_by("route__code", "vehicle__registration", "planned_departure_at")[:20]
+        qs = qs.order_by("planned_departure_at", "route__code")[:40]
 
         results = []
         for trip in qs:
@@ -207,6 +258,7 @@ class PublicTripSearchView(APIView):
                 pass
 
             segment = segments_by_route.get(trip.route_id)
+            can_sell, reason = sale_state(trip)
             results.append({
                 "trip_id": trip.id,
                 "route_id": trip.route_id,
@@ -219,6 +271,11 @@ class PublicTripSearchView(APIView):
                 "direction": segment.direction if segment else "",
                 "status": trip.status,
                 "fare_amount": fare_amount,
+                # Disponibilidade legivel: o site mostra "3 lugares" ou o
+                # motivo de indisponibilidade, nunca um botao morto.
+                "seats_available": seats_available(trip),
+                "on_sale": can_sell,
+                "sale_unavailable_reason": reason,
             })
 
         routes_list = list(Route.objects.filter(status="active").values("id", "code", "name"))
@@ -238,6 +295,19 @@ class PublicTripSearchView(APIView):
                     "code": route_stop.stop.code,
                     "name": route_stop.stop.name,
                 })
+        elif request.query_params.get("sellable"):
+            # Portal publico: so paragens de rotas com partidas futuras — evita
+            # oferecer origens/destinos onde nao ha nada para comprar.
+            sellable_routes = Trip.objects.filter(
+                status=Trip.Status.SCHEDULED,
+                planned_departure_at__gte=timezone.now(),
+                vehicle__isnull=False,
+            ).values_list("route_id", flat=True).distinct()
+            stops_list = list(
+                Stop.objects.filter(
+                    status="active", route_stops__route_id__in=list(sellable_routes),
+                ).distinct().order_by("name").values("id", "code", "name")
+            )
         else:
             stops_list = list(Stop.objects.filter(status="active").values("id", "code", "name"))
 
@@ -246,6 +316,33 @@ class PublicTripSearchView(APIView):
             "stops": stops_list,
             "trips": results,
         })
+
+
+class PublicTripSeatsView(APIView):
+    """Planta de lugares de uma partida, para o passageiro escolher o lugar."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, trip_id: int):
+        trip = Trip.objects.select_related("route", "vehicle").filter(
+            pk=trip_id,
+            status__in=[Trip.Status.SCHEDULED, Trip.Status.BOARDING, Trip.Status.DEPARTED],
+        ).first()
+        if trip is None:
+            return Response({"detail": "Partida nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        can_sell, reason = sale_state(trip)
+        data = seat_map(trip)
+        data.update({
+            "trip_id": trip.id,
+            "route_code": trip.route.code,
+            "route_name": trip.route.name,
+            "vehicle": trip.vehicle.registration if trip.vehicle_id else "",
+            "departure": trip.planned_departure_at.isoformat() if trip.planned_departure_at else None,
+            "on_sale": can_sell,
+            "sale_unavailable_reason": reason,
+        })
+        return Response(data)
 
 
 class PublicBusInfoView(APIView):

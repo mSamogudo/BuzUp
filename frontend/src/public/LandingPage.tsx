@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Wallet, ScanLine, CreditCard, BarChart3, ShieldCheck, Users,
-  Smartphone, Store, LayoutDashboard, Bus, Download, ArrowRight,
+  Smartphone, Store, LayoutDashboard, Bus, Download, ArrowRight, Ticket,
   CheckCircle2, TrendingUp, Route as RouteIcon, RefreshCw, Banknote,
   Menu, X, MapPin,
 } from "lucide-react";
@@ -169,7 +169,7 @@ export default function LandingPage() {
           </nav>
           <div className="bzlp-nav-cta">
             <Link to="/login" className="bzlp-ghost">Entrar</Link>
-            <Link to="/baixar" className="bzlp-btn sm"><Download size={16} aria-hidden /> Baixar app</Link>
+            <Link to="/comprar" className="bzlp-btn sm"><Ticket size={16} aria-hidden /> Comprar bilhete</Link>
             <button ref={burgerRef} className="bzlp-burger" aria-label="Abrir menu" onClick={() => setMenuOpen(true)}>
               <Menu size={24} aria-hidden />
             </button>
@@ -209,8 +209,8 @@ export default function LandingPage() {
                 telemóvel ou cartão — <b>sem troco, sem filas, sem perdas</b> — e o município passa a ver,
                 em tempo real, cada viagem e cada metical.</p>
               <div className="bzlp-hero-cta">
-                <Link to="/baixar" className="bzlp-btn"><Download size={18} aria-hidden /> Baixar aplicação</Link>
-                <a href="#funcionalidades" className="bzlp-btn outline">Ver funcionalidades <ArrowRight size={16} aria-hidden /></a>
+                <Link to="/comprar" className="bzlp-btn"><Ticket size={18} aria-hidden /> Comprar bilhete</Link>
+                <Link to="/baixar" className="bzlp-btn outline"><Download size={18} aria-hidden /> Baixar aplicação</Link>
               </div>
               <div className="bzlp-chips">
                 <span><b>QR</b> no telemóvel</span>

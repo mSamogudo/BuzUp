@@ -32,6 +32,7 @@ import CheckoutPage from "./public/CheckoutPage";
 import BusPaymentPage from "./public/BusPaymentPage";
 // Lazy: o visitante anónimo da landing não deve descarregar o portal inteiro.
 const LandingPage = lazy(() => import("./public/LandingPage"));
+const BookingPage = lazy(() => import("./public/booking/BookingPage"));
 import DownloadPage from "./public/DownloadPage";
 import PassengerPortalPage from "./passenger/PassengerPortalPage";
 import DriverPortalPage from "./driver/DriverPortalPage";
@@ -73,6 +74,7 @@ function AppContent() {
         <Route path="/" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/comprar" element={<Suspense fallback={null}><BookingPage /></Suspense>} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/bus/:vehicleUuid" element={<BusPaymentPage />} />
         <Route path="/portal" element={<ProtectedRoute><PassengerPortalPage /></ProtectedRoute>} />

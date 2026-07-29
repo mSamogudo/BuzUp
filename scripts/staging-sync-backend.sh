@@ -65,6 +65,17 @@ rsync_to_server() {
         "$src" "$SERVER_USER@$SERVER_HOST:$dst" >/dev/null
 }
 
+# O directorio no host deixou de estar montado nos conteineres: sincronizar
+# so ate la deixa o codigo no servidor mas nao em execucao, e o deploy passa
+# silenciosamente por bem-sucedido. Por isso cada sincronizacao termina sempre
+# com um `docker cp` para dentro do conteiner.
+copy_into_container() {
+    local container="$1" src="$2" dst="$3"
+    sshpass -p "$SERVER_PASS" ssh -o StrictHostKeyChecking=no \
+        "$SERVER_USER@$SERVER_HOST" \
+        "docker cp '$src' '$container:$dst'" >/dev/null
+}
+
 if [ "$ONLY_FRONTEND" = false ]; then
     echo "[staging-sync] rsync apps/ → $REMOTE_ROOT/apps/"
     rsync_to_server "$PROJECT_ROOT/backend/apps/" "$REMOTE_ROOT/apps/"
@@ -77,6 +88,11 @@ if [ "$ONLY_FRONTEND" = false ]; then
         "$PROJECT_ROOT/backend/manage.py" \
         "$PROJECT_ROOT/backend/requirements.txt" \
         "$SERVER_USER@$SERVER_HOST:$REMOTE_ROOT/" >/dev/null
+
+    echo "[staging-sync] docker cp backend → $CONTAINER:/app/"
+    copy_into_container "$CONTAINER" "$REMOTE_ROOT/apps/." "/app/apps/"
+    copy_into_container "$CONTAINER" "$REMOTE_ROOT/config/." "/app/config/"
+    copy_into_container "$CONTAINER" "$REMOTE_ROOT/manage.py" "/app/manage.py"
 fi
 
 if [ "$ALSO_FRONTEND" = true ]; then
@@ -88,6 +104,14 @@ if [ "$ALSO_FRONTEND" = true ]; then
     sshpass -p "$SERVER_PASS" rsync -avz --no-times --no-perms --delete \
         "$PROJECT_ROOT/frontend/dist/" \
         "$SERVER_USER@$SERVER_HOST:/opt/staging/buzup/app/frontend/dist/" >/dev/null
+
+    # Limpa antes de copiar: sem isto os bundles antigos acumulam-se no nginx e
+    # o index.html novo pode continuar a apontar para ficheiros que ja mudaram.
+    echo "[staging-sync] docker cp frontend → buzup_frontend_staging:/usr/share/nginx/html/"
+    sshpass -p "$SERVER_PASS" ssh -o StrictHostKeyChecking=no \
+        "$SERVER_USER@$SERVER_HOST" \
+        "docker exec buzup_frontend_staging sh -c 'rm -rf /usr/share/nginx/html/*' && \
+         docker cp /opt/staging/buzup/app/frontend/dist/. buzup_frontend_staging:/usr/share/nginx/html/" >/dev/null
 fi
 
 if [ -n "$MIGRATE_APP" ]; then

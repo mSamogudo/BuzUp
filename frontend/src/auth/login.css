@@ -1,0 +1,777 @@
+/* Autenticação BusUp — scoped por .bzau (não vaza para o resto do portal).
+   Mesma linguagem visual da landing pública (.bzlp): navy #0D3B66, azul #2D8CF0,
+   superfícies calmas, cantos 12-18px, sombras suaves, um único momento "loud"
+   (o painel de marca à esquerda). */
+
+.bzau {
+  --navy: #0D3B66;
+  --navy2: #0A2E50;
+  --navy3: #08243F;
+  --blue: #2D8CF0;
+  --blue2: #1D5FA7;
+  --blue-bright: #5BA3F5;
+  --ink: #0F1B2D;
+  --muted: #5B6B7F;
+  --line: #E4EBF3;
+  --line-soft: #EFF4F9;
+  --bg: #F6F9FD;
+  --surface: #fff;
+  --ok: #2A9D8F;
+  --danger: #B3261E;
+  --danger-bg: #FDECEC;
+  --danger-line: #F6C9C9;
+  --ring: rgba(45, 140, 240, .18);
+
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1.04fr .96fr;
+  background: var(--surface);
+  color: var(--ink);
+  /* Inter para texto, Manrope para display — o par da família UpDigital,
+     já carregado em styles.css. */
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+.bzau-brand h1,
+.bzau-head h2,
+.bzau-modal-head h3 { font-family: Manrope, Inter, system-ui, sans-serif; }
+
+/* Escuro por preferência do sistema (quando o visitante não escolheu)... */
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) {
+    --ink: #EAF1F8;
+    --muted: #9DB2C8;
+    --line: #20303F;
+    --line-soft: #1A2734;
+    --bg: #0C1520;
+    --surface: #101B27;
+    --danger: #FF9A93;
+    --danger-bg: rgba(179, 38, 30, .18);
+    --danger-line: rgba(255, 154, 147, .34);
+    --ring: rgba(91, 163, 245, .26);
+  }
+}
+/* ...ou por escolha explícita guardada no portal. */
+.bzau[data-theme="dark"] {
+  --ink: #EAF1F8;
+  --muted: #9DB2C8;
+  --line: #20303F;
+  --line-soft: #1A2734;
+  --bg: #0C1520;
+  --surface: #101B27;
+  --danger: #FF9A93;
+  --danger-bg: rgba(179, 38, 30, .18);
+  --danger-line: rgba(255, 154, 147, .34);
+  --ring: rgba(91, 163, 245, .26);
+}
+
+.bzau *,
+.bzau *::before,
+.bzau *::after { box-sizing: border-box; }
+
+.bzau img { max-width: 100%; }
+
+.bzau :focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+.bzau-brand :focus-visible { outline-color: #9CCBFF; }
+.bzau ::selection { background: color-mix(in srgb, var(--blue) 26%, transparent); }
+
+/* ─────────────────────────── Painel de marca ─────────────────────────── */
+
+.bzau-brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: clamp(32px, 4.4vw, 68px);
+  background: linear-gradient(155deg, var(--navy) 0%, var(--navy2) 58%, var(--navy3) 100%);
+  color: #fff;
+}
+/* Grelha técnica esbatida — igual ao hero da landing. */
+.bzau-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(125, 185, 255, .07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 185, 255, .07) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(120% 90% at 30% 0%, #000 26%, transparent 76%);
+  mask-image: radial-gradient(120% 90% at 30% 0%, #000 26%, transparent 76%);
+}
+/* Glow subtil. */
+.bzau-brand::after {
+  content: "";
+  position: absolute;
+  left: -14%;
+  bottom: -30%;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(45, 140, 240, .38), transparent 62%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.bzau-brand-in {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.bzau-logo {
+  display: block;
+  width: auto;
+  height: clamp(38px, 4vw, 52px);
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .28));
+}
+
+.bzau-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 30px;
+  padding: 7px 15px;
+  border: 1px solid rgba(191, 216, 245, .36);
+  border-radius: 30px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #BFD8F5;
+}
+
+.bzau-brand h1 {
+  font-size: clamp(26px, 2.9vw, 40px);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -.025em;
+  margin: 18px 0 14px;
+}
+.bzau-brand h1 span { color: var(--blue-bright); }
+
+.bzau-lead {
+  font-size: 15.5px;
+  line-height: 1.62;
+  color: #D6E4F5;
+  margin: 0;
+  max-width: 460px;
+}
+
+.bzau-proof {
+  list-style: none;
+  margin: 30px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.bzau-proof li {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+}
+.bzau-proof-ico {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .17);
+  color: #9CCBFF;
+}
+.bzau-proof b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: #fff;
+}
+.bzau-proof span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #A9C2DC;
+}
+
+.bzau-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 28px;
+}
+.bzau-chips span {
+  background: rgba(255, 255, 255, .09);
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 30px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  color: #EAF3FF;
+}
+
+.bzau-mobile-tag { display: none; }
+
+/* ───────────────────────── Painel do formulário ──────────────────────── */
+
+.bzau-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 3.4vw, 56px);
+  background: var(--surface);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bzau-card {
+  width: 100%;
+  max-width: 408px;
+  margin: auto;
+}
+
+.bzau-head { margin-bottom: 22px; }
+/* Sobrancelha em caixa alta muito espaçada — assinatura da família UpDigital. */
+.bzau-eyebrow {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--blue2);
+}
+.bzau[data-theme="dark"] .bzau-eyebrow { color: var(--blue-bright); }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-eyebrow { color: var(--blue-bright); }
+}
+.bzau-head h2 {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -.022em;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.bzau-head p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Tabs (segmented control) */
+.bzau-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 26px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.bzau-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  padding: 8px 6px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background .16s, color .16s, border-color .16s, box-shadow .16s;
+}
+.bzau-tab:hover { color: var(--ink); background: var(--surface); }
+.bzau-tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--blue2);
+  border-color: var(--line);
+  box-shadow: 0 2px 8px rgba(13, 59, 102, .1);
+}
+.bzau[data-theme="dark"] .bzau-tab[aria-selected="true"] { color: var(--blue-bright); }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-tab[aria-selected="true"] { color: var(--blue-bright); }
+}
+
+/* Campos */
+.bzau-form {
+  display: grid;
+  gap: 16px;
+}
+
+.bzau-field { display: grid; gap: 7px; }
+.bzau-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bzau-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.bzau-input .bzau-input-ico {
+  position: absolute;
+  left: 14px;
+  color: var(--muted);
+  opacity: .55;
+  pointer-events: none;
+  transition: color .16s, opacity .16s;
+}
+.bzau-input input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px 12px 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15.5px;
+  transition: border-color .16s, box-shadow .16s, background .16s;
+}
+.bzau-input input::placeholder { color: var(--muted); opacity: .62; }
+.bzau-input input:hover { border-color: color-mix(in srgb, var(--blue) 30%, var(--line)); }
+.bzau-input input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.bzau-input input:focus ~ .bzau-input-ico { color: var(--blue); opacity: 1; }
+/* O autofill do Chrome pinta o campo de branco — anula-se em modo escuro. */
+.bzau-input input:-webkit-autofill,
+.bzau-input input:-webkit-autofill:hover,
+.bzau-input input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+.bzau-input.has-reveal input { padding-right: 48px; }
+.bzau-reveal {
+  position: absolute;
+  right: 6px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.bzau-reveal:hover { background: var(--bg); color: var(--ink); }
+
+/* Erro */
+.bzau-error {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 13px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  border-radius: 12px;
+  color: var(--danger);
+  font-size: 13.5px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+.bzau-error svg { flex: 0 0 auto; margin-top: 1px; }
+
+/* Botões */
+.bzau-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(29, 95, 167, .3);
+  transition: background .18s, transform .14s, box-shadow .18s;
+}
+.bzau-btn:hover:not(:disabled) {
+  background: var(--blue2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -3px rgba(29, 95, 167, .4);
+}
+.bzau-btn:active:not(:disabled) { transform: translateY(1px); }
+.bzau-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+
+.bzau-btn-ghost {
+  background: transparent;
+  color: var(--blue2);
+  border: 1.5px solid var(--line);
+  box-shadow: none;
+}
+.bzau-btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--blue) 8%, transparent);
+  border-color: var(--blue);
+  color: var(--blue2);
+}
+.bzau[data-theme="dark"] .bzau-btn-ghost { color: var(--blue-bright); }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-btn-ghost { color: var(--blue-bright); }
+}
+
+/* Ligações discretas */
+.bzau-link {
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  min-height: 40px;
+  border-radius: 9px;
+  color: var(--blue2);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.bzau-link:hover:not(:disabled) { background: var(--bg); color: var(--blue); }
+.bzau-link:disabled { opacity: .5; cursor: not-allowed; }
+.bzau[data-theme="dark"] .bzau-link { color: var(--blue-bright); }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-link { color: var(--blue-bright); }
+}
+
+.bzau-form-aside { text-align: center; margin-top: -4px; }
+
+/* Spinner do estado de carregamento */
+.bzau-spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .38);
+  border-top-color: #fff;
+  animation: bzau-spin .7s linear infinite;
+}
+@keyframes bzau-spin { to { transform: rotate(360deg); } }
+
+/* ───────────────────────────── OTP ───────────────────────────── */
+
+.bzau-otp-sent {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+  text-align: center;
+}
+.bzau-otp-sent strong { color: var(--ink); font-weight: 800; }
+
+.bzau-otp-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.bzau-otp-grid input {
+  width: 100%;
+  min-width: 0;
+  height: 58px;
+  padding: 0;
+  text-align: center;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .16s, box-shadow .16s;
+}
+.bzau-otp-grid input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.bzau-otp-timer {
+  margin: 0;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.bzau-otp-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─────────────────────────── Rodapé do painel ─────────────────────────── */
+
+.bzau-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.bzau-lang {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.bzau-lang button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  padding: 0 13px;
+  min-height: 38px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.bzau-lang button:hover { background: var(--bg); color: var(--ink); }
+.bzau-lang button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+
+.bzau-powered {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bzau-powered img {
+  height: 20px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 3px;
+}
+/* O logótipo UpDigital troca de versão conforme a superfície. */
+.bzau-powered img.bzau-on-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-powered img.bzau-on-dark { display: block; }
+  .bzau:not([data-theme="light"]) .bzau-powered img.bzau-on-light { display: none; }
+}
+.bzau[data-theme="dark"] .bzau-powered img.bzau-on-dark { display: block; }
+.bzau[data-theme="dark"] .bzau-powered img.bzau-on-light { display: none; }
+
+/* ───────────────────────────── Modal ───────────────────────────── */
+
+.bzau-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 20, 35, .52);
+  backdrop-filter: blur(3px);
+}
+.bzau-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  pointer-events: none;
+}
+.bzau-modal-card {
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 26px 24px 24px;
+  /* Sombra "premium": queda longa e difusa + fio de 1px (padrão CONDVISIT). */
+  box-shadow:
+    0 26px 54px -26px rgba(13, 59, 102, .34),
+    0 4px 14px -6px rgba(13, 59, 102, .14),
+    0 0 0 1px rgba(13, 59, 102, .05);
+}
+/* Fio de marca no topo do cartão (padrão Keeper/KOPPA). */
+.bzau-modal-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--blue), var(--navy));
+}
+.bzau[data-theme="dark"] .bzau-modal-card {
+  box-shadow: 0 26px 60px -24px rgba(0, 0, 0, .82), 0 0 0 1px rgba(255, 255, 255, .05);
+}
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-modal-card {
+    box-shadow: 0 26px 60px -24px rgba(0, 0, 0, .82), 0 0 0 1px rgba(255, 255, 255, .05);
+  }
+}
+.bzau-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.bzau-modal-head h3 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  margin: 0 0 5px;
+  color: var(--ink);
+}
+.bzau-modal-head p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0;
+}
+.bzau-modal-close {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.bzau-modal-close:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+.bzau-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ───────────────────────────── Responsivo ───────────────────────────── */
+
+/* Portátil pequeno: o painel de marca encolhe mas mantém-se. */
+@media (max-width: 1180px) {
+  .bzau { grid-template-columns: 1fr .92fr; }
+  .bzau-chips { display: none; }
+}
+
+/* Ecrã baixo (portátil 13" com barras): a prova sai antes de cortar. */
+@media (min-width: 901px) and (max-height: 720px) {
+  .bzau-proof { display: none; }
+  .bzau-chips { display: flex; margin-top: 24px; }
+}
+@media (min-width: 901px) and (max-height: 560px) {
+  .bzau-lead,
+  .bzau-chips { display: none; }
+}
+
+/* Telemóvel e tablet: a marca colapsa para um cabeçalho compacto. */
+@media (max-width: 900px) {
+  .bzau {
+    position: static;
+    min-height: 100vh;
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow: visible;
+  }
+  .bzau-brand {
+    padding: 14px 20px;
+    align-items: center;
+  }
+  .bzau-brand::after { left: auto; right: -30%; bottom: -160%; }
+  .bzau-brand-in {
+    max-width: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .bzau-logo { height: 30px; }
+  .bzau-badge,
+  .bzau-brand h1,
+  .bzau-lead,
+  .bzau-proof { display: none; }
+  .bzau-mobile-tag {
+    display: block;
+    margin-left: auto;
+    text-align: right;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #A9C2DC;
+  }
+  .bzau-panel {
+    padding: 28px 20px 36px;
+    align-items: flex-start;
+    overflow: visible;
+  }
+  .bzau-card { margin: 0 auto; }
+}
+
+@media (max-width: 420px) {
+  .bzau-mobile-tag { display: none; }
+  .bzau-head h2 { font-size: 22px; }
+  .bzau-tabs { grid-template-columns: 1fr; gap: 3px; }
+  .bzau-tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 48px;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 13px;
+  }
+  .bzau-otp-grid { gap: 6px; }
+  .bzau-otp-grid input { height: 52px; font-size: 19px; }
+  .bzau-modal-actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bzau *,
+  .bzau *::before,
+  .bzau *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

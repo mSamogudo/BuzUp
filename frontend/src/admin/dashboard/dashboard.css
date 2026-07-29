@@ -1,0 +1,270 @@
+/* Estilos exclusivos do dashboard enterprise.
+   Prefixo `dash-` para nao colidir com nada em styles.css. Todas as cores saem
+   das variaveis do portal, por isso o tema escuro funciona sem regras extra. */
+
+/* ---------- Barra de filtros ---------- */
+
+.dash-filters {
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow);
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.dash-filters-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dash-filters-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-text-muted);
+}
+
+.dash-filters-title svg { color: var(--app-accent); opacity: 0.8; }
+
+.dash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(var(--app-accent-rgb), 0.12);
+  color: var(--app-accent);
+  border: 1px solid rgba(var(--app-accent-rgb), 0.20);
+}
+
+.dash-badge-muted {
+  background: var(--app-surface-soft);
+  color: var(--app-text-muted);
+  border-color: var(--app-border);
+}
+
+.dash-spacer { flex: 1 1 auto; }
+
+.dash-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dash-filter-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+/* Campos mais baixos: uma barra de filtros nao pode ocupar meio ecra. */
+.dash-filters .field input,
+.dash-filters .field select {
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.dash-filters .field span { font-size: 10px; }
+
+.dash-filter-note {
+  font-size: 11.5px;
+  color: var(--app-text-muted);
+  margin: 0;
+}
+
+.dash-link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-accent);
+  cursor: pointer;
+}
+
+.dash-link-button:hover { text-decoration: underline; }
+
+/* ---------- Grelhas ---------- */
+
+.dash-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.dash-grid-2 { grid-template-columns: 1.5fr 1fr; }
+.dash-grid-2-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (max-width: 1080px) {
+  .dash-grid-2,
+  .dash-grid-2-even { grid-template-columns: 1fr; }
+}
+
+/* ---------- Legenda com rotulos directos ---------- */
+
+.dash-legend {
+  display: grid;
+  gap: 6px;
+  padding: 4px 8px 0;
+  width: 100%;
+}
+
+.dash-legend-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.dash-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.dash-legend-name {
+  color: var(--app-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-legend-value {
+  color: var(--app-text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
+}
+
+.dash-legend-value strong { color: var(--app-text); font-weight: 700; }
+
+/* ---------- Actividade recente ---------- */
+
+.dash-recent-list {
+  display: grid;
+  gap: 2px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.dash-recent-item {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 6px;
+  border-radius: 8px;
+}
+
+.dash-recent-item + .dash-recent-item { border-top: 1px solid var(--app-border); }
+
+.dash-recent-item:hover { background: var(--app-surface-soft); }
+
+.dash-recent-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--app-accent-rgb), 0.10);
+  color: var(--app-accent);
+}
+
+.dash-recent-body { min-width: 0; }
+
+.dash-recent-body strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-recent-body span { font-size: 11px; color: var(--app-text-muted); }
+
+.dash-recent-amount {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Estados ---------- */
+
+.dash-error {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(214, 40, 40, 0.30);
+  background: rgba(214, 40, 40, 0.08);
+}
+
+.dash-error strong { font-size: 14px; color: var(--app-danger); }
+.dash-error p { margin: 0; font-size: 13px; color: var(--app-text-muted); }
+
+.dash-notice {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-soft);
+  font-size: 12.5px;
+  color: var(--app-text-muted);
+}
+
+.dash-kpi-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.dash-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dash-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--app-success, #2A9D8F);
+  animation: dash-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes dash-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-live-dot { animation: none; }
+}
+
+/* Tabelas compactas: o dashboard mostra top-8, nao precisa da barra de busca
+   inteira a ocupar espaco vertical. */
+/* Nos paineis compactos (no maximo 8 linhas) a barra de resultados e o
+   selector de "por pagina" nao servem para nada e afastavam a tabela do
+   titulo da seccao. */
+.dash-compact-table .admin-table-meta,
+.dash-compact-table .admin-table-pagination { display: none; }
+.dash-compact-table .admin-table-wrap { margin-top: 0; }
+.dash-compact-table { margin-top: -4px; }
+.dash-compact-table .admin-table th,
+.dash-compact-table .admin-table td { font-size: 12.5px; }

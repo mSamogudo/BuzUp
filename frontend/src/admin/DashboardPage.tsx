@@ -1,231 +1,273 @@
-import { useEffect, useState } from "react";
-import { RefreshCw, TrendingUp, BarChart3 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-} from "recharts";
+  Activity, BarChart3, Clock, CreditCard, Route as RouteIcon, RefreshCw, TrendingUp,
+} from "lucide-react";
 import { apiFetch } from "../lib/api";
-import { formatCount, formatCurrency } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
-import { MetricCard, PageFrame } from "../ui/common";
+import { PageFrame, SectionCard, useAsyncData } from "../ui/common";
 import { SkeletonCard } from "../ui/Skeleton";
+import FilterBar, { countActive, defaultFilters } from "./dashboard/FilterBar";
+import {
+  ChartCard, HourlyChart, PaymentDonut, RevenueChart, TopRoutesChart,
+} from "./dashboard/Charts";
+import {
+  AutoRefreshToggle, KpiStrip, PackagesTable, RecentActivity,
+  TopAgentsTable, TopDriversTable, TopTripsTable,
+} from "./dashboard/Panels";
+import { chartTheme, shortDate } from "./dashboard/theme";
+import type { Analytics, DashFilters, Lookup } from "./dashboard/types";
+import "./dashboard/dashboard.css";
 
-interface DashboardData {
-  passengers_total: number;
-  wallets_total_balance: string;
-  today: {
-    validations_total: number;
-    validations_approved: number;
-    validation_revenue: string;
-    topups_count: number;
-    topups_total: string;
-    guest_checkouts_total: number;
-    guest_checkouts_issued: number;
-  };
-  pending_payments: number;
-  devices_active: number;
-  devices_pending: number;
-}
+const AUTO_REFRESH_MS = 30_000;
 
-interface ChartData {
-  revenue_7d: { date: string; revenue: string; validations: number; topups: string; topups_count: number }[];
-  payment_methods: { provider: string; count: number; total: string }[];
-  top_routes: { route_code: string; route_name: string; count: number; revenue: string }[];
-  hourly_today: { hour: string; total: number; approved: number; denied: number }[];
-  validation_trend: { date: string; approved: number; denied: number }[];
-}
+/** `useAsyncData` engole o erro num toast e deixa `data` a null — não dá para
+ * distinguir "sem dados" de "falhou". Embrulhamos o resultado para termos um
+ * estado de erro próprio (com botão de tentar de novo) sem duplicar a lógica
+ * de carregamento do portal. */
+type Loaded<T> = { ok: true; value: T } | { ok: false; error: string };
 
-function ChartCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="dashboard-chart-card">
-      <div className="dashboard-chart-header">
-        {icon}
-        <h3>{title}</h3>
-      </div>
-      <div className="dashboard-chart-body">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function formatShortDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("pt-MZ", { day: "2-digit", month: "short" });
-}
-
-function formatNum(val: string | number) {
-  const n = typeof val === "string" ? parseFloat(val) : val;
-  if (isNaN(n) || n === 0) return "0";
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString("pt-MZ", { maximumFractionDigits: 0 });
-}
-
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="dashboard-tooltip">
-      <p className="dashboard-tooltip-label">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} style={{ color: p.color }}>
-          {p.name}: <strong>{typeof p.value === "number" ? formatCurrency(p.value) : p.value}</strong>
-        </p>
-      ))}
-    </div>
-  );
+function buildQuery(f: DashFilters): string {
+  const qs = new URLSearchParams();
+  if (f.dateFrom) qs.set("date_from", f.dateFrom);
+  if (f.dateTo) qs.set("date_to", f.dateTo);
+  if (f.routeId) qs.set("route_id", f.routeId);
+  if (f.driverId) qs.set("driver_id", f.driverId);
+  if (f.agentId) qs.set("agent_id", f.agentId);
+  if (f.provider) qs.set("provider", f.provider);
+  return qs.toString();
 }
 
 export default function DashboardPage() {
   const { token } = useAuth();
   const { locale, theme } = useUi();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [charts, setCharts] = useState<ChartData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const c = chartTheme(theme);
 
-  const isDark = theme === "dark";
-  const gridColor = isDark ? "#2A2F38" : "#E7E1D4";
-  const textColor = isDark ? "#8F94A0" : "#6B6356";
+  const [filters, setFilters] = useState<DashFilters>(defaultFilters);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastLoad, setLastLoad] = useState<Date | null>(null);
 
-  const load = () => {
+  const [routes, setRoutes] = useState<Lookup[]>([]);
+  const [drivers, setDrivers] = useState<Lookup[]>([]);
+  const [agents, setAgents] = useState<Lookup[]>([]);
+  const [providers, setProviders] = useState<string[]>([]);
+
+  // Opções dos filtros: falhas ficam silenciosas — um dropdown vazio não deve
+  // derrubar o painel inteiro.
+  useEffect(() => {
     if (!token) return;
-    setLoading(true);
-    Promise.all([
-      apiFetch("/api/admin/dashboard/", token),
-      apiFetch("/api/admin/dashboard/charts/", token),
-    ]).then(([d, c]) => { setData(d); setCharts(c); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-  useEffect(load, [token]);
+    apiFetch("/api/routes/", token).then((d) => setRoutes(d.results || d)).catch(() => {});
+    apiFetch("/api/drivers/", token).then((d) => setDrivers(d.results || d)).catch(() => {});
+    apiFetch("/api/agents/", token).then((d) => setAgents(d.results || d)).catch(() => {});
+  }, [token]);
 
-  const d = data;
-  const c = charts;
+  const query = useMemo(() => buildQuery(filters), [filters]);
 
-  // Combine series into one for the area chart so we have a single dense
-  // visual: receita validada + total recargas, dia a dia, ultimos 7d.
-  const trendData = (c?.revenue_7d || []).map((r) => ({
-    date: formatShortDate(r.date),
-    receita: parseFloat(r.revenue || "0"),
-    recargas: parseFloat(r.topups || "0"),
-  }));
+  const loader = useCallback(
+    (): Promise<Loaded<Analytics>> =>
+      apiFetch(`/api/admin/analytics/?${query}`, token!)
+        .then((d) => ({ ok: true as const, value: d as Analytics }))
+        .catch((e) => ({
+          ok: false as const,
+          error: e instanceof Error ? e.message : "Não foi possível carregar a analítica.",
+        })),
+    [token, query],
+  );
+  const { data: result, loading, reload } = useAsyncData<Loaded<Analytics>>(loader, [token, query]);
 
-  // Top 3 rotas com barra horizontal compacta.
-  const routeData = (c?.top_routes || []).slice(0, 3).map((r) => ({
-    code: r.route_code,
-    name: r.route_name,
-    validacoes: r.count,
-    receita: parseFloat(r.revenue || "0"),
-  }));
-  const maxValidacoes = Math.max(1, ...routeData.map((r) => r.validacoes));
+  const data = result?.ok ? result.value : null;
+  const error = result && !result.ok ? result.error : null;
+
+  useEffect(() => { if (result) setLastLoad(new Date()); }, [result]);
+
+  // Providers acumulam-se entre cargas: filtrar por um método não pode fazer
+  // desaparecer a própria opção do dropdown.
+  useEffect(() => {
+    if (!data) return;
+    setProviders((prev) => {
+      const next = new Set(prev);
+      data.payment_methods.forEach((m) => { if (m.provider) next.add(m.provider); });
+      if (next.size === prev.length) return prev;
+      return Array.from(next).sort();
+    });
+  }, [data]);
+
+  // Auto-refresh: a referência evita recriar o intervalo a cada render (o
+  // `reload` do hook é uma função nova de cada vez).
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = window.setInterval(() => reloadRef.current(), AUTO_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [autoRefresh]);
+
+  const firstLoad = loading && !data && !error;
+  const refreshing = loading && (Boolean(data) || Boolean(error));
+
+  const clampedRange = data && data.filters.date_from !== filters.dateFrom;
+  const isEmpty = data
+    && !data.kpis.tickets_sold && !data.kpis.validations
+    && !data.kpis.trips_total && !data.payment_methods.length;
+
+  const clearFilters = () => setFilters(defaultFilters());
 
   return (
     <PageFrame
+      action={
+        <div className="admin-page-actions">
+          <AutoRefreshToggle on={autoRefresh} onToggle={() => setAutoRefresh((v) => !v)} />
+          <button className="icon-text-button" disabled={loading} onClick={reload} type="button">
+            <RefreshCw className={refreshing ? "button-spinner" : undefined} size={16} />
+            <span>{t(locale, "refresh")}</span>
+          </button>
+        </div>
+      }
+      description={
+        lastLoad
+          ? `Actualizado às ${lastLoad.toLocaleTimeString("pt-MZ", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}${autoRefresh ? " · auto 30s" : ""}`
+          : undefined
+      }
       kicker={t(locale, "overview")}
       title={t(locale, "dashboard")}
-      action={
-        <button className="icon-text-button" onClick={load} type="button">
-          <RefreshCw size={16} />
-          <span>{t(locale, "refresh")}</span>
-        </button>
-      }
     >
-      {loading ? (
-        <>
-          <SkeletonCard count={4} />
-          <div className="dashboard-chart-grid dashboard-chart-grid-compact" style={{ marginTop: 16 }}>
-            <div className="skeleton skeleton-card" style={{ height: 280 }} />
-            <div className="skeleton skeleton-card" style={{ height: 280 }} />
-          </div>
-        </>
-      ) : (
-        <>
-          {/* 4 KPI tiles — uma so linha, tudo no viewport. */}
-          <div className="admin-metric-grid dashboard-kpi-strip">
-            <MetricCard
-              label="Receita hoje"
-              value={formatCurrency(d?.today.validation_revenue || "0")}
-              detail={`${d?.today.validations_total || 0} validacoes`}
-            />
-            <MetricCard
-              label="Top-ups hoje"
-              value={formatCurrency(d?.today.topups_total || "0")}
-              detail={`${d?.today.topups_count || 0} recargas`}
-            />
-            <MetricCard
-              label="Saldo em circulacao"
-              value={formatCurrency(d?.wallets_total_balance || "0")}
-              detail={`${d?.passengers_total || 0} passageiros`}
-            />
-            <MetricCard
-              label="Pendencias"
-              value={formatCount((d?.pending_payments || 0) + (d?.devices_pending || 0))}
-              detail={`${d?.pending_payments || 0} pgs · ${d?.devices_pending || 0} POS`}
-            />
-          </div>
+      <FilterBar
+        agents={agents}
+        drivers={drivers}
+        loading={loading}
+        onChange={setFilters}
+        onClear={clearFilters}
+        providers={providers}
+        routes={routes}
+        value={filters}
+      />
 
-          {/* 2 gráficos lado a lado, sem mais nada por baixo. */}
-          <div className="dashboard-chart-grid dashboard-chart-grid-compact" style={{ marginTop: 16 }}>
-            <ChartCard title="Receita & recargas — 7 dias" icon={<TrendingUp size={18} />}>
-              {trendData.length === 0 ? (
-                <p className="dashboard-empty">Sem dados.</p>
-              ) : (
-                <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={trendData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="gradReceita" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1D5FA7" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#1D5FA7" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="gradRecargas" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2A9D8F" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#2A9D8F" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                    <XAxis dataKey="date" tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: textColor }} axisLine={false} tickLine={false} tickFormatter={formatNum} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Area type="monotone" dataKey="receita" name="Receita" stroke="#1D5FA7" strokeWidth={2.5} fill="url(#gradReceita)" />
-                    <Area type="monotone" dataKey="recargas" name="Recargas" stroke="#2A9D8F" strokeWidth={2} fill="url(#gradRecargas)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
+      {clampedRange && data ? (
+        <p className="dash-notice">
+          Intervalo demasiado longo — o servidor limitou-o a{" "}
+          <strong>{shortDate(data.filters.date_from)} – {shortDate(data.filters.date_to)}</strong>.
+          Os números abaixo referem-se a esse intervalo.
+        </p>
+      ) : null}
+
+      {error ? (
+        <div className="dash-error" style={{ marginTop: 16 }}>
+          <strong>Não foi possível carregar o dashboard</strong>
+          <p>{error}</p>
+          <button className="primary-button" onClick={reload} type="button">
+            <RefreshCw size={15} /> Tentar de novo
+          </button>
+        </div>
+      ) : null}
+
+      {firstLoad ? (
+        <div style={{ marginTop: 16 }}>
+          <SkeletonCard count={8} />
+          <div className="dash-grid dash-grid-2">
+            <div className="skeleton skeleton-card" style={{ height: 340 }} />
+            <div className="skeleton skeleton-card" style={{ height: 340 }} />
+          </div>
+          <div className="dash-grid dash-grid-2-even">
+            <div className="skeleton skeleton-card" style={{ height: 300 }} />
+            <div className="skeleton skeleton-card" style={{ height: 300 }} />
+          </div>
+        </div>
+      ) : null}
+
+      {data ? (
+        <div style={{ marginTop: 16, opacity: refreshing ? 0.65 : 1, transition: "opacity 160ms ease" }}>
+          {isEmpty ? (
+            <div className="admin-empty-state" style={{ marginBottom: 16 }}>
+              Sem movimento no intervalo seleccionado
+              {countActive(filters) > 0 ? " com estes filtros. Tente limpar os filtros ou alargar as datas." : ". Tente alargar as datas."}
+            </div>
+          ) : null}
+
+          <KpiStrip k={data.kpis} packages={data.packages} />
+
+          <div className="dash-grid dash-grid-2">
+            <ChartCard
+              icon={<TrendingUp size={18} />}
+              subtitle="Bilhetes e validações empilham (receita). Recargas ficam a tracejado — são saldo, não receita."
+              title="Receita por dia"
+            >
+              <RevenueChart c={c} data={data.revenue_series} />
             </ChartCard>
 
-            <ChartCard title="Top rotas (hoje)" icon={<BarChart3 size={18} />}>
-              {routeData.length === 0 ? (
-                <p className="dashboard-empty">Sem validacoes registadas hoje.</p>
-              ) : (
-                <div className="dashboard-route-rank-list">
-                  {routeData.map((r, i) => (
-                    <div key={r.code} className="dashboard-route-rank-row">
-                      <span className="dashboard-route-rank-num">{i + 1}</span>
-                      <div className="dashboard-route-rank-info">
-                        <strong>{r.code}</strong>
-                        <span>{r.name}</span>
-                      </div>
-                      <div className="dashboard-route-rank-bar">
-                        <div
-                          className="dashboard-route-rank-fill"
-                          style={{ width: `${Math.max(8, (r.validacoes / maxValidacoes) * 100)}%` }}
-                        />
-                      </div>
-                      <div className="dashboard-route-rank-stats">
-                        <strong>{formatCount(r.validacoes)}</strong>
-                        <span>{formatCurrency(r.receita)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <ChartCard
+              icon={<CreditCard size={18} />}
+              subtitle="Pagamentos confirmados por canal"
+              title="Métodos de pagamento"
+            >
+              <PaymentDonut c={c} data={data.payment_methods} />
             </ChartCard>
           </div>
-        </>
-      )}
+
+          <div className="dash-grid dash-grid-2-even">
+            <ChartCard
+              icon={<Clock size={18} />}
+              subtitle="Validações por hora do dia — a barra cheia é o pico"
+              title="Distribuição horária"
+            >
+              <HourlyChart c={c} data={data.hourly} />
+            </ChartCard>
+
+            <ChartCard
+              icon={<RouteIcon size={18} />}
+              subtitle="Receita por rota (bilhetes + validações)"
+              title="Top rotas"
+            >
+              <TopRoutesChart c={c} data={data.top_routes} />
+            </ChartCard>
+          </div>
+
+          <div className="dash-grid dash-grid-2">
+            <SectionCard description="Viagens com mais receita no intervalo." title="Top viagens">
+              <TopTripsTable rows={data.top_trips} />
+            </SectionCard>
+
+            <SectionCard
+              description={autoRefresh ? "A actualizar a cada 30 segundos." : "Últimos movimentos no intervalo."}
+              title="Actividade recente"
+            >
+              <RecentActivity items={data.recent} />
+            </SectionCard>
+          </div>
+
+          <div className="dash-grid dash-grid-2-even">
+            <SectionCard description="Ordenado por receita associada às viagens." title="Top motoristas">
+              <TopDriversTable rows={data.top_drivers} />
+            </SectionCard>
+
+            <SectionCard description="Vendas de bilhetes emitidos por agente." title="Top agentes">
+              <TopAgentsTable rows={data.top_agents} />
+            </SectionCard>
+          </div>
+
+          <div className="dash-grid">
+            <SectionCard
+              description={`${data.packages.subscriptions} subscrições no intervalo · ${data.packages.active_now} activas neste momento.`}
+              title="Pacotes"
+            >
+              <PackagesTable rows={data.packages.by_package} />
+            </SectionCard>
+          </div>
+        </div>
+      ) : null}
+
+      {!firstLoad && !data && !error ? (
+        <div className="admin-empty-state" style={{ marginTop: 16 }}>
+          <BarChart3 size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
+          {t(locale, "noData")}
+        </div>
+      ) : null}
+
+      {refreshing ? (
+        <p className="dash-kpi-note" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Activity size={12} /> A actualizar…
+        </p>
+      ) : null}
     </PageFrame>
   );
 }

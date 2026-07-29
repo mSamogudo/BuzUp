@@ -88,6 +88,8 @@ class AnalyticsFilters:
             qs = qs.filter(route_id=self.route_id)
         if self.driver_id:
             qs = qs.filter(trip__driver_id=self.driver_id)
+        if self.agent_id:
+            qs = qs.filter(trip__agent_id=self.agent_id)
         return qs
 
     def passes(self):
@@ -98,6 +100,8 @@ class AnalyticsFilters:
             qs = qs.filter(Q(trip__route_id=self.route_id) | Q(guest_checkout__trip__route_id=self.route_id))
         if self.driver_id:
             qs = qs.filter(trip__driver_id=self.driver_id)
+        if self.agent_id:
+            qs = qs.filter(Q(trip__agent_id=self.agent_id) | Q(guest_checkout__trip__agent_id=self.agent_id))
         return qs
 
     def topups(self):
@@ -125,6 +129,8 @@ class AnalyticsFilters:
             qs = qs.filter(route_id=self.route_id)
         if self.driver_id:
             qs = qs.filter(driver_id=self.driver_id)
+        if self.agent_id:
+            qs = qs.filter(agent_id=self.agent_id)
         return qs
 
 
@@ -211,11 +217,45 @@ def _hourly(validations) -> list[dict]:
     return [{"hour": f"{h:02d}h", "count": c} for h, c in buckets.items()]
 
 
+# O campo `provider` foi gravado com caixas diferentes ao longo do tempo
+# ("mpesa" e "MPESA" sao o mesmo) e mistura carteiras moveis com o saldo
+# interno. Aqui normaliza-se e diz-se ao painel o que cada coisa e.
+PROVIDER_LABELS = {
+    "MPESA": ("M-Pesa", "mobile_money"),
+    "EMOLA": ("e-Mola", "mobile_money"),
+    "WALLET": ("Saldo BusUp", "wallet"),
+    "MOCK": ("Simulado (teste)", "test"),
+    "CASH": ("Dinheiro", "cash"),
+}
+
+
 def _payment_methods(payments) -> list[dict]:
-    rows = (payments.values("provider").annotate(count=Count("id"), total=Sum("amount"))
-            .order_by("-total"))
-    return [{"provider": r["provider"] or "Outro", "count": r["count"], "total": _money(r["total"])}
-            for r in rows]
+    """Metodos de pagamento, agrupados sem duplicados de caixa.
+
+    `kind` distingue dinheiro que ENTRA (carteiras moveis) de pagamento feito
+    com saldo ja carregado (`wallet`) — este ultimo nao e receita nova, senao
+    contava-se duas vezes: uma na recarga e outra na viagem.
+    """
+    from collections import defaultdict
+
+    acc = defaultdict(lambda: {"count": 0, "total": Decimal("0.00")})
+    for r in payments.values("provider").annotate(count=Count("id"), total=Sum("amount")):
+        key = (r["provider"] or "OUTRO").strip().upper()
+        acc[key]["count"] += r["count"]
+        acc[key]["total"] += r["total"] or Decimal("0.00")
+
+    rows = []
+    for key, v in acc.items():
+        label, kind = PROVIDER_LABELS.get(key, (key.title(), "other"))
+        rows.append({
+            "provider": key,
+            "label": label,
+            "kind": kind,
+            "count": v["count"],
+            "total": _money(v["total"]),
+        })
+    rows.sort(key=lambda x: Decimal(x["total"]), reverse=True)
+    return rows
 
 
 def _top_routes(validations, passes) -> list[dict]:
@@ -282,6 +322,8 @@ def _top_agents(f: AnalyticsFilters) -> list[dict]:
     )
     if f.route_id:
         qs = qs.filter(trip__route_id=f.route_id)
+    if f.agent_id:
+        qs = qs.filter(trip__agent_id=f.agent_id)
     rows = (qs.filter(trip__agent__isnull=False)
             .values("trip__agent_id", "trip__agent__full_name")
             .annotate(vendas=Count("id"), receita=Sum("total_amount"))

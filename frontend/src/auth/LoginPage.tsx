@@ -1,27 +1,106 @@
-import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from "react";
-import { Lock, Phone, Shield, Smartphone, User, UserPlus, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from "react";
+import { AlertCircle, CreditCard, Eye, EyeOff, Lock, Phone, QrCode, Route, Shield, Smartphone, User, UserPlus, Wallet, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiLogin, apiOtpRequest, apiOtpVerify, apiPublic } from "../lib/api";
-import { t } from "../lib/i18n";
+import { t, type Locale } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "./AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { useBranding, pickLogo } from "../lib/branding";
+import "./login.css";
 
 type Mode = "staff" | "otp" | "register";
 type OtpStep = "phone" | "code";
+
+/* Copy de marca do painel esquerdo + microcopy que não existe no dicionário
+   global. Mantém-se aqui porque só esta página a usa. */
+const COPY: Record<Locale, {
+  headline: [string, string, string];
+  lead: string;
+  tag: string;
+  proof: { title: string; text: string }[];
+  chips: string[];
+  eyebrow: Record<Mode, string>;
+  showPassword: string;
+  hidePassword: string;
+  forgot: string;
+  resetTitle: string;
+  resetLead: string;
+  resetSubmit: string;
+  resetBusy: string;
+  resetOk: string;
+  resetFail: string;
+}> = {
+  pt: {
+    headline: ["Bilhete, carteira e frota", " numa só ", "plataforma."],
+    lead: "Entre no portal BusUp para gerir viagens, vendas e validações — ou entre como passageiro com o seu número de telefone.",
+    tag: "Transporte cashless",
+    proof: [
+      { title: "3 canais de venda e validação", text: "App do passageiro, POS a bordo e agente de bilheteira." },
+      { title: "2 carteiras móveis integradas", text: "M-Pesa e e-Mola, sem guardar dados de cartão." },
+      { title: "Frota e viagens em tempo real", text: "Partidas, lugares e localização no mesmo painel." },
+    ],
+    chips: ["QR no telemóvel", "Cartão NFC", "M-Pesa", "e-Mola"],
+    eyebrow: { staff: "Acesso seguro", otp: "Acesso por SMS", register: "Nova conta" },
+    showPassword: "Mostrar senha",
+    hidePassword: "Ocultar senha",
+    forgot: "Esqueci a senha",
+    resetTitle: "Reposição de senha",
+    resetLead: "Indique o telefone associado à sua conta.",
+    resetSubmit: "Enviar",
+    resetBusy: "A enviar...",
+    resetOk: "Se o telefone estiver associado, receberá uma SMS com a nova senha.",
+    resetFail: "Erro ao solicitar reposição.",
+  },
+  en: {
+    headline: ["Ticketing, wallet and fleet", " on a single ", "platform."],
+    lead: "Sign in to the BusUp portal to manage trips, sales and validations — or sign in as a passenger with your phone number.",
+    tag: "Cashless transport",
+    proof: [
+      { title: "3 sales and validation channels", text: "Passenger app, on-board POS and ticketing agent." },
+      { title: "2 mobile wallets integrated", text: "M-Pesa and e-Mola, with no card data stored." },
+      { title: "Fleet and trips in real time", text: "Departures, seats and location in one dashboard." },
+    ],
+    chips: ["QR on the phone", "NFC card", "M-Pesa", "e-Mola"],
+    eyebrow: { staff: "Secure sign in", otp: "SMS access", register: "New account" },
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    forgot: "Forgot password",
+    resetTitle: "Password reset",
+    resetLead: "Enter the phone number linked to your account.",
+    resetSubmit: "Send",
+    resetBusy: "Sending...",
+    resetOk: "If the phone is linked to an account, you will receive an SMS with the new password.",
+    resetFail: "Could not request the reset.",
+  },
+};
+
+const PROOF_ICONS = [Route, Wallet, Smartphone];
 
 export default function LoginPage() {
   const { locale, setLocale } = useUi();
   const { login } = useAuth();
   const { branding } = useBranding();
   const navigate = useNavigate();
+  const copy = COPY[locale] ?? COPY.pt;
+
+  /* O tema explícito do portal manda; sem escolha guardada seguimos o sistema
+     (prefers-color-scheme), tal como a landing pública. */
+  const explicitTheme = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("buzup_theme");
+      return stored === "dark" || stored === "light" ? stored : undefined;
+    } catch {
+      return undefined;
+    }
+  }, []);
 
   const [mode, setMode] = useState<Mode>("staff");
 
   // Staff login state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -47,11 +126,11 @@ export default function LoginPage() {
         method: "POST",
         body: JSON.stringify({ phone: resetPhone }),
       });
-      showToast("success", "Se o telefone estiver associado, recebera uma SMS com a nova senha.");
+      showToast("success", copy.resetOk);
       setResetOpen(false);
       setResetPhone("");
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao solicitar reposicao.");
+      showToast("danger", err instanceof Error ? err.message : copy.resetFail);
     } finally {
       setResetBusy(false);
     }
@@ -198,181 +277,298 @@ export default function LoginPage() {
     setOtpDigits(["", "", "", "", "", ""]);
   }
 
+  /* Navegação por setas no tablist (WAI-ARIA), já que só o separador activo
+     fica na ordem de tabulação. */
+  function handleTabKeys(e: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const order: Mode[] = ["staff", "otp", "register"];
+    let next = -1;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (index + 1) % order.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (index - 1 + order.length) % order.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = order.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    switchMode(order[next]);
+    document.getElementById(`bzau-tab-${order[next]}`)?.focus();
+  }
+
+  const tabs: { id: Mode; label: string; icon: typeof Shield }[] = [
+    { id: "staff", label: t(locale, "staffLogin"), icon: Shield },
+    { id: "otp", label: t(locale, "otpLogin"), icon: Smartphone },
+    { id: "register", label: t(locale, "registerPassenger"), icon: UserPlus },
+  ];
+
+  const heading = mode === "staff"
+    ? t(locale, "login")
+    : mode === "register"
+      ? t(locale, "createPassengerAccount")
+      : t(locale, "welcomePassenger");
+  const subheading = mode === "staff"
+    ? t(locale, "loginSubtitle")
+    : mode === "register"
+      ? t(locale, "passengerRegisterSubtitle")
+      : t(locale, "otpSubtitle");
+
+  const errorBlock = error ? (
+    <div className="bzau-error" role="alert">
+      <AlertCircle size={17} />
+      <span>{error}</span>
+    </div>
+  ) : null;
+
   return (
-    <main className="login-page">
-      <div className="login-left">
-        <div className="login-left-content">
-          <img alt="BusUp" className="login-hero-logo" src={pickLogo(branding.auth_logo_url, branding.primary_logo_url, "/assets/busup/logo-dark.png")} />
-          <p>{t(locale, "cashlessTransport")}</p>
+    <main className="bzau" data-theme={explicitTheme}>
+      {/* ── Painel de marca ── */}
+      <aside className="bzau-brand">
+        <div className="bzau-brand-in">
+          <img
+            alt="BusUp"
+            className="bzau-logo"
+            src={pickLogo(branding.auth_logo_url, branding.primary_logo_url, "/assets/busup/logo-dark.png")}
+          />
+          <span className="bzau-mobile-tag">{copy.tag}</span>
+
+          <span className="bzau-badge">{t(locale, "cashlessTransport")}</span>
+          <h1>
+            {copy.headline[0]}
+            {copy.headline[1]}
+            <span>{copy.headline[2]}</span>
+          </h1>
+          <p className="bzau-lead">{copy.lead}</p>
+
+          <ul className="bzau-proof">
+            {copy.proof.map((item, i) => {
+              const Icon = PROOF_ICONS[i] ?? Route;
+              return (
+                <li key={item.title}>
+                  <span className="bzau-proof-ico" aria-hidden="true">
+                    <Icon size={18} />
+                  </span>
+                  <span>
+                    <b>{item.title}</b>
+                    <span>{item.text}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="bzau-chips" aria-hidden="true">
+            <span><QrCode size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />{copy.chips[0]}</span>
+            <span><CreditCard size={13} style={{ verticalAlign: "-2px", marginRight: 6 }} />{copy.chips[1]}</span>
+            <span>{copy.chips[2]}</span>
+            <span>{copy.chips[3]}</span>
+          </div>
         </div>
-      </div>
-      <div className="login-right">
-        <div className="login-form-wrap">
-          {/* Mode Toggle */}
-          <div className="login-mode-toggle">
-            <button
-              type="button"
-              className={`login-mode-btn${mode === "staff" ? " login-mode-btn-active" : ""}`}
-              onClick={() => switchMode("staff")}
-            >
-              <Shield size={16} />
-              {t(locale, "staffLogin")}
-            </button>
-            <button
-              type="button"
-              className={`login-mode-btn${mode === "otp" ? " login-mode-btn-active" : ""}`}
-              onClick={() => switchMode("otp")}
-            >
-              <Smartphone size={16} />
-              {t(locale, "otpLogin")}
-            </button>
-            <button
-              type="button"
-              className={`login-mode-btn${mode === "register" ? " login-mode-btn-active" : ""}`}
-              onClick={() => switchMode("register")}
-            >
-              <UserPlus size={16} />
-              {t(locale, "registerPassenger")}
-            </button>
+      </aside>
+
+      {/* ── Painel do formulário ── */}
+      <div className="bzau-panel">
+        <div className="bzau-card">
+          <div className="bzau-tabs" role="tablist" aria-label={t(locale, "login")}>
+            {tabs.map((tab, i) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`bzau-tab-${tab.id}`}
+                  aria-selected={mode === tab.id}
+                  aria-controls="bzau-panel"
+                  tabIndex={mode === tab.id ? 0 : -1}
+                  className="bzau-tab"
+                  onClick={() => switchMode(tab.id)}
+                  onKeyDown={(e) => handleTabKeys(e, i)}
+                >
+                  <Icon size={17} aria-hidden="true" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          {mode === "staff" ? (
-            <>
-              <div className="login-form-header">
-                <h2>{t(locale, "login")}</h2>
-                <p>{t(locale, "loginSubtitle")}</p>
-              </div>
-              <form className="login-form" onSubmit={handleStaffLogin}>
-                {error && <div className="login-error">{error}</div>}
-                <label className="login-field">
-                  <User size={18} className="login-field-icon" />
-                  <input type="text" placeholder={t(locale, "username")} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
+          <div id="bzau-panel" role="tabpanel" aria-labelledby={`bzau-tab-${mode}`}>
+            <div className="bzau-head">
+              <span className="bzau-eyebrow">{copy.eyebrow[mode]}</span>
+              <h2>{heading}</h2>
+              <p>{subheading}</p>
+            </div>
+
+            {mode === "staff" ? (
+              <form className="bzau-form" onSubmit={handleStaffLogin}>
+                {errorBlock}
+                <label className="bzau-field" htmlFor="bzau-username">
+                  <span className="bzau-label">{t(locale, "username")}</span>
+                  <span className="bzau-input">
+                    <input
+                      id="bzau-username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      autoComplete="username"
+                      required
+                    />
+                    <User size={18} className="bzau-input-ico" aria-hidden="true" />
+                  </span>
                 </label>
-                <label className="login-field">
-                  <Lock size={18} className="login-field-icon" />
-                  <input type="password" placeholder={t(locale, "password")} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
-                </label>
-                <button type="submit" className="login-submit" disabled={loading}>
+                <div className="bzau-field">
+                  <label className="bzau-label" htmlFor="bzau-password">{t(locale, "password")}</label>
+                  <span className="bzau-input has-reveal">
+                    <input
+                      id="bzau-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <Lock size={18} className="bzau-input-ico" aria-hidden="true" />
+                    <button
+                      type="button"
+                      className="bzau-reveal"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </span>
+                </div>
+                <button type="submit" className="bzau-btn" disabled={loading} aria-busy={loading}>
+                  {loading && <span className="bzau-spin" aria-hidden="true" />}
                   {loading ? t(locale, "entering") : t(locale, "enter")}
                 </button>
-                <div style={{ textAlign: "center", marginTop: 8 }}>
+                <div className="bzau-form-aside">
                   <button
                     type="button"
-                    className="otp-link-btn"
+                    className="bzau-link"
                     onClick={() => { setResetOpen(true); setResetPhone(""); }}
                   >
-                    Esqueci a senha
+                    {copy.forgot}
                   </button>
                 </div>
               </form>
-            </>
-          ) : (
-            <>
-              <div className="login-form-header">
-                <h2>{mode === "register" ? t(locale, "createPassengerAccount") : t(locale, "welcomePassenger")}</h2>
-                <p>{mode === "register" ? t(locale, "passengerRegisterSubtitle") : t(locale, "otpSubtitle")}</p>
-              </div>
-
-              {otpStep === "phone" ? (
-                <form className="login-form" onSubmit={handleOtpRequest}>
-                  {error && <div className="login-error">{error}</div>}
-                  {mode === "register" && (
-                    <label className="login-field">
-                      <User size={18} className="login-field-icon" />
+            ) : otpStep === "phone" ? (
+              <form className="bzau-form" onSubmit={handleOtpRequest}>
+                {errorBlock}
+                {mode === "register" && (
+                  <label className="bzau-field" htmlFor="bzau-fullname">
+                    <span className="bzau-label">{t(locale, "fullName")}</span>
+                    <span className="bzau-input">
                       <input
+                        id="bzau-fullname"
                         type="text"
-                        placeholder={t(locale, "fullName")}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         autoComplete="name"
                         required
                       />
-                    </label>
-                  )}
-                  <label className="login-field">
-                    <Phone size={18} className="login-field-icon" />
+                      <User size={18} className="bzau-input-ico" aria-hidden="true" />
+                    </span>
+                  </label>
+                )}
+                <label className="bzau-field" htmlFor="bzau-phone">
+                  <span className="bzau-label">{t(locale, "phoneNumber")}</span>
+                  <span className="bzau-input">
                     <input
+                      id="bzau-phone"
                       type="tel"
-                      placeholder={t(locale, "phoneNumber") + " (84/85/86/87...)"}
+                      placeholder="84 / 85 / 86 / 87..."
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       autoComplete="tel"
                       required
                     />
-                  </label>
-                  <button type="submit" className="login-submit" disabled={loading || !phone.trim() || (mode === "register" && !fullName.trim())}>
-                    {loading ? t(locale, "sending") : t(locale, "sendCode")}
-                  </button>
-                </form>
-              ) : (
-                <div className="login-form">
-                  {error && <div className="login-error">{error}</div>}
-                  <p className="otp-sent-label">
-                    {t(locale, "otpSent")} <strong>{phone}</strong>
+                    <Phone size={18} className="bzau-input-ico" aria-hidden="true" />
+                  </span>
+                </label>
+                <button
+                  type="submit"
+                  className="bzau-btn"
+                  disabled={loading || !phone.trim() || (mode === "register" && !fullName.trim())}
+                  aria-busy={loading}
+                >
+                  {loading && <span className="bzau-spin" aria-hidden="true" />}
+                  {loading ? t(locale, "sending") : t(locale, "sendCode")}
+                </button>
+              </form>
+            ) : (
+              <div className="bzau-form">
+                {errorBlock}
+                <p className="bzau-otp-sent">
+                  {t(locale, "otpSent")} <strong>{phone}</strong>
+                </p>
+                <div className="bzau-otp-grid">
+                  {otpDigits.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { inputRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleDigitChange(i, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                      onPaste={handleDigitPaste}
+                      autoComplete={i === 0 ? "one-time-code" : "off"}
+                      pattern="[0-9]*"
+                      aria-label={`${t(locale, "otpCode")} — ${i + 1}`}
+                      autoFocus={i === 0}
+                    />
+                  ))}
+                </div>
+                {countdown > 0 && (
+                  <p className="bzau-otp-timer">
+                    {t(locale, "otpExpires")} {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
                   </p>
-                  <div className="otp-code-grid">
-                    {otpDigits.map((digit, i) => (
-                      <input
-                        key={i}
-                        ref={(el) => { inputRefs.current[i] = el; }}
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={1}
-                        className="otp-digit"
-                        value={digit}
-                        onChange={(e) => handleDigitChange(i, e.target.value)}
-                        onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                        onPaste={handleDigitPaste}
-                        autoComplete={i === 0 ? "one-time-code" : "off"}
-                        pattern="[0-9]*"
-                        aria-label={`${t(locale, "otpCode")} ${i + 1}`}
-                        autoFocus={i === 0}
-                      />
-                    ))}
-                  </div>
-                  {countdown > 0 && (
-                    <p className="otp-timer">
-                      {t(locale, "otpExpires")} {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, "0")}
-                    </p>
-                  )}
+                )}
+                <button
+                  type="button"
+                  className="bzau-btn"
+                  disabled={loading || otpDigits.some((d) => !d)}
+                  aria-busy={loading}
+                  onClick={() => void handleOtpVerify()}
+                >
+                  {loading && <span className="bzau-spin" aria-hidden="true" />}
+                  {loading ? t(locale, "verifying") : t(locale, "verifyCode")}
+                </button>
+                <div className="bzau-otp-actions">
                   <button
                     type="button"
-                    className="login-submit"
-                    disabled={loading || otpDigits.some((d) => !d)}
-                    onClick={() => void handleOtpVerify()}
+                    className="bzau-link"
+                    onClick={() => { setOtpStep("phone"); setError(""); }}
                   >
-                    {loading ? t(locale, "verifying") : t(locale, "verifyCode")}
+                    {t(locale, "changePhone")}
                   </button>
-                  <div className="otp-actions">
-                    <button
-                      type="button"
-                      className="otp-link-btn"
-                      onClick={() => { setOtpStep("phone"); setError(""); }}
-                    >
-                      {t(locale, "changePhone")}
-                    </button>
-                    <button
-                      type="button"
-                      className="otp-link-btn"
-                      onClick={handleResend}
-                      disabled={loading}
-                    >
-                      {t(locale, "otpResend")}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="bzau-link"
+                    onClick={handleResend}
+                    disabled={loading}
+                  >
+                    {t(locale, "otpResend")}
+                  </button>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            )}
+          </div>
 
-          <div className="login-footer">
-            <div className="locale-flag-toggle" role="group">
-              <button className={`locale-flag-button${locale === "pt" ? " locale-flag-button-active" : ""}`} onClick={() => setLocale("pt")} type="button">PT</button>
-              <button className={`locale-flag-button${locale === "en" ? " locale-flag-button-active" : ""}`} onClick={() => setLocale("en")} type="button">EN</button>
+          <div className="bzau-foot">
+            <div className="bzau-lang" role="group" aria-label="PT / EN">
+              <button type="button" aria-pressed={locale === "pt"} onClick={() => setLocale("pt")}>PT</button>
+              <button type="button" aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
             </div>
-            <div className="login-powered">
+            <div className="bzau-powered">
               <span>{t(locale, "poweredBy")}</span>
-              <img alt="UpDigital" src={pickLogo(branding.powered_by_logo_url, "/assets/up-digital-logo/up_digital_dark.png")} className="login-powered-logo" />
+              {branding.powered_by_logo_url ? (
+                <img alt="UpDigital" src={branding.powered_by_logo_url} />
+              ) : (
+                <>
+                  <img alt="UpDigital" className="bzau-on-light" src="/assets/up-digital-logo/up_digital_dark.png" />
+                  <img alt="UpDigital" className="bzau-on-dark" src="/assets/up-digital-logo/up_digital_light.png" />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -380,40 +576,55 @@ export default function LoginPage() {
 
       {resetOpen && (
         <>
-          <div className="admin-modal-overlay" onClick={() => !resetBusy && setResetOpen(false)} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label="Reposicao de senha">
-            <div className="admin-modal-card">
-              <div className="admin-modal-head">
+          <div className="bzau-modal-overlay" onClick={() => !resetBusy && setResetOpen(false)} />
+          <div className="bzau-modal">
+            <div className="bzau-modal-card" role="dialog" aria-modal="true" aria-labelledby="bzau-reset-title">
+              <div className="bzau-modal-head">
                 <div>
-                  <h3>Reposicao de senha</h3>
-                  <p>Indique o telefone associado a sua conta.</p>
+                  <h3 id="bzau-reset-title">{copy.resetTitle}</h3>
+                  <p>{copy.resetLead}</p>
                 </div>
-                <button className="icon-button" disabled={resetBusy} onClick={() => setResetOpen(false)} type="button"><X size={18} /></button>
+                <button
+                  type="button"
+                  className="bzau-modal-close"
+                  disabled={resetBusy}
+                  onClick={() => setResetOpen(false)}
+                  aria-label={t(locale, "cancel")}
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <div className="admin-modal-body">
-                <form className="admin-form" onSubmit={handlePasswordReset}>
-                  <label className="login-field">
-                    <Phone size={18} className="login-field-icon" />
+              <form className="bzau-form" onSubmit={handlePasswordReset}>
+                <label className="bzau-field" htmlFor="bzau-reset-phone">
+                  <span className="bzau-label">{t(locale, "phoneNumber")}</span>
+                  <span className="bzau-input">
                     <input
+                      id="bzau-reset-phone"
                       type="tel"
-                      placeholder={t(locale, "phoneNumber")}
                       value={resetPhone}
                       onChange={(e) => setResetPhone(e.target.value)}
                       autoComplete="tel"
                       required
                       autoFocus
                     />
-                  </label>
-                  <div className="admin-form-actions" style={{ marginTop: 16 }}>
-                    <button className="primary-button" disabled={resetBusy || !resetPhone.trim()} type="submit">
-                      {resetBusy ? "A enviar..." : "Enviar"}
-                    </button>
-                    <button className="secondary-button" disabled={resetBusy} onClick={() => setResetOpen(false)} type="button">
-                      {t(locale, "cancel")}
-                    </button>
-                  </div>
-                </form>
-              </div>
+                    <Phone size={18} className="bzau-input-ico" aria-hidden="true" />
+                  </span>
+                </label>
+                <div className="bzau-modal-actions">
+                  <button className="bzau-btn" disabled={resetBusy || !resetPhone.trim()} type="submit" aria-busy={resetBusy}>
+                    {resetBusy && <span className="bzau-spin" aria-hidden="true" />}
+                    {resetBusy ? copy.resetBusy : copy.resetSubmit}
+                  </button>
+                  <button
+                    className="bzau-btn bzau-btn-ghost"
+                    disabled={resetBusy}
+                    onClick={() => setResetOpen(false)}
+                    type="button"
+                  >
+                    {t(locale, "cancel")}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </>

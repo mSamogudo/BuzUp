@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.packages.apps.PackagesConfig",
     "apps.pos.apps.PosConfig",
     "apps.notifications.apps.NotificationsConfig",
+    "apps.leads.apps.LeadsConfig",
     "apps.agent_api.apps.AgentApiConfig",
     "apps.mobile_api.apps.MobileApiConfig",
 ]
@@ -192,8 +193,12 @@ REST_FRAMEWORK = {
     # que as apps consultam em polling).
     "DEFAULT_THROTTLE_RATES": {
         "vehicle-locations": "12/min",
+        "service-request": "6/hour",
     },
 }
+
+# Telefone que recebe aviso de novos pedidos de contacto da landing.
+SALES_NOTIFY_PHONE = os.environ.get("BUZUP_SALES_NOTIFY_PHONE", "")
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "BuzUp API",

@@ -17,17 +17,19 @@ export default function SeatMap({
           <span>FRENTE DO AUTOCARRO</span>
           <span aria-hidden>🚍</span>
         </div>
-        {rows.map((r) => (
-          <div className="bzbk-row" key={r.row}>
-            {r.seats.slice(0, 2).map((s) => (
-              <SeatButton key={s.label} seat={s} picked={picked} maxPick={maxPick} onToggle={onToggle} />
-            ))}
-            {r.seats.length > 2 ? <span className="bzbk-aisle">{r.row}</span> : <span />}
-            {r.seats.slice(2).map((s) => (
-              <SeatButton key={s.label} seat={s} picked={picked} maxPick={maxPick} onToggle={onToggle} />
-            ))}
-          </div>
-        ))}
+        <div className="bzbk-bus-scroll">
+          {rows.map((r) => (
+            <div className="bzbk-row" key={r.row}>
+              {r.seats.slice(0, 2).map((s) => (
+                <SeatButton key={s.label} seat={s} picked={picked} maxPick={maxPick} onToggle={onToggle} />
+              ))}
+              {r.seats.length > 2 ? <span className="bzbk-aisle">{r.row}</span> : <span />}
+              {r.seats.slice(2).map((s) => (
+                <SeatButton key={s.label} seat={s} picked={picked} maxPick={maxPick} onToggle={onToggle} />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="bzbk-legend">
         <span><i /> Livre</span>

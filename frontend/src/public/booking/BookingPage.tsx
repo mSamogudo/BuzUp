@@ -370,13 +370,13 @@ export default function BookingPage() {
                       {p.seat && <span className="bzbk-pax-seat">{p.seat}</span>}
                       <span className="bzbk-pax-title">Passageiro {i + 1}</span>
                     </div>
-                    <div className="bzbk-grid-3">
-                      <div className="bzbk-field" style={{ gridColumn: "span 1" }}>
-                        <label className="bzbk-label">Nome completo</label>
-                        <input className="bzbk-input" value={p.name} required
-                          placeholder="Como está no documento"
-                          onChange={(e) => setPaxField(i, "name", e.target.value)} />
-                      </div>
+                    <div className="bzbk-field">
+                      <label className="bzbk-label">Nome completo</label>
+                      <input className="bzbk-input" value={p.name} required
+                        placeholder="Como está no documento"
+                        onChange={(e) => setPaxField(i, "name", e.target.value)} />
+                    </div>
+                    <div className="bzbk-grid" style={{ marginTop: 12 }}>
                       <div className="bzbk-field">
                         <label className="bzbk-label">Documento</label>
                         <select className="bzbk-select" value={p.document_type}

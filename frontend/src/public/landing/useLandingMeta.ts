@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 
-const TITLE = "BusUp · Transporte público cashless";
+const TITLE = "BusUp · Bilhética digital para transporte de passageiros";
 const DESCRIPTION =
-  "Bilhética digital completa para o transporte público em Moçambique: carteira digital, QR e cartão NFC, " +
-  "recargas M-Pesa e e-Mola, terminal POS para agentes e motoristas, e portal de gestão para o município.";
+  "Venda e valide bilhetes de autocarro em Moçambique: compra online com lugar marcado, carteira digital, " +
+  "QR e cartão NFC, recargas M-Pesa e e-Mola, terminal POS para agentes e motoristas, e portal de gestão " +
+  "com receita, frota e relatórios em tempo real.";
 
 /**
  * Injeta title/description/OG/Twitter/JSON-LD enquanto a landing está montada

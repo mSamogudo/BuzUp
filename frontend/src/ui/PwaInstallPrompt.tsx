@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Download, Smartphone, X } from "lucide-react";
+
+// Fluxos onde o convite de instalação compete com a acção principal
+// (a barra de compra fica ao polegar; o banner tapava-a em telemóvel).
+const HIDDEN_PATHS = ["/comprar", "/checkout", "/bus/"];
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,6 +15,7 @@ const DISMISS_KEY = "buzup_pwa_dismissed_at";
 const DISMISS_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 export default function PwaInstallPrompt() {
+  const { pathname } = useLocation();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [iosVisible, setIosVisible] = useState(false);
@@ -56,6 +62,8 @@ export default function PwaInstallPrompt() {
     setVisible(false);
     setIosVisible(false);
   }
+
+  if (HIDDEN_PATHS.some((p) => pathname.startsWith(p))) return null;
 
   if (visible) {
     return (

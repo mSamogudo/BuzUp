@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/api_client.dart';
 import '../../core/feedback.dart';
+import '../../core/idempotency.dart';
 import '../../core/nfc.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -27,6 +28,9 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
   String? _error;
   bool _torch = false;
   bool _nfcArmed = false;
+
+  /// Impede que uma validacao repetida por falha de rede debite duas vezes.
+  final _idem = IdempotencyScope();
   Map<String, dynamic>? _activeTrip;
 
   @override
@@ -105,17 +109,26 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
     try {
       final serial = await ref.read(secureStoreProvider).getDeviceSerial();
       final activeTripRoute = (_activeTrip?['route'] ?? _activeTrip?['route_id'])?.toString();
+      final tripId = activeTripRoute == routeId.toString() ? (_activeTrip?['id'] as int?) : null;
       final res = await ref.read(agentApiProvider).validateCard(
             cardUid: uid,
             routeId: routeId,
             // So amarra a viagem se a rota digitada continuar a ser a da
             // viagem activa (o operador pode validar outra rota manualmente).
-            tripId: activeTripRoute == routeId.toString() ? (_activeTrip?['id'] as int?) : null,
+            tripId: tripId,
             deviceSerial: serial,
+            // Se a rede cair a meio da validacao, o agente volta a passar o
+            // cartao. A chave sobrevive a essa repeticao, por isso o servidor
+            // devolve a primeira validacao em vez de debitar de novo. Depois
+            // de uma validacao concluida a chave roda: um embarque seguinte do
+            // mesmo cartao e uma viagem nova e deve mesmo ser cobrado.
+            idempotencyKey: _idem.keyFor('val:$uid:$routeId:${tripId ?? "-"}'),
           );
+      _idem.rotate();
       await (res['valid'] == true ? AppFeedback.success() : AppFeedback.error());
       setState(() => _last = res);
     } on DioException catch (e) {
+      if (!isAmbiguousFailure(e)) _idem.rotate();
       await AppFeedback.error();
       final body = e.response?.data;
       if (body is Map) {

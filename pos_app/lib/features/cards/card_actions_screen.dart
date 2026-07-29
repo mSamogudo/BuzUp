@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/bus_loader.dart';
 import '../../core/feedback.dart';
+import '../../core/idempotency.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 
@@ -40,6 +41,10 @@ class _CardActionsScreenState extends ConsumerState<CardActionsScreen> {
   String? _busyLabel;
   String? _error;
   String? _success;
+
+  /// Protege recargas, pacotes e débitos de serem cobrados duas vezes quando a
+  /// rede falha a meio e o agente tenta de novo.
+  final _idem = IdempotencyScope();
 
   late Map<String, dynamic> _cardData = Map<String, dynamic>.from(widget.card);
   Map<String, dynamic> get _card => _cardData;
@@ -105,6 +110,10 @@ class _CardActionsScreenState extends ConsumerState<CardActionsScreen> {
     }
   }
 
+  /// Identifica o cartão na assinatura de idempotência. O ecrã recebe um dos
+  /// dois, nunca ambos vazios.
+  String _cardKey() => widget.cardUid ?? widget.qrToken ?? '';
+
   Future<void> _submit() async {
     if (!_canSubmit) return;
     switch (_mode) {
@@ -123,13 +132,16 @@ class _CardActionsScreenState extends ConsumerState<CardActionsScreen> {
   }
 
   Future<void> _runTopup() async {
+    final amount = _amountCtrl.text.trim();
+    final phone = _phoneCtrl.text.trim();
     await _run('Recarga em curso...', () async {
       final res = await ref.read(agentApiProvider).walletTopup(
             cardUid: widget.cardUid,
             qrToken: widget.qrToken,
-            amount: _amountCtrl.text.trim(),
+            amount: amount,
             method: 'mobile_money',
-            payerPhone: _phoneCtrl.text.trim(),
+            payerPhone: phone,
+            idempotencyKey: _idem.keyFor('topup:${_cardKey()}:$amount:$phone'),
           );
       _handlePaymentResponse(res, 'Recarga');
     });
@@ -137,24 +149,29 @@ class _CardActionsScreenState extends ConsumerState<CardActionsScreen> {
 
   Future<void> _runPackage() async {
     final pkg = _selectedPackage!;
+    final packageId = (pkg['id'] as num).toInt();
+    final phone = _phoneCtrl.text.trim();
     await _run('A activar pacote...', () async {
       final res = await ref.read(agentApiProvider).packageTopup(
             cardUid: widget.cardUid,
             qrToken: widget.qrToken,
-            packageId: (pkg['id'] as num).toInt(),
+            packageId: packageId,
             method: 'mobile_money',
-            payerPhone: _phoneCtrl.text.trim(),
+            payerPhone: phone,
+            idempotencyKey: _idem.keyFor('pkg:${_cardKey()}:$packageId:$phone'),
           );
       _handlePaymentResponse(res, 'Pacote');
     });
   }
 
   Future<void> _runDebit() async {
+    final amount = _amountCtrl.text.trim();
     await _run('A debitar carteira...', () async {
       final res = await ref.read(agentApiProvider).walletDebit(
             cardUid: widget.cardUid,
             qrToken: widget.qrToken,
-            amount: _amountCtrl.text.trim(),
+            amount: amount,
+            idempotencyKey: _idem.keyFor('debit:${_cardKey()}:$amount'),
           );
       await AppFeedback.success();
       setState(() {
@@ -204,7 +221,13 @@ class _CardActionsScreenState extends ConsumerState<CardActionsScreen> {
     });
     try {
       await task();
+      // Operação concluída (confirmada, pendente ou recusada pelo servidor):
+      // a próxima é genuinamente nova e leva chave nova.
+      _idem.rotate();
     } on DioException catch (e) {
+      // Só se roda a chave quando se sabe que nada se moveu. Num timeout o
+      // servidor pode ter processado, por isso a repetição reutiliza a chave.
+      if (!isAmbiguousFailure(e)) _idem.rotate();
       await AppFeedback.error();
       setState(() => _error = ApiClient.extractError(e));
     } catch (e) {

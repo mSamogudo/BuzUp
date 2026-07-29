@@ -11,6 +11,7 @@ import '../../core/api_client.dart';
 import '../../core/bus_loader.dart';
 import '../../core/config.dart';
 import '../../core/feedback.dart';
+import '../../core/idempotency.dart';
 import '../../core/nfc.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -41,7 +42,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   Map<String, dynamic>? _scannedCard;
   // Stable token per sale attempt so the same trip+phone tap isn't charged
   // twice if the agent double-presses or the network retries.
-  String _idempotencyKey = '';
+  /// Impede que uma venda repetida por falha de rede seja cobrada duas vezes.
+  final _idem = IdempotencyScope();
 
   String? _paymentRef;
   String? _saleRef;
@@ -137,10 +139,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         return;
       }
     }
-    if (_idempotencyKey.isEmpty) {
-      _idempotencyKey = DateTime.now().millisecondsSinceEpoch.toRadixString(36) +
-          '-${_selectedTrip!['id']}-${_originId}-${_destinationId}-$_quantity';
-    }
     setState(() {
       _error = null;
       _step = 3;
@@ -160,8 +158,16 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         qrToken: _paymentMethod == 'card' ? _qrToken : null,
         quantity: _quantity,
         deviceSerial: serial,
-        idempotencyKey: _idempotencyKey,
+        // A assinatura inclui tudo o que define a venda: se o agente voltar
+        // atras e corrigir o destino ou a quantidade, a chave roda sozinha e a
+        // venda seguinte nao e confundida com a anterior.
+        idempotencyKey: _idem.keyFor(
+          'sale:${_selectedTrip!['id']}:$_originId:$_destinationId:$_quantity'
+          ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}',
+        ),
       );
+      // O servidor respondeu: a venda seguinte e nova e leva chave nova.
+      _idem.rotate();
       _saleRef = res['sale_reference'] as String?;
       final payment = res['payment'] as Map?;
       _paymentRef = payment?['reference'] as String?;
@@ -180,6 +186,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _startPolling();
       }
     } on DioException catch (e) {
+      // Timeout ou 5xx: a venda pode ter sido criada no servidor. Mantem-se a
+      // chave para que a repeticao devolva essa venda em vez de criar outra.
+      if (!isAmbiguousFailure(e)) _idem.rotate();
       setState(() {
         _error = ApiClient.extractError(e);
         _step = 2;
@@ -868,7 +877,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             _cardUid = null;
             _qrToken = null;
             _scannedCard = null;
-            _idempotencyKey = '';
+            _idem.rotate();
             _paymentRef = null;
             _saleRef = null;
             _paymentStatus = '';

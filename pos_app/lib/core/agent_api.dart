@@ -9,6 +9,15 @@ class AgentApi {
 
   final ApiClient _http;
 
+  /// Cabeçalho `Idempotency-Key` para os pedidos que movem dinheiro.
+  ///
+  /// O backend usa-o para reconhecer uma repetição e devolver o resultado da
+  /// primeira tentativa em vez de cobrar de novo. A chave vem sempre de fora —
+  /// de um [IdempotencyScope] no ecrã — porque gerá-la aqui daria uma chave
+  /// nova a cada repetição e anulava a protecção.
+  Options? _idempotent(String? key) =>
+      (key == null || key.isEmpty) ? null : Options(headers: {'Idempotency-Key': key});
+
   // ----- App update (OTA) -----
 
   /// Asks the backend whether a newer published POS release exists.
@@ -228,10 +237,6 @@ class AgentApi {
     bool autoRequestPayment = true,
     String? idempotencyKey,
   }) async {
-    final headers = <String, String>{};
-    if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
-      headers['Idempotency-Key'] = idempotencyKey;
-    }
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/sales/',
       data: {
@@ -246,7 +251,7 @@ class AgentApi {
         if (deviceSerial != null) 'device_serial': deviceSerial,
         'auto_request_payment': autoRequestPayment,
       },
-      options: headers.isEmpty ? null : Options(headers: headers),
+      options: _idempotent(idempotencyKey),
     );
     return res.data ?? const {};
   }
@@ -324,6 +329,7 @@ class AgentApi {
     required String amount,
     required String method, // cash | mobile_money
     String? payerPhone,
+    String? idempotencyKey,
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/topups/wallet/',
@@ -334,6 +340,7 @@ class AgentApi {
         'method': method,
         if (payerPhone != null) 'payer_phone': payerPhone,
       },
+      options: _idempotent(idempotencyKey),
     );
     return res.data ?? const {};
   }
@@ -344,6 +351,7 @@ class AgentApi {
     required int packageId,
     required String method,
     String? payerPhone,
+    String? idempotencyKey,
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/topups/package/',
@@ -354,6 +362,7 @@ class AgentApi {
         'method': method,
         if (payerPhone != null) 'payer_phone': payerPhone,
       },
+      options: _idempotent(idempotencyKey),
     );
     return res.data ?? const {};
   }
@@ -362,6 +371,7 @@ class AgentApi {
     String? cardUid,
     String? qrToken,
     required String amount,
+    String? idempotencyKey,
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/payments/wallet/',
@@ -370,6 +380,7 @@ class AgentApi {
         if (qrToken != null) 'qr_token': qrToken,
         'amount': amount,
       },
+      options: _idempotent(idempotencyKey),
     );
     return res.data ?? const {};
   }
@@ -475,6 +486,7 @@ class AgentApi {
     int? originStopId,
     int? destinationStopId,
     String? deviceSerial,
+    String? idempotencyKey,
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/validations/card/',
@@ -487,6 +499,7 @@ class AgentApi {
         if (destinationStopId != null) 'destination_stop_id': destinationStopId,
         if (deviceSerial != null && deviceSerial.isNotEmpty) 'device_serial': deviceSerial,
       },
+      options: _idempotent(idempotencyKey),
     );
     return res.data ?? const {};
   }

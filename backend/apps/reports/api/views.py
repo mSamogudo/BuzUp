@@ -789,3 +789,15 @@ class ExportTransactionsView(APIView):
         response = HttpResponse(output.getvalue(), content_type="text/csv")
         response["Content-Disposition"] = "attachment; filename=transactions.csv"
         return response
+
+
+class AnalyticsView(APIView):
+    """Analitica do dashboard: todas as series com os mesmos filtros."""
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("reports.read",)
+
+    def get(self, request):
+        from apps.reports.analytics import build_analytics
+
+        return Response(build_analytics(request.query_params))

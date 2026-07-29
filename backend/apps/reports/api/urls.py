@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.reports.api.views import (
+    AnalyticsView,
     DashboardChartsView,
     DashboardView,
     ExportTransactionsView,
@@ -16,6 +17,7 @@ from apps.reports.api.views import (
 urlpatterns = [
     path("admin/dashboard/", DashboardView.as_view(), name="dashboard"),
     path("admin/dashboard/charts/", DashboardChartsView.as_view(), name="dashboard-charts"),
+    path("admin/analytics/", AnalyticsView.as_view(), name="dashboard-analytics"),
     path("admin/reports/revenue/", RevenueReportView.as_view(), name="report-revenue"),
     path("admin/reports/operational-revenue/", OperationalRevenueReportView.as_view(), name="report-operational-revenue"),
     path("admin/reports/validations/", ValidationReportView.as_view(), name="report-validations"),

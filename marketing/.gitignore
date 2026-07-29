@@ -1,3 +1,6 @@
 
 # artefactos regeneraveis do gerador de video
 premium_export/promo_frames/
+
+# masters de video (regeneraveis por build_promo_video.py)
+BusUp-Promo*.mp4

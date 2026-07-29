@@ -202,7 +202,7 @@ export default function LoginPage() {
     <main className="login-page">
       <div className="login-left">
         <div className="login-left-content">
-          <img alt="TPM-TUR" className="login-hero-logo" src={pickLogo(branding.auth_logo_url, branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png")} />
+          <img alt="BusUp" className="login-hero-logo" src={pickLogo(branding.auth_logo_url, branding.primary_logo_url, "/assets/busup/logo-dark.png")} />
           <p>{t(locale, "cashlessTransport")}</p>
         </div>
       </div>

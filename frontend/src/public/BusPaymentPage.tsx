@@ -126,7 +126,7 @@ export default function BusPaymentPage() {
   return (
     <div className="bus-pay">
       <header className="bus-pay-header">
-        <img alt="BusUp" src={pickLogo(branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png")} className="bus-pay-logo" />
+        <img alt="BusUp" src={pickLogo(branding.primary_logo_url, "/assets/busup/logo-dark.png")} className="bus-pay-logo" />
         <div className="bus-pay-header-text">
           <strong>BusUp</strong>
           <span>Comprar Bilhete</span>

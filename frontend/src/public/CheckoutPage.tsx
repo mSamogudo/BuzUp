@@ -91,7 +91,7 @@ export default function CheckoutPage() {
   return (
     <div className="co">
       <header className="co-header">
-        <img alt="TPM-TUR" src={pickLogo(branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png")} className="co-logo" />
+        <img alt="BusUp" src={pickLogo(branding.primary_logo_url, "/assets/busup/logo-dark.png")} className="co-logo" />
         <div className="co-header-text">
           <strong>BusUp</strong>
           <span>Bilhete Electronico</span>

@@ -49,15 +49,15 @@ export default function AdminLayout() {
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
   const sidebarBrandSrc = collapsed
-    ? pickLogo(branding.sidebar_mark_url, "/assets/tpm-tur-logo/tpm_mark.png")
-    : pickLogo(branding.sidebar_logo_url, branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_dark.png");
+    ? pickLogo(branding.sidebar_mark_url, "/assets/busup/mark.png")
+    : pickLogo(branding.sidebar_logo_url, branding.primary_logo_url, "/assets/busup/logo-dark.png");
 
   return (
     <div className="admin-shell">
       <aside className={`admin-sidebar${collapsed ? " admin-sidebar-collapsed" : ""}`}>
         <div className="admin-sidebar-head">
           <div className="admin-sidebar-brand">
-            <img alt="TPM-TUR" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
+            <img alt="BusUp" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
           </div>
           {!collapsed && (
             <button className="icon-button desktop-only sidebar-collapse-btn" onClick={() => setCollapsed((c) => !c)} type="button">

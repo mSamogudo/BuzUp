@@ -9,6 +9,7 @@ from uuid import uuid4
 from django.utils import timezone
 
 from apps.fares.services import NoFareFoundError, quote_fare
+from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_code
 from apps.guest_checkouts.models import DigitalTravelPass
 from apps.packages.models import PackageRoute, PassengerPackage
 from apps.packages.services import (
@@ -200,6 +201,9 @@ def purchase_travel_pass(
             valid_from=timezone.now(),
             valid_until=timezone.now() + timedelta(hours=24),
         )
+        # Codigo curto para leitura manual (mesma regra do PDF).
+        travel_pass.short_code = ticket_short_code(ticket_reference(travel_pass))
+        travel_pass.save(update_fields=["short_code", "updated_at"])
 
     travel_pass._raw_token = raw_token
     if package_used:

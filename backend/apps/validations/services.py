@@ -229,10 +229,12 @@ def _resolve_digital_travel_pass(
         raise DigitalTravelPass.DoesNotExist
 
     now = timezone.now()
+    # Janela pela VALIDADE, nao pela data de compra: um bilhete comprado tres
+    # semanas antes da viagem tem de poder ser validado no dia da partida.
     qs = base_qs.filter(
+        Q(valid_until__isnull=True) | Q(valid_until__gte=now - timedelta(days=1)),
         guest_checkout__isnull=False,
-        created_at__gte=now - timedelta(days=7),
-    )
+    ).filter(created_at__gte=now - timedelta(days=180))
     if trip_id:
         qs = qs.filter(Q(trip_id=trip_id) | Q(guest_checkout__trip_id=trip_id))
     if route_id:
@@ -245,11 +247,15 @@ def _resolve_digital_travel_pass(
                 | Q(guest_checkout__route_code=route.code)
             )
 
-    candidates = [
+    # Preferir o codigo gravado no bilhete (indexado); so recorrer ao calculo
+    # em Python para bilhetes antigos, emitidos antes do campo existir.
+    stored = list(qs.filter(short_code__iexact=short_code)[:50])
+    legacy = [
         candidate
-        for candidate in qs.order_by("-created_at")[:1000]
+        for candidate in qs.filter(short_code="").order_by("-created_at")[:1000]
         if ticket_short_code(ticket_reference(candidate)) == short_code
     ]
+    candidates = stored + legacy
     if len(candidates) == 1:
         return candidates[0]
 

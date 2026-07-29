@@ -247,8 +247,32 @@ def _extract_value(payload: dict, keys: tuple[str, ...]) -> str:
     return ""
 
 
+def _status_words(payload: dict) -> set[str]:
+    """Palavras dos campos de ESTADO do gateway (nunca o JSON inteiro).
+
+    Antes comparava-se `json.dumps(payload).lower()`, o que incluia as CHAVES
+    e fazia correspondencia por substring: `{"status": "unpaid"}` contem
+    "paid" e `{"amountPaid": 0}` tem a chave "amountpaid" — ambos eram lidos
+    como SUCESSO e emitiam bilhete/creditavam carteira sem dinheiro entrar.
+    Agora olhamos so para os valores dos campos de estado, palavra a palavra.
+    """
+    fields = (
+        "status", "data.status", "state", "data.state",
+        "output_ResponseDesc", "data.output_ResponseDesc",
+        "message", "data.message", "detail", "data.detail",
+        "description", "data.description", "result", "data.result",
+    )
+    words: set[str] = set()
+    for key in fields:
+        value = _extract_value(payload, (key,))
+        if value:
+            words.update(re.findall(r"[a-z]+", value.lower()))
+    return words
+
+
 def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple[str, str, str]:
     payload_text = json.dumps(payload, ensure_ascii=False).lower() if payload else ""
+    status_words = _status_words(payload)
 
     response_code = _extract_value(payload, (
         "output_ResponseCode", "data.output_ResponseCode", "response_code", "responseCode", "code", "data.code",
@@ -266,8 +290,14 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
     emola_success = {"0", "00", "000", "2001", "SUCCESS", "OK"}
     success_codes = mpesa_success if provider == "MPESA" else emola_success
 
-    success_markers = ("success", "approved", "completed", "paid", "confirmado com sucesso")
-    failure_markers = ("failed", "failure", "error", "rejected", "insufficient", "declined", "invalid")
+    # Palavras exactas, nao substrings: "unpaid" ja nao conta como "paid".
+    success_words = {"success", "successful", "sucesso", "approved", "aprovado",
+                     "completed", "complete", "concluido", "paid", "pago", "confirmed", "confirmado"}
+    failure_words = {"failed", "failure", "falhou", "falha", "error", "erro", "rejected", "rejeitado",
+                     "insufficient", "insuficiente", "declined", "recusado", "invalid", "invalido",
+                     "unpaid", "cancelled", "canceled", "cancelado", "expired", "expirado", "timeout"}
+    # Negacao explicita ("not completed", "nao confirmado") anula o sucesso.
+    negated = bool(re.search(r"\b(not|nao|não|no)\b", payload_text)) and bool(status_words & success_words)
 
     if any(k in payload_text for k in ("cancelled", "canceled", "rejected by customer")):
         result = "FAILED"
@@ -276,10 +306,13 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
         result = "TIMEOUT"
     elif provider == "EMOLA" and response_code == "2007":
         result = "TIMEOUT"
-    elif response_code in success_codes or any(m in payload_text for m in success_markers):
-        result = "SUCCESS"
-    elif any(m in payload_text for m in failure_markers) or status_code >= 400:
+    # A FALHA e avaliada ANTES do sucesso: em dinheiro, na duvida, nao confirmar.
+    elif (status_words & failure_words) or status_code >= 400:
         result = "FAILED"
+    elif response_code in success_codes:
+        result = "SUCCESS"
+    elif (status_words & success_words) and not negated:
+        result = "SUCCESS"
     elif 200 <= status_code < 300:
         result = "PENDING"
     else:

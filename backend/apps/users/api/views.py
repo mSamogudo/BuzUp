@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from django.http import HttpResponse
 from django.utils import timezone
+from rest_framework.throttling import AnonRateThrottle
 from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -722,26 +723,82 @@ def _generate_temp_password() -> str:
     return "".join(secrets.choice(alphabet) for _ in range(8))
 
 
+class PasswordResetThrottle(AnonRateThrottle):
+    scope = "password-reset"
+
+
 class PublicPasswordResetView(APIView):
-    """Generate a temporary password and send via SMS. Public endpoint."""
+    """Recuperacao de senha — exige prova de posse do telefone (OTP).
+
+    Antes bastava enviar um numero de telefone para a senha de QUALQUER conta
+    (incluindo superadmin e agentes) ser reposta e enviada por SMS: qualquer
+    pessoa na Internet podia trancar o administrador fora do sistema, esgotar
+    o credito de SMS e, com acesso ao SMS, tomar conta da plataforma.
+
+    Fluxo agora: pedir OTP em /api/auth/otp/request/ e enviar aqui o
+    challenge_id + codigo. Sem OTP valido nao ha reposicao.
+    """
+
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [PasswordResetThrottle]
+
+    # Resposta neutra: nunca revela se o telefone existe.
+    NEUTRAL = "Se o telefone estiver associado a uma conta, enviaremos uma senha temporaria."
 
     def post(self, request):
-        from apps.users.otp import normalize_otp_phone
+        from apps.audit.services import audit, client_ip
         from apps.sms.services.sender import send_sms
+        from apps.users.models import OtpChallenge
+        from apps.users.otp import OTP_MAX_ATTEMPTS, normalize_otp_phone, verify_otp_hash
+
         phone = normalize_otp_phone(request.data.get("phone", ""))
+        challenge_id = (request.data.get("challenge_id") or "").strip()
+        otp_code = (request.data.get("otp_code") or "").strip()
         if not phone:
             return Response({"detail": "Telefone invalido."}, status=400)
+        if not challenge_id or not otp_code:
+            return Response(
+                {"detail": "Confirme o codigo enviado por SMS para recuperar a senha.",
+                 "otp_required": True},
+                status=400,
+            )
+
+        challenge = OtpChallenge.objects.filter(
+            uuid=challenge_id, phone=phone, status=OtpChallenge.Status.PENDING,
+        ).first()
+        if not challenge or timezone.now() > challenge.expires_at:
+            return Response({"detail": "Codigo invalido ou expirado."}, status=400)
+        if challenge.attempts >= OTP_MAX_ATTEMPTS:
+            challenge.status = OtpChallenge.Status.EXPIRED
+            challenge.save(update_fields=["status", "updated_at"])
+            return Response({"detail": "Tentativas excedidas."}, status=400)
+        if not verify_otp_hash(otp_code, challenge.code_hash):
+            challenge.attempts += 1
+            fields = ["attempts", "updated_at"]
+            detail = "Codigo incorreto."
+            if challenge.attempts >= OTP_MAX_ATTEMPTS:
+                challenge.status = OtpChallenge.Status.EXPIRED
+                fields.append("status")
+                detail = "Tentativas excedidas."
+            challenge.save(update_fields=fields)
+            return Response({"detail": detail}, status=400)
+
+        challenge.status = OtpChallenge.Status.VERIFIED
+        challenge.verified_at = timezone.now()
+        challenge.save(update_fields=["status", "verified_at", "updated_at"])
+
         user = User.objects.filter(phone=phone, is_active=True).first()
         if not user:
-            # Return 200 to avoid leaking which phones exist
-            return Response({"detail": "Se o telefone estiver associado a uma conta, enviaremos uma senha temporaria."})
+            return Response({"detail": self.NEUTRAL})
+
         temp = _generate_temp_password()
         user.set_password(temp)
         user.save(update_fields=["password", "updated_at"])
+        audit("PASSWORD_RESET_SELF", actor=user, entity_type="user", entity_id=str(user.id),
+              ip=client_ip(request), after={"phone": phone})
         send_sms(phone, f"BuzUp: senha temporaria {temp}. Altere apos o login.", purpose="PASSWORD_RESET")
-        return Response({"detail": "Se o telefone estiver associado a uma conta, enviaremos uma senha temporaria."})
+        return Response({"detail": self.NEUTRAL})
 
 
 class AdminUserPasswordResetView(APIView):

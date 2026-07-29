@@ -1103,11 +1103,18 @@ class AgentTicketVerifyView(APIView):
             # 4-char shortcode matches the last 4 chars of GuestCheckout.reference
             if len(shortcode) != 4:
                 return Response({"valid": False, "reason": "Shortcode deve ter 4 caracteres."}, status=400)
+            # Procura pelo codigo gravado NO BILHETE. Antes procurava-se pelo
+            # fim da referencia do checkout, o que nunca casava com o codigo
+            # impresso em compras de 2+ bilhetes (ref BASE-01, BASE-02...).
+            # O fallback por referencia cobre bilhetes emitidos antes deste campo.
             matches = list(
                 DigitalTravelPass.objects
                 .select_related("guest_checkout")
-                .filter(guest_checkout__reference__iendswith=shortcode)
                 .filter(status=DigitalTravelPass.Status.ACTIVE)
+                .filter(
+                    Q(short_code__iexact=shortcode)
+                    | Q(short_code="", guest_checkout__reference__iendswith=shortcode)
+                )
                 .order_by("-created_at")[:5]
             )
             if not matches:

@@ -17,10 +17,12 @@ class ProfileScreen extends ConsumerWidget {
     final nameCtrl = TextEditingController(text: data['full_name']?.toString() ?? '');
     final emailCtrl = TextEditingController(text: data['email']?.toString() ?? '');
     String? error;
+    // `busy` vive FORA do builder: dentro, cada setLocal reiniciava-o a false
+    // e o botao nunca bloqueava (dava para submeter o perfil varias vezes).
+    bool busy = false;
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setLocal) {
-        bool busy = false;
         Future<void> submit() async {
           if (nameCtrl.text.trim().length < 2) {
             setLocal(() => error = 'Nome deve ter pelo menos 2 caracteres.');
@@ -244,8 +246,8 @@ class ProfileScreen extends ConsumerWidget {
               () => _logout(context, ref), danger: true),
         ]),
         const SizedBox(height: 24),
-        const Center(child: Text('BuzUp Passageiro · v0.3',
-            style: TextStyle(fontSize: 11, color: BuzUpColors.muted))),
+        Center(child: Text('BuzUp Passageiro · v${AppVersion.label}',
+            style: const TextStyle(fontSize: 11, color: BuzUpColors.muted))),
         const SizedBox(height: 4),
         Center(child: BrandLogo(
           slot: 'powered_by_logo',

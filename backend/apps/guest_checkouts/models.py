@@ -129,6 +129,12 @@ class DigitalTravelPass(BaseModel):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     token = models.CharField(max_length=128, unique=True, db_index=True)
     token_hash = models.CharField(max_length=128, db_index=True)
+    # Codigo curto impresso no bilhete (leitura manual quando o QR falha).
+    # Guardado no proprio passe: era derivado em dois sitios com regras
+    # diferentes — o POS procurava pelo fim da referencia do checkout e os
+    # bilhetes de compras com 2+ lugares (ref BASE-01, BASE-02...) nunca
+    # casavam com o codigo impresso.
+    short_code = models.CharField(max_length=8, blank=True, db_index=True)
     delivery_channel = models.CharField(
         max_length=8, choices=DeliveryChannel.choices, default=DeliveryChannel.SMS,
     )
@@ -141,6 +147,7 @@ class DigitalTravelPass(BaseModel):
         indexes = [
             models.Index(fields=["token_hash"]),
             models.Index(fields=["status", "valid_until"]),
+            models.Index(fields=["short_code", "status"]),
         ]
 
     def __str__(self):

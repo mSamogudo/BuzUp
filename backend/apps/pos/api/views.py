@@ -16,6 +16,7 @@ from apps.packages.services import PackageError, subscribe_passenger
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
 from apps.payments.services.processing import confirm_payment_immediately
+from apps.agent_api.permissions import IsActiveAgent
 from apps.core.permissions import HasCapabilities
 from apps.pos.api.serializers import (
     AdminPosSessionSerializer,
@@ -46,7 +47,7 @@ class AdminPosSessionListView(ListAPIView):
 
 
 class OpenSessionView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = OpenSessionSerializer(data=request.data)
@@ -79,7 +80,7 @@ class OpenSessionView(APIView):
 
 
 class CloseSessionView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         updated = PosSession.objects.filter(
@@ -89,7 +90,7 @@ class CloseSessionView(APIView):
 
 
 class ActiveSessionView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def get(self, request):
         session = PosSession.objects.select_related(
@@ -101,7 +102,7 @@ class ActiveSessionView(APIView):
 
 
 class PosCardValidateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = PosCardValidateSerializer(data=request.data)
@@ -129,7 +130,7 @@ class PosCardValidateView(APIView):
 
 
 class PosQrValidateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = PosQrValidateSerializer(data=request.data)
@@ -153,7 +154,7 @@ class PosQrValidateView(APIView):
 
 
 class PosCardTopupView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = PosCardTopupSerializer(data=request.data)
@@ -226,7 +227,7 @@ class PosCardTopupView(APIView):
 
 
 class PosPackageSubscribeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def post(self, request):
         serializer = PosPackageTopupSerializer(data=request.data)

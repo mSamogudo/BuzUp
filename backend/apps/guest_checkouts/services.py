@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
+from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_code
 from apps.sms.services.sender import send_sms
 
 
@@ -61,6 +62,10 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
                 valid_from=valid_from,
                 valid_until=valid_until,
             )
+            # Codigo curto do proprio bilhete (inclui a sequencia -01, -02...)
+            travel_pass.short_code = ticket_short_code(
+                ticket_reference(travel_pass, sequence=i + 1, total=gc.quantity))
+            travel_pass.save(update_fields=["short_code", "updated_at"])
             travel_pass._raw_token = raw_token
             passes.append(travel_pass)
 

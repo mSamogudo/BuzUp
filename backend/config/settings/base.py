@@ -194,6 +194,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "vehicle-locations": "12/min",
         "service-request": "6/hour",
+        "password-reset": "5/hour",
     },
 }
 

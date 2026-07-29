@@ -38,7 +38,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           BrandLogo(
             slot: 'mobile_logo',
-            fallbackAsset: isDark ? 'assets/tpm_tur_dark.png' : 'assets/tpm_tur_light.png',
+            fallbackAsset: isDark ? 'assets/busup_dark.png' : 'assets/busup_light.png',
             height: 80,
           ),
           const SizedBox(height: 8),

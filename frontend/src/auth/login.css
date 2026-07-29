@@ -1,70 +1,159 @@
-/* Autenticação BusUp — scoped por .bzau (não vaza para o resto do portal).
-   Mesma linguagem visual da landing pública (.bzlp): navy #0D3B66, azul #2D8CF0,
-   superfícies calmas, cantos 12-18px, sombras suaves, um único momento "loud"
-   (o painel de marca à esquerda). */
+/* Autenticação BusUp — porte 1:1 da página de login do CONDVISIT/VURA
+   (design system UpDigital "Zinc Executive"): fundo com dois glows radiais +
+   ícones esbatidos, coluna centrada (max 420px), bloco de cabeçalho com tile de
+   marca, cartão translúcido com sombra "premium" e formulário denso.
+
+   Neutros = rampa zinc do CondVisit. O acento é o mesmo nos dois produtos
+   (#1D5FA7 / #2D8CF0 / #0D3B66), por isso a marca BusUp entra sem desvio.
+   Os valores em px são os do CondVisit já resolvidos: o root de lá é 15.25px,
+   por isso rem × 15.25 (ex.: p-6 = 1.5rem = 23px; max-w-md = 28rem = 427px). */
 
 .bzau {
-  --navy: #0D3B66;
-  --navy2: #0A2E50;
-  --navy3: #08243F;
-  --blue: #2D8CF0;
-  --blue2: #1D5FA7;
-  --blue-bright: #5BA3F5;
-  --ink: #0F1B2D;
-  --muted: #5B6B7F;
-  --line: #E4EBF3;
-  --line-soft: #EFF4F9;
-  --bg: #F6F9FD;
-  --surface: #fff;
-  --ok: #2A9D8F;
-  --danger: #B3261E;
-  --danger-bg: #FDECEC;
-  --danger-line: #F6C9C9;
-  --ring: rgba(45, 140, 240, .18);
+  /* Acento — accent / accent-strong / accent-deep / accent-bright */
+  --acc: #1D5FA7;
+  --acc-strong: #2D8CF0;
+  --acc-deep: #0D3B66;
+  --acc-bright: #5BA3F5;
 
-  position: fixed;
-  inset: 0;
-  display: grid;
-  grid-template-columns: 1.04fr .96fr;
-  background: var(--surface);
-  color: var(--ink);
-  /* Inter para texto, Manrope para display — o par da família UpDigital,
-     já carregado em styles.css. */
+  /* Neutros (light.*) */
+  --bg: #F4F4F5;
+  --bg2: #FAFAFA;
+  --bg3: #E4E4E7;
+  --surface: #FFFFFF;
+  --surface-hover: #F4F4F5;
+  --line: #E4E4E7;
+  --line-2: #D4D4D8;
+  --text: #18181B;
+  --text2: #52525B;
+  --muted: #71717A;
+  --err: #D62828;
+  --ok: #2A9D8F;
+
+  /* Fundo da página — dois glows radiais sobre um degradé vertical. */
+  --page-bg:
+    radial-gradient(circle at top left, rgba(29, 95, 167, .08), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(45, 140, 240, .06), transparent 34%),
+    linear-gradient(180deg, #FAFAFA, #F4F4F5);
+  --sheen: linear-gradient(120deg, rgba(255, 255, 255, .16), transparent 36%, rgba(113, 113, 122, .05), transparent 72%);
+  --ghost-ico: rgba(24, 24, 27, .05);
+
+  /* Superfícies compostas */
+  --card-bg: linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(255, 255, 255, .88));
+  --card-line: rgba(228, 228, 231, .7);
+  --card-shadow:
+    0 18px 38px -26px rgba(13, 59, 102, .22),
+    0 2px 10px -4px rgba(13, 59, 102, .08),
+    0 0 0 1px rgba(13, 59, 102, .04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+  --ring: rgba(29, 95, 167, .15);
+
+  --tabs-bg: rgba(228, 228, 231, .9);
+  --tabs-line: rgba(228, 228, 231, .7);
+  --tab-on-bg: #FFFFFF;
+  --notice-bg: rgba(250, 250, 250, .6);
+  --notice-line: rgba(228, 228, 231, .7);
+  --pill-bg: rgba(255, 255, 255, .7);
+  --input-bg: #FFFFFF;
+  --ghost-hover: rgba(228, 228, 231, .6);
+  --lang-bg: rgba(250, 250, 250, .88);
+  --lang-line: rgba(228, 228, 231, .8);
+  --lang-on-bg: #FFFFFF;
+
+  /* Sem `overflow: hidden` aqui: o recorte dos ícones do fundo é feito pelo
+     .bzau-bg, e assim um ecrã baixo continua a poder deslizar. */
+  position: relative;
+  background: var(--page-bg);
+  color: var(--text);
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
 }
-.bzau-brand h1,
-.bzau-head h2,
-.bzau-modal-head h3 { font-family: Manrope, Inter, system-ui, sans-serif; }
 
 /* Escuro por preferência do sistema (quando o visitante não escolheu)... */
 @media (prefers-color-scheme: dark) {
   .bzau:not([data-theme="light"]) {
-    --ink: #EAF1F8;
-    --muted: #9DB2C8;
-    --line: #20303F;
-    --line-soft: #1A2734;
-    --bg: #0C1520;
-    --surface: #101B27;
-    --danger: #FF9A93;
-    --danger-bg: rgba(179, 38, 30, .18);
-    --danger-line: rgba(255, 154, 147, .34);
-    --ring: rgba(91, 163, 245, .26);
+    --bg: #09090B;
+    --bg2: #0F0F12;
+    --bg3: #27272A;
+    --surface: #18181B;
+    --surface-hover: #3F3F46;
+    --line: #27272A;
+    --line-2: #3F3F46;
+    --text: #F4F4F5;
+    --text2: #D4D4D8;
+    --muted: #A1A1AA;
+    --err: #F87171;
+
+    --page-bg:
+      radial-gradient(circle at top left, rgba(29, 95, 167, .16), transparent 32%),
+      radial-gradient(circle at bottom right, rgba(13, 59, 102, .28), transparent 34%),
+      linear-gradient(180deg, #0F0F12, #09090B);
+    --sheen: linear-gradient(120deg, rgba(255, 255, 255, .05), transparent 34%, rgba(29, 95, 167, .12), transparent 72%);
+    --ghost-ico: rgba(244, 244, 245, .06);
+
+    --card-bg: linear-gradient(180deg, rgba(24, 24, 27, .94), rgba(15, 15, 18, .9));
+    --card-line: rgba(255, 255, 255, .12);
+    --card-shadow:
+      0 18px 40px -24px rgba(0, 0, 0, .52),
+      0 2px 12px -6px rgba(0, 0, 0, .34),
+      0 0 0 1px rgba(255, 255, 255, .04);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, .30), 0 1px 2px rgba(0, 0, 0, .22);
+    --ring: rgba(45, 140, 240, .2);
+
+    --tabs-bg: rgba(24, 24, 27, .92);
+    --tabs-line: rgba(39, 39, 42, .7);
+    --tab-on-bg: #27272A;
+    --notice-bg: rgba(39, 39, 42, .72);
+    --notice-line: rgba(39, 39, 42, .85);
+    --pill-bg: rgba(15, 15, 18, .8);
+    --input-bg: #0F0F12;
+    --ghost-hover: #3F3F46;
+    --lang-bg: rgba(15, 15, 18, .92);
+    --lang-line: rgba(39, 39, 42, .85);
+    --lang-on-bg: #3F3F46;
   }
 }
+
 /* ...ou por escolha explícita guardada no portal. */
 .bzau[data-theme="dark"] {
-  --ink: #EAF1F8;
-  --muted: #9DB2C8;
-  --line: #20303F;
-  --line-soft: #1A2734;
-  --bg: #0C1520;
-  --surface: #101B27;
-  --danger: #FF9A93;
-  --danger-bg: rgba(179, 38, 30, .18);
-  --danger-line: rgba(255, 154, 147, .34);
-  --ring: rgba(91, 163, 245, .26);
+  --bg: #09090B;
+  --bg2: #0F0F12;
+  --bg3: #27272A;
+  --surface: #18181B;
+  --surface-hover: #3F3F46;
+  --line: #27272A;
+  --line-2: #3F3F46;
+  --text: #F4F4F5;
+  --text2: #D4D4D8;
+  --muted: #A1A1AA;
+  --err: #F87171;
+
+  --page-bg:
+    radial-gradient(circle at top left, rgba(29, 95, 167, .16), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(13, 59, 102, .28), transparent 34%),
+    linear-gradient(180deg, #0F0F12, #09090B);
+  --sheen: linear-gradient(120deg, rgba(255, 255, 255, .05), transparent 34%, rgba(29, 95, 167, .12), transparent 72%);
+  --ghost-ico: rgba(244, 244, 245, .06);
+
+  --card-bg: linear-gradient(180deg, rgba(24, 24, 27, .94), rgba(15, 15, 18, .9));
+  --card-line: rgba(255, 255, 255, .12);
+  --card-shadow:
+    0 18px 40px -24px rgba(0, 0, 0, .52),
+    0 2px 12px -6px rgba(0, 0, 0, .34),
+    0 0 0 1px rgba(255, 255, 255, .04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, .30), 0 1px 2px rgba(0, 0, 0, .22);
+  --ring: rgba(45, 140, 240, .2);
+
+  --tabs-bg: rgba(24, 24, 27, .92);
+  --tabs-line: rgba(39, 39, 42, .7);
+  --tab-on-bg: #27272A;
+  --notice-bg: rgba(39, 39, 42, .72);
+  --notice-line: rgba(39, 39, 42, .85);
+  --pill-bg: rgba(15, 15, 18, .8);
+  --input-bg: #0F0F12;
+  --ghost-hover: #3F3F46;
+  --lang-bg: rgba(15, 15, 18, .92);
+  --lang-line: rgba(39, 39, 42, .85);
+  --lang-on-bg: #3F3F46;
 }
 
 .bzau *,
@@ -73,424 +162,466 @@
 
 .bzau img { max-width: 100%; }
 
+/* Anel de foco do design system: 2px de acento com 2px de folga. */
 .bzau :focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 3px;
-  border-radius: 10px;
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
-.bzau-brand :focus-visible { outline-color: #9CCBFF; }
-.bzau ::selection { background: color-mix(in srgb, var(--blue) 26%, transparent); }
-
-/* ─────────────────────────── Painel de marca ─────────────────────────── */
-
-.bzau-brand {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  padding: clamp(32px, 4.4vw, 68px);
-  background: linear-gradient(155deg, var(--navy) 0%, var(--navy2) 58%, var(--navy3) 100%);
-  color: #fff;
+.bzau[data-theme="dark"] :focus-visible { outline-color: var(--acc-strong); }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) :focus-visible { outline-color: var(--acc-strong); }
 }
-/* Grelha técnica esbatida — igual ao hero da landing. */
-.bzau-brand::before {
-  content: "";
+.bzau ::selection { background: rgba(29, 95, 167, .2); color: var(--acc); }
+
+/* ───────────────────── Fundo: brilho diagonal + ícones ───────────────────── */
+
+.bzau-bg {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(125, 185, 255, .07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(125, 185, 255, .07) 1px, transparent 1px);
-  background-size: 46px 46px;
-  -webkit-mask-image: radial-gradient(120% 90% at 30% 0%, #000 26%, transparent 76%);
-  mask-image: radial-gradient(120% 90% at 30% 0%, #000 26%, transparent 76%);
-}
-/* Glow subtil. */
-.bzau-brand::after {
-  content: "";
-  position: absolute;
-  left: -14%;
-  bottom: -30%;
-  width: 560px;
-  height: 560px;
-  background: radial-gradient(circle, rgba(45, 140, 240, .38), transparent 62%);
-  filter: blur(12px);
+  overflow: hidden;
   pointer-events: none;
 }
-
-.bzau-brand-in {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 520px;
-  margin: 0 auto;
+.bzau-sheen {
+  position: absolute;
+  inset: 0;
+  background: var(--sheen);
+}
+/* h-14/h-16 e sm:h-16/sm:h-20 do CondVisit, resolvidos a 15.25px de root. */
+.bzau-bg-ico {
+  position: absolute;
+  color: var(--ghost-ico);
+  width: 53px;
+  height: 53px;
+  transform: rotate(var(--rot, 0deg));
+}
+.bzau-bg-ico.is-lg { width: 61px; height: 61px; }
+@media (min-width: 640px) {
+  .bzau-bg-ico { width: 61px; height: 61px; }
+  .bzau-bg-ico.is-lg { width: 76px; height: 76px; }
 }
 
-.bzau-logo {
+/* ───────────────────────────── Estrutura ───────────────────────────── */
+
+.bzau-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* max-w-5xl (64rem) e px-4/py-4 → sm:px-6/py-6 do CondVisit. */
+  max-width: 976px;
+  margin: 0 auto;
+  padding: 15px 15px calc(15px + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .bzau-shell { padding: 23px 23px calc(23px + env(safe-area-inset-bottom)); }
+}
+
+.bzau-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bzau-top-logo {
   display: block;
+  height: 26px;
   width: auto;
-  height: clamp(38px, 4vw, 52px);
   object-fit: contain;
   object-position: left center;
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .28));
+}
+@media (min-width: 640px) {
+  .bzau-top-logo { height: 30px; }
 }
 
-.bzau-badge {
+.bzau-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 23px 0;
+}
+@media (min-width: 640px) {
+  .bzau-main { padding: 38px 0; }
+}
+
+/* max-w-md = 28rem. */
+.bzau-col {
+  width: 100%;
+  max-width: 427px;
+}
+
+/* ─────────────────────── Cabeçalho (fora do cartão) ─────────────────────── */
+
+.bzau-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 19px;
+}
+@media (min-width: 640px) {
+  .bzau-head { margin-bottom: 23px; }
+}
+
+/* Tile de marca — o mesmo lugar/tamanho do `Logo variant="icon"` (h-14 w-14),
+   com o gradiente `brand-tile` do design system (deep → accent). */
+.bzau-tile {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 30px;
-  padding: 7px 15px;
-  border: 1px solid rgba(191, 216, 245, .36);
-  border-radius: 30px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: #BFD8F5;
-}
-
-.bzau-brand h1 {
-  font-size: clamp(26px, 2.9vw, 40px);
-  line-height: 1.1;
-  font-weight: 800;
-  letter-spacing: -.025em;
-  margin: 18px 0 14px;
-}
-.bzau-brand h1 span { color: var(--blue-bright); }
-
-.bzau-lead {
-  font-size: 15.5px;
-  line-height: 1.62;
-  color: #D6E4F5;
-  margin: 0;
-  max-width: 460px;
-}
-
-.bzau-proof {
-  list-style: none;
-  margin: 30px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 14px;
-}
-.bzau-proof li {
-  display: flex;
-  gap: 13px;
-  align-items: flex-start;
-}
-.bzau-proof-ico {
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, .1);
-  border: 1px solid rgba(255, 255, 255, .17);
-  color: #9CCBFF;
-}
-.bzau-proof b {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 800;
-  letter-spacing: -.01em;
+  width: 53px;
+  height: 53px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #0D3B66 0%, #1D5FA7 100%);
   color: #fff;
+  box-shadow: 0 8px 20px -10px rgba(13, 59, 102, .55);
 }
-.bzau-proof span {
-  display: block;
-  margin-top: 2px;
+
+.bzau-wordmark {
+  margin: 15px 0 0;
   font-size: 13px;
-  line-height: 1.5;
-  color: #A9C2DC;
+  font-weight: 600;
+  letter-spacing: .28em;
+  text-indent: .28em;
+  color: var(--text2);
 }
 
-.bzau-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 9px;
-  margin-top: 28px;
+/* text-2xl → sm:text-3xl, no tipo de corpo (o h1 do CondVisit não usa a display
+   font — fica em Inter, como aqui por herança). */
+.bzau-head h1 {
+  font-family: inherit;
+  margin: 11px 0 0;
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
 }
-.bzau-chips span {
-  background: rgba(255, 255, 255, .09);
-  border: 1px solid rgba(255, 255, 255, .16);
-  border-radius: 30px;
-  padding: 7px 14px;
-  font-size: 12.5px;
-  color: #EAF3FF;
+@media (min-width: 640px) {
+  .bzau-head h1 { font-size: 29px; }
 }
 
-.bzau-mobile-tag { display: none; }
-
-/* ───────────────────────── Painel do formulário ──────────────────────── */
-
-.bzau-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(24px, 3.4vw, 56px);
-  background: var(--surface);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+/* text-sm / leading-7 / max-w-sm. */
+.bzau-sub {
+  margin: 11px 0 0;
+  max-width: 366px;
+  font-size: 13.5px;
+  line-height: 27px;
+  color: var(--text2);
 }
+
+/* ───────────────────────────── Cartão ───────────────────────────── */
 
 .bzau-card {
-  width: 100%;
-  max-width: 408px;
-  margin: auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: 11px;
+  border: 1px solid var(--card-line);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+  /* No CondVisit somam-se o padding do <Card> (p-3.5 → sm:p-5) e o do
+     <CardContent> (p-6 → sm:p-8): 36px em telemóvel, 50px a partir de 640px. */
+  padding: 36px;
+}
+@media (min-width: 640px) {
+  .bzau-card { padding: 50px; }
 }
 
-.bzau-head { margin-bottom: 22px; }
-/* Sobrancelha em caixa alta muito espaçada — assinatura da família UpDigital. */
-.bzau-eyebrow {
-  display: block;
-  margin-bottom: 9px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--blue2);
-}
-.bzau[data-theme="dark"] .bzau-eyebrow { color: var(--blue-bright); }
-@media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) .bzau-eyebrow { color: var(--blue-bright); }
-}
-.bzau-head h2 {
-  font-size: 25px;
-  font-weight: 800;
-  letter-spacing: -.022em;
-  line-height: 1.2;
-  margin: 0 0 6px;
-  color: var(--ink);
-}
-.bzau-head p {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin: 0;
-}
-
-/* Tabs (segmented control) */
+/* Separadores (pills) — mesmo recipe do Tabs variant="pills". */
 .bzau-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 4px;
   padding: 4px;
-  margin-bottom: 26px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  margin-bottom: 22px;
+  border: 1px solid var(--tabs-line);
+  border-radius: 15px;
+  background: var(--tabs-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24);
 }
+/* Ao contrário do CondVisit (pills numa linha, com scroll horizontal), os
+   rótulos BusUp são longos — "Entrar como Funcionário" — por isso o ícone sobe
+   para cima do texto. O recipe visual da pílula mantém-se igual. */
 .bzau-tab {
-  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 58px;
+  min-height: 62px;
   padding: 8px 6px;
-  border: 1px solid transparent;
-  border-radius: 11px;
+  border: 0;
+  border-radius: 8px;
   background: transparent;
-  color: var(--muted);
+  color: var(--text2);
   font-family: inherit;
   font-size: 11.5px;
-  font-weight: 700;
+  font-weight: 500;
+  letter-spacing: .01em;
   line-height: 1.25;
   text-align: center;
   cursor: pointer;
-  transition: background .16s, color .16s, border-color .16s, box-shadow .16s;
+  touch-action: manipulation;
+  transition: background .2s cubic-bezier(.4, 0, .2, 1), color .2s cubic-bezier(.4, 0, .2, 1), box-shadow .2s cubic-bezier(.4, 0, .2, 1);
 }
-.bzau-tab:hover { color: var(--ink); background: var(--surface); }
+.bzau-tab svg { flex: 0 0 auto; }
+.bzau-tab:hover { color: var(--text); }
 .bzau-tab[aria-selected="true"] {
-  background: var(--surface);
-  color: var(--blue2);
-  border-color: var(--line);
-  box-shadow: 0 2px 8px rgba(13, 59, 102, .1);
-}
-.bzau[data-theme="dark"] .bzau-tab[aria-selected="true"] { color: var(--blue-bright); }
-@media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) .bzau-tab[aria-selected="true"] { color: var(--blue-bright); }
+  background: var(--tab-on-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
 }
 
-/* Campos */
+/* Sobrancelha do cartão — caixa alta muito espaçada (assinatura UpDigital). */
+.bzau-eyebrow {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+/* ───────────────────────────── Formulário ───────────────────────────── */
+
 .bzau-form {
   display: grid;
-  gap: 16px;
+  gap: 15px;
+  margin-top: 22px;
 }
 
-.bzau-field { display: grid; gap: 7px; }
+.bzau-field { display: block; }
+/* Rótulo do <Input>: mb-1.5 → sm:mb-2, 0.68rem → sm:0.72rem, 700, .05em. */
 .bzau-label {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .07em;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
   text-transform: uppercase;
   color: var(--muted);
 }
+@media (min-width: 640px) {
+  .bzau-label { margin-bottom: 8px; font-size: 11px; }
+}
+
 .bzau-input {
   position: relative;
-  display: flex;
-  align-items: center;
+  display: block;
 }
+/* Ícone à esquerda: left-3.5 → sm:left-4, com pl-10 → sm:pl-11 no campo. */
 .bzau-input .bzau-input-ico {
   position: absolute;
-  left: 14px;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--muted);
-  opacity: .55;
   pointer-events: none;
-  transition: color .16s, opacity .16s;
+  transition: color .2s;
 }
 .bzau-input input {
   width: 100%;
-  min-height: 50px;
-  padding: 12px 14px 12px 44px;
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--ink);
+  /* O CondVisit pára nos 44px (mínimo HIG); aqui sobe para 48px por regra da
+     BusUp para alvos de toque. Restantes métricas iguais. */
+  min-height: 48px;
+  padding: 10px 11px 10px 38px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
   font-family: inherit;
-  font-size: 15.5px;
-  transition: border-color .16s, box-shadow .16s, background .16s;
+  /* 16px em telemóvel é obrigatório: abaixo disso o Safari faz zoom no foco. */
+  font-size: 16px;
+  touch-action: manipulation;
+  transition: border-color .2s cubic-bezier(.4, 0, .2, 1), box-shadow .2s cubic-bezier(.4, 0, .2, 1);
 }
-.bzau-input input::placeholder { color: var(--muted); opacity: .62; }
-.bzau-input input:hover { border-color: color-mix(in srgb, var(--blue) 30%, var(--line)); }
+@media (min-width: 640px) {
+  .bzau-input input { font-size: 14px; padding: 10px 13px 10px 42px; }
+  .bzau-input .bzau-input-ico { left: 15px; }
+}
+.bzau-input input::placeholder { color: var(--muted); }
 .bzau-input input:focus {
   outline: none;
-  border-color: var(--blue);
+  border-color: var(--acc);
   box-shadow: 0 0 0 3px var(--ring);
 }
-.bzau-input input:focus ~ .bzau-input-ico { color: var(--blue); opacity: 1; }
+.bzau-input input:focus ~ .bzau-input-ico { color: var(--acc); }
+.bzau[data-theme="dark"] .bzau-input input:focus { border-color: var(--acc-strong); }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-input input:focus { border-color: var(--acc-strong); }
+}
 /* O autofill do Chrome pinta o campo de branco — anula-se em modo escuro. */
 .bzau-input input:-webkit-autofill,
 .bzau-input input:-webkit-autofill:hover,
 .bzau-input input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--ink);
-  caret-color: var(--ink);
-  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset;
   transition: background-color 9999s ease-in-out 0s;
 }
 .bzau-input.has-reveal input { padding-right: 48px; }
 .bzau-reveal {
   position: absolute;
-  right: 6px;
-  width: 38px;
-  height: 38px;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 9px;
+  border: 0;
+  border-radius: 8px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: background .15s, color .15s;
+  transition: background .2s, color .2s;
 }
-.bzau-reveal:hover { background: var(--bg); color: var(--ink); }
+.bzau-reveal:hover { background: var(--ghost-hover); color: var(--text); }
 
-/* Erro */
+/* Erro — linha de texto, como no CondVisit, com ícone para leitura rápida. */
 .bzau-error {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
-  padding: 11px 13px;
-  background: var(--danger-bg);
-  border: 1px solid var(--danger-line);
-  border-radius: 12px;
-  color: var(--danger);
+  margin: 0;
+  color: var(--err);
   font-size: 13.5px;
-  line-height: 1.45;
-  font-weight: 600;
+  line-height: 1.5;
+  font-weight: 500;
 }
-.bzau-error svg { flex: 0 0 auto; margin-top: 1px; }
+.bzau-error svg { flex: 0 0 auto; margin-top: 2px; }
 
-/* Botões */
+/* Caixa de aviso (OTP enviado / contagem) — recipe do bloco "remember device". */
+.bzau-notice {
+  border: 1px solid var(--notice-line);
+  border-radius: 15px;
+  background: var(--notice-bg);
+  padding: 15px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text2);
+  text-align: center;
+}
+.bzau-notice strong { color: var(--text); font-weight: 600; }
+.bzau-notice p { margin: 0; }
+.bzau-notice p + p { margin-top: 7px; }
+
+/* ───────────────────────────── Botões ───────────────────────────── */
+
 .bzau-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 8px;
   width: 100%;
-  min-height: 50px;
-  padding: 13px 20px;
-  border: none;
-  border-radius: 12px;
-  background: var(--blue);
+  /* Recipe do <Button variant="primary">: raio lg, acento sólido, sombra curta,
+     hover em accent-deep com -1px. Altura 48px (o CondVisit usa 44px em
+     telemóvel) e tipo 13.5px por causa do alvo de toque BusUp. */
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--acc);
+  border-radius: 8px;
+  background: var(--acc);
   color: #fff;
   font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
   box-shadow: 0 1px 3px rgba(29, 95, 167, .3);
-  transition: background .18s, transform .14s, box-shadow .18s;
+  transition: all .2s cubic-bezier(.4, 0, .2, 1);
 }
 .bzau-btn:hover:not(:disabled) {
-  background: var(--blue2);
+  background: var(--acc-deep);
+  border-color: var(--acc-deep);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px -3px rgba(29, 95, 167, .4);
+  box-shadow: 0 4px 12px -2px rgba(29, 95, 167, .35);
 }
 .bzau-btn:active:not(:disabled) { transform: translateY(1px); }
-.bzau-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.bzau-btn:disabled {
+  cursor: not-allowed;
+  background: rgba(29, 95, 167, .5);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.bzau[data-theme="dark"] .bzau-btn { background: var(--acc-strong); border-color: var(--acc-strong); }
+.bzau[data-theme="dark"] .bzau-btn:hover:not(:disabled) { background: var(--acc); border-color: var(--acc); }
+.bzau[data-theme="dark"] .bzau-btn:disabled { background: rgba(45, 140, 240, .5); border-color: transparent; }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-btn { background: var(--acc-strong); border-color: var(--acc-strong); }
+  .bzau:not([data-theme="light"]) .bzau-btn:hover:not(:disabled) { background: var(--acc); border-color: var(--acc); }
+  .bzau:not([data-theme="light"]) .bzau-btn:disabled { background: rgba(45, 140, 240, .5); border-color: transparent; }
+}
 
-.bzau-btn-ghost {
+/* Variante fantasma — acções secundárias por baixo do botão primário. */
+.bzau-btn-ghost,
+.bzau[data-theme="dark"] .bzau-btn-ghost {
   background: transparent;
-  color: var(--blue2);
-  border: 1.5px solid var(--line);
+  border-color: transparent;
+  color: var(--text2);
+  box-shadow: none;
+  font-weight: 500;
+}
+.bzau-btn-ghost:hover:not(:disabled),
+.bzau[data-theme="dark"] .bzau-btn-ghost:hover:not(:disabled) {
+  background: var(--ghost-hover);
+  border-color: transparent;
+  color: var(--text);
+  transform: none;
   box-shadow: none;
 }
-.bzau-btn-ghost:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--blue) 8%, transparent);
-  border-color: var(--blue);
-  color: var(--blue2);
-}
-.bzau[data-theme="dark"] .bzau-btn-ghost { color: var(--blue-bright); }
+.bzau-btn-ghost:disabled,
+.bzau[data-theme="dark"] .bzau-btn-ghost:disabled { background: transparent; opacity: .5; }
 @media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) .bzau-btn-ghost { color: var(--blue-bright); }
+  .bzau:not([data-theme="light"]) .bzau-btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text2);
+  }
+  .bzau:not([data-theme="light"]) .bzau-btn-ghost:hover:not(:disabled) {
+    background: var(--ghost-hover);
+    color: var(--text);
+  }
+  .bzau:not([data-theme="light"]) .bzau-btn-ghost:disabled { background: transparent; }
 }
 
-/* Ligações discretas */
-.bzau-link {
-  background: none;
-  border: none;
-  padding: 8px 10px;
-  min-height: 40px;
-  border-radius: 9px;
-  color: var(--blue2);
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background .15s, color .15s;
+.bzau-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
 }
-.bzau-link:hover:not(:disabled) { background: var(--bg); color: var(--blue); }
-.bzau-link:disabled { opacity: .5; cursor: not-allowed; }
-.bzau[data-theme="dark"] .bzau-link { color: var(--blue-bright); }
-@media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) .bzau-link { color: var(--blue-bright); }
+.bzau-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
 }
 
-.bzau-form-aside { text-align: center; margin-top: -4px; }
-
-/* Spinner do estado de carregamento */
+/* Spinner do estado de carregamento (animate-spin do design system). */
 .bzau-spin {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, .38);
+  border: 2px solid rgba(255, 255, 255, .35);
   border-top-color: #fff;
-  animation: bzau-spin .7s linear infinite;
+  animation: bzau-spin 1s linear infinite;
+}
+.bzau-btn-ghost .bzau-spin {
+  border-color: rgba(113, 113, 122, .35);
+  border-top-color: currentColor;
 }
 @keyframes bzau-spin { to { transform: rotate(360deg); } }
 
 /* ───────────────────────────── OTP ───────────────────────────── */
-
-.bzau-otp-sent {
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin: 0;
-  text-align: center;
-}
-.bzau-otp-sent strong { color: var(--ink); font-weight: 800; }
 
 .bzau-otp-grid {
   display: grid;
@@ -500,106 +631,111 @@
 .bzau-otp-grid input {
   width: 100%;
   min-width: 0;
-  height: 58px;
+  height: 52px;
   padding: 0;
   text-align: center;
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
   font-family: inherit;
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  transition: border-color .16s, box-shadow .16s;
+  transition: border-color .2s cubic-bezier(.4, 0, .2, 1), box-shadow .2s cubic-bezier(.4, 0, .2, 1);
 }
 .bzau-otp-grid input:focus {
   outline: none;
-  border-color: var(--blue);
+  border-color: var(--acc);
   box-shadow: 0 0 0 3px var(--ring);
 }
 
-.bzau-otp-timer {
-  margin: 0;
-  text-align: center;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.bzau-otp-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* ─────────────────────────── Rodapé do painel ─────────────────────────── */
+/* ─────────────────────── Rodapé: powered by UpDigital ─────────────────────── */
 
 .bzau-foot {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
+  justify-content: center;
+  margin-top: 19px;
 }
-.bzau-lang {
-  display: flex;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.bzau-lang button {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .04em;
-  padding: 0 13px;
-  min-height: 38px;
-  cursor: pointer;
-  transition: background .15s, color .15s;
-}
-.bzau-lang button:hover { background: var(--bg); color: var(--ink); }
-.bzau-lang button[aria-pressed="true"] { background: var(--blue); color: #fff; }
-
 .bzau-powered {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
+  padding: 8px 15px;
+  border: 1px solid var(--card-line);
+  border-radius: 999px;
+  background: var(--pill-bg);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text2);
 }
 .bzau-powered img {
-  height: 20px;
+  height: 18px;
   width: auto;
   object-fit: contain;
   display: block;
   border-radius: 3px;
 }
-/* O logótipo UpDigital troca de versão conforme a superfície. */
-.bzau-powered img.bzau-on-dark { display: none; }
-@media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) .bzau-powered img.bzau-on-dark { display: block; }
-  .bzau:not([data-theme="light"]) .bzau-powered img.bzau-on-light { display: none; }
-}
-.bzau[data-theme="dark"] .bzau-powered img.bzau-on-dark { display: block; }
-.bzau[data-theme="dark"] .bzau-powered img.bzau-on-light { display: none; }
 
-/* ───────────────────────────── Modal ───────────────────────────── */
+/* Os logótipos trocam de versão conforme a superfície. */
+.bzau .bzau-on-dark { display: none; }
+.bzau .bzau-on-light { display: block; }
+@media (prefers-color-scheme: dark) {
+  .bzau:not([data-theme="light"]) .bzau-on-dark { display: block; }
+  .bzau:not([data-theme="light"]) .bzau-on-light { display: none; }
+}
+.bzau[data-theme="dark"] .bzau-on-dark { display: block; }
+.bzau[data-theme="dark"] .bzau-on-light { display: none; }
+
+/* ─────────────────────────── Selector PT / EN ─────────────────────────── */
+
+.bzau-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--lang-line);
+  border-radius: 999px;
+  background: var(--lang-bg);
+  box-shadow: 0 10px 24px -16px rgba(15, 23, 42, .45);
+}
+.bzau-lang button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all .2s cubic-bezier(.4, 0, .2, 1);
+}
+.bzau-lang button:hover { color: var(--text); }
+.bzau-lang button[aria-pressed="true"] {
+  background: var(--lang-on-bg);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+}
+
+/* ───────────────────────────── Modal (reset) ───────────────────────────── */
 
 .bzau-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(8, 20, 35, .52);
+  background: rgba(9, 9, 11, .5);
+  -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }
 .bzau-modal {
@@ -617,141 +753,72 @@
   overflow: hidden;
   pointer-events: auto;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 26px 24px 24px;
-  /* Sombra "premium": queda longa e difusa + fio de 1px (padrão CONDVISIT). */
-  box-shadow:
-    0 26px 54px -26px rgba(13, 59, 102, .34),
-    0 4px 14px -6px rgba(13, 59, 102, .14),
-    0 0 0 1px rgba(13, 59, 102, .05);
+  border: 1px solid var(--card-line);
+  border-radius: 11px;
+  padding: 24px;
+  box-shadow: 0 24px 64px -16px rgba(9, 9, 11, .4);
 }
-/* Fio de marca no topo do cartão (padrão Keeper/KOPPA). */
-.bzau-modal-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 4px;
-  background: linear-gradient(90deg, var(--blue), var(--navy));
-}
-.bzau[data-theme="dark"] .bzau-modal-card {
-  box-shadow: 0 26px 60px -24px rgba(0, 0, 0, .82), 0 0 0 1px rgba(255, 255, 255, .05);
-}
-@media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) .bzau-modal-card {
-    box-shadow: 0 26px 60px -24px rgba(0, 0, 0, .82), 0 0 0 1px rgba(255, 255, 255, .05);
-  }
+@media (min-width: 640px) {
+  .bzau-modal-card { padding: 32px; }
 }
 .bzau-modal-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 18px;
 }
 .bzau-modal-head h3 {
+  font-family: Manrope, Inter, system-ui, sans-serif;
   font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -.02em;
-  margin: 0 0 5px;
-  color: var(--ink);
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text);
 }
 .bzau-modal-head p {
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.5;
-  color: var(--muted);
+  color: var(--text2);
   margin: 0;
 }
 .bzau-modal-close {
   flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  transition: background .15s, color .15s;
+  transition: background .2s, color .2s;
 }
-.bzau-modal-close:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
-.bzau-modal-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 4px;
-}
+.bzau-modal-close:hover:not(:disabled) { background: var(--ghost-hover); color: var(--text); }
 
 /* ───────────────────────────── Responsivo ───────────────────────────── */
 
-/* Portátil pequeno: o painel de marca encolhe mas mantém-se. */
-@media (max-width: 1180px) {
-  .bzau { grid-template-columns: 1fr .92fr; }
-  .bzau-chips { display: none; }
+/* Telemóvel: sem espaço desperdiçado — o cartão sobe e o fundo simplifica. */
+@media (max-width: 560px) {
+  .bzau-main { padding: 15px 0 0; align-items: flex-start; }
+  /* Único desvio de propósito: os 36px do CondVisit deixariam pouca largura
+     para os três separadores BusUp num ecrã de 360px. */
+  .bzau-card { padding: 28px 22px; }
+  .bzau-head { margin-bottom: 16px; }
+  .bzau-head h1 { font-size: 22px; }
+  .bzau-sub { font-size: 13.5px; line-height: 23px; }
+  .bzau-tile { width: 46px; height: 46px; border-radius: 13px; }
+  .bzau-wordmark { margin-top: 12px; font-size: 12px; }
+  .bzau-bg-ico { opacity: .7; }
+  .bzau-otp-grid { gap: 6px; }
+  .bzau-otp-grid input { height: 50px; font-size: 19px; }
 }
 
-/* Ecrã baixo (portátil 13" com barras): a prova sai antes de cortar. */
-@media (min-width: 901px) and (max-height: 720px) {
-  .bzau-proof { display: none; }
-  .bzau-chips { display: flex; margin-top: 24px; }
-}
-@media (min-width: 901px) and (max-height: 560px) {
-  .bzau-lead,
-  .bzau-chips { display: none; }
-}
-
-/* Telemóvel e tablet: a marca colapsa para um cabeçalho compacto. */
-@media (max-width: 900px) {
-  .bzau {
-    position: static;
-    min-height: 100vh;
-    min-height: 100dvh;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    overflow: visible;
-  }
-  .bzau-brand {
-    padding: 14px 20px;
-    align-items: center;
-  }
-  .bzau-brand::after { left: auto; right: -30%; bottom: -160%; }
-  .bzau-brand-in {
-    max-width: none;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .bzau-logo { height: 30px; }
-  .bzau-badge,
-  .bzau-brand h1,
-  .bzau-lead,
-  .bzau-proof { display: none; }
-  .bzau-mobile-tag {
-    display: block;
-    margin-left: auto;
-    text-align: right;
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: #A9C2DC;
-  }
-  .bzau-panel {
-    padding: 28px 20px 36px;
-    align-items: flex-start;
-    overflow: visible;
-  }
-  .bzau-card { margin: 0 auto; }
-}
-
-@media (max-width: 420px) {
-  .bzau-mobile-tag { display: none; }
-  .bzau-head h2 { font-size: 22px; }
-  .bzau-tabs { grid-template-columns: 1fr; gap: 3px; }
+/* Ecrãs muito estreitos: os separadores empilham em linhas legíveis. */
+@media (max-width: 400px) {
+  .bzau-tabs { flex-direction: column; border-radius: 13px; }
   .bzau-tab {
     flex-direction: row;
     justify-content: flex-start;
@@ -759,11 +826,9 @@
     min-height: 48px;
     padding: 8px 12px;
     text-align: left;
-    font-size: 13px;
+    font-size: 13.5px;
   }
-  .bzau-otp-grid { gap: 6px; }
-  .bzau-otp-grid input { height: 52px; font-size: 19px; }
-  .bzau-modal-actions { grid-template-columns: 1fr; }
+  .bzau-lang button { padding: 0 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -116,7 +116,7 @@ export function RevenueChart({ data, c }: { data: RevenuePoint[]; c: ChartTheme 
         />
         <Line
           activeDot={{ r: 4, stroke: c.surface, strokeWidth: 2 }} dataKey="recargas" dot={false}
-          name="Recargas (não é receita)" stroke={c.series[2]} strokeDasharray="5 4"
+          name="Recargas (saldo carregado)" stroke={c.series[2]} strokeDasharray="5 4"
           strokeWidth={2} type="monotone"
         />
       </ComposedChart>

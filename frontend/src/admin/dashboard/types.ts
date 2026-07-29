@@ -14,6 +14,8 @@ export interface AnalyticsFiltersEcho {
 
 export interface AnalyticsKpis {
   transport_revenue: string;
+  /** M-Pesa + e-Mola + numerário. Exclui saldo BusUp: esse já entrou na recarga. */
+  cash_in: string;
   ticket_revenue: string;
   validation_revenue: string;
   topups_total: string;

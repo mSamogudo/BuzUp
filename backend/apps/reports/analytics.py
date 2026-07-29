@@ -150,10 +150,20 @@ def build_analytics(params) -> dict:
     tickets_count = passes.count()
     validations_count = validations.count()
 
+    methods = _payment_methods(payments)
+    # Dinheiro que entrou mesmo na conta da empresa: M-Pesa, e-Mola, numerario.
+    # Exclui pagamentos feitos com saldo BusUp — esse dinheiro ja entrou antes,
+    # na recarga; conta-lo aqui seria conta-lo duas vezes.
+    cash_in = sum(
+        (Decimal(m["total"]) for m in methods if m["kind"] in ("mobile_money", "cash")),
+        Decimal("0.00"),
+    )
+
     kpis = {
         # Receita de transporte = bilhetes vendidos + validações pagas por carteira.
         # As recargas NÃO entram: são dinheiro que ainda não virou viagem.
         "transport_revenue": _money(ticket_revenue + validation_revenue),
+        "cash_in": _money(cash_in),
         "ticket_revenue": _money(ticket_revenue),
         "validation_revenue": _money(validation_revenue),
         "topups_total": _money(topup_total),
@@ -172,7 +182,7 @@ def build_analytics(params) -> dict:
         "kpis": kpis,
         "revenue_series": _revenue_series(f),
         "hourly": _hourly(validations),
-        "payment_methods": _payment_methods(payments),
+        "payment_methods": methods,
         "top_routes": _top_routes(validations, passes),
         "top_trips": _top_trips(f),
         "top_drivers": _top_drivers(f),

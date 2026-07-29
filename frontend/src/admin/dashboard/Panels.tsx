@@ -19,6 +19,11 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
     <>
       <div className="admin-metric-grid">
         <MetricCard
+          detail="M-Pesa, e-Mola e numerário recebidos"
+          label="Entradas de dinheiro"
+          value={formatCurrency(k.cash_in)}
+        />
+        <MetricCard
           detail="Bilhetes + validações — o dinheiro que virou viagem"
           label="Receita de transporte"
           value={formatCurrency(k.transport_revenue)}
@@ -39,14 +44,9 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
           value={formatCurrency(k.avg_ticket)}
         />
         <MetricCard
-          detail="Saldo carregado — ainda não é receita"
+          detail="Saldo carregado — vira receita quando o passageiro viaja"
           label="Recargas"
           value={formatCurrency(k.topups_total)}
-        />
-        <MetricCard
-          detail="Todos os canais, já confirmados"
-          label="Pagamentos"
-          value={formatCurrency(k.payments_total)}
         />
         <MetricCard
           detail={`${formatCount(k.trips_completed)} concluídas · ${completion}%`}
@@ -60,9 +60,13 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
         />
       </div>
       <p className="dash-kpi-note">
-        Receita de transporte = bilhetes + validações pagas por carteira. As recargas
-        entram como saldo e só contam como receita quando o passageiro viaja — por isso
-        aparecem à parte, aqui e no gráfico diário.
+        <strong>Entradas de dinheiro</strong> são os pagamentos confirmados nos canais externos
+        (M-Pesa, e-Mola, numerário), venham de recargas ou de bilhetes. <strong>Receita de
+        transporte</strong> é o serviço já prestado: bilhetes + validações. Uma recarga é
+        dinheiro recebido mas ainda em dívida ao passageiro — vira receita quando ele viaja,
+        por isso somar as duas contaria o mesmo dinheiro duas vezes. <strong>Recargas</strong>
+        mede o saldo creditado nas carteiras, que pode divergir das entradas quando há
+        créditos feitos fora dos canais de pagamento.
       </p>
     </>
   );

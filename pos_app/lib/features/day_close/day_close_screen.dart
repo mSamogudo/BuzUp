@@ -322,17 +322,15 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
         icon: Icons.qr_code_scanner,
         label: 'VALIDACOES',
         value: '${totals['validations'] ?? 0}',
-        footer: '${totals['validations_revenue'] ?? '0.00'} MZN debitados',
+        // Débito de carteira: NAO e dinheiro que o agente entrega. Sem esta
+        // distincao o agente confunde o total a prestar contas.
+        footer: '${totals['validations_revenue'] ?? '0.00'} MZN em carteira (nao entra na caixa)',
         accent: const Color(0xFF8B5CF6),
       ),
-      _kpiData(
-        icon: Icons.account_balance_wallet,
-        label: 'A ENTREGAR',
-        value: '${totals['revenue'] ?? '0.00'} MZN',
-        footer: 'Vendas + Recargas (em caixa)',
-        accent: const Color(0xFFEAB308),
-      ),
     ];
+    // O cartao 'A ENTREGAR' foi removido: repetia exactamente o valor e o
+    // subtitulo do total do topo. Ficam as duas parcelas que o compoem
+    // (vendas e recargas) e, em baixo, as validacoes — que nao sao caixa.
     return Column(
       children: [
         Row(children: [
@@ -341,11 +339,7 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
           Expanded(child: _kpiTile(context, tiles[1], compact: compact)),
         ]),
         const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: _kpiTile(context, tiles[2], compact: compact)),
-          const SizedBox(width: 8),
-          Expanded(child: _kpiTile(context, tiles[3], compact: compact)),
-        ]),
+        _kpiTile(context, tiles[2], compact: compact),
       ],
     );
   }

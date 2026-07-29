@@ -11,7 +11,7 @@ const DESCRIPTION =
  * e REPÕE tudo no unmount — a SPA partilha o index.html com o portal de
  * gestão, e o título de marketing não deve ficar preso na tab do admin.
  */
-export function useLandingMeta() {
+export function useLandingMeta(_lang?: string) {
   useEffect(() => {
     const prevTitle = document.title;
     document.title = TITLE;

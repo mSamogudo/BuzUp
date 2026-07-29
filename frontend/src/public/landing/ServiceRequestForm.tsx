@@ -9,7 +9,7 @@ const INTERESTS = [
 ];
 
 /** Pedido de contacto: fica registado no sistema e avisa a equipa comercial. */
-export default function ServiceRequestForm() {
+export default function ServiceRequestForm({ lang = "pt" }: { lang?: "pt" | "en" }) {
   const [form, setForm] = useState({
     name: "", organization: "", phone: "", email: "",
     interest: "operator", fleet_size: "", message: "",

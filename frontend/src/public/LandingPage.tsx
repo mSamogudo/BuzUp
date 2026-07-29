@@ -1,25 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight, CheckCircle2, Download, Menu, Ticket, X,
+  ArrowRight, CheckCircle2, Download, Menu, Moon, Sun, Ticket, X,
 } from "lucide-react";
-import { useBranding, pickLogo } from "../lib/branding";
 import Reveal from "./landing/Reveal";
 import { useLandingMeta } from "./landing/useLandingMeta";
 import ServiceRequestForm from "./landing/ServiceRequestForm";
+import EcosystemSection from "./landing/EcosystemSection";
+import { useLandingPrefs, type Lang } from "./landing/useLandingPrefs";
+import { copyFor } from "./landing/landing-copy";
 import {
-  ADDRESS, AUDIENCES, BENEFITS, ECOSYSTEM, MODULES, NAV,
-  PLATFORM_PILLS, SALES_EMAIL, SALES_PHONE, SALES_PHONE_HREF, SECURITY_POINTS, STATS, TOOLS,
+  ADDRESS, AUDIENCE_ICONS, BENEFIT_ICONS, MODULE_ICONS, SALES_EMAIL,
+  SALES_PHONE, SALES_PHONE_HREF, TOOL_ICONS,
 } from "./landing/landing-content";
 import "./landing/landing.css";
 
+/** Site do produto: logótipo BusUp sempre (o branding do portal pertence ao
+ *  operador cliente e não deve substituir a marca aqui). */
+const LOGO_LIGHT_BG = "/assets/busup/logo-light.png";
+const LOGO_DARK_BG = "/assets/busup/logo-dark.png";
+
 function Wordmark({ url, alt, height = 30 }: { url: string; alt: string; height?: number }) {
-  if (url) return <img src={url} alt={alt} style={{ height, display: "block" }} />;
-  return (
-    <span style={{ fontWeight: 800, fontSize: height * 0.8, letterSpacing: "-0.02em" }}>
-      Bus<span style={{ color: "#2D8CF0" }}>Up</span>
-    </span>
-  );
+  return <img src={url} alt={alt} style={{ height, display: "block" }} />;
 }
 
 /** Imagem de produto: dimensões intrínsecas (zero CLS), lazy excepto o hero. */
@@ -37,17 +39,22 @@ function ProductImg({ src, alt, width, height, eager = false }: {
 }
 
 export default function LandingPage() {
-  const { branding } = useBranding();
-  // Duas variantes: a barra é clara (logo de tinta escura) e o rodapé é
-  // navy (logo em branco). Usar a mesma nas duas fazia sumir o "BUS".
-  const lightBgLogo = pickLogo(branding.primary_logo_url, "/assets/tpm-tur-logo/tpm_light.png");
-  const darkBgLogo = pickLogo(branding.sidebar_logo_url, "/assets/tpm-tur-logo/tpm_dark.png");
-  useLandingMeta();
+  const { effectiveTheme, toggleTheme, lang, setLang } = useLandingPrefs();
+  const t = copyFor(lang);
+  useLandingMeta(lang);
 
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [active, setActive] = useState("");
   const burgerRef = useRef<HTMLButtonElement | null>(null);
+
+  const NAV_IDS = [
+    { id: "produto", label: t.nav.produto },
+    { id: "como-funciona", label: t.nav.como },
+    { id: "solucoes", label: t.nav.solucoes },
+    { id: "plataforma", label: t.nav.plataforma },
+    { id: "ecossistema", label: t.nav.eco },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -61,12 +68,12 @@ export default function LandingPage() {
       (entries) => { for (const e of entries) if (e.isIntersecting) setActive(e.target.id); },
       { rootMargin: "-88px 0px -65% 0px" },
     );
-    for (const { id } of NAV) {
+    for (const { id } of NAV_IDS) {
       const el = document.getElementById(id);
       if (el) io.observe(el);
     }
     return () => io.disconnect();
-  }, []);
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -80,22 +87,41 @@ export default function LandingPage() {
     };
   }, [menuOpen]);
 
+  const ThemeButton = () => (
+    <button className="bzlp-icon-btn" type="button" onClick={toggleTheme}
+      aria-label={effectiveTheme === "dark" ? t.themeLight : t.themeDark}
+      title={effectiveTheme === "dark" ? t.themeLight : t.themeDark}>
+      {effectiveTheme === "dark" ? <Sun size={16} aria-hidden /> : <Moon size={16} aria-hidden />}
+    </button>
+  );
+
+  const LangSwitch = () => (
+    <div className="bzlp-lang" role="group" aria-label="Idioma">
+      {(["pt", "en"] as Lang[]).map((l) => (
+        <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="bzlp">
-      <a className="bzlp-skip" href="#conteudo">Saltar para o conteúdo</a>
+    <div className="bzlp" data-theme={effectiveTheme}>
+      <a className="bzlp-skip" href="#conteudo">{t.skip}</a>
 
       <header className={`bzlp-nav${scrolled ? " is-scrolled" : ""}`}>
         <div className="bzlp-nav-in">
-          <Link to="/" aria-label="BusUp — início"><Wordmark url={lightBgLogo} alt="BusUp" height={28} /></Link>
-          <nav className="bzlp-links" aria-label="Navegação principal">
-            {NAV.map((n) => (
+          <Link to="/" aria-label="BusUp"><Wordmark url={effectiveTheme === "dark" ? LOGO_DARK_BG : LOGO_LIGHT_BG} alt="BusUp" height={28} /></Link>
+          <nav className="bzlp-links" aria-label="BusUp">
+            {NAV_IDS.map((n) => (
               <a key={n.id} href={`#${n.id}`} aria-current={active === n.id ? "location" : undefined}>{n.label}</a>
             ))}
           </nav>
           <div className="bzlp-nav-cta">
-            <Link to="/login" className="bzlp-ghost">Entrar</Link>
-            <Link to="/comprar" className="bzlp-btn sm"><Ticket size={16} aria-hidden /> Comprar bilhete</Link>
-            <button ref={burgerRef} className="bzlp-burger" aria-label="Abrir menu" onClick={() => setMenuOpen(true)}>
+            <div className="bzlp-tools"><LangSwitch /><ThemeButton /></div>
+            <Link to="/login" className="bzlp-ghost">{t.signIn}</Link>
+            <Link to="/comprar" className="bzlp-btn sm"><Ticket size={16} aria-hidden /> {t.buy}</Link>
+            <button ref={burgerRef} className="bzlp-burger" aria-label={t.openMenu} onClick={() => setMenuOpen(true)}>
               <Menu size={24} aria-hidden />
             </button>
           </div>
@@ -106,18 +132,19 @@ export default function LandingPage() {
         <div className="bzlp-sheet" onClick={() => setMenuOpen(false)}>
           <div className="bzlp-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <div className="bzlp-sheet-head">
-              <Wordmark url={lightBgLogo} alt="BusUp" height={24} />
-              <button className="bzlp-sheet-close" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}>
+              <Wordmark url={effectiveTheme === "dark" ? LOGO_DARK_BG : LOGO_LIGHT_BG} alt="BusUp" height={24} />
+              <button className="bzlp-sheet-close" aria-label={t.closeMenu} onClick={() => setMenuOpen(false)}>
                 <X size={24} aria-hidden />
               </button>
             </div>
-            {NAV.map((n) => (
+            {NAV_IDS.map((n) => (
               <a key={n.id} href={`#${n.id}`} onClick={() => setMenuOpen(false)}>{n.label}</a>
             ))}
-            <Link to="/login" onClick={() => setMenuOpen(false)}>Entrar no portal</Link>
+            <Link to="/login" onClick={() => setMenuOpen(false)}>{t.signInPortal}</Link>
             <Link to="/comprar" className="bzlp-btn" onClick={() => setMenuOpen(false)}>
-              <Ticket size={18} aria-hidden /> Comprar bilhete
+              <Ticket size={18} aria-hidden /> {t.buy}
             </Link>
+            <div className="bzlp-sheet-tools"><LangSwitch /><ThemeButton /></div>
           </div>
         </div>
       )}
@@ -127,67 +154,60 @@ export default function LandingPage() {
         <section className="bzlp-hero">
           <div className="bzlp-hero-in">
             <div className="bzlp-hero-txt">
-              <span className="bzlp-badge">Bilhética digital · Moçambique</span>
-              <h1>Bilhetes, frota e receita<br /><span>numa só plataforma.</span></h1>
+              <span className="bzlp-badge">{t.hero.badge}</span>
+              <h1>{t.hero.h1a}<br /><span>{t.hero.h1b}</span></h1>
               <p>
-                O <b>BusUp</b> digitaliza a venda e a validação de bilhetes no transporte de passageiros —
-                do bairro à viagem internacional. O passageiro compra no telemóvel ou no agente;
-                o operador vê <b>cada viagem e cada metical</b>, em tempo real.
+                <b>BusUp</b> {t.hero.lead1} <b>{t.hero.leadStrong}</b>{t.hero.lead2}
               </p>
               <div className="bzlp-hero-cta">
-                <Link to="/comprar" className="bzlp-btn"><Ticket size={18} aria-hidden /> Comprar bilhete</Link>
-                <a href={`mailto:${SALES_EMAIL}`} className="bzlp-btn outline light">
-                  Falar com vendas <ArrowRight size={16} aria-hidden />
+                <Link to="/comprar" className="bzlp-btn"><Ticket size={18} aria-hidden /> {t.buy}</Link>
+                <a href="#pedido" className="bzlp-btn outline light">
+                  {t.talkSales} <ArrowRight size={16} aria-hidden />
                 </a>
               </div>
               <div className="bzlp-chips">
-                <span><b>QR</b> no telemóvel</span>
-                <span><b>Cartão NFC</b></span>
-                <span><b>M-Pesa</b></span>
-                <span><b>e-Mola</b></span>
+                {t.hero.chips.map((c) => <span key={c}>{c}</span>)}
               </div>
             </div>
             <div className="bzlp-hero-art">
-              <ProductImg
-                src="/landing/hero-all.webp"
-                alt="Plataforma BusUp: autocarro, portal de gestão, terminal POS e app do passageiro"
-                width={1003} height={1052} eager
-              />
+              <ProductImg src="/landing/hero-all.webp"
+                alt="BusUp: autocarro, portal de gestão, terminal POS e app do passageiro"
+                width={1003} height={1052} eager />
             </div>
           </div>
         </section>
 
         <div className="bzlp-stats">
           <div className="bzlp-stats-in">
-            {STATS.map((s) => (
+            {t.stats.map((s) => (
               <div className="bzlp-stat" key={s.l}><b>{s.v}</b><span>{s.l}</span></div>
             ))}
           </div>
         </div>
 
-        {/* PRODUTO / benefícios */}
+        {/* BENEFÍCIOS */}
         <section className="bzlp-sec" id="produto">
           <div className="bzlp-wrap">
             <Reveal>
               <div className="bzlp-sechead">
-                <div className="bzlp-kicker">O que o BusUp resolve</div>
-                <h2 className="bzlp-h2">Menos dinheiro na mão. Mais controlo na operação.</h2>
-                <p className="bzlp-lead">
-                  Substitui o dinheiro vivo por pagamento digital e dá ao operador a informação que
-                  hoje se perde entre o passageiro e a tesouraria.
-                </p>
+                <div className="bzlp-kicker">{t.benefits.kicker}</div>
+                <h2 className="bzlp-h2">{t.benefits.h2}</h2>
+                <p className="bzlp-lead">{t.benefits.lead}</p>
               </div>
             </Reveal>
             <div className="bzlp-benefits">
-              {BENEFITS.map((b, i) => (
-                <Reveal key={b.title} delay={i * 60}>
-                  <div className="bzlp-benefit">
-                    <div className="bzlp-bi"><b.icon size={21} aria-hidden /></div>
-                    <h3>{b.title}</h3>
-                    <p>{b.text}</p>
-                  </div>
-                </Reveal>
-              ))}
+              {t.benefits.items.map((b, i) => {
+                const Icon = BENEFIT_ICONS[i];
+                return (
+                  <Reveal key={b.title} delay={i * 60}>
+                    <div className="bzlp-benefit">
+                      <div className="bzlp-bi"><Icon size={21} aria-hidden /></div>
+                      <h3>{b.title}</h3>
+                      <p>{b.text}</p>
+                    </div>
+                  </Reveal>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -197,94 +217,63 @@ export default function LandingPage() {
           <div className="bzlp-wrap">
             <Reveal>
               <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Como funciona</div>
-                <h2 className="bzlp-h2">Veja o produto a trabalhar.</h2>
+                <div className="bzlp-kicker">{t.how.kicker}</div>
+                <h2 className="bzlp-h2">{t.how.h2}</h2>
               </div>
             </Reveal>
 
-            <Reveal>
-              <div className="bzlp-row">
-                <div className="bzlp-row-media">
-                  <ProductImg src="/landing/compra.webp" alt="Compra de bilhete online com escolha de lugar"
-                    width={1400} height={900} />
-                </div>
-                <div>
-                  <div className="bzlp-kicker left">Passo 1 · Comprar</div>
-                  <h3>Escolhe o dia, a partida e o lugar.</h3>
-                  <p>No site ou na app, em menos de um minuto.</p>
-                  <ul className="bzlp-facts">
-                    <li><CheckCircle2 size={17} aria-hidden /> Partidas com semanas de antecedência</li>
-                    <li><CheckCircle2 size={17} aria-hidden /> Planta do autocarro com lugares livres</li>
-                    <li><CheckCircle2 size={17} aria-hidden /> Pagamento M-Pesa ou e-Mola</li>
-                  </ul>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal>
-              <div className="bzlp-row flip">
-                <div className="bzlp-row-media">
-                  <ProductImg src="/landing/bilhete.webp" alt="Bilhete BusUp em PDF com QR e dados do passageiro"
-                    width={1400} height={900} />
-                </div>
-                <div>
-                  <div className="bzlp-kicker left">Passo 2 · Receber</div>
-                  <h3>O bilhete chega ao telemóvel.</h3>
-                  <p>PDF nominal com QR, lugar e hora de partida. Também por SMS.</p>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal>
-              <div className="bzlp-row">
-                <div className="bzlp-row-media">
-                  <img src="/landing/bordo-anim.webp" alt="Agente a vender e validar no terminal POS"
-                    width={760} height={900} loading="lazy" decoding="async" />
-                </div>
-                <div>
-                  <div className="bzlp-live"><i aria-hidden />App real</div>
-                  <div className="bzlp-kicker left">Passo 3 · Embarcar</div>
-                  <h3>O agente valida em segundos.</h3>
-                  <p>QR ou cartão NFC no terminal. Sem smartphone? Compra ali mesmo.</p>
-                </div>
-              </div>
-            </Reveal>
-
-            <Reveal>
-              <div className="bzlp-row flip">
-                <div className="bzlp-row-media">
-                  <img src="/landing/mapa-anim.webp" alt="Autocarro a mover-se no mapa em tempo real"
-                    width={760} height={900} loading="lazy" decoding="async" />
-                </div>
-                <div>
-                  <div className="bzlp-live"><i aria-hidden />GPS real</div>
-                  <div className="bzlp-kicker left">Passo 4 · Seguir</div>
-                  <h3>O autocarro no mapa, ao vivo.</h3>
-                  <p>Quando o motorista inicia a viagem, o passageiro vê onde ele está.</p>
-                </div>
-              </div>
-            </Reveal>
+            {[
+              { media: <ProductImg src="/landing/compra.webp" alt="" width={1400} height={900} />, flip: false },
+              { media: <ProductImg src="/landing/bilhete.webp" alt="" width={1400} height={900} />, flip: true },
+              { media: <img src="/landing/bordo-anim.webp" alt="" width={760} height={900} loading="lazy" decoding="async" />, flip: false },
+              { media: <img src="/landing/mapa-anim.webp" alt="" width={760} height={900} loading="lazy" decoding="async" />, flip: true },
+            ].map((row, i) => {
+              const s = t.how.steps[i];
+              return (
+                <Reveal key={s.h3}>
+                  <div className={`bzlp-row${row.flip ? " flip" : ""}`}>
+                    <div className="bzlp-row-media">{row.media}</div>
+                    <div>
+                      {"live" in s && s.live ? <div className="bzlp-live"><i aria-hidden />{s.live}</div> : null}
+                      <div className="bzlp-kicker left">{s.kicker}</div>
+                      <h3>{s.h3}</h3>
+                      <p>{s.text}</p>
+                      {s.facts.length > 0 && (
+                        <ul className="bzlp-facts">
+                          {s.facts.map((f) => (
+                            <li key={f}><CheckCircle2 size={17} aria-hidden /> {f}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
           </div>
         </section>
 
-        {/* MÓDULOS — hairline matrix */}
+        {/* FUNCIONALIDADES */}
         <section className="bzlp-sec">
           <div className="bzlp-wrap">
             <Reveal>
               <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Funcionalidades</div>
-                <h2 className="bzlp-h2">Tudo o que a operação precisa.</h2>
+                <div className="bzlp-kicker">{t.modules.kicker}</div>
+                <h2 className="bzlp-h2">{t.modules.h2}</h2>
               </div>
             </Reveal>
             <Reveal>
               <div className="bzlp-matrix">
-                {MODULES.map((m) => (
-                  <div className="bzlp-cell" key={m.title}>
-                    <div className="bzlp-cell-ico"><m.icon size={19} aria-hidden /></div>
-                    <h3>{m.title}</h3>
-                    <p>{m.text}</p>
-                  </div>
-                ))}
+                {t.modules.items.map((m, i) => {
+                  const Icon = MODULE_ICONS[i];
+                  return (
+                    <div className="bzlp-cell" key={m.title}>
+                      <div className="bzlp-cell-ico"><Icon size={19} aria-hidden /></div>
+                      <h3>{m.title}</h3>
+                      <p>{m.text}</p>
+                    </div>
+                  );
+                })}
               </div>
             </Reveal>
           </div>
@@ -296,20 +285,16 @@ export default function LandingPage() {
             <div className="bzlp-platform">
               <Reveal>
                 <div className="bzlp-shot">
-                  <ProductImg src="/landing/portal.webp" alt="Portal de gestão BusUp: receita, rotas e frota"
-                    width={1400} height={697} />
+                  <ProductImg src="/landing/portal.webp" alt="" width={1400} height={820} />
                 </div>
               </Reveal>
               <Reveal delay={80}>
                 <div>
-                  <div className="bzlp-kicker left">Portal de gestão</div>
-                  <h2 className="bzlp-h2 left">A operação inteira num ecrã.</h2>
-                  <p className="bzlp-lead left">
-                    Receita do dia, rotas, horários, frota, agentes e terminais. Com relatórios
-                    exportáveis e registo de auditoria de ponta a ponta.
-                  </p>
+                  <div className="bzlp-kicker left">{t.platform.kicker}</div>
+                  <h2 className="bzlp-h2 left">{t.platform.h2}</h2>
+                  <p className="bzlp-lead left">{t.platform.lead}</p>
                   <div className="bzlp-pills">
-                    {PLATFORM_PILLS.map((p) => <span key={p}>{p}</span>)}
+                    {t.platform.pills.map((p) => <span key={p}>{p}</span>)}
                   </div>
                 </div>
               </Reveal>
@@ -317,26 +302,20 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* SEGURANÇA — drench */}
+        {/* SEGURANÇA */}
         <section className="bzlp-drench">
           <div className="bzlp-wrap bzlp-drench-in">
             <Reveal>
               <div>
-                <div className="bzlp-kicker left light">Confiança</div>
-                <h2>A receita deixa de depender de confiança.</h2>
-                <p>
-                  Cada bilhete, validação e recarga fica registado com autor, terminal e hora.
-                  O que antes era palavra passa a ser dado auditável.
-                </p>
+                <div className="bzlp-kicker left light">{t.security.kicker}</div>
+                <h2>{t.security.h2}</h2>
+                <p>{t.security.lead}</p>
               </div>
             </Reveal>
             <div className="bzlp-checks">
-              {SECURITY_POINTS.map((p, i) => (
+              {t.security.points.map((p, i) => (
                 <Reveal key={p} delay={i * 45}>
-                  <div className="bzlp-check">
-                    <CheckCircle2 size={19} aria-hidden />
-                    <span>{p}</span>
-                  </div>
+                  <div className="bzlp-check"><CheckCircle2 size={19} aria-hidden /><span>{p}</span></div>
                 </Reveal>
               ))}
             </div>
@@ -348,24 +327,24 @@ export default function LandingPage() {
           <div className="bzlp-wrap">
             <Reveal>
               <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Para quem é</div>
-                <h2 className="bzlp-h2">Feito para quem move pessoas.</h2>
-                <p className="bzlp-lead">
-                  Operadores privados, empresas e instituições — a mesma plataforma, configurada
-                  para a realidade de cada frota.
-                </p>
+                <div className="bzlp-kicker">{t.audiences.kicker}</div>
+                <h2 className="bzlp-h2">{t.audiences.h2}</h2>
+                <p className="bzlp-lead">{t.audiences.lead}</p>
               </div>
             </Reveal>
             <div className="bzlp-aud">
-              {AUDIENCES.map((a, i) => (
-                <Reveal key={a.name} delay={i * 60}>
-                  <div className="bzlp-aud-card">
-                    <div className="bzlp-aud-ico"><a.icon size={21} aria-hidden /></div>
-                    <h3>{a.name}</h3>
-                    <p>{a.text}</p>
-                  </div>
-                </Reveal>
-              ))}
+              {t.audiences.items.map((a, i) => {
+                const Icon = AUDIENCE_ICONS[i];
+                return (
+                  <Reveal key={a.name} delay={i * 60}>
+                    <div className="bzlp-aud-card">
+                      <div className="bzlp-aud-ico"><Icon size={21} aria-hidden /></div>
+                      <h3>{a.name}</h3>
+                      <p>{a.text}</p>
+                    </div>
+                  </Reveal>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -375,85 +354,67 @@ export default function LandingPage() {
           <div className="bzlp-wrap">
             <Reveal>
               <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Uma plataforma, três ferramentas</div>
-                <h2 className="bzlp-h2">Do passageiro à direcção — tudo ligado.</h2>
+                <div className="bzlp-kicker">{t.tools.kicker}</div>
+                <h2 className="bzlp-h2">{t.tools.h2}</h2>
               </div>
             </Reveal>
-            <div className="bzlp-tools">
-              {TOOLS.map((t, i) => (
-                <Reveal key={t.name} delay={i * 70}>
-                  <div className="bzlp-tool">
-                    <div className="bzlp-tool-head">
-                      <div className="bzlp-ti"><t.icon size={25} aria-hidden /></div>
-                      <div>
-                        <h3>{t.name}</h3>
-                        <span>{t.tag}</span>
+            <div className="bzlp-tools-grid">
+              {t.tools.items.map((tool, i) => {
+                const Icon = TOOL_ICONS[i];
+                return (
+                  <Reveal key={tool.name} delay={i * 70}>
+                    <div className="bzlp-tool">
+                      <div className="bzlp-tool-head">
+                        <div className="bzlp-ti"><Icon size={25} aria-hidden /></div>
+                        <div>
+                          <h3>{tool.name}</h3>
+                          <span>{tool.tag}</span>
+                        </div>
                       </div>
+                      <ul>{tool.list.map((x) => <li key={x}>{x}</li>)}</ul>
                     </div>
-                    <ul>{t.items.map((i2) => <li key={i2}>{i2}</li>)}</ul>
-                  </div>
-                </Reveal>
-              ))}
+                  </Reveal>
+                );
+              })}
             </div>
             <div style={{ textAlign: "center", marginTop: 32 }}>
-              <Link to="/baixar" className="bzlp-btn outline"><Download size={18} aria-hidden /> Descarregar as aplicações</Link>
+              <Link to="/baixar" className="bzlp-btn outline">
+                <Download size={18} aria-hidden /> {t.tools.download}
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* ECOSSISTEMA */}
-        <section className="bzlp-sec" id="ecossistema">
-          <div className="bzlp-wrap">
-            <Reveal>
-              <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Ecossistema UpDigital</div>
-                <h2 className="bzlp-h2">O BusUp não anda sozinho.</h2>
-                <p className="bzlp-lead">
-                  Faz parte de uma família de produtos que já opera em Moçambique — pagamentos,
-                  tesouraria, mobilidade e controlo de acessos.
-                </p>
-              </div>
-            </Reveal>
-            <div className="bzlp-eco">
-              {ECOSYSTEM.map((e, i) => (
-                <Reveal key={e.name} delay={i * 45}>
-                  <div className="bzlp-eco-card">
-                    <b>{e.name}</b>
-                    <span>{e.text}</span>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* ECOSSISTEMA UPDIGITAL */}
+        <EcosystemSection lang={lang} kicker={t.eco.kicker} h2={t.eco.h2} lead={t.eco.lead} visit={t.eco.visit} />
 
         {/* CTA + contactos */}
         <section className="bzlp-cta" id="contacto">
           <div className="bzlp-wrap">
             <div className="bzlp-cta-in">
               <div>
-                <h2>Leve o BusUp para a sua frota.</h2>
-                <p>Marcamos uma demonstração e mostramos a plataforma a operar com os seus dados.</p>
+                <h2>{t.cta.h2}</h2>
+                <p>{t.cta.lead}</p>
               </div>
               <div className="bzlp-cta-btns">
-                <a href={`mailto:${SALES_EMAIL}`} className="bzlp-btn white">Falar com vendas</a>
+                <a href="#pedido" className="bzlp-btn white">{t.talkSales}</a>
                 <Link to="/comprar" className="bzlp-btn outline light">
-                  <Ticket size={17} aria-hidden /> Comprar bilhete
+                  <Ticket size={17} aria-hidden /> {t.buy}
                 </Link>
               </div>
             </div>
             <div className="bzlp-contact">
               <div className="bzlp-contact-card">
-                <small>Comercial</small>
+                <small>{t.cta.commercial}</small>
                 <a href={`mailto:${SALES_EMAIL}`}>{SALES_EMAIL}</a>
                 <a href={`tel:${SALES_PHONE_HREF}`}>{SALES_PHONE}</a>
               </div>
               <div className="bzlp-contact-card">
-                <small>Endereço</small>
+                <small>{t.cta.address}</small>
                 <span>{ADDRESS}</span>
               </div>
               <div className="bzlp-contact-card">
-                <small>Website</small>
+                <small>{t.cta.website}</small>
                 <a href="https://updigital.co.mz" target="_blank" rel="noreferrer">updigital.co.mz</a>
                 <a href="https://busup.updigital.co.mz">busup.updigital.co.mz</a>
               </div>
@@ -467,22 +428,17 @@ export default function LandingPage() {
             <div className="bzlp-contact-split">
               <Reveal>
                 <div>
-                  <div className="bzlp-kicker left">Fale connosco</div>
-                  <h2 className="bzlp-h2 left">Vamos ver isto na sua operação.</h2>
-                  <p className="bzlp-lead left">
-                    Preenchemos a plataforma com as suas rotas e horários e mostramos o fluxo
-                    completo — venda, embarque e fecho de contas.
-                  </p>
+                  <div className="bzlp-kicker left">{t.form.kicker}</div>
+                  <h2 className="bzlp-h2 left">{t.form.h2}</h2>
+                  <p className="bzlp-lead left">{t.form.lead}</p>
                   <ul className="bzlp-facts" style={{ marginTop: 22 }}>
-                    <li><CheckCircle2 size={17} aria-hidden /> Demonstração com os seus dados</li>
-                    <li><CheckCircle2 size={17} aria-hidden /> Instalação sem obra na frota</li>
-                    <li><CheckCircle2 size={17} aria-hidden /> Suporte local em Moçambique</li>
+                    {t.form.facts.map((f) => (
+                      <li key={f}><CheckCircle2 size={17} aria-hidden /> {f}</li>
+                    ))}
                   </ul>
                 </div>
               </Reveal>
-              <Reveal delay={80}>
-                <ServiceRequestForm />
-              </Reveal>
+              <Reveal delay={80}><ServiceRequestForm lang={lang} /></Reveal>
             </div>
           </div>
         </section>
@@ -491,32 +447,32 @@ export default function LandingPage() {
       <footer className="bzlp-foot">
         <div className="bzlp-foot-in">
           <div className="bzlp-foot-brand">
-            <Wordmark url={darkBgLogo} alt="BusUp" height={26} />
-            <p>Plataforma de bilhética digital para o transporte de passageiros. Desenvolvido em Moçambique.</p>
+            <Wordmark url={LOGO_DARK_BG} alt="BusUp" height={26} />
+            <p>{t.footer.about}</p>
           </div>
           <div className="bzlp-foot-cols">
-            <nav aria-label="Produto">
-              <h4>Produto</h4>
-              <a href="#produto">Funcionalidades</a>
-              <a href="#plataforma">Portal de gestão</a>
-              <Link to="/comprar">Comprar bilhete</Link>
-              <Link to="/baixar">Descarregar apps</Link>
+            <nav aria-label={t.footer.product}>
+              <h4>{t.footer.product}</h4>
+              <a href="#produto">{t.footer.features}</a>
+              <a href="#plataforma">{t.footer.portal}</a>
+              <Link to="/comprar">{t.buy}</Link>
+              <Link to="/baixar">{t.footer.apps}</Link>
             </nav>
-            <nav aria-label="Acesso">
-              <h4>Acesso</h4>
-              <Link to="/login">Portal de gestão</Link>
+            <nav aria-label={t.footer.access}>
+              <h4>{t.footer.access}</h4>
+              <Link to="/login">{t.footer.portal}</Link>
               <Link to="/baixar">App Passageiro</Link>
               <Link to="/baixar">App POS</Link>
             </nav>
-            <nav aria-label="Contacto">
-              <h4>Contacto</h4>
+            <nav aria-label={t.footer.contact}>
+              <h4>{t.footer.contact}</h4>
               <a href={`mailto:${SALES_EMAIL}`}>{SALES_EMAIL}</a>
               <a href={`tel:${SALES_PHONE_HREF}`}>{SALES_PHONE}</a>
               <a href="https://updigital.co.mz" target="_blank" rel="noreferrer">updigital.co.mz</a>
             </nav>
           </div>
         </div>
-        <div className="bzlp-foot-bar">© {new Date().getFullYear()} BusUp · UpDigital. Todos os direitos reservados.</div>
+        <div className="bzlp-foot-bar">© {new Date().getFullYear()} BusUp · UpDigital. {t.footer.rights}</div>
       </footer>
     </div>
   );

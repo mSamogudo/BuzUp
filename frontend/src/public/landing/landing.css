@@ -10,9 +10,27 @@
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased;
 }
+/* Escuro por preferência do sistema... */
 @media (prefers-color-scheme: dark){
-  .bzlp{--ink:#EAF1F8;--muted:#9DB2C8;--line:#20303F;--line-soft:#1A2734;--bg:#0C1520;--surface:#101B27}
+  .bzlp:not([data-theme="light"]){--ink:#EAF1F8;--muted:#9DB2C8;--line:#20303F;--line-soft:#1A2734;
+    --bg:#0C1520;--surface:#101B27}
 }
+/* ...ou por escolha explícita do visitante (o botão da barra manda). */
+.bzlp[data-theme="dark"]{--ink:#EAF1F8;--muted:#9DB2C8;--line:#20303F;--line-soft:#1A2734;
+  --bg:#0C1520;--surface:#101B27}
+
+/* Controlos da barra (tema e idioma) */
+.bzlp-tools{display:flex;align-items:center;gap:6px}
+.bzlp-icon-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;
+  padding:0 10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);
+  font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s}
+.bzlp-icon-btn:hover{background:var(--bg);border-color:var(--blue)}
+.bzlp-lang{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.bzlp-lang button{border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;
+  font-weight:800;letter-spacing:.04em;padding:0 10px;min-height:38px;cursor:pointer;transition:all .15s}
+.bzlp-lang button[aria-pressed="true"]{background:var(--blue);color:#fff}
+@media(max-width:900px){.bzlp-nav-cta .bzlp-tools{display:none}}
+.bzlp-sheet-tools{display:flex;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 .bzlp a{text-decoration:none;color:inherit}
 .bzlp img{max-width:100%}
 
@@ -217,8 +235,8 @@
 .bzlp-aud-card p{font-size:13.5px;line-height:1.58;color:var(--muted);margin:0}
 
 /* Ferramentas */
-.bzlp-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-@media(max-width:860px){.bzlp-tools{grid-template-columns:1fr}}
+.bzlp-tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:860px){.bzlp-tools-grid{grid-template-columns:1fr}}
 .bzlp-tool{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;
   box-shadow:0 8px 24px rgba(13,59,102,.06)}
 .bzlp-tool-head{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:22px;
@@ -232,15 +250,46 @@
 .bzlp-tool li::before{content:"";position:absolute;left:0;top:6px;width:8px;height:8px;border-radius:50%;
   background:var(--blue)}
 
-/* Ecossistema */
-.bzlp-eco{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
-@media(max-width:860px){.bzlp-eco{grid-template-columns:1fr 1fr}}
-@media(max-width:460px){.bzlp-eco{grid-template-columns:1fr}}
-.bzlp-eco-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;
-  text-align:center;transition:border-color .18s,transform .18s}
-.bzlp-eco-card:hover{border-color:rgba(45,140,240,.4);transform:translateY(-2px)}
-.bzlp-eco-card b{display:block;font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px}
-.bzlp-eco-card span{font-size:12.5px;color:var(--muted);line-height:1.45}
+/* Ecossistema — bento à maneira do site UpDigital (tile grande + tiles) */
+.bzlp-bento{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(14px,1.6vw,20px)}
+.bzlp-bento > *{grid-column:span 2;min-width:0}
+.bzlp-bento > .bzlp-bento-feature{grid-column:span 4}
+@media(max-width:980px){
+  .bzlp-bento > *{grid-column:span 3}
+  .bzlp-bento > .bzlp-bento-feature{grid-column:span 6}
+}
+@media(max-width:600px){.bzlp-bento > *{grid-column:span 6}}
+.bzlp-tile{position:relative;display:flex;flex-direction:column;height:100%;overflow:hidden;
+  background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  transition:transform .4s cubic-bezier(.16,1,.3,1),box-shadow .4s,border-color .4s}
+.bzlp-tile:hover{transform:translateY(-6px);border-color:color-mix(in srgb,var(--pa) 42%,var(--line));
+  box-shadow:0 30px 60px -22px rgba(6,20,38,.45)}
+/* fio de cor da marca revelado no hover */
+.bzlp-tile::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;z-index:3;
+  background:var(--pa);opacity:0;transition:opacity .4s}
+.bzlp-tile:hover::before{opacity:.92}
+.bzlp-tile.is-current{border-color:color-mix(in srgb,var(--pa) 55%,var(--line))}
+.bzlp-tile.is-current::before{opacity:.92}
+.bzlp-tile-media{overflow:hidden;background:var(--bg);aspect-ratio:16/11}
+.bzlp-tile-media img{display:block;width:100%;height:100%;object-fit:cover;
+  transition:transform .55s cubic-bezier(.16,1,.3,1)}
+.bzlp-tile:hover .bzlp-tile-media img{transform:scale(1.04)}
+.bzlp-tile-body{display:flex;flex-direction:column;gap:9px;padding:18px 20px 20px;flex:1}
+.bzlp-plogo{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;
+  padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);overflow:hidden}
+.bzlp-plogo img{display:block;width:auto}
+.bzlp-tile-cat{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pa)}
+.bzlp-tile-body p{font-size:13.5px;line-height:1.55;color:var(--muted);margin:0}
+.bzlp-tile-cta{margin-top:auto;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;
+  font-weight:800;color:var(--pa);transition:gap .3s}
+.bzlp-tile:hover .bzlp-tile-cta{gap:12px}
+/* tile grande: media e texto lado a lado */
+@media(min-width:981px){
+  .bzlp-tile.is-feature{flex-direction:row}
+  .bzlp-tile.is-feature .bzlp-tile-media{flex:1 1 48%;aspect-ratio:auto}
+  .bzlp-tile.is-feature .bzlp-tile-body{flex:1 1 52%;justify-content:center;padding:26px 28px}
+  .bzlp-tile.is-feature .bzlp-tile-body p{font-size:15px}
+}
 
 /* CTA + contactos */
 .bzlp-cta{background:var(--navy);color:#fff;padding:56px 0}

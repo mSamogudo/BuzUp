@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/app_update.dart';
 import '../../core/config.dart';
 import '../../core/feedback.dart';
+import '../../core/location.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/theme_controller.dart';
@@ -27,12 +26,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _heartbeatTimer;
   String? _deviceSerial;
   Map<String, dynamic>? _summary;
+  LocationReadiness _location = LocationReadiness.ok;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() async {
       _deviceSerial = await ref.read(secureStoreProvider).getDeviceSerial();
+      // Pedido explicito antes do primeiro heartbeat: sem isto o Android
+      // mantem a permissao em "denied" para sempre e o autocarro nunca chega
+      // ao mapa dos passageiros.
+      await _ensureLocation();
       _heartbeatTimer = Timer.periodic(AppConfig.heartbeatInterval, (_) => _sendHeartbeat());
       _sendHeartbeat();
       _loadSummary();
@@ -48,34 +52,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  /// Garante permissao de localizacao e guarda o estado para o aviso do ecra.
+  Future<void> _ensureLocation() async {
+    final readiness = await DeviceLocation.ensurePermission();
+    if (mounted) setState(() => _location = readiness);
+  }
+
   Future<void> _sendHeartbeat() async {
     try {
-      double? lat;
-      double? lng;
-      double? speedKmh;
-      double? heading;
-      if (Platform.isAndroid) {
-        final perm = await Geolocator.checkPermission();
-        if (perm == LocationPermission.always || perm == LocationPermission.whileInUse) {
-          final pos = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
-          ).timeout(const Duration(seconds: 5), onTimeout: () => throw TimeoutException('gps'));
-          lat = pos.latitude;
-          lng = pos.longitude;
-          // Alimenta a seta/velocidade do autocarro no mapa dos passageiros.
-          if (pos.speed >= 0) speedKmh = pos.speed * 3.6;
-          if (pos.heading >= 0) heading = pos.heading;
-        }
-      }
+      final pos = await DeviceLocation.current();
       await ref.read(agentApiProvider).heartbeat(
             serialNumber: _deviceSerial,
-            latitude: lat,
-            longitude: lng,
-            speedKmh: speedKmh,
-            heading: heading,
+            latitude: pos?.latitude,
+            longitude: pos?.longitude,
+            // Alimenta a seta/velocidade do autocarro no mapa dos passageiros.
+            speedKmh: (pos != null && pos.speed >= 0) ? pos.speed * 3.6 : null,
+            heading: (pos != null && pos.heading >= 0) ? pos.heading : null,
             appVersion: '1.0.0',
           );
+      // O GPS pode ter sido desligado depois do arranque; mantem o aviso fiel.
+      if (mounted && pos == null && _location == LocationReadiness.ok) {
+        setState(() => _location = LocationReadiness.serviceOff);
+      } else if (mounted && pos != null && _location != LocationReadiness.ok) {
+        setState(() => _location = LocationReadiness.ok);
+      }
     } catch (_) {}
+  }
+
+  /// Aviso discreto mas accionavel: diz o que falha e leva ao sitio certo
+  /// para corrigir, em vez de deixar o agente sem saber que nao e seguido.
+  Widget _locationBanner() {
+    const amber = Color(0xFFB45309);
+    final canRetry = _location == LocationReadiness.denied;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: amber.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: amber.withValues(alpha: 0.35)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.location_off, color: amber, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            DeviceLocation.describe(_location),
+            style: const TextStyle(color: amber, fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            await AppFeedback.click();
+            if (canRetry) {
+              await _ensureLocation();
+            } else {
+              await DeviceLocation.openSettingsFor(_location);
+              // O operador volta das definicoes: reavalia sem obrigar a
+              // reiniciar a aplicacao.
+              await _ensureLocation();
+            }
+          },
+          child: Text(canRetry ? 'Permitir' : 'Definicoes',
+              style: const TextStyle(color: amber, fontWeight: FontWeight.w700)),
+        ),
+      ]),
+    );
   }
 
   Future<void> _loadSummary() async {
@@ -174,6 +215,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
+                  // Sem localizacao o autocarro desaparece do mapa dos
+                  // passageiros sem qualquer erro. O agente tem de saber.
+                  if (_location != LocationReadiness.ok)
+                    SliverToBoxAdapter(
+                      child: FadeIn(
+                        delay: const Duration(milliseconds: 60),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                          child: _locationBanner(),
+                        ),
+                      ),
+                    ),
                   // KPI strip
                   SliverToBoxAdapter(
                     child: FadeIn(

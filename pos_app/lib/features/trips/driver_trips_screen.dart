@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/feedback.dart';
+import '../../core/location.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 
@@ -45,6 +46,26 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
       final serial = action == 'start'
           ? await ref.read(secureStoreProvider).getDeviceSerial()
           : null;
+      // Iniciar viagem e o momento em que o rastreio passa a valer: se a
+      // permissao ainda nao foi dada, pede-se agora, e avisa-se se for
+      // recusada — senao a viagem arranca e o autocarro fica invisivel no
+      // mapa dos passageiros sem ninguem dar por isso.
+      if (action == 'start') {
+        final readiness = await DeviceLocation.ensurePermission();
+        if (readiness != LocationReadiness.ok && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(DeviceLocation.describe(readiness)),
+              backgroundColor: const Color(0xFFB45309),
+              action: SnackBarAction(
+                label: 'Corrigir',
+                textColor: Colors.white,
+                onPressed: () => DeviceLocation.openSettingsFor(readiness),
+              ),
+            ),
+          );
+        }
+      }
       final res = await ref.read(agentApiProvider).driverTripAction(tripId, action, deviceSerial: serial);
       await AppFeedback.success();
       ref.invalidate(driverTripsProvider);

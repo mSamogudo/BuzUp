@@ -15,7 +15,7 @@ from apps.guest_checkouts.api.serializers import (
     GuestCheckoutPublicSerializer,
     GuestCheckoutSerializer,
 )
-from apps.guest_checkouts.capacity import sale_state, seats_available
+from apps.guest_checkouts.capacity import sale_state, seats_available, seats_taken_bulk
 from apps.guest_checkouts.models import GuestCheckout
 from apps.guest_checkouts.seatmap import occupied_seats, seat_map
 from apps.fares.services import NoFareFoundError, quote_fare
@@ -295,19 +295,36 @@ class PublicTripSearchView(APIView):
 
         qs = qs.order_by("planned_departure_at", "route__code")[:40]
 
+        # Origem e destino sao os MESMOS para todas as partidas do resultado:
+        # buscá-los dentro do ciclo eram 2 queries por partida (80 no total)
+        # para obter sempre a mesma linha. Idem a tarifa, que depende da rota e
+        # nao da partida: com varias partidas da mesma rota, `quote_fare` (~8
+        # queries) corria uma vez por partida em vez de uma por rota. Este
+        # endpoint e o da pesquisa publica do site — o mais exposto de todos.
+        origin = Stop.objects.filter(pk=origin_id).first() if origin_id else None
+        dest = Stop.objects.filter(pk=destination_id).first() if destination_id else None
+        fare_by_route: dict[int, str | None] = {}
+        # Lotacao de todas as partidas num agregado, em vez de dois por partida
+        # (`seats_available` + `sale_state`, que o chamava outra vez).
+        trips = list(qs)
+        taken_by_trip = seats_taken_bulk(trips)
+
         results = []
-        for trip in qs:
-            fare_amount = None
-            origin = Stop.objects.filter(pk=origin_id).first() if origin_id else None
-            dest = Stop.objects.filter(pk=destination_id).first() if destination_id else None
-            try:
-                q = quote_fare(route=trip.route, origin_stop=origin, destination_stop=dest)
-                fare_amount = str(q.amount)
-            except NoFareFoundError:
-                pass
+        for trip in trips:
+            if trip.route_id in fare_by_route:
+                fare_amount = fare_by_route[trip.route_id]
+            else:
+                fare_amount = None
+                try:
+                    q = quote_fare(route=trip.route, origin_stop=origin, destination_stop=dest)
+                    fare_amount = str(q.amount)
+                except NoFareFoundError:
+                    pass
+                fare_by_route[trip.route_id] = fare_amount
 
             segment = segments_by_route.get(trip.route_id)
-            can_sell, reason = sale_state(trip)
+            taken = taken_by_trip.get(trip.id, 0)
+            can_sell, reason = sale_state(trip, taken=taken)
             results.append({
                 "trip_id": trip.id,
                 "route_id": trip.route_id,
@@ -322,7 +339,7 @@ class PublicTripSearchView(APIView):
                 "fare_amount": fare_amount,
                 # Disponibilidade legivel: o site mostra "3 lugares" ou o
                 # motivo de indisponibilidade, nunca um botao morto.
-                "seats_available": seats_available(trip),
+                "seats_available": seats_available(trip, taken=taken),
                 "on_sale": can_sell,
                 "sale_unavailable_reason": reason,
             })

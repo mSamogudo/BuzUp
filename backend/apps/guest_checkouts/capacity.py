@@ -36,12 +36,37 @@ def seats_taken(trip) -> int:
     return qs.aggregate(n=Sum("quantity"))["n"] or 0
 
 
-def seats_available(trip) -> int | None:
-    """None = sem limite conhecido (viagem sem viatura alocada)."""
+def seats_taken_bulk(trips) -> dict[int, int]:
+    """Lugares ocupados de VARIAS partidas num unico agregado.
+
+    A pesquisa publica listava 40 partidas e chamava `seats_taken` por cada
+    uma — e `sale_state` chamava-o outra vez, dando 80 queries so para contar
+    lugares. Aqui e um `GROUP BY`.
+    """
+    trip_ids = [t.pk for t in trips]
+    if not trip_ids:
+        return {}
+    rows = (
+        GuestCheckout.objects
+        .filter(trip_id__in=trip_ids, status__in=BLOCKING_STATUSES)
+        .exclude(Q(status=GuestCheckout.Status.PAYMENT_PENDING) & Q(expires_at__lt=timezone.now()))
+        .values("trip_id")
+        .annotate(n=Sum("quantity"))
+    )
+    return {row["trip_id"]: row["n"] or 0 for row in rows}
+
+
+def seats_available(trip, taken: int | None = None) -> int | None:
+    """None = sem limite conhecido (viagem sem viatura alocada).
+
+    `taken` permite reaproveitar uma contagem feita em bloco por
+    `seats_taken_bulk`, evitando um agregado por partida.
+    """
     capacity = trip_capacity(trip)
     if capacity is None:
         return None
-    return max(capacity - seats_taken(trip), 0)
+    used = seats_taken(trip) if taken is None else taken
+    return max(capacity - used, 0)
 
 
 # A venda fecha pouco antes da partida (derivado, nunca configurado por
@@ -53,7 +78,7 @@ SALE_CLOSES_MINUTES_BEFORE = 15
 SELLABLE_TRIP_STATUSES = ("scheduled", "boarding", "departed")
 
 
-def sale_state(trip) -> tuple[bool, str]:
+def sale_state(trip, taken: int | None = None) -> tuple[bool, str]:
     """(pode_vender, motivo_legivel_quando_nao).
 
     Devolver o motivo em texto — e nao um booleano — permite ao site dizer
@@ -73,7 +98,7 @@ def sale_state(trip) -> tuple[bool, str]:
                 f"A venda encerra {SALE_CLOSES_MINUTES_BEFORE} minutos antes da partida."
             )
 
-    available = seats_available(trip)
+    available = seats_available(trip, taken=taken)
     if available is not None and available <= 0:
         return False, "Partida esgotada."
 

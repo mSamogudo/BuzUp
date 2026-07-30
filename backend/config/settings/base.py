@@ -196,6 +196,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Traduz as excepcoes do nosso dominio (terminal bloqueado, partida
+    # esgotada, colisao de unicidade) em respostas legiveis em vez de 500 —
+    # e registra as inesperadas, que antes desapareciam sem rasto.
+    "EXCEPTION_HANDLER": "apps.core.exception_handler.buzup_exception_handler",
     # Paginação por omissão. Sem isto, `/api/validations/` devolvia a tabela
     # inteira num só JSON: com um milhão de linhas o worker esgotava a memória
     # do contentor e morria — e como há poucos workers, isso derrubava o

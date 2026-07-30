@@ -20,7 +20,7 @@ from apps.passengers.models import PassengerAccount
 from apps.payments.models import PaymentIntent
 from apps.reports.api.serializers import DateRangeSerializer
 from apps.trips.models import Trip
-from apps.trips.revenue import calculate_trip_revenue
+from apps.trips.revenue import calculate_trip_revenue, calculate_trips_revenue_bulk
 from apps.validations.models import ValidationEvent
 from apps.wallets.models import Wallet, WalletTransaction
 
@@ -375,8 +375,17 @@ class OperationalRevenueReportView(APIView):
             "validations_denied": 0,
         }
 
-        for trip in trips.order_by("route__code", "vehicle__registration", "activity_started_at", "planned_departure_at")[:1000]:
-            summary = calculate_trip_revenue(trip)
+        # Uma passagem de agregados para TODAS as viagens em vez de 8 queries
+        # por viagem (ate 1000 viagens = ~8000 queries num unico pedido, com
+        # seq scans a PaymentIntent pelo meio).
+        trip_page = list(
+            trips.order_by("route__code", "vehicle__registration",
+                           "activity_started_at", "planned_departure_at")[:1000]
+        )
+        revenue_by_trip = calculate_trips_revenue_bulk(trip_page)
+
+        for trip in trip_page:
+            summary = revenue_by_trip[trip.id]
             row = {
                 "trip_id": trip.id,
                 "route_id": trip.route_id,

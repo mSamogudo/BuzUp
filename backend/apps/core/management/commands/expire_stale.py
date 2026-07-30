@@ -12,6 +12,8 @@ Correr a cada 5 minutos (cron/systemd timer):
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
@@ -59,7 +61,46 @@ class Command(BaseCommand):
             stale_checkouts.update(status=GuestCheckout.Status.EXPIRED, updated_at=now)
 
         n_packages = expire_subscriptions()
+        n_otps = self._purge_otps(now)
+        n_tokens = self._purge_jwt_blacklist()
 
         self.stdout.write(self.style.SUCCESS(
-            f"expirados: checkouts={n_checkouts} intents={n_intents} pacotes={n_packages}"
+            f"expirados: checkouts={n_checkouts} intents={n_intents} pacotes={n_packages} "
+            f"otps={n_otps} tokens={n_tokens}"
         ))
+
+    def _purge_otps(self, now) -> int:
+        """Apaga desafios de OTP ja sem utilidade.
+
+        Cada pedido de codigo grava uma linha e nada a removia: a tabela crescia
+        indefinidamente e e consultada em cada login. Guardamos 7 dias, o
+        suficiente para investigar uma queixa de "nao recebi o codigo".
+        """
+        from apps.users.models import OtpChallenge
+
+        cutoff = now - timedelta(days=7)
+        # `hard_delete`: o `delete()` do projecto e soft (marca `deleted_at`),
+        # o que aqui nao servia de nada — as linhas continuavam na tabela, a
+        # ocupar espaco e a ser varridas nas consultas de login.
+        return OtpChallenge.all_objects.filter(created_at__lt=cutoff).hard_delete()[0]
+
+    def _purge_jwt_blacklist(self) -> int:
+        """Remove tokens de refresh ja expirados da blacklist.
+
+        Com `ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION`, cada renovacao
+        grava duas linhas — para sempre. Com dezenas de terminais e milhares de
+        passageiros a renovar de 30 em 30 minutos, as tabelas crescem sem limite
+        e sao consultadas em cada refresh, num Postgres com pouca memoria.
+        Um token ja expirado nao precisa de estar na blacklist: nao seria aceite
+        de qualquer forma.
+        """
+        try:
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+
+            deleted, _ = OutstandingToken.objects.filter(
+                expires_at__lt=timezone.now(),
+            ).delete()
+            return deleted
+        except Exception:
+            # A app da blacklist pode nao estar instalada em alguns ambientes.
+            return 0

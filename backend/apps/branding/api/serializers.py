@@ -4,7 +4,25 @@ from rest_framework import serializers
 
 from apps.branding.models import LOGO_FIELDS, BrandingSettings
 
-ALLOWED_LOGO_EXT = (".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".ico")
+# SVG fora: e um documento XML que pode conter <script>, e os logos sao
+# servidos do mesmo dominio do portal. Um administrador com `settings.manage`
+# a carregar um SVG malicioso executava codigo no browser de todos os outros —
+# XSS armazenado, com os tokens de sessao ao alcance. Os formatos raster
+# cobrem todos os usos reais de um logotipo.
+ALLOWED_LOGO_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".ico")
+
+# Um logotipo nao precisa de mais do que isto; sem limite, o ficheiro entrava
+# inteiro na memoria do worker.
+MAX_LOGO_BYTES = 2 * 1024 * 1024
+
+# Assinaturas dos formatos aceites. Verificar so a extensao deixava passar um
+# ficheiro arbitrario renomeado para .png.
+_MAGIC = (
+    b"\x89PNG\r\n\x1a\n",       # PNG
+    b"\xff\xd8\xff",              # JPEG
+    b"GIF87a", b"GIF89a",           # GIF
+    b"\x00\x00\x01\x00",         # ICO
+)
 
 
 class BrandingSettingsSerializer(serializers.ModelSerializer):
@@ -21,9 +39,24 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
         }
 
     def _validate_logo(self, value):
-        if value and os.path.splitext(value.name)[1].lower() not in ALLOWED_LOGO_EXT:
+        if not value:
+            return value
+        if os.path.splitext(value.name)[1].lower() not in ALLOWED_LOGO_EXT:
             raise serializers.ValidationError(
                 f"Formato invalido. Use um de: {', '.join(ALLOWED_LOGO_EXT)}."
+            )
+        if value.size and value.size > MAX_LOGO_BYTES:
+            raise serializers.ValidationError(
+                f"Ficheiro demasiado grande (maximo {MAX_LOGO_BYTES // (1024 * 1024)} MB)."
+            )
+        # Conteudo, nao so o nome: le o inicio do ficheiro e confirma que e
+        # mesmo uma imagem dos formatos aceites.
+        head = value.read(16)
+        value.seek(0)
+        is_webp = head[:4] == b"RIFF" and head[8:12] == b"WEBP"
+        if not (is_webp or any(head.startswith(sig) for sig in _MAGIC)):
+            raise serializers.ValidationError(
+                "O ficheiro nao parece ser uma imagem valida."
             )
         return value
 

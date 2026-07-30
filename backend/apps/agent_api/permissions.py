@@ -65,19 +65,34 @@ def driver_only_scope(user):
     return Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).first()
 
 
+class DeviceBlocked(Exception):
+    """O terminal indicado esta bloqueado — a operacao nao pode prosseguir."""
+
+
 def get_authorized_device(user, serial_number: str | None = None) -> Device | None:
     """Resolve o dispositivo da operacao.
 
     Politica: dispositivos LIVRES — qualquer agente/motorista opera qualquer
     terminal nao bloqueado. Com serial, resolve por serial; sem serial, cai na
-    alocacao administrativa (opcional, so informativa)."""
+    alocacao administrativa (opcional, so informativa).
+
+    Um terminal BLOQUEADO levanta `DeviceBlocked` em vez de devolver None.
+    Devolver None fazia com que a chamada seguisse "sem dispositivo" — e a
+    venda passava, porque a verificacao a jusante era
+    `if device and device.status == BLOCKED`. Ou seja: bloquear um terminal
+    roubado no portal nao o impedia de continuar a vender.
+    """
     if not user or not user.is_authenticated:
         return None
     if serial_number:
-        return (Device.objects.filter(serial_number=serial_number)
-                .exclude(status=Device.Status.BLOCKED).first())
-    return (Device.objects.filter(assigned_agent=user)
-            .exclude(status=Device.Status.BLOCKED).first())
+        device = Device.objects.filter(serial_number=serial_number).first()
+        if device and device.status == Device.Status.BLOCKED:
+            raise DeviceBlocked("Terminal bloqueado. Contacte o administrador.")
+        return device
+    device = Device.objects.filter(assigned_agent=user).first()
+    if device and device.status == Device.Status.BLOCKED:
+        raise DeviceBlocked("Terminal bloqueado. Contacte o administrador.")
+    return device
 
 
 class IsActiveAgent(BasePermission):

@@ -188,10 +188,16 @@ class OtpVerifyView(APIView):
         driver = DriverModel.objects.filter(phone=phone, status=DriverModel.Status.ACTIVE).select_related("user").first()
         if driver and driver.user:
             user = driver.user
-            user.is_active = True
+            # NAO reactivar a conta. Estava `user.is_active = True` sem
+            # condicao: um motorista desactivado pelo administrador (roubo,
+            # despedimento, suspensao) voltava a entrar sozinho com um OTP,
+            # anulando a decisao de quem o bloqueou. Quem desactiva e quem
+            # reactiva.
+            if not user.is_active:
+                return Response({"detail": "Conta desactivada. Contacte o administrador."}, status=403)
             if full_name and not (user.first_name or "").strip():
                 user.first_name = full_name
-            user.save(update_fields=["is_active", "first_name", "updated_at"])
+                user.save(update_fields=["first_name", "updated_at"])
 
             refresh = RefreshToken.for_user(user)
             refresh["driver_id"] = driver.id
@@ -206,10 +212,12 @@ class OtpVerifyView(APIView):
         agent = AgentModel.objects.filter(phone=phone, status=AgentModel.Status.ACTIVE).select_related("user").first()
         if agent and agent.user:
             user = agent.user
-            user.is_active = True
+            # Ver acima: uma conta desactivada nao se reactiva a si mesma.
+            if not user.is_active:
+                return Response({"detail": "Conta desactivada. Contacte o administrador."}, status=403)
             if full_name and not (user.first_name or "").strip():
                 user.first_name = full_name
-            user.save(update_fields=["is_active", "first_name", "updated_at"])
+                user.save(update_fields=["first_name", "updated_at"])
 
             refresh = RefreshToken.for_user(user)
             refresh["agent_id"] = agent.id

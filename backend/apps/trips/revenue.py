@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.payments.models import PaymentIntent
@@ -81,3 +81,123 @@ def calculate_trip_revenue(trip: Trip) -> dict:
 
 def _decimal(value) -> Decimal:
     return Decimal(value or "0.00").quantize(Decimal("0.01"))
+
+
+def calculate_trips_revenue_bulk(trips) -> dict[int, dict]:
+    """A mesma coisa que `calculate_trip_revenue`, mas para muitas viagens.
+
+    O relatorio operacional percorria ate 1000 viagens chamando
+    `calculate_trip_revenue` por cada uma — 8 agregados cada, ~8000 queries num
+    unico pedido, uma delas um seq scan a `PaymentIntent` por `metadata__trip_id`.
+    Ocupava um worker durante minutos e saturava o Postgres antes de ser morto
+    pelo timeout.
+
+    Aqui sao 6 agregados no total, agrupados por viagem, qualquer que seja o
+    numero de viagens. Devolve {trip_id: mesmo dicionario de sempre}.
+    """
+    trip_ids = [t.pk for t in trips]
+    if not trip_ids:
+        return {}
+
+    def by_trip(rows, key="trip_id"):
+        return {row[key]: row for row in rows}
+
+    guest = by_trip(
+        GuestCheckout.objects
+        .filter(trip_id__in=trip_ids,
+                status__in=[GuestCheckout.Status.PAID, GuestCheckout.Status.ISSUED])
+        .values("trip_id")
+        .annotate(count=Count("id"), tickets=Sum("quantity"), total=Sum("total_amount"))
+    )
+    app_passes = by_trip(
+        DigitalTravelPass.objects
+        .filter(trip_id__in=trip_ids, guest_checkout__isnull=True, passenger_account__isnull=False)
+        .values("trip_id")
+        .annotate(count=Count("id"), total=Sum("fare_amount"))
+    )
+    wallet_val = by_trip(
+        ValidationEvent.objects
+        .filter(trip_id__in=trip_ids, status=ValidationEvent.Status.APPROVED,
+                validation_type__in=PAY_AS_YOU_GO_VALIDATION_TYPES)
+        .values("trip_id")
+        .annotate(count=Count("id"), total=Sum("amount_debited"))
+    )
+    pass_val = by_trip(
+        ValidationEvent.objects
+        .filter(trip_id__in=trip_ids, status=ValidationEvent.Status.APPROVED)
+        .exclude(validation_type__in=PAY_AS_YOU_GO_VALIDATION_TYPES)
+        .values("trip_id")
+        .annotate(count=Count("id"), total=Sum("amount_debited"))
+    )
+    val_counts = by_trip(
+        ValidationEvent.objects
+        .filter(trip_id__in=trip_ids)
+        .values("trip_id")
+        .annotate(
+            approved=Count("id", filter=Q(status=ValidationEvent.Status.APPROVED)),
+            denied=Count("id", filter=Q(status=ValidationEvent.Status.DENIED)),
+        )
+    )
+    # `metadata__trip_id` guarda o id como valor JSON; agrupar em SQL exigiria
+    # uma expressao sobre JSONB. Uma unica query traz as linhas do periodo e o
+    # agrupamento faz-se em memoria — continua a ser 1 query em vez de N.
+    direct_rows = (
+        PaymentIntent.objects
+        .filter(status=PaymentIntent.Status.CONFIRMED,
+                purpose=PaymentIntent.Purpose.DIRECT_TRIP_PAYMENT,
+                metadata__trip_id__in=trip_ids)
+        .values("metadata", "amount")
+    )
+    direct: dict[int, dict] = {}
+    for row in direct_rows:
+        tid = (row["metadata"] or {}).get("trip_id")
+        if tid is None:
+            continue
+        entry = direct.setdefault(tid, {"count": 0, "total": Decimal("0.00")})
+        entry["count"] += 1
+        entry["total"] += Decimal(row["amount"] or "0.00")
+
+    empty = {"count": 0, "tickets": 0, "total": None}
+    result: dict[int, dict] = {}
+    for trip_id in trip_ids:
+        g = guest.get(trip_id, empty)
+        a = app_passes.get(trip_id, empty)
+        w = wallet_val.get(trip_id, empty)
+        p = pass_val.get(trip_id, empty)
+        v = val_counts.get(trip_id, {"approved": 0, "denied": 0})
+        d = direct.get(trip_id, {"count": 0, "total": Decimal("0.00")})
+
+        guest_total = _decimal(g.get("total"))
+        app_total = _decimal(a.get("total"))
+        wallet_total = _decimal(w.get("total"))
+        direct_total = _decimal(d["total"])
+
+        result[trip_id] = {
+            "guest_checkout": {
+                "count": g.get("count") or 0,
+                "tickets": g.get("tickets") or 0,
+                "revenue": str(guest_total),
+            },
+            "app_passes": {
+                "count": a.get("count") or 0,
+                "revenue": str(app_total),
+            },
+            "wallet_validations": {
+                "count": w.get("count") or 0,
+                "revenue": str(wallet_total),
+            },
+            "digital_pass_validations": {
+                "count": p.get("count") or 0,
+                "nominal_value": str(_decimal(p.get("total"))),
+            },
+            "direct_payments": {
+                "count": d["count"],
+                "revenue": str(direct_total),
+            },
+            "validations": {
+                "approved": v.get("approved", 0),
+                "denied": v.get("denied", 0),
+            },
+            "total_revenue": str(guest_total + app_total + wallet_total + direct_total),
+        }
+    return result

@@ -33,6 +33,13 @@ services:
     image: redis:7-alpine
     container_name: buzup_redis_prod
     restart: unless-stopped
+    # Sem limite, num host de 2GB partilhado com outras stacks, o Redis era o
+    # candidato natural ao OOM-killer do kernel — e sem Redis o rate-limit de
+    # OTP levanta excepcao em cada login, ou seja, ninguem entra na app.
+    # `maxmemory` abaixo do limite do contentor para o Redis despejar chaves
+    # antigas em vez de ser morto; as chaves aqui sao contadores com validade.
+    mem_limit: 128m
+    command: ["redis-server", "--maxmemory", "96mb", "--maxmemory-policy", "allkeys-lru"]
     networks:
       - buzup_internal
     healthcheck:
@@ -47,7 +54,8 @@ services:
     container_name: buzup_backend_prod
     restart: unless-stopped
     logging: *buzup-logging
-    # Shared 2GB host (co-tenant with 3 other prod stacks): 1 worker + 2 threads
+    # Host de 2GB partilhado com outras 3 stacks de producao.
+    # 3 workers x 4 threads: com 1x2, dois pagamentos lentos paravam tudo.
     # keeps RSS low while still handling concurrent requests. --max-requests
     # recycles the worker to cap memory creep. Bump workers after a RAM upgrade.
     mem_limit: 768m

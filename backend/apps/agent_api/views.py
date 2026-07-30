@@ -96,6 +96,10 @@ def _ticket_payload(tp: DigitalTravelPass) -> dict:
         "origin_stop": tp.origin_stop,
         "destination_stop": tp.destination_stop,
         "fare_amount": str(tp.fare_amount),
+        "display_currency": tp.display_currency or "MZN",
+        "display_fare_amount": str(tp.display_fare_amount) if tp.display_fare_amount else None,
+        "passenger_name": tp.passenger_name,
+        "seat_number": tp.seat_number,
         "payer_phone_masked": _mask_phone(tp.payer_phone),
         "status": tp.status,
         "valid_from": tp.valid_from.isoformat() if tp.valid_from else None,
@@ -637,6 +641,7 @@ class AgentSaleCreateView(APIView):
                     qr_token=data.get("qr_token", ""),
                     quantity=data.get("quantity", 1),
                     idempotency_key=idem_full,
+                    display_currency=data.get("display_currency") or "MZN",
                 )
                 # Card payment is confirmed synchronously; return final state.
                 return Response({
@@ -663,6 +668,7 @@ class AgentSaleCreateView(APIView):
                 passenger_phone=data["passenger_phone"],
                 quantity=data.get("quantity", 1),
                 idempotency_key=idem_full,
+                display_currency=data.get("display_currency") or "MZN",
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)

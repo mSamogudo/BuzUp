@@ -191,6 +191,7 @@ class PurchaseTravelPassView(APIView):
                 trip_id=data.get("trip_id"),
                 passenger_package_id=data.get("passenger_package_id"),
                 use_package=data.get("use_package", True),
+                display_currency=data.get("display_currency") or "MZN",
             )
         except (PurchaseError, InsufficientBalanceError, WalletBlockedError) as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

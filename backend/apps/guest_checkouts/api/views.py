@@ -38,13 +38,24 @@ class GuestCheckoutViewSet(BaseModelViewSet):
 
 
 class GuestCheckoutCreateView(APIView):
+    # AllowAny mas COM autenticacao JWT: o mesmo endpoint serve o comprador
+    # anonimo da web e a app do passageiro. Quando vem um token valido, a
+    # compra fica ligada a conta e o bilhete entra directamente na app.
     permission_classes = [AllowAny]
-    authentication_classes = []
 
     def post(self, request):
         serializer = GuestCheckoutCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+
+        linked_passenger = None
+        if getattr(request.user, "is_authenticated", False) and getattr(request.user, "phone", ""):
+            from apps.passengers.models import PassengerAccount
+
+            linked_passenger = PassengerAccount.objects.filter(
+                phone_number=request.user.phone,
+                status=PassengerAccount.Status.ACTIVE,
+            ).first()
 
         origin = Stop.objects.filter(pk=data.get("origin_stop_id")).first() if data.get("origin_stop_id") else None
         destination = Stop.objects.filter(pk=data.get("destination_stop_id")).first() if data.get("destination_stop_id") else None
@@ -59,10 +70,27 @@ class GuestCheckoutCreateView(APIView):
             ).first()
             if trip is None:
                 return Response({"detail": "Partida nao disponivel para compra."}, status=status.HTTP_404_NOT_FOUND)
-            if trip.route.code != data["route_code"]:
+            if data.get("route_code") and trip.route.code != data["route_code"]:
                 return Response({"detail": "A viagem nao pertence a rota seleccionada."}, status=status.HTTP_400_BAD_REQUEST)
 
-        route = trip.route if trip else Route.objects.filter(code=data["route_code"], status=Route.Status.ACTIVE).first()
+        route = trip.route if trip else None
+        if route is None and data.get("route_code"):
+            route = Route.objects.filter(code=data["route_code"], status=Route.Status.ACTIVE).first()
+        if route is None and origin and destination:
+            # Sem rota explicita (app do passageiro): inferir do par de paragens,
+            # preferindo deterministicamente o corredor de menor id.
+            try:
+                segments = route_segments_for_stop_pair(origin.id, destination.id)
+            except RouteSegmentError:
+                segments = {}
+            route_ids = sorted(segments.keys())
+            if route_ids:
+                route = Route.objects.filter(pk=route_ids[0]).first()
+        if route is None:
+            return Response(
+                {"detail": "Nao existe rota entre a origem e o destino seleccionados."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if route and (origin or destination):
             try:
                 resolve_route_segment(route, origin.id if origin else None, destination.id if destination else None)
@@ -121,14 +149,28 @@ class GuestCheckoutCreateView(APIView):
                             {"detail": f"Lugar(es) ja ocupado(s): {', '.join(clash)}. Escolha outro."},
                             status=status.HTTP_409_CONFLICT,
                         )
+            # Moeda de exibicao (ex.: ZAR nas rotas p/ Africa do Sul). A taxa e
+            # congelada agora, para o valor mostrado no bilhete nunca mudar.
+            from apps.fares.models import ExchangeRate
+
+            display_currency = str(data.get("display_currency") or "MZN").upper()
+            display_total = None
+            frozen_rate = None
+            if display_currency != "MZN":
+                converted = ExchangeRate.convert_from_mzn(total, display_currency)
+                if converted is None:
+                    display_currency = "MZN"      # sem taxa configurada: cai para MZN
+                else:
+                    display_total, frozen_rate = converted
+
             gc = GuestCheckout.objects.create(
                 reference=ref,
                 payer_phone=data["payer_phone"],
                 buyer_name=data.get("buyer_name", ""),
                 buyer_email=data.get("buyer_email", ""),
                 passengers=passengers,
-                route_code=data["route_code"],
-                route_name=data.get("route_name", ""),
+                route_code=route.code,
+                route_name=data.get("route_name") or route.name,
                 origin_stop=origin.name if origin else data["origin_stop"],
                 destination_stop=destination.name if destination else data["destination_stop"],
                 origin_stop_ref=origin,
@@ -136,9 +178,13 @@ class GuestCheckoutCreateView(APIView):
                 quantity=quantity,
                 unit_amount=unit_amount,
                 total_amount=total,
+                display_currency=display_currency,
+                display_total_amount=display_total,
+                exchange_rate=frozen_rate,
                 status=GuestCheckout.Status.PAYMENT_PENDING,
                 expires_at=timezone.now() + timedelta(minutes=30),
                 trip=trip,
+                linked_passenger=linked_passenger,
             )
 
         idempotency_key = f"gc-{ref}"
@@ -158,7 +204,7 @@ class GuestCheckoutCreateView(APIView):
             reference=pi.reference,
             amount=total,
             payer_phone=data["payer_phone"],
-            description=f"BuzUp bilhete {data['route_code']}",
+            description=f"BuzUp bilhete {route.code}",
         )
 
         pi.provider = result.provider

@@ -15,6 +15,7 @@ class GuestCheckoutSerializer(serializers.ModelSerializer):
             "route_code", "route_name", "origin_stop", "destination_stop",
             "origin_stop_ref_id", "destination_stop_ref_id",
             "quantity", "unit_amount", "total_amount", "status", "trip_id",
+            "display_currency", "display_total_amount", "exchange_rate",
             "expires_at", "created_at", "updated_at",
         )
         read_only_fields = fields
@@ -41,7 +42,9 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
     buyer_name = serializers.CharField(max_length=255, required=False, default="", allow_blank=True)
     buyer_email = serializers.EmailField(required=False, allow_blank=True, default="")
     passengers = PassengerInputSerializer(many=True, required=False, default=list)
-    route_code = serializers.CharField(max_length=32)
+    # Opcional: a app do passageiro só escolhe origem + destino e o backend
+    # infere o corredor (como na compra por carteira).
+    route_code = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
     route_name = serializers.CharField(max_length=255, required=False, default="", allow_blank=True)
     origin_stop = serializers.CharField(max_length=255)
     destination_stop = serializers.CharField(max_length=255)
@@ -50,6 +53,11 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
     trip_id = serializers.IntegerField(required=False)
     quantity = serializers.IntegerField(min_value=1, max_value=10, default=1)
     unit_amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, default=0)
+    # Moeda em que o comprador viu o preco (ex.: ZAR). So exibicao — a
+    # cobranca e sempre em MZN; a taxa e congelada no servidor.
+    display_currency = serializers.CharField(
+        max_length=3, required=False, allow_blank=True, default="MZN",
+    )
 
     def validate(self, attrs):
         origin_id = attrs.get("origin_stop_id")
@@ -74,6 +82,8 @@ class DigitalTravelPassSerializer(serializers.ModelSerializer):
         fields = (
             "id", "uuid", "route_code", "route_name",
             "origin_stop", "destination_stop", "fare_amount",
+            "display_currency", "display_fare_amount",
+            "passenger_name", "document_type", "document_number", "seat_number",
             "origin_stop_ref_id", "destination_stop_ref_id",
             "status", "delivery_channel", "trip_id",
             "valid_from", "valid_until", "used_at", "pdf_url", "created_at",
@@ -95,6 +105,8 @@ class GuestCheckoutPublicSerializer(serializers.ModelSerializer):
         fields = (
             "reference", "route_code", "route_name",
             "origin_stop", "destination_stop",
-            "quantity", "total_amount", "status", "passes",
+            "quantity", "total_amount",
+            "display_currency", "display_total_amount",
+            "status", "passes",
         )
         read_only_fields = fields

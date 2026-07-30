@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import transaction
@@ -35,6 +36,13 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
 
         valid_from, valid_until = _validity_window(gc)
         departure = getattr(gc.trip, "planned_departure_at", None) if gc.trip_id else None
+        # Compra feita por um passageiro autenticado (app): o bilhete e nominal
+        # e entra directamente na conta dele.
+        linked = gc.linked_passenger
+        # Moeda de exibicao escolhida na compra, congelada a taxa da altura.
+        unit_display = None
+        if gc.display_currency != "MZN" and gc.exchange_rate:
+            unit_display = (gc.unit_amount / gc.exchange_rate).quantize(Decimal("0.01"))
         # Um passe por passageiro quando ha dados nominais; senao, por unidade.
         people = list(gc.passengers or [])
         for i in range(gc.quantity):
@@ -42,6 +50,7 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
             raw_token, token_hash = DigitalTravelPass.generate_token()
             travel_pass = DigitalTravelPass.objects.create(
                 guest_checkout=gc,
+                passenger_account=linked,
                 payer_phone=gc.payer_phone,
                 route_code=gc.route_code,
                 route_name=gc.route_name,
@@ -50,15 +59,21 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
                 origin_stop_ref=gc.origin_stop_ref,
                 destination_stop_ref=gc.destination_stop_ref,
                 trip=gc.trip,
-                passenger_name=(person.get("name") or gc.buyer_name or "")[:255],
-                document_type=person.get("document_type") or "",
-                document_number=(person.get("document_number") or "")[:64],
+                passenger_name=(person.get("name") or (linked.full_name if linked else "") or gc.buyer_name or "")[:255],
+                document_type=person.get("document_type") or (linked.document_type if linked else "") or "",
+                document_number=(person.get("document_number") or (linked.document_number if linked else "") or "")[:64],
                 seat_number=(person.get("seat") or "")[:8],
                 departure_at=departure,
                 fare_amount=gc.unit_amount,
+                display_currency=gc.display_currency or "MZN",
+                display_fare_amount=unit_display,
+                exchange_rate=gc.exchange_rate,
                 token=raw_token,
                 token_hash=token_hash,
-                delivery_channel=DigitalTravelPass.DeliveryChannel.SMS,
+                delivery_channel=(
+                    DigitalTravelPass.DeliveryChannel.APP if linked
+                    else DigitalTravelPass.DeliveryChannel.SMS
+                ),
                 valid_from=valid_from,
                 valid_until=valid_until,
             )

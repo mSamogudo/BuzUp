@@ -46,6 +46,13 @@ class GuestCheckout(BaseModel):
     total_amount = models.DecimalField(
         max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))],
     )
+    # Moeda de EXIBICAO escolhida no acto da compra (rotas p/ Africa do Sul).
+    # A cobranca e sempre em MZN; isto congela o valor mostrado e a taxa usada.
+    display_currency = models.CharField(max_length=3, default="MZN")
+    display_total_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    exchange_rate = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     expires_at = models.DateTimeField(null=True, blank=True)
     linked_passenger = models.ForeignKey(
@@ -126,6 +133,13 @@ class DigitalTravelPass(BaseModel):
     # Copia da partida: o passe tem de sobreviver a alteracoes/remocao da viagem.
     departure_at = models.DateTimeField(null=True, blank=True)
     fare_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    # Moeda de exibicao escolhida na compra (ver GuestCheckout): o bilhete
+    # imprime o preco nesta moeda, congelado a taxa da altura.
+    display_currency = models.CharField(max_length=3, default="MZN")
+    display_fare_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
+    exchange_rate = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     token = models.CharField(max_length=128, unique=True, db_index=True)
     token_hash = models.CharField(max_length=128, db_index=True)

@@ -68,6 +68,7 @@ def purchase_travel_pass(
     trip_id: int | None = None,
     passenger_package_id: int | None = None,
     use_package: bool = True,
+    display_currency: str = "MZN",
 ) -> DigitalTravelPass:
     if passenger.status != PassengerAccount.Status.ACTIVE:
         raise PurchaseError("Conta bloqueada ou inactiva.")
@@ -180,6 +181,20 @@ def purchase_travel_pass(
                 created_at=now,
             )
 
+        # Moeda de exibicao escolhida na app (rand nas rotas p/ Africa do Sul):
+        # so visualizacao — a carteira debita sempre MZN.
+        from apps.fares.models import ExchangeRate
+
+        display_ccy = str(display_currency or "MZN").upper()
+        display_amount = None
+        frozen_rate = None
+        if display_ccy != "MZN":
+            converted = ExchangeRate.convert_from_mzn(wallet_amount, display_ccy)
+            if converted is None:
+                display_ccy = "MZN"
+            else:
+                display_amount, frozen_rate = converted
+
         travel_pass = DigitalTravelPass.objects.create(
             passenger_account=passenger,
             wallet=wallet,
@@ -191,10 +206,18 @@ def purchase_travel_pass(
             origin_stop_ref=origin,
             destination_stop_ref=destination,
             trip=trip,
+            # O bilhete comprado na app e NOMINAL: leva os dados do titular
+            # da conta, como pedido pelo cliente.
+            passenger_name=(passenger.full_name or "")[:255],
+            document_type=getattr(passenger, "document_type", "") or "",
+            document_number=(getattr(passenger, "document_number", "") or "")[:64],
             # Show what the passenger actually paid (after any package
             # discount), not the gross fare — the ticket, tickets list,
             # history and PDF all read this field.
             fare_amount=wallet_amount,
+            display_currency=display_ccy,
+            display_fare_amount=display_amount,
+            exchange_rate=frozen_rate,
             token=raw_token,
             token_hash=token_hash,
             delivery_channel=DigitalTravelPass.DeliveryChannel.APP,

@@ -59,6 +59,11 @@ class AgentSaleSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=1, max_value=10, default=1)
     device_serial = serializers.CharField(max_length=128, required=False, allow_blank=True)
     auto_request_payment = serializers.BooleanField(default=True)
+    # Moeda em que o agente mostrou o preco ao passageiro (ex.: ZAR nas rotas
+    # p/ Africa do Sul). So exibicao — a cobranca e sempre em MZN.
+    display_currency = serializers.CharField(
+        max_length=3, required=False, allow_blank=True, default="MZN",
+    )
 
     def validate(self, attrs):
         if not attrs.get("trip_id") and not attrs.get("route_id"):

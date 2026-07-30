@@ -43,6 +43,7 @@ def create_pos_sale(
     passenger_phone: str,
     quantity: int = 1,
     idempotency_key: str = "",
+    display_currency: str = "MZN",
 ) -> tuple[GuestCheckout, PaymentIntent]:
     """Create a sale + initiate payment for an agent's POS terminal.
 
@@ -108,6 +109,9 @@ def create_pos_sale(
     total = quote.amount * quantity
     ref = f"AS-{uuid4().hex[:12].upper()}"
 
+    from apps.fares.services import display_snapshot
+    disp_ccy, disp_total, disp_rate = display_snapshot(total, display_currency)
+
     with transaction.atomic():
         gc = GuestCheckout.objects.create(
             reference=ref,
@@ -123,6 +127,9 @@ def create_pos_sale(
             quantity=quantity,
             unit_amount=quote.amount,
             total_amount=total,
+            display_currency=disp_ccy,
+            display_total_amount=disp_total,
+            exchange_rate=disp_rate,
             status=GuestCheckout.Status.PAYMENT_PENDING,
             expires_at=timezone.now() + timedelta(minutes=15),
         )
@@ -174,6 +181,7 @@ def create_card_sale(
     qr_token: str = "",
     quantity: int = 1,
     idempotency_key: str = "",
+    display_currency: str = "MZN",
 ) -> tuple[GuestCheckout, PaymentIntent, list]:
     """Card-based POS sale: lookup card -> debit wallet -> confirm + issue.
 
@@ -309,6 +317,8 @@ def create_card_sale(
         # (after package discount) so the ticket shows what was charged, not
         # the gross fare.
         net_unit = (charged_total / quantity).quantize(Decimal("0.01")) if quantity else charged_total
+        from apps.fares.services import display_snapshot
+        disp_ccy, disp_total, disp_rate = display_snapshot(charged_total, display_currency)
         gc = GuestCheckout.objects.create(
             reference=ref,
             payer_phone=phone,
@@ -323,6 +333,9 @@ def create_card_sale(
             quantity=quantity,
             unit_amount=net_unit,
             total_amount=charged_total,
+            display_currency=disp_ccy,
+            display_total_amount=disp_total,
+            exchange_rate=disp_rate,
             status=GuestCheckout.Status.PAYMENT_PENDING,
             expires_at=timezone.now() + timedelta(minutes=15),
         )

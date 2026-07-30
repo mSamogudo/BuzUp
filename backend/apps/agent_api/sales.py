@@ -108,7 +108,7 @@ def create_pos_sale(
         raise SaleError("Conflito de tarifas. Contacte o administrador.")
 
     total = quote.amount * quantity
-    ref = f"AS-{uuid4().hex[:12].upper()}"
+    ref = f"AS-{uuid4().hex[:18].upper()}"
 
     from apps.fares.services import display_snapshot
     disp_ccy, disp_total, disp_rate = display_snapshot(total, display_currency)
@@ -277,7 +277,7 @@ def create_card_sale(
 
     base_unit = quote.amount
     gross_total = base_unit * quantity  # fare value (shown on the ticket)
-    ref = f"AS-{uuid4().hex[:12].upper()}"
+    ref = f"AS-{uuid4().hex[:18].upper()}"
     phone = pa.phone_number or ""
 
     # Single atomic block:

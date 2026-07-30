@@ -126,7 +126,7 @@ class AgentPassengerOnboardView(APIView):
 
         # Atomic block: create passenger + assign card + create PI. If gateway
         # initiation fails, everything rolls back.
-        ref = f"ISS-{uuid4().hex[:12].upper()}"
+        ref = f"ISS-{uuid4().hex[:18].upper()}"
         with transaction.atomic():
             passenger = PassengerAccount.objects.create(
                 full_name=data["full_name"].strip(),

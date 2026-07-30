@@ -63,7 +63,7 @@ class TopupView(APIView):
         payer_phone = serializer.validated_data["payer_phone"]
         idempotency_key = request.headers.get("Idempotency-Key", uuid4().hex)
 
-        ref = f"TOP-{uuid4().hex[:12].upper()}"
+        ref = f"TOP-{uuid4().hex[:18].upper()}"
         pi, created = get_or_create_payment_intent(
             idempotency_key=idempotency_key,
             reference=ref,

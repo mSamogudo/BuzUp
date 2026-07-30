@@ -281,7 +281,7 @@ class PassengerPortalTopupView(APIView):
         if existing:
             return Response(_topup_response(existing))
 
-        ref = f"TOP-{uuid4().hex[:12].upper()}"
+        ref = f"TOP-{uuid4().hex[:18].upper()}"
         pi = PaymentIntent.objects.create(
             reference=ref,
             idempotency_key=idempotency_key,

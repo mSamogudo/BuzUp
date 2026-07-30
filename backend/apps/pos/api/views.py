@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import ListAPIView
@@ -63,19 +64,25 @@ class OpenSessionView(APIView):
         if device.status != Device.Status.ACTIVE:
             return Response({"detail": "Dispositivo nao activo."}, status=status.HTTP_403_FORBIDDEN)
 
-        PosSession.objects.filter(agent=request.user, status=PosSession.Status.ACTIVE).update(
-            status=PosSession.Status.CLOSED, closed_at=timezone.now(),
-        )
-
         route = None
         if data.get("route_id"):
             route = Route.objects.filter(pk=data["route_id"]).first()
 
-        session = PosSession.objects.create(
-            agent=request.user,
-            device=device,
-            allocated_route=route,
-        )
+        # Fechar as anteriores e abrir a nova no mesmo atomic, com o
+        # dispositivo bloqueado: dois logins simultaneos do mesmo agente
+        # deixavam DUAS sessoes activas, e quem le a sessao escolhia uma
+        # arbitrariamente — logo a rota alocada podia ser a errada, e com ela
+        # a tarifa cobrada ao passageiro.
+        with transaction.atomic():
+            Device.objects.select_for_update().filter(pk=device.pk).first()
+            PosSession.objects.filter(agent=request.user, status=PosSession.Status.ACTIVE).update(
+                status=PosSession.Status.CLOSED, closed_at=timezone.now(),
+            )
+            session = PosSession.objects.create(
+                agent=request.user,
+                device=device,
+                allocated_route=route,
+            )
 
         return Response(PosSessionSerializer(session).data, status=status.HTTP_201_CREATED)
 
@@ -181,7 +188,7 @@ class PosCardTopupView(APIView):
 
         amount = data["amount"]
         payer_phone = data["payer_phone"]
-        ref = f"POS-{uuid4().hex[:12].upper()}"
+        ref = f"POS-{uuid4().hex[:18].upper()}"
         # A chave tem de vir do cliente para que a repeticao do MESMO pedido
         # seja reconhecida. Gerada aqui, cada toque no botao era uma recarga
         # nova — duplo toque cobrava duas vezes ao passageiro.

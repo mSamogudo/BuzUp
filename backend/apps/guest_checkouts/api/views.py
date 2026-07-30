@@ -118,7 +118,7 @@ class GuestCheckoutCreateView(APIView):
             )
 
         total = unit_amount * quantity
-        ref = f"GC-{uuid4().hex[:12].upper()}"
+        ref = f"GC-{uuid4().hex[:18].upper()}"
 
         # Reserva do lugar: bloqueia a linha da viagem para que dois
         # compradores simultaneos nao levem o mesmo ultimo lugar.

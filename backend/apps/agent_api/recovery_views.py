@@ -232,7 +232,7 @@ class AgentRecoverCardAssociateView(APIView):
         if fee is None or fee <= Decimal("0.00"):
             fee = AdminFee.resolve(AdminFee.Kind.CARD_RECOVERY, default=Decimal("100.00"))
 
-        ref = f"REC-{uuid4().hex[:12].upper()}"
+        ref = f"REC-{uuid4().hex[:18].upper()}"
         idem_key = f"recovery-{session.challenge_id}-{new_card.id}"
 
         if PaymentIntent.objects.filter(idempotency_key=idem_key).exists():

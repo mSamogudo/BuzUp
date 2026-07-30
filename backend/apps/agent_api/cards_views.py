@@ -219,7 +219,7 @@ class AgentWalletTopupView(APIView):
                 "duplicate": True,
             })
 
-        ref = f"TOP-{uuid4().hex[:12].upper()}"
+        ref = f"TOP-{uuid4().hex[:18].upper()}"
         pi = PaymentIntent.objects.create(
             reference=ref,
             idempotency_key=idem,
@@ -395,7 +395,7 @@ class AgentPackagePurchaseView(APIView):
                 "duplicate": True,
             })
 
-        ref = f"PKG-{uuid4().hex[:12].upper()}"
+        ref = f"PKG-{uuid4().hex[:18].upper()}"
         pi = PaymentIntent.objects.create(
             reference=ref,
             idempotency_key=idem,

@@ -210,21 +210,34 @@ def validate_qr_pass(
     if trip and route and trip.route_id != route.id:
         return _denied(vtype, ValidationEvent.FailureReason.ROUTE_NOT_ALLOWED, idempotency_key, digital_travel_pass=travel_pass, route=route, device=device)
 
-    with transaction.atomic():
-        tp = DigitalTravelPass.objects.select_for_update().get(pk=travel_pass.pk)
-        if tp.status != DigitalTravelPass.Status.ACTIVE:
-            return _denied(vtype, ValidationEvent.FailureReason.PASS_ALREADY_USED, idempotency_key, digital_travel_pass=tp, device=device)
-        tp.status = DigitalTravelPass.Status.USED
-        tp.used_at = now
-        tp.save(update_fields=["status", "used_at", "updated_at"])
+    # Queimar o bilhete e registar o embarque no MESMO atomic. Estando o
+    # registo fora, uma colisao de chave (duas leituras com a mesma
+    # idempotency_key) deixava o bilhete USED sem evento nenhum: o POS repetia,
+    # via USED e negava para sempre — bilhete pago, passageiro em terra.
+    try:
+        with transaction.atomic():
+            tp = DigitalTravelPass.objects.select_for_update().get(pk=travel_pass.pk)
+            if tp.status != DigitalTravelPass.Status.ACTIVE:
+                return _denied(vtype, ValidationEvent.FailureReason.PASS_ALREADY_USED, idempotency_key, digital_travel_pass=tp, device=device)
+            tp.status = DigitalTravelPass.Status.USED
+            tp.used_at = now
+            tp.save(update_fields=["status", "used_at", "updated_at"])
 
-    return ValidationEvent.objects.create(
-        validation_type=vtype, passenger_account=travel_pass.passenger_account,
-        wallet=travel_pass.wallet, digital_travel_pass=travel_pass,
-        route=route, trip=trip, device=device,
-        amount_debited=travel_pass.fare_amount, status=ValidationEvent.Status.APPROVED,
-        idempotency_key=idempotency_key,
-    )
+            return ValidationEvent.objects.create(
+                validation_type=vtype, passenger_account=travel_pass.passenger_account,
+                wallet=travel_pass.wallet, digital_travel_pass=travel_pass,
+                route=route, trip=trip, device=device,
+                amount_debited=travel_pass.fare_amount, status=ValidationEvent.Status.APPROVED,
+                idempotency_key=idempotency_key,
+            )
+    except IntegrityError:
+        # Corrida com a mesma chave: o vencedor ja registou o embarque. O
+        # rollback devolveu o bilhete a ACTIVE nesta tentativa; devolver o
+        # evento do vencedor faz o POS ver a validacao que de facto ocorreu.
+        existing = ValidationEvent.objects.filter(idempotency_key=idempotency_key).first()
+        if existing:
+            return existing
+        raise
 
 
 def _resolve_digital_travel_pass(
@@ -365,8 +378,22 @@ def validate_qr_account(
 
 
 def _denied(validation_type: str, failure: str, idempotency_key: str, **kwargs) -> ValidationEvent:
-    return ValidationEvent.objects.create(
-        validation_type=validation_type, status=ValidationEvent.Status.DENIED,
-        failure_reason=failure, idempotency_key=idempotency_key,
-        **{k: v for k, v in kwargs.items() if v is not None},
-    )
+    """Registo de recusa. Repetir a mesma recusa devolve a que ja existe.
+
+    A `idempotency_key` e unica: sem este tratamento, o POS a repetir uma
+    leitura recusada (rede instavel, agente a insistir num cartao bloqueado)
+    recebia 500 em vez da recusa — e um 500 num validador parece avaria do
+    sistema, nao cartao sem saldo.
+    """
+    fields = {k: v for k, v in kwargs.items() if v is not None}
+    try:
+        with transaction.atomic():
+            return ValidationEvent.objects.create(
+                validation_type=validation_type, status=ValidationEvent.Status.DENIED,
+                failure_reason=failure, idempotency_key=idempotency_key, **fields,
+            )
+    except IntegrityError:
+        existing = ValidationEvent.objects.filter(idempotency_key=idempotency_key).first()
+        if existing:
+            return existing
+        raise

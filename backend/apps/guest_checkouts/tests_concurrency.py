@@ -231,3 +231,51 @@ class CardChargeRepeatTests(ConcurrencyBase):
             self.wallet.balance_cached, Decimal("900.00"),
             "a mesma chave de idempotencia debitou duas vezes",
         )
+
+
+class QrPassBurnTests(TicketDoubleValidationTests):
+    """Bilhete queimado sem registo do embarque — negava a quem pagou."""
+
+    def test_same_key_twice_never_leaves_ticket_used_without_event(self):
+        """Duas leituras com a MESMA chave: uma valida, a outra repete-a.
+
+        Antes, o bilhete era marcado USED numa transacao e o ValidationEvent
+        criado fora dela: na corrida, o segundo pedido rebentava com 500 e
+        deixava o bilhete queimado sem evento. O POS repetia, via USED e
+        negava definitivamente — bilhete pago, passageiro em terra.
+        """
+        from apps.validations.models import ValidationEvent
+        from apps.validations.services import validate_qr_pass
+
+        tp, raw = self._issue_pass()
+        key = "qr-mesma-chave-1"
+
+        results = run_together(
+            lambda _i: validate_qr_pass(token=raw, trip_id=self.trip.id, idempotency_key=key),
+            n=2,
+        )
+        erros = [r for r in results if isinstance(r, Exception)]
+        self.assertEqual(erros, [], f"nenhum pedido devia rebentar: {erros}")
+
+        eventos = ValidationEvent.objects.filter(idempotency_key=key)
+        self.assertEqual(eventos.count(), 1, "a mesma chave devia produzir um unico registo")
+
+        tp.refresh_from_db()
+        aprovado = eventos.first().status == ValidationEvent.Status.APPROVED
+        # A regra que importa: bilhete USED se e so se ha embarque aprovado.
+        self.assertEqual(
+            tp.status == DigitalTravelPass.Status.USED, aprovado,
+            "bilhete queimado sem embarque aprovado (ou o contrario)",
+        )
+
+    def test_repeated_denial_does_not_blow_up(self):
+        """Retry de uma recusa nao pode devolver 500 ao validador."""
+        from apps.validations.models import ValidationEvent
+        from apps.validations.services import validate_qr_pass
+
+        key = "qr-token-invalido-1"
+        first = validate_qr_pass(token="nao-existe-este-token", idempotency_key=key)
+        second = validate_qr_pass(token="nao-existe-este-token", idempotency_key=key)
+
+        self.assertEqual(first.status, ValidationEvent.Status.DENIED)
+        self.assertEqual(second.id, first.id, "a repeticao devia devolver a mesma recusa")

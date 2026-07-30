@@ -115,6 +115,39 @@ curl -s -o /dev/null -w "%{http_code}\n" https://buzup-test.updigital.co.mz/api/
 - Confirmar OTP (sender UpDigital) em ambos.
 - Confirmar que o prod usa a DB limpa (sem dados de teste).
 
+## Passo 10 — Tarefas periódicas (OBRIGATÓRIO — nada as corre sozinho)
+
+Sem estas duas linhas a operação para, e o modo como para não é óbvio:
+
+- **Sem `generate_trips`**: não existem viagens para o dia. O POS abre com a
+  lista de partidas vazia e o agente não consegue iniciar uma venda; o site
+  também não vende. Só a validação por cartão sobrevive — e sem viagem
+  associada, o que corrompe o fecho de dia.
+- **Sem `expire_stale`**: cada checkout abandonado (browser fechado, gateway
+  sem resposta) retém o lugar na viagem para sempre. Ao fim de uma manhã, uma
+  partida com lugares vazios aparece "esgotada" e o agente não pode vender.
+
+```sh
+# no servidor, como root — o padrão dos outros projectos é /etc/cron.d/
+cat > /etc/cron.d/buzup-prod-jobs <<'EOF'
+# Viagens do dia (idempotente; a segunda passagem é rede de segurança)
+20 0 * * * root docker exec buzup_backend_prod python manage.py generate_trips >> /var/log/buzup-trips-prod.log 2>&1
+0 5 * * * root docker exec buzup_backend_prod python manage.py generate_trips >> /var/log/buzup-trips-prod.log 2>&1
+# Expirar checkouts/pagamentos/pacotes vencidos (janela de checkout: 30 min web, 15 min POS)
+*/5 * * * * root docker exec buzup_backend_prod python manage.py expire_stale >> /var/log/buzup-expire-prod.log 2>&1
+EOF
+chmod 644 /etc/cron.d/buzup-prod-jobs
+```
+
+Verificar no dia seguinte:
+```sh
+tail -5 /var/log/buzup-trips-prod.log     # "N viagens geradas."
+tail -5 /var/log/buzup-expire-prod.log    # "expirados: checkouts=… intents=… pacotes=…"
+```
+
+Em staging estas tarefas já estão instaladas em `/etc/cron.d/buzup-trips` e
+`/etc/cron.d/buzup-expire`.
+
 ## Rollback
 - Edge: voltar o upstream de `buzup.updigital.co.mz` para `buzup_gateway_staging` e `nginx -s reload`.
 - Parar o prod: `docker compose -f docker-compose.prod.yml down` (volumes externos persistem).

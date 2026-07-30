@@ -32,6 +32,10 @@ const double _designHeight = 1535;
 const Color _navy = Color(0xFF071E49);
 const Color _orange = Color(0xFF1D5FA7);
 const Color _red = Color(0xFFD32F2F);
+// Laranja das etiquetas do PDF (`ORANGE` em ticket_pdf.py).
+const Color _labelOrange = Color(0xFFE47B11);
+const TextStyle _labelStyle = TextStyle(
+    fontSize: 20, color: _labelOrange, fontWeight: FontWeight.w800, height: 1.0);
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   late Future<Map<String, dynamic>> _future;
@@ -151,18 +155,37 @@ class _TicketCanvas extends StatelessWidget {
     final issuedAt = _parseLocal(issuedAtIso ?? '');
     final validUntil = _parseLocal(validUntilIso ?? '');
 
+    // Preco na moeda escolhida na compra (rand nas rotas p/ Africa do Sul);
+    // sem escolha, meticais — igual ao PDF (`_fare_label`).
+    final displayCurrency = (data['display_currency'] ?? 'MZN').toString().toUpperCase();
+    final displayFare = data['display_fare_amount'];
+    final fareLabel = (displayCurrency != 'MZN' && displayFare != null)
+        ? '${_money(displayFare)} $displayCurrency'
+        : '$fare MZN';
+
+    // Bloco nominal — mesmo posicionamento do PDF (`_draw_passenger_block`).
+    final passengerName = (data['passenger_name'] ?? '').toString();
+    final documentNumber = (data['document_number'] ?? '').toString();
+    final documentType = (data['document_type'] ?? '').toString();
+    final seat = (data['seat_number'] ?? '').toString();
+    final nominal = passengerName.isNotEmpty || documentNumber.isNotEmpty || seat.isNotEmpty;
+
     return FittedBox(
       fit: BoxFit.fill,
       child: SizedBox(
         width: _designWidth,
         height: _designHeight,
         child: Stack(children: [
-          // Background template (same JPG the PDF uses).
+          // Background template (same JPGs the PDF uses): fundo branco; a
+          // variante "nominal" tem a zona a direita do QR limpa para os
+          // dados do passageiro.
           Positioned.fill(
             child: Image.asset(
-              'assets/ticket_template.jpg',
+              nominal
+                  ? 'assets/ticket_template_white_nominal.jpg'
+                  : 'assets/ticket_template_white.jpg',
               fit: BoxFit.fill,
-              errorBuilder: (_, _, _) => Container(color: const Color(0xFFF7F4EE)),
+              errorBuilder: (_, _, _) => Container(color: Colors.white),
             ),
           ),
 
@@ -188,9 +211,9 @@ class _TicketCanvas extends StatelessWidget {
           _PdfRightText(right: 856, top: 762, size: 45, minSize: 28,
               maxWidth: 205, color: _navy, value: destinationStop),
 
-          // Fare (x=282, y=901) + " MZN", status (x=689, y=911).
+          // Fare (x=282, y=901) na moeda escolhida, status (x=689, y=911).
           _PdfText(left: 282, top: 901, size: 45, minSize: 31,
-              maxWidth: 245, color: _navy, value: '$fare MZN'),
+              maxWidth: 245, color: _navy, value: fareLabel),
           _PdfText(left: 689, top: 911, size: 40, minSize: 28,
               maxWidth: 178,
               color: status == 'active'
@@ -224,6 +247,56 @@ class _TicketCanvas extends StatelessWidget {
               ),
             ),
           ),
+
+          // Dados do passageiro dentro do cartao, ladeando o QR — mesmas
+          // coordenadas do PDF: coluna esquerda (x=130) nome + documento,
+          // coluna direita (x=688) o lugar.
+          if (nominal) ...[
+            Positioned(
+              left: 130, top: 1102, width: 214,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (passengerName.isNotEmpty) ...[
+                  const Text('PASSAGEIRO', style: _labelStyle),
+                  const SizedBox(height: 6),
+                  Text(passengerName,
+                      maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 30, color: _navy,
+                          fontWeight: FontWeight.w900, height: 1.15)),
+                  const SizedBox(height: 16),
+                ],
+                if (documentNumber.isNotEmpty) ...[
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(_docLabel(documentType), style: _labelStyle),
+                  ),
+                  const SizedBox(height: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(documentNumber,
+                        maxLines: 1, softWrap: false,
+                        style: const TextStyle(
+                            fontSize: 30, color: _navy,
+                            fontWeight: FontWeight.w900, height: 1.0)),
+                  ),
+                ],
+              ]),
+            ),
+            if (seat.isNotEmpty)
+              Positioned(
+                left: 688, top: 1102, width: 218,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('LUGAR', style: _labelStyle),
+                  const SizedBox(height: 6),
+                  Text(seat,
+                      maxLines: 1, softWrap: false,
+                      style: const TextStyle(
+                          fontSize: 44, color: _navy,
+                          fontWeight: FontWeight.w900, height: 1.0)),
+                ]),
+              ),
+          ],
 
           // Short code centered below QR (center_x=512, top_y=1365).
           _PdfCenteredText(centerX: 512, top: 1365, maxSize: 35, minSize: 28,
@@ -270,6 +343,14 @@ class _TicketCanvas extends StatelessWidget {
     final n = double.tryParse('${v ?? 0}') ?? 0;
     return n.toStringAsFixed(2).replaceAll('.', ',');
   }
+
+  String _docLabel(String t) => switch (t) {
+        'bi' => 'BILHETE DE IDENTIDADE',
+        'passport' => 'PASSAPORTE',
+        'dire' => 'DIRE',
+        'cedula' => 'CEDULA',
+        _ => 'DOCUMENTO',
+      };
 
   String _statusLabel(String s) => switch (s) {
         'active' => 'ACTIVO',

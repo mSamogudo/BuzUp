@@ -189,6 +189,7 @@ class PassengerApi {
     int? tripId,
     int? passengerPackageId,
     bool usePackage = true,
+    String displayCurrency = 'MZN',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/travel-passes/purchase/',
@@ -199,8 +200,49 @@ class PassengerApi {
         if (tripId != null) 'trip_id': tripId,
         if (passengerPackageId != null) 'passenger_package_id': passengerPackageId,
         'use_package': usePackage,
+        'display_currency': displayCurrency,
       },
     );
+    return res.data ?? const {};
+  }
+
+  /// Taxas de cambio de exibicao configuradas no portal (ex.: {"ZAR": "4.10"}).
+  /// A cobranca e sempre em MZN — isto so alimenta a visualizacao de precos.
+  Future<Map<String, dynamic>> exchangeRates() async {
+    final res = await _http.get<Map<String, dynamic>>('/api/public/exchange-rate/');
+    return res.data ?? const {};
+  }
+
+  /// Compra directa com M-Pesa/e-Mola (sem passar pela carteira): cria um
+  /// checkout ligado a conta autenticada e dispara o pedido de PIN no numero
+  /// indicado. Devolve {checkout_reference, status, payment_status, ...}.
+  Future<Map<String, dynamic>> directCheckout({
+    required int originStopId,
+    required int destinationStopId,
+    required String originName,
+    required String destinationName,
+    required String payerPhone,
+    String displayCurrency = 'MZN',
+  }) async {
+    final res = await _http.post<Map<String, dynamic>>(
+      '/api/guest-checkouts/',
+      data: {
+        'payer_phone': payerPhone,
+        'origin_stop': originName,
+        'destination_stop': destinationName,
+        'origin_stop_id': originStopId,
+        'destination_stop_id': destinationStopId,
+        'quantity': 1,
+        'display_currency': displayCurrency,
+      },
+    );
+    return res.data ?? const {};
+  }
+
+  /// Estado de um checkout directo ({status, passes: [...]}) para fazer
+  /// polling enquanto o passageiro confirma o PIN na carteira movel.
+  Future<Map<String, dynamic>> checkoutStatus(String reference) async {
+    final res = await _http.get<Map<String, dynamic>>('/api/guest-checkouts/$reference/');
     return res.data ?? const {};
   }
 

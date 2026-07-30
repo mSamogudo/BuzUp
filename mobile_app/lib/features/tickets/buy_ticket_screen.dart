@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,11 @@ import '../../core/bus_loader.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
+import 'stop_picker.dart';
+
+/// Como o passageiro paga o bilhete: com o saldo BusUp (fluxo original) ou
+/// directamente com M-Pesa/e-Mola, sem ser obrigado a carregar a carteira.
+enum _PayMethod { wallet, mobileMoney }
 
 class BuyTicketScreen extends ConsumerStatefulWidget {
   const BuyTicketScreen({super.key});
@@ -22,15 +29,57 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   bool _quoting = false;
   bool _purchasing = false;
   String? _error;
+  String? _waitingMessage;
 
   int? _originId;
   int? _destinationId;
+  List<Map> _stops = const [];
   bool _usePackage = true;
+
+  _PayMethod _method = _PayMethod.wallet;
+  final _phoneCtrl = TextEditingController();
+
+  // Moeda de exibicao (rand nas rotas p/ Africa do Sul). So visual: a
+  // cobranca e sempre em meticais; a escolha fica gravada no bilhete.
+  Map<String, double> _rates = const {};
+  String _currency = 'MZN';
 
   @override
   void initState() {
     super.initState();
     _trips = ref.read(passengerApiProvider).publicTrips();
+    ref.read(passengerApiProvider).exchangeRates().then((d) {
+      final parsed = <String, double>{};
+      (d['rates'] as Map?)?.forEach((k, v) {
+        final n = double.tryParse('$v');
+        if (n != null && n > 0) parsed['$k'] = n;
+      });
+      if (mounted) setState(() => _rates = parsed);
+    }).catchError((_) {});
+    // Prefill do telemovel com o numero da conta (o passageiro pode trocar).
+    ref.read(passengerApiProvider).me().then((me) {
+      final phone = (me['phone'] ?? '').toString();
+      if (mounted && _phoneCtrl.text.isEmpty && phone.isNotEmpty) {
+        _phoneCtrl.text = phone.startsWith('258') ? phone.substring(3) : phone;
+      }
+    }).catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  double? get _rate => _currency == 'MZN' ? null : _rates[_currency];
+
+  String _fmtMzn(num n) =>
+      '${n.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]} ')} MZN';
+
+  String _fmtDisplay(num mzn) {
+    final r = _rate;
+    if (r == null) return _fmtMzn(mzn);
+    return '${(mzn / r).toStringAsFixed(2)} $_currency';
   }
 
   Future<void> _refreshQuote() async {
@@ -60,17 +109,13 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     }
   }
 
-  Future<void> _purchase() async {
-    if (_originId == null || _destinationId == null) return;
-    setState(() {
-      _purchasing = true;
-      _error = null;
-    });
+  Future<void> _purchaseWithWallet() async {
     try {
       final res = await ref.read(passengerApiProvider).purchaseTicket(
             originStopId: _originId,
             destinationStopId: _destinationId,
             usePackage: _usePackage,
+            displayCurrency: _currency,
           );
       Log.info('ticket.purchase ok', data: 'id=${res['id']}');
       ref.invalidate(meProvider);
@@ -85,8 +130,129 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       Log.warn('ticket.purchase failed', error: e.message);
       if (!mounted) return;
       setState(() => _error = ApiClient.extractError(e));
+    }
+  }
+
+  /// Compra directa: cria o checkout (dispara o pedido de PIN) e faz polling
+  /// ate o pagamento confirmar e o bilhete ser emitido na conta.
+  Future<void> _purchaseWithMobileMoney() async {
+    final phone = _phoneCtrl.text.replaceAll(RegExp(r'\D'), '');
+    if (phone.length < 9) {
+      setState(() => _error = 'Indique o numero de telemovel que paga (9 digitos).');
+      return;
+    }
+    Map? originStop;
+    Map? destStop;
+    for (final s in _stops) {
+      if (s['id'] == _originId) originStop = s;
+      if (s['id'] == _destinationId) destStop = s;
+    }
+    try {
+      setState(() => _waitingMessage = 'A contactar a carteira movel...');
+      final res = await ref.read(passengerApiProvider).directCheckout(
+            originStopId: _originId!,
+            destinationStopId: _destinationId!,
+            originName: (originStop?['name'] ?? '').toString(),
+            destinationName: (destStop?['name'] ?? '').toString(),
+            payerPhone: phone,
+            displayCurrency: _currency,
+          );
+      Log.info('ticket.direct ok', data: 'ref=${res['checkout_reference']} status=${res['status']}');
+      final reference = (res['checkout_reference'] ?? '').toString();
+      if (reference.isEmpty) {
+        throw StateError('Resposta sem referencia de checkout.');
+      }
+      if (res['status'] == 'issued') {
+        await _finishDirectPurchase(reference);
+        return;
+      }
+      if (mounted) {
+        setState(() => _waitingMessage =
+            'Confirme o pagamento no telemovel $phone quando o PIN for pedido.');
+      }
+      await _pollCheckout(reference);
+    } on DioException catch (e) {
+      Log.warn('ticket.direct failed', error: e.message);
+      if (!mounted) return;
+      setState(() {
+        _error = ApiClient.extractError(e);
+        _waitingMessage = null;
+      });
+    }
+  }
+
+  Future<void> _pollCheckout(String reference) async {
+    // ~2 minutos: o pedido de PIN do M-Pesa/e-Mola expira antes disso.
+    for (var i = 0; i < 40; i++) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      Map<String, dynamic> st;
+      try {
+        st = await ref.read(passengerApiProvider).checkoutStatus(reference);
+      } on DioException {
+        continue; // rede instavel: tentar de novo no proximo tick
+      }
+      final s = (st['status'] ?? '').toString();
+      if (s == 'issued') {
+        await _finishDirectPurchase(reference, statusPayload: st);
+        return;
+      }
+      if (s == 'cancelled' || s == 'expired') {
+        if (!mounted) return;
+        setState(() {
+          _error = 'O pagamento nao foi concluido. Nenhum valor foi debitado alem do pedido cancelado.';
+          _waitingMessage = null;
+        });
+        return;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _error = 'Tempo esgotado a aguardar a confirmacao. Verifique nos seus bilhetes '
+          'antes de tentar de novo — o pagamento pode ainda ser confirmado.';
+      _waitingMessage = null;
+    });
+  }
+
+  Future<void> _finishDirectPurchase(String reference, {Map<String, dynamic>? statusPayload}) async {
+    var payload = statusPayload;
+    if (payload == null) {
+      try {
+        payload = await ref.read(passengerApiProvider).checkoutStatus(reference);
+      } on DioException {
+        payload = const {};
+      }
+    }
+    ref.invalidate(meProvider);
+    if (!mounted) return;
+    final passes = (payload['passes'] as List?)?.cast<Map>() ?? const [];
+    final id = passes.isNotEmpty ? passes.first['id'] : null;
+    if (id is int) {
+      context.go('/tickets/$id');
+    } else {
+      context.go('/tickets');
+    }
+  }
+
+  Future<void> _purchase() async {
+    if (_originId == null || _destinationId == null) return;
+    setState(() {
+      _purchasing = true;
+      _error = null;
+    });
+    try {
+      if (_method == _PayMethod.wallet) {
+        await _purchaseWithWallet();
+      } else {
+        await _purchaseWithMobileMoney();
+      }
     } finally {
-      if (mounted) setState(() => _purchasing = false);
+      if (mounted) {
+        setState(() {
+          _purchasing = false;
+          _waitingMessage = null;
+        });
+      }
     }
   }
 
@@ -111,46 +277,69 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
               return Center(child: Text('Erro: ${snap.error}', style: const TextStyle(color: BuzUpColors.danger)));
             }
             final data = snap.data ?? const {};
-            final stops = (data['stops'] as List?)?.cast<Map>() ?? const [];
+            _stops = (data['stops'] as List?)?.cast<Map>() ?? const [];
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                _dropdown<int>(
+                StopPickerField(
                   label: 'Origem',
-                  value: _originId,
-                  items: [for (final s in stops)
-                    if (s['id'] != _destinationId)
-                      DropdownMenuItem(value: s['id'] as int, child: Text(s['name']?.toString() ?? '-'))],
+                  stops: _stops,
+                  selectedId: _originId,
+                  excludeId: _destinationId,
                   onChanged: (v) {
                     setState(() => _originId = v);
                     _refreshQuote();
                   },
                 ),
                 const SizedBox(height: 12),
-                _dropdown<int>(
+                StopPickerField(
                   label: 'Destino',
-                  value: _destinationId,
-                  items: [for (final s in stops)
-                    if (s['id'] != _originId)
-                      DropdownMenuItem(value: s['id'] as int, child: Text(s['name']?.toString() ?? '-'))],
+                  stops: _stops,
+                  selectedId: _destinationId,
+                  excludeId: _originId,
                   onChanged: (v) {
                     setState(() => _destinationId = v);
                     _refreshQuote();
                   },
                 ),
                 const SizedBox(height: 12),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  value: _usePackage,
-                  onChanged: (v) {
-                    setState(() => _usePackage = v);
-                    _refreshQuote();
-                  },
-                  title: const Text('Usar pacote especial se disponivel'),
-                  subtitle: const Text('Quando activo, desconta primeiro do saldo do pacote.', style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted)),
-                ),
+                _methodSelector(),
+                if (_method == _PayMethod.wallet)
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    value: _usePackage,
+                    onChanged: (v) {
+                      setState(() => _usePackage = v);
+                      _refreshQuote();
+                    },
+                    title: const Text('Usar pacote especial se disponivel'),
+                    subtitle: const Text('Quando activo, desconta primeiro do saldo do pacote.', style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted)),
+                  ),
+                if (_method == _PayMethod.mobileMoney) ...[
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: _phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Telemovel que paga (M-Pesa ou e-Mola)',
+                      hintText: '84xxxxxxx / 86xxxxxxx',
+                      helperText: 'Vai receber o pedido de PIN neste numero.',
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                if (_rates.isNotEmpty) _currencySelector(),
                 const SizedBox(height: 8),
                 _quoteCard(),
+                if (_waitingMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Row(children: [
+                      const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(_waitingMessage!, style: const TextStyle(fontSize: 12.5))),
+                    ]),
+                  ),
                 if (_error != null) Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(_error!, style: const TextStyle(color: BuzUpColors.danger, fontSize: 12.5)),
@@ -170,24 +359,67 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     );
   }
 
-  Widget _dropdown<T>({
-    required String label,
-    required T? value,
-    required List<DropdownMenuItem<T>> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return InputDecorator(
-      decoration: InputDecoration(labelText: label),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          isExpanded: true,
-          value: value,
-          items: items,
-          onChanged: onChanged,
-          hint: const Text('Seleccione...', style: TextStyle(color: BuzUpColors.muted)),
+  Widget _methodSelector() {
+    Widget option(_PayMethod m, IconData icon, String title, String subtitle) {
+      final selected = _method == m;
+      final scheme = Theme.of(context).colorScheme;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: _purchasing ? null : () => setState(() {
+            _method = m;
+            _error = null;
+          }),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? BuzUpColors.navy : scheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: selected ? BuzUpColors.navy : scheme.outline),
+            ),
+            child: Column(children: [
+              Icon(icon, size: 20, color: selected ? Colors.white : BuzUpColors.muted),
+              const SizedBox(height: 4),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.5, fontWeight: FontWeight.w800,
+                    color: selected ? Colors.white : null,
+                  )),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: selected ? Colors.white70 : BuzUpColors.muted,
+                  )),
+            ]),
+          ),
         ),
-      ),
-    );
+      );
+    }
+
+    return Row(children: [
+      option(_PayMethod.wallet, Icons.account_balance_wallet, 'Saldo BusUp', 'usa a carteira'),
+      const SizedBox(width: 10),
+      option(_PayMethod.mobileMoney, Icons.phone_iphone, 'M-Pesa / e-Mola', 'paga na hora'),
+    ]);
+  }
+
+  Widget _currencySelector() {
+    final codes = ['MZN', ..._rates.keys.toList()..sort()];
+    return Row(children: [
+      const Text('Ver precos em', style: TextStyle(fontSize: 12, color: BuzUpColors.muted)),
+      const SizedBox(width: 10),
+      ...codes.map((c) => Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: ChoiceChip(
+              label: Text(c, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+              selected: _currency == c,
+              visualDensity: VisualDensity.compact,
+              onSelected: (_) => setState(() => _currency = c),
+            ),
+          )),
+    ]);
   }
 
   Widget _quoteCard() {
@@ -220,13 +452,15 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     // package_id, package_name, discount_type.
     final base = double.tryParse('${_quote!['base_fare'] ?? _quote!['fare_amount'] ?? 0}') ?? 0;
     final walletAmount = double.tryParse('${_quote!['wallet_amount'] ?? base}') ?? base;
+    // No pagamento directo o pacote nao entra: paga-se a tarifa cheia.
+    final directPay = _method == _PayMethod.mobileMoney;
+    final due = directPay ? base : walletAmount;
     final packageName = (_quote!['package_name'] ?? '').toString();
     final discountType = (_quote!['discount_type'] ?? '').toString();
-    final hasPackage = (_quote!['package_id'] ?? null) != null && packageName.isNotEmpty;
+    final hasPackage = !directPay && _quote!['package_id'] != null && packageName.isNotEmpty;
     final discount = (base - walletAmount).clamp(0, base);
     final fullyCoveredByPackage = walletAmount <= 0 && hasPackage;
-    final fmt = (num n) =>
-        '${n.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]} ')} MZN';
+    final rate = _rate;
 
     Widget row(String label, String value, {Color? color, FontWeight? bold, IconData? icon}) {
       return Padding(
@@ -257,24 +491,35 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         const Text('RESUMO DA COMPRA',
             style: TextStyle(color: Colors.white70, fontSize: 10.5, letterSpacing: 1.6, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        row('Tarifa base', fmt(base), icon: Icons.directions_bus),
+        row('Tarifa base', _fmtMzn(base), icon: Icons.directions_bus),
+        if (rate != null)
+          row('Em $_currency (1 $_currency = ${rate.toStringAsFixed(2)} MZN)', _fmtDisplay(base),
+              icon: Icons.currency_exchange),
         if (hasPackage) ...[
           const Divider(color: Colors.white24, height: 14),
           row('Pacote', packageName,
               color: BuzUpColors.orangeDark, bold: FontWeight.w900, icon: Icons.card_giftcard),
           if (discount > 0)
-            row(_discountLabel(discountType), '-${fmt(discount.toDouble())}',
+            row(_discountLabel(discountType), '-${_fmtMzn(discount.toDouble())}',
                 color: const Color(0xFF6FE38B), icon: Icons.local_offer),
         ],
         const Divider(color: Colors.white24, height: 16),
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-          const Expanded(
-            child: Text('A PAGAR DA CARTEIRA',
-                style: TextStyle(color: Colors.white, fontSize: 11.5, letterSpacing: 1.2, fontWeight: FontWeight.w900)),
+          Expanded(
+            child: Text(directPay ? 'A PAGAR POR M-PESA/E-MOLA' : 'A PAGAR DA CARTEIRA',
+                style: const TextStyle(color: Colors.white, fontSize: 11.5, letterSpacing: 1.2, fontWeight: FontWeight.w900)),
           ),
-          Text(fmt(walletAmount),
+          Text(_fmtMzn(due),
               style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.3)),
         ]),
+        if (rate != null) Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text('≈ ${_fmtDisplay(due)} · o debito e sempre em MZN',
+                style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          ),
+        ),
         if (fullyCoveredByPackage) Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Row(children: const [
@@ -299,7 +544,13 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
 
   String _payButtonLabel() {
     if (_quote == null) return 'COMPRAR BILHETE';
+    final base = double.tryParse('${_quote!['base_fare'] ?? 0}') ?? 0;
     final walletAmount = double.tryParse('${_quote!['wallet_amount'] ?? 0}') ?? 0;
+    if (_method == _PayMethod.mobileMoney) {
+      final fmt = base.toStringAsFixed(2)
+          .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]} ');
+      return 'PAGAR $fmt MZN COM M-PESA/E-MOLA';
+    }
     if (walletAmount <= 0) return 'USAR PACOTE - GRATIS';
     final fmt = walletAmount.toStringAsFixed(2)
         .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]} ');

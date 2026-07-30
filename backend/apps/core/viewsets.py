@@ -14,10 +14,24 @@ class BaseModelViewSet(ModelViewSet):
     required_capabilities_by_action = {}
     allow_restore_action = True
 
+    # Acções não declaradas são NEGADAS em vez de permitidas. Hoje todas as
+    # acções custom estão declaradas, mas `has_capabilities` devolve True para
+    # uma lista vazia: bastava alguém acrescentar um `@action` novo e esquecer
+    # a linha no dicionário para o expor a qualquer utilizador autenticado —
+    # incluindo um passageiro com a app. A falha tem de ser fechada, não aberta.
+    deny_undeclared_actions = True
+
     def get_required_capabilities(self):
         if self.action == "restore":
             return self.required_capabilities_by_action.get("destroy", ())
-        return self.required_capabilities_by_action.get(self.action, ())
+        declared = self.required_capabilities_by_action
+        if self.action in declared:
+            return declared[self.action]
+        if declared and self.deny_undeclared_actions:
+            # Capability impossível de possuir: nega sem depender de o
+            # programador se lembrar de declarar.
+            return ("__undeclared_action__",)
+        return ()
 
     def _has_soft_delete_field(self, model):
         try:

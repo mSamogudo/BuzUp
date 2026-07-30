@@ -62,15 +62,18 @@ class SelfOnboardView(APIView):
                     {"detail": "Dispositivo rejeitado ou bloqueado. Contacte o administrador."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            if existing.status == Device.Status.ACTIVE:
-                return Response({
-                    "activation_code": existing.activation_code,
-                    "status": existing.status,
-                })
-
+            # NAO devolver o `activation_code` de um dispositivo que ja existe.
+            # Este endpoint e publico: quem soubesse (ou adivinhasse) um numero
+            # de serie obtinha o codigo e activava o terminal em
+            # /api/agent/devices/activate/, que so pede serial + codigo. O
+            # controlo de inventario de terminais ficava anulado. O codigo e
+            # entregue uma unica vez, a quem registou o aparelho.
             return Response({
-                "activation_code": existing.activation_code,
                 "status": existing.status,
+                "detail": (
+                    "Este terminal ja esta registado. Peca o codigo de activacao "
+                    "ao administrador."
+                ),
             })
 
         activation_code = Device.generate_activation_code()
@@ -302,8 +305,13 @@ class DeviceConfigurationView(APIView):
 
 
 class DeviceHeartbeatView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    """Heartbeat do terminal. Exige sessao — as apps usam
+    /api/agent/devices/heartbeat/, que sempre foi autenticado; este ficava
+    aberto e permitia escrever a versao da app em qualquer serial e enumerar
+    seriais pela diferenca entre 404 e 200.
+    """
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = HeartbeatSerializer(data=request.data)
@@ -347,8 +355,13 @@ class DeviceHeartbeatView(APIView):
 
 
 class DeviceLocationView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
+    """Posicao do terminal. Exige sessao: sem isso, qualquer pessoa na internet
+    escrevia coordenadas em qualquer numero de serie e os passageiros viam
+    autocarros inventados no mapa (ou o autocarro certo no lugar errado).
+    Tambem servia para enumerar seriais pela diferenca entre 404 e 200.
+    """
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serial = request.data.get("serial_number", "")

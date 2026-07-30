@@ -133,7 +133,14 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = config("PAYMENT_GATEWAY_WEBHOOK_SECRET", defaul
 # (fail-closed). Default False para nao quebrar dev/test; forcado True em prod.
 PAYMENT_WEBHOOK_REQUIRE_SIGNATURE = config("PAYMENT_WEBHOOK_REQUIRE_SIGNATURE", default=False, cast=bool)
 PAYMENT_MOBILE_WALLET_METHODS = config("PAYMENT_MOBILE_WALLET_METHODS", default="MPESA,EMOLA")
-PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", default=180, cast=int)
+# A cadeia de timeouts tem de ser CRESCENTE do exterior para o interior:
+# gateway (25s) < nginx proxy_read (60s) < gunicorn --timeout (120s).
+# Estava invertida — o gateway tinha 180s: o POS recebia 504 do nginx aos 60s,
+# o agente repetia, o gunicorn matava o worker aos 120s levando consigo as
+# validacoes em voo, e a resposta do gateway (que chegaria aos 150s) era
+# perdida deixando o pagamento PENDING para sempre. Ver docker-compose.prod.yml
+# e docker/prod/nginx.conf.
+PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", default=25, cast=int)
 PAYLESS_BASE_URL = config("PAYLESS_BASE_URL", default="https://payless.bluteki.com/api/v2.0")
 PAYLESS_BEARER_TOKEN = config("PAYLESS_BEARER_TOKEN", default="")
 
@@ -189,13 +196,33 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Só para endpoints com throttle_scope explícito (ex.: posições do mapa,
-    # que as apps consultam em polling).
+    # Paginação por omissão. Sem isto, `/api/validations/` devolvia a tabela
+    # inteira num só JSON: com um milhão de linhas o worker esgotava a memória
+    # do contentor e morria — e como há poucos workers, isso derrubava o
+    # backend para todos os terminais. Um clique no portal chegava.
+    # Os clientes já leem `results` (o frontend faz `d.results || d`).
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.DefaultPagination",
+    # Tecto global: um cliente sem limite é um cliente que pode saturar as
+    # threads todas. Endpoints com `throttle_scope` próprio continuam a mandar.
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ),
     "DEFAULT_THROTTLE_RATES": {
+        # Generosos de propósito: um terminal em hora de ponta faz muitos
+        # pedidos legítimos. Isto trava abuso, não trabalho.
+        "anon": "120/min",
+        "user": "600/min",
         "vehicle-locations": "12/min",
         "service-request": "6/hour",
         "password-reset": "5/hour",
+        # Login: travar força bruta de senha e de OTP.
+        "agent-login": "10/min",
+        "guest-checkout": "10/hour",
     },
+    # O IP vem do proxy; sem isto o `X-Forwarded-For` do cliente é aceite como
+    # verdade e qualquer limite por IP é contornável acrescentando um header.
+    "NUM_PROXIES": config("NUM_PROXIES", default=1, cast=int),
 }
 
 # Telefone que recebe aviso de novos pedidos de contacto da landing.
@@ -215,3 +242,69 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+# Não havia configuração nenhuma. Com DEBUG=False, o handler de consola do
+# Django está atrás do filtro `require_debug_true`, portanto TODOS os
+# logger.info/warning do código (pagamentos, SMS, validações) iam para o vazio;
+# e os 500 iam para `mail_admins` com ADMINS vazio, ou seja, desapareciam.
+# Resultado prático: com a operação parada não havia uma única linha para ler.
+# Aqui tudo vai para stdout, que é onde `docker logs` e qualquer agregador
+# esperam encontrá-lo.
+LOG_LEVEL = config("LOG_LEVEL", default="INFO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        # Os 500 têm de aparecer no stdout com stack trace, não só num email
+        # que ninguém configurou.
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        # As nossas apps ao nível configurado; o resto do Django mais calado
+        # para o ruído não esconder o que importa.
+        "apps": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+
+# Ligações à base de dados reutilizadas entre pedidos. Estava em 0 (o default),
+# o que abria uma ligação TCP + autenticação nova em CADA pedido — com ~15
+# queries por validação e um Postgres com pouca memória, é latência pura na
+# hora de ponta.
+DATABASES["default"]["CONN_MAX_AGE"] = config("CONN_MAX_AGE", default=60, cast=int)
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+
+# Limites de upload: sem eles, um ficheiro grande na importação Excel enche a
+# memória do worker e mata o processo — e com ele a operação de todos.
+DATA_UPLOAD_MAX_MEMORY_SIZE = config("DATA_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)
+FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)

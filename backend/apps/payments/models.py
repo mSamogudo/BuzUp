@@ -57,6 +57,11 @@ class PaymentIntent(BaseModel):
         indexes = [
             models.Index(fields=["status", "created_at"]),
             models.Index(fields=["payer_phone"]),
+            # `purpose` filtra em todos os relatorios financeiros e
+            # `provider_reference` e o lookup do webhook — o caminho que tem de
+            # ser rapido para o gateway nao desistir e reenviar.
+            models.Index(fields=["purpose", "status", "created_at"]),
+            models.Index(fields=["provider_reference"]),
         ]
 
     def __str__(self):

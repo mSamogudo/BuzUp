@@ -281,11 +281,20 @@ def _resolve_digital_travel_pass(
     # Preferir o codigo gravado no bilhete (indexado); so recorrer ao calculo
     # em Python para bilhetes antigos, emitidos antes do campo existir.
     stored = list(qs.filter(short_code__iexact=short_code)[:50])
-    legacy = [
-        candidate
-        for candidate in qs.filter(short_code="").order_by("-created_at")[:1000]
-        if ticket_short_code(ticket_reference(candidate)) == short_code
-    ]
+
+    # O fallback antigo carregava 1000 bilhetes e calculava 1000 SHA-256 em
+    # Python — a cada leitura manual, que e justamente o que se usa quando o QR
+    # nao le (chuva, ecra rachado). Era o pedido mais caro do sistema no pior
+    # momento possivel. Agora so corre se o caminho indexado nao encontrou
+    # nada, e sobre uma janela pequena: bilhetes sem `short_code` sao
+    # anteriores a introducao do campo e ja estao, na pratica, todos usados.
+    legacy: list[DigitalTravelPass] = []
+    if not stored:
+        legacy = [
+            candidate
+            for candidate in qs.filter(short_code="").order_by("-created_at")[:200]
+            if ticket_short_code(ticket_reference(candidate)) == short_code
+        ]
     candidates = stored + legacy
     if len(candidates) == 1:
         return candidates[0]

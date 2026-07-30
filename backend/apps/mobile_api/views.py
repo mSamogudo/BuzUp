@@ -12,6 +12,7 @@ Flutter app and a Notifications API.
 from __future__ import annotations
 
 import hashlib
+import uuid
 from datetime import timedelta
 
 from django.http import HttpResponse as DjangoHttpResponse
@@ -48,6 +49,39 @@ def _mask_phone(phone: str) -> str:
         return p
     return f"***{p[-4:]}"
 
+
+def _pass_lookup(ref: str):
+    """Filtro para encontrar um bilhete por token, referencia ou uuid.
+
+    `Q(uuid=ref)` com um valor que nao e UUID levanta ValidationError e devolve
+    500 — e a referencia normal (`GC-...`) nao e um UUID, logo qualquer procura
+    por referencia rebentava. So se acrescenta a condicao de uuid quando o
+    valor tem realmente essa forma.
+    """
+    from django.db.models import Q
+
+    token_hash = hashlib.sha256(ref.encode()).hexdigest()
+    lookup = Q(token_hash=token_hash) | Q(guest_checkout__reference=ref)
+    try:
+        lookup |= Q(uuid=uuid.UUID(str(ref)))
+    except (ValueError, AttributeError, TypeError):
+        pass
+    return lookup
+
+
+def _owns_pass(tp, passenger, phone: str) -> bool:
+    """O bilhete pertence a quem pede?
+
+    A versao anterior tinha um buraco: se o bilhete TINHA dono e quem pedia
+    NAO tinha conta de passageiro (um agente, um motorista, qualquer conta de
+    portal), nenhuma das duas condicoes se aplicava e o bilhete era devolvido
+    — com o token do QR e o PDF. Bastava saber a referencia. Agora a posse tem
+    de ser afirmada, nao apenas "nao contrariada".
+    """
+    if tp.passenger_account_id:
+        return bool(passenger and tp.passenger_account_id == passenger.id)
+    # Bilhete ao portador (comprado sem conta): pertence a quem o pagou.
+    return bool(phone) and tp.payer_phone == phone
 
 def _ticket_payload(tp: DigitalTravelPass) -> dict:
     return {
@@ -171,17 +205,12 @@ class MobileTicketDetailView(APIView):
     def get(self, request, ref: str):
         passenger = _passenger(request.user)
         phone = request.user.phone or (passenger.phone_number if passenger else "")
-        from django.db.models import Q
-
-        token_hash = hashlib.sha256(ref.encode()).hexdigest()
         tp = DigitalTravelPass.objects.select_related("guest_checkout").filter(
-            Q(token_hash=token_hash) | Q(guest_checkout__reference=ref) | Q(uuid=ref),
+            _pass_lookup(ref),
         ).first()
         if not tp:
             return Response({"detail": "Bilhete nao encontrado."}, status=404)
-        if tp.passenger_account_id and passenger and tp.passenger_account_id != passenger.id:
-            return Response({"detail": "Sem permissao."}, status=403)
-        if not tp.passenger_account_id and tp.payer_phone != phone:
+        if not _owns_pass(tp, passenger, phone):
             return Response({"detail": "Sem permissao."}, status=403)
         return Response(_ticket_payload(tp))
 
@@ -192,16 +221,12 @@ class MobileTicketPdfView(APIView):
     def get(self, request, ref: str):
         passenger = _passenger(request.user)
         phone = request.user.phone or (passenger.phone_number if passenger else "")
-        from django.db.models import Q
-        token_hash = hashlib.sha256(ref.encode()).hexdigest()
         tp = DigitalTravelPass.objects.select_related("guest_checkout").filter(
-            Q(token_hash=token_hash) | Q(guest_checkout__reference=ref) | Q(uuid=ref),
+            _pass_lookup(ref),
         ).first()
         if not tp:
             return Response({"detail": "Bilhete nao encontrado."}, status=404)
-        if tp.passenger_account_id and passenger and tp.passenger_account_id != passenger.id:
-            return Response({"detail": "Sem permissao."}, status=403)
-        if not tp.passenger_account_id and tp.payer_phone != phone:
+        if not _owns_pass(tp, passenger, phone):
             return Response({"detail": "Sem permissao."}, status=403)
 
         if tp.guest_checkout_id:

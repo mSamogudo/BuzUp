@@ -846,21 +846,34 @@ class MeProfileUpdateView(APIView):
     def patch(self, request):
         user = request.user
         updated_fields = []
-        for field in ("first_name", "last_name", "email", "phone"):
+        # O TELEFONE NAO E EDITAVEL AQUI. E a identidade de toda a plataforma:
+        # a conta de passageiro, a carteira, os bilhetes e os pagamentos sao
+        # resolvidos por telefone, e `User.phone` nao e unico. Deixar trocar
+        # livremente significava: autenticar-me na minha conta, gravar o
+        # telefone de outra pessoa e passar a ler e GASTAR a carteira dela.
+        # Mudar de numero exige verificacao por OTP no numero novo — fluxo que
+        # ainda nao existe; ate existir, e o administrador que o altera.
+        if "phone" in request.data:
+            submitted = str(request.data.get("phone") or "").strip()
+            from apps.users.otp import normalize_otp_phone
+            if normalize_otp_phone(submitted) not in ("", user.phone):
+                return Response(
+                    {"detail": "O numero de telefone nao pode ser alterado aqui. Contacte o suporte."},
+                    status=400,
+                )
+        for field in ("first_name", "last_name", "email"):
             if field in request.data:
-                value = str(request.data[field] or "").strip()
-                if field == "phone":
-                    from apps.users.otp import normalize_otp_phone
-                    value = normalize_otp_phone(value) or value
-                setattr(user, field, value)
+                setattr(user, field, str(request.data[field] or "").strip())
                 updated_fields.append(field)
         new_password = request.data.get("new_password")
         if new_password:
             current_password = request.data.get("current_password", "")
             if not user.check_password(current_password):
                 return Response({"detail": "Senha actual incorrecta."}, status=400)
-            if len(str(new_password)) < 6:
-                return Response({"detail": "Nova senha deve ter pelo menos 6 caracteres."}, status=400)
+            if len(str(new_password)) < 8:
+                # 8 como no `change-password`: ter dois minimos diferentes para
+                # a mesma senha e um convite a usar o mais fraco.
+                return Response({"detail": "Nova senha deve ter pelo menos 8 caracteres."}, status=400)
             user.set_password(new_password)
             updated_fields.append("password")
         if updated_fields:

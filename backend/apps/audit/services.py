@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from django.db import transaction
 
 from apps.audit.models import AuditLog
+
+logger = logging.getLogger(__name__)
 
 # Chaves cujo valor nunca deve ser guardado no audit (snapshot redigido).
 _REDACT = ("password", "token", "secret", "otp", "pin", "authorization", "api_key", "apikey", "checksum", "hash")
@@ -67,19 +71,29 @@ def audit(
     ip: str = "",
     device: str = "",
 ) -> AuditLog | None:
-    """Lightweight wrapper for AuditLog creation. Never raises."""
+    """Registo de auditoria. Nunca levanta excepcao — e nunca envenena a
+    transacao de quem a chama.
+
+    O `try/except` sozinho nao bastava: esta funcao e chamada de dentro do
+    `atomic` que confirma pagamentos, e no Postgres uma query falhada aborta a
+    transacao inteira. O `except` engolia o erro, mas a query seguinte morria
+    com `TransactionManagementError` — ou seja, um pagamento confirmado com
+    sucesso devolvia 500 ao agente. O savepoint isola a falha do registo.
+    """
     try:
-        return AuditLog.objects.create(
-            actor=actor if (actor and getattr(actor, "is_authenticated", False)) else None,
-            action=action,
-            entity_type=entity_type,
-            entity_id=str(entity_id) if entity_id else "",
-            before=before or {},
-            after=after or {},
-            ip_address=ip or None,
-            device=device or "",
-        )
+        with transaction.atomic():
+            return AuditLog.objects.create(
+                actor=actor if (actor and getattr(actor, "is_authenticated", False)) else None,
+                action=action,
+                entity_type=entity_type,
+                entity_id=str(entity_id) if entity_id else "",
+                before=before or {},
+                after=after or {},
+                ip_address=ip or None,
+                device=device or "",
+            )
     except Exception:
+        logger.warning("auditoria falhou para a accao %s", action, exc_info=True)
         return None
 
 

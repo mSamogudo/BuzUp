@@ -77,6 +77,11 @@ class ValidationEvent(BaseModel):
             models.Index(fields=["validation_type", "status"]),
             models.Index(fields=["route", "created_at"]),
             models.Index(fields=["device", "created_at"]),
+            # O dashboard e os relatorios filtram por data e por estado sem
+            # rota nem dispositivo: sem estes, cada abertura do painel era um
+            # varrimento completo de milhoes de validacoes.
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["status", "created_at"]),
         ]
 
     def __str__(self):

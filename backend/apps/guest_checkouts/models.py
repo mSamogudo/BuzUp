@@ -69,6 +69,10 @@ class GuestCheckout(BaseModel):
         indexes = [
             models.Index(fields=["payer_phone", "status"]),
             models.Index(fields=["reference"]),
+            # Contar lugares ocupados numa partida (capacity.py) esta no
+            # caminho de CADA venda: tem de ser um index scan.
+            models.Index(fields=["trip", "status"]),
+            models.Index(fields=["created_at"]),
         ]
 
     def __str__(self):

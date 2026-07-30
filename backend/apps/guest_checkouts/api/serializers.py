@@ -97,8 +97,38 @@ class DigitalTravelPassSerializer(serializers.ModelSerializer):
         return f"{base}/api/public/ticket/{obj.token}/" if base else f"/api/public/ticket/{obj.token}/"
 
 
+class PublicTravelPassSerializer(serializers.ModelSerializer):
+    """Bilhete visto pelo canal PÚBLICO (lookup por referência, sem sessão).
+
+    Deliberadamente mais pobre que `DigitalTravelPassSerializer`: a referência
+    circula por SMS, aparece impressa no bilhete e no ecrã do agente, portanto
+    não é um segredo. O `pdf_url` (que carrega o token) fica, porque é o próprio
+    meio de entrega ao comprador — mas o número do documento não: quem consiga
+    uma referência não tem de levar com ele a identificação do passageiro.
+    """
+
+    pdf_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DigitalTravelPass
+        fields = (
+            "uuid", "route_code", "route_name",
+            "origin_stop", "destination_stop", "fare_amount",
+            "display_currency", "display_fare_amount",
+            "passenger_name", "seat_number",
+            "status", "valid_from", "valid_until", "used_at", "pdf_url",
+        )
+        read_only_fields = fields
+
+    def get_pdf_url(self, obj):
+        if not obj.token:
+            return ""
+        base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").rstrip("/")
+        return f"{base}/api/public/ticket/{obj.token}/" if base else f"/api/public/ticket/{obj.token}/"
+
+
 class GuestCheckoutPublicSerializer(serializers.ModelSerializer):
-    passes = DigitalTravelPassSerializer(source="travel_passes", many=True, read_only=True)
+    passes = PublicTravelPassSerializer(source="travel_passes", many=True, read_only=True)
 
     class Meta:
         model = GuestCheckout

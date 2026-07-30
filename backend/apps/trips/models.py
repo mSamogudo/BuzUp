@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -91,7 +92,13 @@ class RouteSchedule(BaseModel):
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name="schedules")
     start_time = models.TimeField()
     end_time = models.TimeField()
-    frequency_minutes = models.PositiveIntegerField(default=30)
+    # Minimo 1: com 0, `generate_daily_trips` entra em ciclo infinito
+    # (`current_time += timedelta(minutes=0)` nunca avanca) e consome um worker
+    # para sempre. O campo esta exposto na API do backoffice, logo um erro de
+    # digitacao chegava para prender o backend.
+    frequency_minutes = models.PositiveIntegerField(
+        default=30, validators=[MinValueValidator(1)],
+    )
     days_of_week = models.JSONField(default=list)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
 
@@ -137,6 +144,10 @@ class Trip(BaseModel):
         indexes = [
             models.Index(fields=["route", "status"]),
             models.Index(fields=["planned_departure_at"]),
+            # O motorista abre "as minhas viagens" a cada embarque, e a lista
+            # do POS filtra por estado + hora de partida.
+            models.Index(fields=["driver", "status"]),
+            models.Index(fields=["status", "planned_departure_at"]),
         ]
 
     def __str__(self):

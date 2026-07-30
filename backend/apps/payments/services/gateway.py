@@ -335,7 +335,10 @@ class MobileWalletGateway:
     def __init__(self, provider: str = "MPESA"):
         self.provider = provider.upper()
         self.config = _get_provider_config(self.provider)
-        self.timeout = max(30, int(getattr(settings, "PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", 180)))
+        # O piso de 30s anulava qualquer configuracao mais curta e punha o
+        # gateway acima do timeout do nginx (60s). 5s e o minimo razoavel para
+        # nao cortar um pedido lento legitimo.
+        self.timeout = max(5, int(getattr(settings, "PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", 25)))
 
     def initiate_payment(self, reference: str, amount, payer_phone: str, description: str = "") -> PaymentGatewayResult:
         if not _provider_is_configured(self.provider):

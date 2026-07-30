@@ -38,6 +38,7 @@ from django.utils import timezone
 from rest_framework import status as drf_status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -127,6 +128,17 @@ def _ticket_payload(tp: DigitalTravelPass) -> dict:
 # Auth
 # ----------------------------------------------------------------------------
 
+class AgentLoginThrottle(ScopedRateThrottle):
+    """Trava forca bruta no login do POS.
+
+    Sem isto, tanto a senha como o OTP de 6 digitos eram atacaveis a ritmo
+    ilimitado — e o contador de tentativas do OTP e por desafio, logo pedir um
+    desafio novo reiniciava-o.
+    """
+
+    scope = "agent-login"
+
+
 class AgentLoginView(APIView):
     """Agent login by phone+OTP code (reuses OtpChallenge).
 
@@ -135,6 +147,8 @@ class AgentLoginView(APIView):
     """
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = [AgentLoginThrottle]
+    throttle_scope = "agent-login"
 
     def post(self, request):
         serializer = AgentLoginSerializer(data=request.data)
@@ -1162,7 +1176,21 @@ class AgentTicketVerifyView(APIView):
                     "valid": False,
                     "reason": "Codigo ambiguo. Use QR Code ou pergunte a referencia completa.",
                     "consumed": False,
-                    "candidates": [_ticket_payload(t) for t in matches],
+                    # Sem `_ticket_payload`: incluía o token do QR de cada
+                    # candidato. Com um código de 4 caracteres e sem limite de
+                    # tentativas, isso transformava o 409 numa fonte de QRs
+                    # válidos de bilhetes alheios. Aqui só o suficiente para o
+                    # agente perguntar a referência certa ao passageiro.
+                    "candidates": [
+                        {
+                            "reference": t.guest_checkout.reference if t.guest_checkout else str(t.uuid)[:12].upper(),
+                            "route_code": t.route_code,
+                            "origin_stop": t.origin_stop,
+                            "destination_stop": t.destination_stop,
+                            "passenger_name": t.passenger_name,
+                        }
+                        for t in matches
+                    ],
                 }, status=409)
             tp = matches[0]
             lookup_kind = "shortcode"
@@ -1366,6 +1394,11 @@ class AgentTicketMarkUsedView(APIView):
         ).first()
         if not tp:
             return Response({"detail": "Bilhete nao encontrado."}, status=404)
+        # Faltava aqui a verificacao de posse que os outros endpoints de
+        # bilhete ja fazem: qualquer agente activo podia queimar o bilhete de
+        # qualquer venda sabendo a referencia (que vem impressa no bilhete).
+        if not _ticket_visible_to(request.user, tp):
+            return Response({"detail": "Sem permissao para este bilhete."}, status=403)
         if tp.status == DigitalTravelPass.Status.USED:
             return Response({"detail": "Bilhete ja foi utilizado.", "used_at": tp.used_at.isoformat() if tp.used_at else None}, status=409)
         if tp.status != DigitalTravelPass.Status.ACTIVE:
@@ -1373,9 +1406,19 @@ class AgentTicketMarkUsedView(APIView):
         if tp.valid_until and tp.valid_until < timezone.now():
             return Response({"detail": "Bilhete expirado."}, status=400)
 
-        tp.status = DigitalTravelPass.Status.USED
-        tp.used_at = timezone.now()
-        tp.save(update_fields=["status", "used_at", "updated_at"])
+        # Mesmo lock do /verify/: sem ele, duas marcacoes simultaneas passavam
+        # ambas e o registo de auditoria ficava a mentir sobre quem consumiu.
+        with transaction.atomic():
+            locked = DigitalTravelPass.objects.select_for_update().get(pk=tp.pk)
+            if locked.status == DigitalTravelPass.Status.USED:
+                return Response({
+                    "detail": "Bilhete ja foi utilizado.",
+                    "used_at": locked.used_at.isoformat() if locked.used_at else None,
+                }, status=409)
+            locked.status = DigitalTravelPass.Status.USED
+            locked.used_at = timezone.now()
+            locked.save(update_fields=["status", "used_at", "updated_at"])
+            tp = locked
         audit(
             "TICKET_USED",
             actor=request.user,

@@ -24,8 +24,13 @@ def resolve_route_segment(route: Route, origin_stop_id: int | str | None, destin
     if not origin_stop_id or not destination_stop_id:
         raise RouteSegmentError("Origem e destino sao obrigatorios.")
 
-    origin_id = int(origin_stop_id)
-    destination_id = int(destination_stop_id)
+    # Vinha `int()` cru sobre query-params do site publico: `?origin=abc`
+    # levantava ValueError e devolvia 500 em vez de um pedido invalido.
+    try:
+        origin_id = int(origin_stop_id)
+        destination_id = int(destination_stop_id)
+    except (TypeError, ValueError):
+        raise RouteSegmentError("Origem e destino invalidos.") from None
     if origin_id == destination_id:
         raise RouteSegmentError("Destino deve ser diferente da origem.")
 

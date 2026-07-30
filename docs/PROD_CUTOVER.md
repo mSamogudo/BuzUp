@@ -126,6 +126,10 @@ Sem estas duas linhas a operação para, e o modo como para não é óbvio:
 - **Sem `expire_stale`**: cada checkout abandonado (browser fechado, gateway
   sem resposta) retém o lugar na viagem para sempre. Ao fim de uma manhã, uma
   partida com lugares vazios aparece "esgotada" e o agente não pode vender.
+- **Sem `reconcile_payments`**: a confirmação de pagamento chega por webhook, e
+  com a rede móvel a oscilar uma parte nunca chega. O passageiro pagou no
+  M-Pesa, o dinheiro saiu, e fica sem bilhete — sem que nada o detecte. A
+  reclamação aparece dias depois, no balcão, sem prova do que se passou.
 
 ```sh
 # no servidor, como root — o padrão dos outros projectos é /etc/cron.d/
@@ -135,18 +139,28 @@ cat > /etc/cron.d/buzup-prod-jobs <<'EOF'
 0 5 * * * root docker exec buzup_backend_prod python manage.py generate_trips >> /var/log/buzup-trips-prod.log 2>&1
 # Expirar checkouts/pagamentos/pacotes vencidos (janela de checkout: 30 min web, 15 min POS)
 */5 * * * * root docker exec buzup_backend_prod python manage.py expire_stale >> /var/log/buzup-expire-prod.log 2>&1
+# Perguntar ao gateway o que aconteceu aos pagamentos pendentes (webhooks perdidos)
+*/5 * * * * root docker exec buzup_backend_prod python manage.py reconcile_payments >> /var/log/buzup-reconcile-prod.log 2>&1
 EOF
 chmod 644 /etc/cron.d/buzup-prod-jobs
 ```
 
 Verificar no dia seguinte:
 ```sh
-tail -5 /var/log/buzup-trips-prod.log     # "N viagens geradas."
-tail -5 /var/log/buzup-expire-prod.log    # "expirados: checkouts=… intents=… pacotes=…"
+tail -5 /var/log/buzup-trips-prod.log      # "N viagens geradas."
+tail -5 /var/log/buzup-expire-prod.log     # "expirados: checkouts=… intents=… pacotes=…"
+tail -5 /var/log/buzup-reconcile-prod.log  # "verificados=… confirmados=… revisao_manual=…"
 ```
 
-Em staging estas tarefas já estão instaladas em `/etc/cron.d/buzup-trips` e
-`/etc/cron.d/buzup-expire`.
+**`revisao_manual` > 0 exige acção humana.** São pagamentos que o gateway
+confirma mas cuja compra já tinha expirado: o lugar pode ter sido revendido, e
+emitir automaticamente criaria dois passageiros no mesmo lugar. Aparecem no
+portal em Pagamentos com o aviso "Aguarda decisão" (ou via
+`/api/payments/intents/?needs_review=1`). Para cada um: emitir o bilhete se
+ainda houver lugar, ou reembolsar.
+
+Em staging estas tarefas já estão instaladas em `/etc/cron.d/buzup-trips`,
+`/etc/cron.d/buzup-expire` e `/etc/cron.d/buzup-reconcile`.
 
 ## Rollback
 - Edge: voltar o upstream de `buzup.updigital.co.mz` para `buzup_gateway_staging` e `nginx -s reload`.

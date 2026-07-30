@@ -36,6 +36,8 @@ class PaymentIntentSerializer(serializers.ModelSerializer):
     source = serializers.SerializerMethodField()
     payer_display_name = serializers.SerializerMethodField()
     payer_display_phone = serializers.SerializerMethodField()
+    needs_review = serializers.SerializerMethodField()
+    review_reason = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentIntent
@@ -49,9 +51,24 @@ class PaymentIntentSerializer(serializers.ModelSerializer):
             "created_by_username", "created_by_full_name",
             "payer_display_name", "payer_display_phone",
             "provider_reference", "expires_at", "confirmed_at",
-            "metadata", "created_at", "updated_at",
+            "metadata", "needs_review", "review_reason", "created_at", "updated_at",
         )
         read_only_fields = fields
+
+    def _reconciliation(self, obj) -> dict:
+        return (obj.metadata or {}).get("reconciliation") or {}
+
+    def get_needs_review(self, obj) -> bool:
+        """Pagamento confirmado no gateway que nao pode ser emitido sozinho.
+
+        Acontece quando a confirmacao chega depois do checkout expirar: o lugar
+        pode ter sido revendido, logo a decisao entre reemitir e reembolsar e
+        de uma pessoa. Sinalizar aqui e o que faz o caso aparecer no portal.
+        """
+        return bool(self._reconciliation(obj).get("needs_manual_review"))
+
+    def get_review_reason(self, obj) -> str:
+        return str(self._reconciliation(obj).get("reason") or "")
 
     def get_wallet_uuid(self, obj):
         if not obj.wallet_id or not obj.wallet:

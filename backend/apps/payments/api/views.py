@@ -105,6 +105,13 @@ class PaymentIntentViewSet(BaseModelViewSet):
         date_to = self.request.query_params.get("date_to")
         if date_to:
             qs = qs.filter(created_at__date__lte=date_to)
+        # `?needs_review=1` — pagamentos que a reconciliacao confirmou no
+        # gateway mas nao pode transformar em bilhete sozinha (o checkout tinha
+        # expirado e o lugar pode estar revendido). Sem esta vista, o caso fica
+        # correctamente sinalizado na base de dados e invisivel para quem tem de
+        # decidir entre reemitir e reembolsar.
+        if self.request.query_params.get("needs_review") in ("1", "true", "True"):
+            qs = qs.filter(metadata__reconciliation__needs_manual_review=True)
         return qs
 
 

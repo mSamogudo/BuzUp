@@ -35,6 +35,10 @@ interface PI {
   provider_reference: string;
   confirmed_at: string | null;
   metadata: Record<string, unknown>;
+  // Pagamento confirmado no gateway que a reconciliação não pôde emitir
+  // sozinha (o checkout expirou e o lugar pode estar revendido).
+  needs_review: boolean;
+  review_reason: string;
   created_at: string;
   updated_at: string;
 }
@@ -89,6 +93,7 @@ export default function PaymentsPage() {
   const confirmed = filtered.filter((r) => r.status === "confirmed");
   const pending = filtered.filter((r) => r.status === "pending");
   const failed = filtered.filter((r) => r.status === "failed");
+  const needsReview = filtered.filter((r) => r.needs_review);
   const totalConfirmed = confirmed.reduce((s, r) => s + parseFloat(r.amount || "0"), 0);
 
   const clearFilters = () => {
@@ -113,6 +118,23 @@ export default function PaymentsPage() {
         <MetricCard label={t(lc, "pending")} value={String(pending.length)} />
         <MetricCard label="Falhados" value={String(failed.length)} />
       </div>
+
+      {needsReview.length > 0 && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 16, padding: "12px 14px", borderRadius: 12,
+            background: "#FFF7E6", border: "1px solid #F5E2B0", color: "#7A5A00",
+            fontSize: 13.5, lineHeight: 1.55,
+          }}
+        >
+          <strong>{needsReview.length} pagamento(s) a precisar de decisão.</strong>{" "}
+          O gateway confirmou que o passageiro pagou, mas a compra já tinha expirado
+          quando a confirmação chegou — o lugar pode ter sido vendido a outra pessoa.
+          Cada caso precisa de escolha entre emitir o bilhete (se houver lugar) ou
+          reembolsar. Lista abaixo, marcada com <em>Aguarda decisão</em>.
+        </div>
+      )}
 
       <SectionCard title={t(lc, "payments")}>
         {/* Filter bar */}
@@ -203,7 +225,22 @@ export default function PaymentsPage() {
               header: t(lc, "amount"), sortKey: "amount",
               render: (r: PI) => <span style={{ fontWeight: 800 }}>{formatCurrency(r.amount, r.currency)}</span>,
             },
-            { header: t(lc, "status"), sortKey: "status", render: (r: PI) => <StatusBadge value={r.status} /> },
+            {
+              header: t(lc, "status"), sortKey: "status",
+              render: (r: PI) => (
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <StatusBadge value={r.status} />
+                  {r.needs_review && (
+                    <span
+                      title={r.review_reason}
+                      style={{ fontSize: 10.5, fontWeight: 800, color: "#7A5A00", letterSpacing: 0.3 }}
+                    >
+                      AGUARDA DECISÃO
+                    </span>
+                  )}
+                </div>
+              ),
+            },
             {
               header: "Data", sortKey: "created_at",
               render: (r: PI) => <span style={{ fontSize: 12 }}>{formatDateTime(r.confirmed_at || r.created_at)}</span>,
@@ -241,6 +278,11 @@ export default function PaymentsPage() {
           { label: "Canal (campo bruto)", value: viewing.channel || "-" },
           { label: "Ref. Provedor", value: viewing.provider_reference || "-" },
           { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
+          ...(viewing.needs_review ? [{
+            label: "Aguarda decisão",
+            value: viewing.review_reason
+              || "Confirmado no gateway após a compra expirar — verificar se ainda há lugar.",
+          }] : []),
           { label: t(lc, "confirmed"), value: formatDateTime(viewing.confirmed_at) },
           { label: t(lc, "created"), value: formatDateTime(viewing.created_at) },
           { label: "Idempotency", value: viewing.idempotency_key },

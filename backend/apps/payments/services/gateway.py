@@ -42,12 +42,17 @@ class MockPaymentGateway:
             provider="MOCK",
         )
 
-    def query_payment(self, provider_reference: str) -> dict:
-        return {
-            "provider_reference": provider_reference,
-            "status": "confirmed",
-            "confirmed_at": timezone.now().isoformat(),
-        }
+    def query_payment(self, provider_reference: str) -> PaymentGatewayResult:
+        # Devolve `PaymentGatewayResult` como o gateway real. Antes devolvia um
+        # `dict` — assinaturas diferentes para o mesmo método garantiam que o
+        # primeiro chamador a existir ia rebentar num dos dois ambientes.
+        return PaymentGatewayResult(
+            success=True,
+            provider_reference=provider_reference,
+            detail_message="Pagamento confirmado (mock).",
+            provider="MOCK",
+            supports_query=True,
+        )
 
 
 def _payless_base_url() -> str:

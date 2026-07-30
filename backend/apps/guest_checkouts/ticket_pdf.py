@@ -62,22 +62,31 @@ def _draw_ticket_page(c: canvas.Canvas, travel_pass: DigitalTravelPass, token: s
     c.saveState()
     c.scale(TICKET_SCALE, TICKET_SCALE)
     ref = ticket_reference(travel_pass, sequence=sequence, total=total)
-    _draw_template(c)
+    _draw_template(c, nominal=_is_nominal(travel_pass))
     _draw_dynamic_fields(c, travel_pass, ref)
     _draw_qr(c, token, ref)
     c.restoreState()
 
 
-def _draw_template(c: canvas.Canvas) -> None:
-    template_path = _asset_path("ticket", "ticket_template_clean.jpg")
-    if not template_path.exists():
-        template_path = _asset_path("ticket", "ticket_template.jpg")
+def _is_nominal(tp: DigitalTravelPass) -> bool:
+    return bool(tp.passenger_name or tp.document_number or tp.seat_number)
 
-    if template_path.exists():
-        c.drawImage(ImageReader(str(template_path)), 0, 0, DESIGN_WIDTH, DESIGN_HEIGHT)
-        return
 
-    c.setFillColor(colors.HexColor("#061A3A"))
+def _draw_template(c: canvas.Canvas, *, nominal: bool) -> None:
+    # Variantes de fundo branco geradas a partir do JPG original (que tinha o
+    # cartao sobre um pano azul-escuro). A variante "nominal" tem a zona a
+    # direita do QR limpa para receber os dados do passageiro.
+    candidates = ["ticket_template_white.jpg", "ticket_template_clean.jpg", "ticket_template.jpg"]
+    if nominal:
+        candidates.insert(0, "ticket_template_white_nominal.jpg")
+
+    for name in candidates:
+        template_path = _asset_path("ticket", name)
+        if template_path.exists():
+            c.drawImage(ImageReader(str(template_path)), 0, 0, DESIGN_WIDTH, DESIGN_HEIGHT)
+            return
+
+    c.setFillColor(colors.white)
     c.rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT, fill=1, stroke=0)
 
 
@@ -106,7 +115,7 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
     _text_fit(c, 192, 762, tp.origin_stop or "-", max_width=255, max_size=45, min_size=28, color=NAVY)
     _right_text_fit(c, 856, 762, tp.destination_stop or "-", max_width=205, max_size=45, min_size=28, color=NAVY)
 
-    _text_fit(c, 282, 901, f"{_money(tp.fare_amount)} MZN", max_width=245, max_size=45, min_size=31, color=NAVY)
+    _text_fit(c, 282, 901, _fare_label(tp), max_width=245, max_size=45, min_size=31, color=NAVY)
     if tp.status == DigitalTravelPass.Status.ACTIVE:
         status_color = ORANGE
     elif tp.status == DigitalTravelPass.Status.USED:
@@ -131,31 +140,69 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
 
 
 def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
-    """Bloco nominal a esquerda do QR (area livre do template).
+    """Dados do passageiro DENTRO do cartao, ladeando o QR.
 
-    So aparece em bilhetes nominais — o urbano ao portador continua limpo.
+    Coluna esquerda (x 130..344): nome (ate 2 linhas) e documento.
+    Coluna direita (x 688..906): lugar — a zona onde o template nominal tem o
+    bloco "Apresente este QR code" apagado. So aparece em bilhetes nominais;
+    o urbano ao portador continua limpo e mantem o texto de ajuda.
     """
-    if not (tp.passenger_name or tp.document_number or tp.seat_number):
+    if not _is_nominal(tp):
         return
 
-    x = 78
-    y = 1080
-    label_size = 18
-    rows: list[tuple[str, str]] = []
+    left_x, left_width = 130, 214
+    y = 1102
     if tp.passenger_name:
-        rows.append(("PASSAGEIRO", tp.passenger_name))
+        y = _labeled_value(c, left_x, y, "PASSAGEIRO", tp.passenger_name, max_width=left_width, wrap=True)
     if tp.document_number:
         doc_label = dict(DigitalTravelPass.DocumentType.choices).get(tp.document_type, "DOCUMENTO")
-        rows.append((doc_label.upper(), tp.document_number))
-    if tp.seat_number:
-        rows.append(("LUGAR", tp.seat_number))
+        _labeled_value(c, left_x, y, doc_label.upper(), tp.document_number, max_width=left_width)
 
-    for label, value in rows:
-        c.setFillColor(ORANGE)
-        c.setFont("Helvetica-Bold", label_size)
-        c.drawString(x, _baseline(y, label_size), label)
-        _text_fit(c, x, y + 24, value, max_width=250, max_size=29, min_size=18, color=NAVY)
-        y += 70
+    if tp.seat_number:
+        _labeled_value(c, 688, 1102, "LUGAR", tp.seat_number, max_width=218, max_size=44)
+
+
+def _labeled_value(
+    c: canvas.Canvas,
+    x: float,
+    y_top: float,
+    label: str,
+    value: str,
+    *,
+    max_width: float,
+    max_size: int = 34,
+    min_size: int = 21,
+    wrap: bool = False,
+) -> float:
+    """Etiqueta laranja + valor navy; devolve o y_top da linha seguinte."""
+    label_size = _fit_size(c, label, "Helvetica-Bold", max_width, 20, 13)
+    c.setFillColor(ORANGE)
+    c.setFont("Helvetica-Bold", label_size)
+    c.drawString(x, _baseline(y_top, label_size), label)
+
+    y = y_top + label_size + 8
+    lines = [value]
+    if wrap and c.stringWidth(value, "Helvetica-Bold", min_size) > max_width:
+        lines = _split_two_lines(value)
+    size = min(
+        _fit_size(c, line, "Helvetica-Bold", max_width, max_size, min_size) for line in lines
+    )
+    for line in lines:
+        _text(c, x, y, line, size=size, font="Helvetica-Bold", color=NAVY)
+        y += size + 6
+    return y + 18
+
+
+def _split_two_lines(value: str) -> list[str]:
+    words = value.split()
+    if len(words) < 2:
+        return [value]
+    # Quebra no espaco que deixa as duas linhas mais equilibradas.
+    best = min(
+        range(1, len(words)),
+        key=lambda i: abs(len(" ".join(words[:i])) - len(" ".join(words[i:]))),
+    )
+    return [" ".join(words[:best]), " ".join(words[best:])]
 
 
 def _draw_qr(c: canvas.Canvas, data: str, ref: str) -> None:
@@ -262,6 +309,19 @@ def _route_label(tp: DigitalTravelPass) -> str:
 
 def _asset_path(folder: str, filename: str) -> Path:
     return Path(settings.BASE_DIR) / "static" / "assets" / folder / filename
+
+
+def _fare_label(tp: DigitalTravelPass) -> str:
+    """Preco na moeda escolhida na compra.
+
+    O MZN continua a ser a moeda canonica (fare_amount); display_currency e
+    display_fare_amount sao o retrato ZAR congelado no momento da compra,
+    quando existirem. Sem eles, mostra-se o valor em meticais.
+    """
+    currency = (tp.display_currency or "MZN").upper()
+    if currency != "MZN" and tp.display_fare_amount:
+        return f"{_money(tp.display_fare_amount)} {currency}"
+    return f"{_money(tp.fare_amount)} MZN"
 
 
 def _money(value: Decimal | None) -> str:

@@ -14,6 +14,7 @@ import '../../core/feedback.dart';
 import '../../core/idempotency.dart';
 import '../../core/nfc.dart';
 import '../../core/providers.dart';
+import '../../core/stop_picker.dart';
 import '../../core/theme.dart';
 
 class SaleFlowScreen extends ConsumerStatefulWidget {
@@ -51,10 +52,31 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   Timer? _pollTimer;
   List<dynamic> _tickets = [];
 
+  // Moeda de exibicao (rand nas rotas p/ Africa do Sul). So visual — a
+  // cobranca e sempre em MZN; a escolha fica registada no bilhete.
+  Map<String, double> _rates = const {};
+  String _currency = 'MZN';
+
   @override
   void initState() {
     super.initState();
     _loadTrips();
+    ref.read(agentApiProvider).exchangeRates().then((d) {
+      final parsed = <String, double>{};
+      (d['rates'] as Map?)?.forEach((k, v) {
+        final n = double.tryParse('$v');
+        if (n != null && n > 0) parsed['$k'] = n;
+      });
+      if (mounted) setState(() => _rates = parsed);
+    }).catchError((_) {});
+  }
+
+  double? get _rate => _currency == 'MZN' ? null : _rates[_currency];
+
+  String _inDisplay(num mzn) {
+    final r = _rate;
+    if (r == null) return '';
+    return '${(mzn / r).toStringAsFixed(2)} $_currency';
   }
 
   @override
@@ -158,12 +180,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         qrToken: _paymentMethod == 'card' ? _qrToken : null,
         quantity: _quantity,
         deviceSerial: serial,
+        displayCurrency: _currency,
         // A assinatura inclui tudo o que define a venda: se o agente voltar
         // atras e corrigir o destino ou a quantidade, a chave roda sozinha e a
         // venda seguinte nao e confundida com a anterior.
         idempotencyKey: _idem.keyFor(
           'sale:${_selectedTrip!['id']}:$_originId:$_destinationId:$_quantity'
-          ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}',
+          ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}:$_currency',
         ),
       );
       // O servidor respondeu: a venda seguinte e nova e leva chave nova.
@@ -343,23 +366,21 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _errorBanner(),
         Text(_selectedTrip != null ? '2. ${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}' : '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          decoration: const InputDecoration(labelText: 'Origem', prefixIcon: Icon(Icons.location_on)),
-          value: _originId,
-          items: _stops.where((s) => s['id'] != _destinationId).map((s) {
-            final st = s as Map<String, dynamic>;
-            return DropdownMenuItem(value: st['id'] as int, child: Text(st['name'] ?? ''));
-          }).toList(),
+        StopPickerField(
+          label: 'Origem',
+          icon: const Icon(Icons.location_on),
+          stops: _stops,
+          selectedId: _originId,
+          excludeId: _destinationId,
           onChanged: (v) => setState(() => _originId = v),
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<int>(
-          decoration: const InputDecoration(labelText: 'Destino', prefixIcon: Icon(Icons.location_on, color: Color(0xFF1D5FA7))),
-          value: _destinationId,
-          items: _stops.where((s) => s['id'] != _originId).map((s) {
-            final st = s as Map<String, dynamic>;
-            return DropdownMenuItem(value: st['id'] as int, child: Text(st['name'] ?? ''));
-          }).toList(),
+        StopPickerField(
+          label: 'Destino',
+          icon: const Icon(Icons.location_on, color: Color(0xFF1D5FA7)),
+          stops: _stops,
+          selectedId: _destinationId,
+          excludeId: _originId,
           onChanged: (v) => setState(() => _destinationId = v),
         ),
         const SizedBox(height: 24),
@@ -386,11 +407,35 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}'),
               Text('${_fare!['origin']} → ${_fare!['destination']}'),
+              if (_rates.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Row(children: [
+                  const Text('Mostrar em', style: TextStyle(fontSize: 12)),
+                  const SizedBox(width: 8),
+                  for (final c in ['MZN', ..._rates.keys.toList()..sort()])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(c, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+                        selected: _currency == c,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (_) => setState(() => _currency = c),
+                      ),
+                    ),
+                ]),
+              ],
               const Divider(),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('Preco unit.'),
                 Text('${_fare!['fare_amount']} MZN', style: const TextStyle(fontWeight: FontWeight.bold)),
               ]),
+              if (_rate != null)
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('Em $_currency (1 $_currency = ${_rate!.toStringAsFixed(2)} MZN)',
+                      style: const TextStyle(fontSize: 12)),
+                  Text(_inDisplay(_unitFare()),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ]),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('Quantidade'),
                 Row(children: [
@@ -406,6 +451,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
                 ),
               ]),
+              if (_rate != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '≈ ${_inDisplay(_unitFare() * _quantity)} · cobranca em MZN',
+                    style: const TextStyle(fontSize: 11.5),
+                  ),
+                ),
             ]),
           ),
         ),

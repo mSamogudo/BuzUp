@@ -236,6 +236,7 @@ class AgentApi {
     String? deviceSerial,
     bool autoRequestPayment = true,
     String? idempotencyKey,
+    String displayCurrency = 'MZN',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/sales/',
@@ -250,9 +251,17 @@ class AgentApi {
         'quantity': quantity,
         if (deviceSerial != null) 'device_serial': deviceSerial,
         'auto_request_payment': autoRequestPayment,
+        'display_currency': displayCurrency,
       },
       options: _idempotent(idempotencyKey),
     );
+    return res.data ?? const {};
+  }
+
+  /// Taxas de cambio de exibicao configuradas no portal (ex.: {"ZAR": "4.10"}).
+  /// A cobranca e sempre em MZN — isto so alimenta a visualizacao de precos.
+  Future<Map<String, dynamic>> exchangeRates() async {
+    final res = await _http.get<Map<String, dynamic>>('/api/public/exchange-rate/');
     return res.data ?? const {};
   }
 

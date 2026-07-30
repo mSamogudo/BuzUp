@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useBranding, pickLogo } from "../../lib/branding";
 import SeatMap, { type SeatRow } from "./SeatMap";
+import StopCombo from "./StopCombo";
 import "./booking.css";
 
 type Step = "search" | "trips" | "seats" | "pax" | "pay" | "done";
@@ -81,6 +82,11 @@ export default function BookingPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ checkout_reference: string; ticket_url: string; total_amount: string } | null>(null);
 
+  // Moeda de EXIBIÇÃO (rand nas rotas p/ África do Sul). A cobrança é sempre
+  // em meticais; a taxa vem do portal e o bilhete congela a moeda escolhida.
+  const [rates, setRates] = useState<Record<string, number>>({});
+  const [currency, setCurrency] = useState("MZN");
+
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   useEffect(() => {
@@ -89,7 +95,37 @@ export default function BookingPage() {
     getJson("/api/public/trips/?sellable=1")
       .then((d) => setStops(d.stops || []))
       .catch(() => setStops([]));
+    getJson("/api/public/exchange-rate/")
+      .then((d) => {
+        const parsed: Record<string, number> = {};
+        Object.entries(d.rates || {}).forEach(([k, v]) => {
+          const n = Number(v);
+          if (n > 0) parsed[k] = n;
+        });
+        setRates(parsed);
+      })
+      .catch(() => setRates({}));
   }, []);
+
+  const otherCurrencies = Object.keys(rates).sort();
+  const rate = currency !== "MZN" ? rates[currency] : undefined;
+  // Preço na moeda escolhida (só visual — o valor cobrado continua em MZN).
+  const inDisplay = (mzn: number) => (rate ? mzn / rate : mzn);
+  const priceLabel = (mzn: number) => (rate
+    ? `${money(inDisplay(mzn))} ${currency}`
+    : `${money(mzn)} MZN`);
+
+  const currencyToggle = otherCurrencies.length > 0 && (
+    <div className="bzbk-currency" role="group" aria-label="Moeda dos preços">
+      {["MZN", ...otherCurrencies].map((c) => (
+        <button key={c} type="button" aria-pressed={currency === c}
+          className={`bzbk-currency-btn${currency === c ? " is-on" : ""}`}
+          onClick={() => setCurrency(c)}>
+          {c}
+        </button>
+      ))}
+    </div>
+  );
 
   // Link partilhável: /comprar?origem=66&destino=70&data=2026-08-05&pax=2
   // (campanhas e CTAs da landing podem apontar directamente a um percurso).
@@ -200,6 +236,7 @@ export default function BookingPage() {
           trip_id: trip.trip_id,
           quantity: qty,
           passengers: pax,
+          display_currency: currency,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -253,21 +290,13 @@ export default function BookingPage() {
                 <div className="bzbk-grid">
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="o"><MapPin size={12} style={{ verticalAlign: -2 }} /> Origem</label>
-                    <select id="o" className="bzbk-select" value={origin} required
-                      onChange={(e) => setOrigin(e.target.value)}>
-                      <option value="">Seleccione a origem</option>
-                      {stops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
+                    <StopCombo id="o" onChange={setOrigin} placeholder="Escreva para procurar"
+                      stops={stops} value={origin} />
                   </div>
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="d"><MapPin size={12} style={{ verticalAlign: -2 }} /> Destino</label>
-                    <select id="d" className="bzbk-select" value={destination} required
-                      onChange={(e) => setDestination(e.target.value)}>
-                      <option value="">Seleccione o destino</option>
-                      {stops.filter((s) => String(s.id) !== origin).map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                    <StopCombo exclude={origin} id="d" onChange={setDestination}
+                      placeholder="Escreva para procurar" stops={stops} value={destination} />
                   </div>
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="dt"><Calendar size={12} style={{ verticalAlign: -2 }} /> Data da viagem</label>
@@ -295,7 +324,10 @@ export default function BookingPage() {
 
             {step === "trips" && (
               <div>
-                <h2 className="bzbk-h2">Partidas disponíveis</h2>
+                <div className="bzbk-h2-row">
+                  <h2 className="bzbk-h2">Partidas disponíveis</h2>
+                  {currencyToggle}
+                </div>
                 <p className="bzbk-lead">{date && longDate(date)} · {qty} {qty === 1 ? "bilhete" : "bilhetes"}</p>
                 {trips.length === 0 && (
                   <div className="bzbk-notice warn">
@@ -324,7 +356,10 @@ export default function BookingPage() {
                                   : <span className="bzbk-seats-left">{left} lugares livres</span>}
                         </span>
                       </span>
-                      <span className="bzbk-trip-price">{money(t.fare_amount)} MZN<small>por pessoa</small></span>
+                      <span className="bzbk-trip-price">
+                        {priceLabel(Number(t.fare_amount || 0))}
+                        <small>{rate ? `${money(t.fare_amount)} MZN · por pessoa` : "por pessoa"}</small>
+                      </span>
                     </button>
                   );
                 })}
@@ -406,7 +441,10 @@ export default function BookingPage() {
 
             {step === "pay" && trip && (
               <form onSubmit={pay}>
-                <h2 className="bzbk-h2">Pagamento</h2>
+                <div className="bzbk-h2-row">
+                  <h2 className="bzbk-h2">Pagamento</h2>
+                  {currencyToggle}
+                </div>
                 <p className="bzbk-lead">Confirme os dados e pague com a sua carteira móvel.</p>
 
                 <div className="bzbk-summary">
@@ -416,9 +454,24 @@ export default function BookingPage() {
                     <span>Passageiros</span>
                     <b>{pax.map((p) => p.name + (p.seat ? ` (${p.seat})` : "")).join(", ")}</b>
                   </div>
-                  <div className="bzbk-sum-row"><span>{qty} × {money(unit)} MZN</span><b>{money(total)} MZN</b></div>
+                  <div className="bzbk-sum-row">
+                    <span>{qty} × {rate ? priceLabel(unit) : `${money(unit)} MZN`}</span>
+                    <b>{rate ? priceLabel(total) : `${money(total)} MZN`}</b>
+                  </div>
                   <div className="bzbk-sum-total"><span>TOTAL A PAGAR</span><b>{money(total)} MZN</b></div>
+                  {rate && (
+                    <div className="bzbk-sum-row bzbk-sum-fx">
+                      <span>Equivalente em {currency}</span>
+                      <b>{money(inDisplay(total))} {currency} · 1 {currency} = {money(rate)} MZN</b>
+                    </div>
+                  )}
                 </div>
+                {rate && (
+                  <p className="bzbk-hint" style={{ display: "block", marginTop: -8, marginBottom: 14 }}>
+                    O débito na carteira móvel é sempre em meticais; o valor em {currency} é indicativo
+                    e fica registado no bilhete à taxa de hoje.
+                  </p>
+                )}
 
                 <div className="bzbk-methods">
                   {(["mpesa", "emola"] as const).map((m) => (

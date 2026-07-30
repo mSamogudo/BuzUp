@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 
 import '../../core/api_client.dart';
+import '../../core/app_version.dart';
 import '../../core/branding.dart';
 import '../../core/config.dart';
 import '../../core/providers.dart';

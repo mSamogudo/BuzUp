@@ -231,3 +231,21 @@ def _validate_route_stops(route: Route, origin_stop: Stop | None, destination_st
         resolve_route_segment(route, origin_stop.pk, destination_stop.pk)
     except RouteSegmentError as e:
         raise NoFareFoundError(str(e)) from e
+
+
+def display_snapshot(amount_mzn: Decimal, currency: str) -> tuple[str, Decimal | None, Decimal | None]:
+    """(moeda, valor_exibido, taxa) congelados no acto da venda.
+
+    Devolve ("MZN", None, None) quando a moeda pedida e MZN ou nao tem taxa
+    configurada — nesse caso a venda fica registada so em meticais.
+    """
+    from apps.fares.models import ExchangeRate
+
+    code = (currency or "MZN").strip().upper()
+    if code == "MZN":
+        return "MZN", None, None
+    converted = ExchangeRate.convert_from_mzn(amount_mzn, code)
+    if converted is None:
+        return "MZN", None, None
+    amount, rate = converted
+    return code, amount, rate

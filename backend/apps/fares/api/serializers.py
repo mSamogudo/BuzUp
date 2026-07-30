@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.fares.models import AdminFee, FareProduct, FareRule
+from apps.fares.models import AdminFee, ExchangeRate, FareProduct, FareRule
 from apps.fares.services import find_conflicts
 
 
@@ -157,3 +157,17 @@ class FareQuoteRequestSerializer(serializers.Serializer):
         choices=FareRule.PassengerClass.choices,
         default=FareRule.PassengerClass.STANDARD,
     )
+
+
+class ExchangeRateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExchangeRate
+        fields = ("id", "uuid", "currency", "rate_to_mzn", "is_active", "notes",
+                  "created_at", "updated_at")
+        read_only_fields = ("uuid", "created_at", "updated_at")
+
+    def validate_currency(self, value):
+        code = (value or "").strip().upper()
+        if len(code) != 3 or code == "MZN":
+            raise serializers.ValidationError("Indique um codigo ISO valido (ex.: ZAR), diferente de MZN.")
+        return code

@@ -6,11 +6,12 @@ from rest_framework.views import APIView
 from apps.core.viewsets import BaseModelViewSet
 from apps.fares.api.serializers import (
     AdminFeeSerializer,
+    ExchangeRateSerializer,
     FareProductSerializer,
     FareQuoteRequestSerializer,
     FareRuleSerializer,
 )
-from apps.fares.models import AdminFee, FareProduct, FareRule
+from apps.fares.models import AdminFee, ExchangeRate, FareProduct, FareRule
 
 
 class AdminFeeViewSet(BaseModelViewSet):
@@ -116,4 +117,34 @@ class FareQuoteView(APIView):
             "route_code": route.code,
             "origin": origin.name if origin else None,
             "destination": destination.name if destination else None,
+        })
+
+
+class ExchangeRateViewSet(BaseModelViewSet):
+    """Taxas de cambio de exibicao (ex.: ZAR->MZN), geridas no portal."""
+
+    queryset = ExchangeRate.all_objects.all()
+    serializer_class = ExchangeRateSerializer
+    required_capabilities_by_action = {
+        "list": ("fares.read",),
+        "retrieve": ("fares.read",),
+        "create": ("fares.manage",),
+        "update": ("fares.manage",),
+        "partial_update": ("fares.manage",),
+        "destroy": ("fares.manage",),
+    }
+
+
+class PublicExchangeRateView(APIView):
+    """Taxa activa para o frontend converter precos de exibicao (sem auth —
+    e usada no checkout publico antes de qualquer login)."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        rows = ExchangeRate.objects.filter(is_active=True)
+        return Response({
+            "base": "MZN",
+            "rates": {r.currency: str(r.rate_to_mzn) for r in rows},
         })

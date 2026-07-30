@@ -143,3 +143,47 @@ class FareRule(BaseModel):
         if self.origin_stop and self.destination_stop:
             label += f" | {self.origin_stop.code}->{self.destination_stop.code}"
         return f"{label} = {self.fixed_amount}"
+
+
+class ExchangeRate(BaseModel):
+    """Taxa de cambio de EXIBICAO configurada no portal (ex.: ZAR -> MZN).
+
+    O rand e apenas visualizacao para o passageiro (rotas para a Africa do
+    Sul): a cobranca e sempre em MZN. A taxa activa converte precos para
+    mostrar, e cada bilhete guarda a taxa usada no acto da compra para o
+    valor exibido nunca mudar depois de emitido.
+    """
+
+    currency = models.CharField(max_length=3, db_index=True)  # ex.: ZAR
+    # Quantos MZN vale 1 unidade da moeda. Ex.: 1 ZAR = 4.10 MZN -> rate=4.10
+    rate_to_mzn = models.DecimalField(
+        max_digits=12, decimal_places=4,
+        validators=[MinValueValidator(Decimal("0.0001"))],
+    )
+    is_active = models.BooleanField(default=True)
+    notes = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ("currency", "-updated_at")
+        constraints = [
+            active_unique_constraint("currency", name="uq_exchange_rate_currency_active"),
+        ]
+
+    def __str__(self):
+        return f"1 {self.currency} = {self.rate_to_mzn} MZN"
+
+    @classmethod
+    def current(cls, currency: str) -> "ExchangeRate | None":
+        code = (currency or "").strip().upper()
+        if not code or code == "MZN":
+            return None
+        return cls.objects.filter(currency=code, is_active=True).first()
+
+    @classmethod
+    def convert_from_mzn(cls, amount_mzn: Decimal, currency: str) -> tuple[Decimal, Decimal] | None:
+        """(valor_convertido, taxa) para exibicao, ou None se nao configurada."""
+        row = cls.current(currency)
+        if not row:
+            return None
+        converted = (Decimal(amount_mzn) / row.rate_to_mzn).quantize(Decimal("0.01"))
+        return converted, row.rate_to_mzn

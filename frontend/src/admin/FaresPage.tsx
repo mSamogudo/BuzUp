@@ -13,6 +13,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 interface FareProduct { id: number; uuid: string; name: string; product_type: string; status: string; }
 interface FareRule { id: number; uuid: string; fare_product_id: number; fare_product_name: string; route_id: number | null; route_code: string; origin_stop_name: string; destination_stop_name: string; calculation_method: string; fixed_amount: string; amount_per_km: string; min_amount: string; max_amount: string; distance_min_km: string | null; distance_max_km: string | null; passenger_class: string; priority: number; origin_stop_id: number | null; destination_stop_id: number | null; }
 interface AdminFee { id: number; uuid: string; code: string; name: string; kind: string; amount: string; currency: string; description: string; is_active: boolean; created_at: string; }
+interface ExchangeRate { id: number; uuid: string; currency: string; rate_to_mzn: string; is_active: boolean; notes: string; updated_at: string; }
 interface RouteOption { id: number; code: string; name: string; }
 interface StopOption { id: number; code: string; name: string; }
 interface RouteStopOption { stop_id: number; stop_code: string; stop_name: string; sequence: number; direction: string; }
@@ -25,15 +26,20 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   const rLoader = useCallback(() => apiFetch("/api/fare-rules/", token!).then((d) => d.results || d), [token]);
   const routeLoader = useCallback(() => apiFetch("/api/routes/", token!).then((d) => d.results || d), [token]);
   const feesLoader = useCallback(() => apiFetch("/api/admin-fees/", token!).then((d) => d.results || d), [token]);
+  const fxLoader = useCallback(() => apiFetch("/api/exchange-rates/", token!).then((d) => d.results || d), [token]);
   const { data: products, loading: lP, reload: rP } = useAsyncData<FareProduct[]>(pLoader, [token]);
   const { data: rules, loading: lR, reload: rR } = useAsyncData<FareRule[]>(rLoader, [token]);
   const { data: routeOpts } = useAsyncData<RouteOption[]>(routeLoader, [token]);
   const { data: fees, loading: lF, reload: rF } = useAsyncData<AdminFee[]>(feesLoader, [token]);
-  const reload = () => { rP(); rR(); rF(); };
-  const [tab, setTab] = useState<"rules" | "products" | "fees">("rules");
+  const { data: fxRates, loading: lX, reload: rX } = useAsyncData<ExchangeRate[]>(fxLoader, [token]);
+  const reload = () => { rP(); rR(); rF(); rX(); };
+  const [tab, setTab] = useState<"rules" | "products" | "fees" | "fx">("rules");
   const [feeModal, setFeeModal] = useState(false);
   const [editFee, setEditFee] = useState<number | null>(null);
   const [feeForm, setFeeForm] = useState({ code: "", name: "", kind: "card_issuance", amount: "0.00", currency: "MZN", description: "", is_active: true });
+  const [fxModal, setFxModal] = useState(false);
+  const [editFx, setEditFx] = useState<number | null>(null);
+  const [fxForm, setFxForm] = useState({ currency: "ZAR", rate_to_mzn: "", is_active: true, notes: "" });
 
   const [ruleModal, setRuleModal] = useState(false);
   const [prodModal, setProdModal] = useState(false);
@@ -123,7 +129,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         { key: "rules", label: t(lc, "fareRules"), count: (rules || []).length },
         { key: "products", label: t(lc, "fareProducts"), count: (products || []).length },
         { key: "fees", label: "Taxas administrativas", count: (fees || []).length },
-      ]} value={tab} onChange={(k) => setTab(k as "rules" | "products" | "fees")} />
+        { key: "fx", label: "Câmbio", count: (fxRates || []).length },
+      ]} value={tab} onChange={(k) => setTab(k as "rules" | "products" | "fees" | "fx")} />
 
       {tab === "rules" && (
         <SectionCard title={t(lc, "fareRules")}>
@@ -194,6 +201,93 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
           ]} rows={fees || []} rowKey={(r) => r.uuid} loading={lF} emptyMessage="Sem taxas configuradas." />
         </SectionCard>
       )}
+
+      {tab === "fx" && (
+        <SectionCard
+          title="Taxa de câmbio"
+          description="Preços mostrados noutra moeda (ex.: rand nas rotas para a África do Sul). A cobrança é sempre em meticais — isto só afecta a visualização, e cada bilhete congela a taxa em vigor no acto da compra."
+        >
+          <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
+            <button className="primary-button" type="button" onClick={() => {
+              setEditFx(null);
+              setFxForm({ currency: "ZAR", rate_to_mzn: "", is_active: true, notes: "" });
+              setFxModal(true);
+            }}><Plus size={15} /> Nova taxa de câmbio</button>
+          </div>
+          <DataTable columns={[
+            { header: "Moeda", render: (r: ExchangeRate) => <TablePrimaryCell title={r.currency} subtitle={r.notes || ""} /> },
+            { header: "Taxa", render: (r: ExchangeRate) => `1 ${r.currency} = ${formatCurrency(r.rate_to_mzn)} MZN` },
+            { header: "Estado", render: (r: ExchangeRate) => <StatusBadge value={r.is_active ? "active" : "inactive"} /> },
+            { header: "Actualizada", render: (r: ExchangeRate) => new Date(r.updated_at).toLocaleString("pt-PT") },
+            { header: t(lc, "actions"), className: "table-actions-cell", render: (r: ExchangeRate) => (
+              <div className="admin-inline-actions">
+                <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => {
+                  setEditFx(r.id);
+                  setFxForm({ currency: r.currency, rate_to_mzn: r.rate_to_mzn, is_active: r.is_active, notes: r.notes || "" });
+                  setFxModal(true);
+                }} />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => {
+                  const ok = await confirm({ title: t(lc, "delete"), message: `Eliminar a taxa de câmbio ${r.currency}? Os preços passam a aparecer só em meticais.`, tone: "danger" });
+                  if (!ok) return;
+                  try { await apiDelete(`/api/exchange-rates/${r.id}/`, token!); reload(); }
+                  catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+                }} tone="danger" />
+              </div>
+            )},
+          ]} rows={fxRates || []} rowKey={(r) => r.uuid} loading={lX} emptyMessage="Sem taxas de câmbio — os preços aparecem só em meticais." />
+        </SectionCard>
+      )}
+
+      <AdminModal open={fxModal} onClose={() => setFxModal(false)} title={editFx ? "Editar taxa de câmbio" : "Nova taxa de câmbio"}>
+        <form className="admin-form" onSubmit={async (e: FormEvent) => {
+          e.preventDefault();
+          setBusy(true);
+          try {
+            const payload = {
+              currency: fxForm.currency.trim().toUpperCase(),
+              rate_to_mzn: fxForm.rate_to_mzn,
+              is_active: fxForm.is_active,
+              notes: fxForm.notes,
+            };
+            if (editFx) await apiPatch(`/api/exchange-rates/${editFx}/`, token!, payload);
+            else await apiPost(`/api/exchange-rates/`, token!, payload);
+            setFxModal(false); reload();
+            showToast("success", editFx ? "Taxa de câmbio actualizada." : "Taxa de câmbio criada.");
+          } catch (err) {
+            showToast("danger", err instanceof Error ? err.message : "Erro");
+          } finally { setBusy(false); }
+        }}>
+          <div className="admin-form-grid">
+            <label className="field"><span>Moeda (ISO)</span>
+              <input required value={fxForm.currency} maxLength={3} placeholder="ZAR"
+                     onChange={(e) => setFxForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
+            </label>
+            <label className="field"><span>Quantos MZN vale 1 {fxForm.currency || "ZAR"}</span>
+              <input required type="number" min="0.0001" step="0.0001" value={fxForm.rate_to_mzn} placeholder="ex: 4.1000"
+                     onChange={(e) => setFxForm((f) => ({ ...f, rate_to_mzn: e.target.value }))} />
+            </label>
+            <label className="field"><span>Estado</span>
+              <select value={fxForm.is_active ? "1" : "0"} onChange={(e) => setFxForm((f) => ({ ...f, is_active: e.target.value === "1" }))}>
+                <option value="1">Activa</option>
+                <option value="0">Inactiva</option>
+              </select>
+            </label>
+            <label className="field" style={{ gridColumn: "1 / -1" }}>
+              <span>Notas</span>
+              <input value={fxForm.notes} placeholder="ex: taxa de balcão + margem" onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
+            </label>
+          </div>
+          {fxForm.rate_to_mzn && Number(fxForm.rate_to_mzn) > 0 && (
+            <p className="dash-kpi-note" style={{ marginTop: 8 }}>
+              Exemplo: um bilhete de 1.000,00 MZN aparece como {(1000 / Number(fxForm.rate_to_mzn)).toFixed(2)} {fxForm.currency || "ZAR"}.
+            </p>
+          )}
+          <div className="admin-form-actions">
+            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editFx ? t(lc, "update") : t(lc, "create")}</button>
+            <button className="secondary-button" onClick={() => setFxModal(false)} type="button">{t(lc, "cancel")}</button>
+          </div>
+        </form>
+      </AdminModal>
 
       <DetailDrawer open={!!viewR} onClose={() => setViewR(null)} title="Regra de Tarifa" fields={viewR ? [
         { label: t(lc, "fareProducts"), value: viewR.fare_product_name },

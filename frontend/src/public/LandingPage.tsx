@@ -10,7 +10,7 @@ import EcosystemSection from "./landing/EcosystemSection";
 import { useLandingPrefs, type Lang } from "./landing/useLandingPrefs";
 import { copyFor } from "./landing/landing-copy";
 import {
-  ADDRESS, AUDIENCE_ICONS, BENEFIT_ICONS, MODULE_ICONS, SALES_EMAIL,
+  ADDRESS, AUDIENCE_ICONS, BENEFIT_ICONS, SALES_EMAIL,
   SALES_PHONE, SALES_PHONE_HREF, TOOL_ICONS,
 } from "./landing/landing-content";
 import "./landing/landing.css";
@@ -224,9 +224,7 @@ export default function LandingPage() {
 
             {[
               { media: <ProductImg src="/landing/compra.webp" alt="" width={1400} height={900} />, flip: false },
-              { media: <ProductImg src="/landing/bilhete.webp" alt="" width={1400} height={900} />, flip: true },
-              { media: <img src="/landing/bordo-anim.webp" alt="" width={760} height={900} loading="lazy" decoding="async" />, flip: false },
-              { media: <img src="/landing/mapa-anim.webp" alt="" width={760} height={900} loading="lazy" decoding="async" />, flip: true },
+              { media: <img src="/landing/bordo-anim.webp" alt="" width={760} height={900} loading="lazy" decoding="async" />, flip: true },
             ].map((row, i) => {
               const s = t.how.steps[i];
               return (
@@ -250,32 +248,6 @@ export default function LandingPage() {
                 </Reveal>
               );
             })}
-          </div>
-        </section>
-
-        {/* FUNCIONALIDADES */}
-        <section className="bzlp-sec">
-          <div className="bzlp-wrap">
-            <Reveal>
-              <div className="bzlp-sechead">
-                <div className="bzlp-kicker">{t.modules.kicker}</div>
-                <h2 className="bzlp-h2">{t.modules.h2}</h2>
-              </div>
-            </Reveal>
-            <Reveal>
-              <div className="bzlp-matrix">
-                {t.modules.items.map((m, i) => {
-                  const Icon = MODULE_ICONS[i];
-                  return (
-                    <div className="bzlp-cell" key={m.title}>
-                      <div className="bzlp-cell-ico"><Icon size={19} aria-hidden /></div>
-                      <h3>{m.title}</h3>
-                      <p>{m.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </Reveal>
           </div>
         </section>
 

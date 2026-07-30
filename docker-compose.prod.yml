@@ -50,7 +50,7 @@ services:
     # Shared 2GB host (co-tenant with 3 other prod stacks): 1 worker + 2 threads
     # keeps RSS low while still handling concurrent requests. --max-requests
     # recycles the worker to cap memory creep. Bump workers after a RAM upgrade.
-    mem_limit: 384m
+    mem_limit: 768m
     command:
       [
         "gunicorn",
@@ -58,9 +58,9 @@ services:
         "--bind",
         "0.0.0.0:8000",
         "--workers",
-        "1",
+        "3",
         "--threads",
-        "2",
+        "4",
         "--max-requests",
         "800",
         "--max-requests-jitter",

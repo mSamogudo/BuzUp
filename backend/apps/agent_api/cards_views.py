@@ -33,6 +33,21 @@ def _mask_phone(phone: str) -> str:
     return f"***{p[-4:]}"
 
 
+def _mask_document(number: str) -> str:
+    """Ultimos 4 caracteres do documento.
+
+    O agente precisa de confirmar a identidade comparando com o documento
+    fisico que o passageiro apresenta — para isso os ultimos digitos bastam.
+    Devolver o numero completo entregava o BI de qualquer passageiro a qualquer
+    agente que passasse um cartao pelo leitor, e era incoerente com o telefone,
+    que ja ia mascarado no mesmo payload.
+    """
+    value = "".join(str(number or "").split())
+    if len(value) <= 4:
+        return value
+    return f"***{value[-4:]}"
+
+
 def _resolve_card(card_uid: str = "", qr_token: str = "") -> Card | None:
     """Find a card by NFC UID or by digital QR token (hashed lookup).
 
@@ -93,7 +108,7 @@ def _serialize_card(card: Card) -> dict:
             "phone_masked": _mask_phone(pa.phone_number),
             "email": pa.email or "",
             "document_type": pa.document_type or "",
-            "document_number": pa.document_number or "",
+            "document_number_masked": _mask_document(pa.document_number),
             "status": pa.status,
             "registered_at": pa.created_at.isoformat() if pa.created_at else None,
         }

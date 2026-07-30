@@ -11,6 +11,7 @@ from apps.routes.api.serializers import (
     StopDetailSerializer,
     StopSerializer,
 )
+from apps.routes.services import invalidate_route_segments
 from apps.routes.models import Route, RouteStop, Stop
 
 
@@ -79,6 +80,10 @@ class RouteViewSet(BaseModelViewSet):
 
         qs = route.route_stops.select_related("stop").order_by("direction", "sequence")
         from apps.routes.api.serializers import RouteStopSerializer
+        # As tarifas por distancia e a resolucao de segmentos leem estas
+        # paragens e ficam em cache; sem esta linha, uma alteracao no mapa da
+        # rota so surtia efeito minutos depois.
+        invalidate_route_segments(route.id)
         return Response(RouteStopSerializer(qs, many=True).data)
 
 

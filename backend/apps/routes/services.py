@@ -18,7 +18,74 @@ class RouteSegment:
     distance_km: str
 
 
+# Segmentos sao praticamente estaticos: as paragens de uma rota mudam quando um
+# administrador as edita, o que e raro. Sem cache, esta funcao corria TRES vezes
+# por validacao (uma directa, uma dentro de `quote_fare` e outra em
+# `_safe_distance_km`), a 2 queries cada — 6 queries desperdicadas no caminho
+# mais quente do sistema, o do embarque. O TTL e curto e ha invalidacao
+# explicita quando as paragens sao alteradas (ver `invalidate_route_segments`).
+_SEGMENT_CACHE_TTL = 300
+
+
+def _segment_cache_key(route_id: int, origin_id: int, destination_id: int) -> str:
+    return f"routeseg:{route_id}:{origin_id}:{destination_id}"
+
+
+def invalidate_route_segments(route_id: int) -> None:
+    """Esquece os segmentos em cache de uma rota.
+
+    Chamar sempre que as paragens da rota mudam, senao as tarifas por distancia
+    podem usar sequencias antigas durante o TTL.
+    """
+    from django.core.cache import cache
+
+    # Sem enumerar pares: uma marca de versao por rota invalida tudo de uma vez.
+    try:
+        cache.incr(f"routeseg:ver:{route_id}")
+    except ValueError:
+        cache.set(f"routeseg:ver:{route_id}", 1, None)
+
+
+def _route_version(route_id: int) -> int:
+    from django.core.cache import cache
+
+    return cache.get(f"routeseg:ver:{route_id}") or 0
+
+
 def resolve_route_segment(route: Route, origin_stop_id: int | str | None, destination_stop_id: int | str | None) -> RouteSegment | None:
+    """Wrapper com cache. A resolucao propria esta em `_resolve_route_segment`."""
+    from django.core.cache import cache
+
+    if not origin_stop_id or not destination_stop_id:
+        return _resolve_route_segment(route, origin_stop_id, destination_stop_id)
+
+    try:
+        key = (
+            f"{_segment_cache_key(route.id, int(origin_stop_id), int(destination_stop_id))}"
+            f":v{_route_version(route.id)}"
+        )
+    except (TypeError, ValueError):
+        # Input invalido: deixa a validacao normal levantar o erro legivel.
+        return _resolve_route_segment(route, origin_stop_id, destination_stop_id)
+
+    cached = cache.get(key)
+    if cached is not None:
+        # `False` guarda o facto de "este par nao forma segmento nesta rota",
+        # que tambem custa 2 queries a descobrir.
+        if cached is False:
+            raise RouteSegmentError("Origem ou destino nao pertence a rota seleccionada.")
+        return cached or None
+
+    try:
+        segment = _resolve_route_segment(route, origin_stop_id, destination_stop_id)
+    except RouteSegmentError:
+        cache.set(key, False, _SEGMENT_CACHE_TTL)
+        raise
+    cache.set(key, segment or "", _SEGMENT_CACHE_TTL)
+    return segment
+
+
+def _resolve_route_segment(route: Route, origin_stop_id: int | str | None, destination_stop_id: int | str | None) -> RouteSegment | None:
     if not origin_stop_id and not destination_stop_id:
         return None
     if not origin_stop_id or not destination_stop_id:
@@ -68,7 +135,14 @@ def route_segments_for_stop_pair(
     destination_stop_id: int | str,
     route_id: int | str | None = None,
 ) -> dict[int, RouteSegment]:
-    if int(origin_stop_id) == int(destination_stop_id):
+    # Os ids chegam de query-params do site publico (`?origin=abc`): `int()` cru
+    # levantava ValueError e devolvia 500 em vez de "pedido invalido".
+    try:
+        origin_id = int(origin_stop_id)
+        destination_id = int(destination_stop_id)
+    except (TypeError, ValueError):
+        raise RouteSegmentError("Origem e destino invalidos.") from None
+    if origin_id == destination_id:
         raise RouteSegmentError("Destino deve ser diferente da origem.")
 
     routes = Route.objects.filter(status=Route.Status.ACTIVE)
@@ -76,9 +150,9 @@ def route_segments_for_stop_pair(
         routes = routes.filter(pk=route_id)
 
     routes = routes.filter(
-        route_stops__stop_id=origin_stop_id,
+        route_stops__stop_id=origin_id,
     ).filter(
-        route_stops__stop_id=destination_stop_id,
+        route_stops__stop_id=destination_id,
     ).distinct()
 
     result: dict[int, RouteSegment] = {}

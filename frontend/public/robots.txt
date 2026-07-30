@@ -1,9 +1,17 @@
+# BusUp — o que os motores de busca podem indexar.
 User-agent: *
 Allow: /$
+Allow: /comprar
 Allow: /baixar
+
+# Áreas privadas e fluxos autenticados: nada para indexar.
 Disallow: /app
 Disallow: /portal
 Disallow: /driver
 Disallow: /login
 Disallow: /checkout
 Disallow: /profile
+Disallow: /bus/
+Disallow: /api/
+
+Sitemap: https://buzup.updigital.co.mz/sitemap.xml

@@ -51,3 +51,19 @@ Future<DeviceFingerprint> readDeviceFingerprint() async {
     deviceType: deviceType,
   );
 }
+
+/// `true` num terminal POS dedicado (SUNMI/Urovo), `false` em telemovel comum.
+///
+/// Governa o modo de ecra cheio: no terminal esconder as barras do sistema
+/// aproveita o ecra pequeno; num telemovel tira ao agente o relogio, a bateria
+/// e o botao de voltar sem nada em troca.
+Future<bool> isDedicatedPosTerminal() async {
+  if (!Platform.isAndroid) return false;
+  try {
+    final android = await DeviceInfoPlugin().androidInfo;
+    final make = android.manufacturer.toLowerCase();
+    return make.contains('sunmi') || make.contains('urovo');
+  } catch (_) {
+    return false;  // na duvida, respeitar as barras do sistema
+  }
+}

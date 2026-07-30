@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/app_version.dart';
 import 'core/api_client.dart';
 import 'core/branding.dart';
 import 'core/device_gate.dart';
@@ -14,6 +15,7 @@ import 'features/cards/card_capture_screen.dart';
 import 'features/cards/card_lookup_screen.dart';
 import 'features/day_close/day_close_screen.dart';
 import 'features/history/history_screen.dart';
+import 'features/profile/profile_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/onboarding/activation_code_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -36,6 +38,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/sale', builder: (_, __) => const DeviceGate(child: SaleFlowScreen())),
       GoRoute(path: '/verify', builder: (_, __) => const DeviceGate(child: VerifyScreen())),
       GoRoute(path: '/history', builder: (_, __) => const DeviceGate(child: HistoryScreen())),
+      GoRoute(path: '/profile', builder: (_, __) => const DeviceGate(child: ProfileScreen())),
       GoRoute(path: '/day-close', builder: (_, __) => const DeviceGate(child: DayCloseScreen())),
       GoRoute(path: '/driver/trips', builder: (_, __) => const DeviceGate(child: DriverTripsScreen())),
       GoRoute(path: '/cards', builder: (_, __) => const DeviceGate(child: CardLookupScreen())),
@@ -81,7 +84,7 @@ class _SplashScreenState extends ConsumerState<_SplashScreen> {
         modelName: fp.modelName,
         manufacturer: fp.manufacturer,
         androidId: fp.androidId,
-        appVersion: '1.0.0',
+        appVersion: AppVersion.version,
         capabilities: const ['qr_scanner', 'camera'],
       );
       serial = res['serial_number'] as String?;

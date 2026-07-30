@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_version.dart';
 import '../../core/app_update.dart';
 import '../../core/config.dart';
 import '../../core/feedback.dart';
@@ -68,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             // Alimenta a seta/velocidade do autocarro no mapa dos passageiros.
             speedKmh: (pos != null && pos.speed >= 0) ? pos.speed * 3.6 : null,
             heading: (pos != null && pos.heading >= 0) ? pos.heading : null,
-            appVersion: '1.0.0',
+            appVersion: AppVersion.version,
           );
       // O GPS pode ter sido desligado depois do arranque; mantem o aviso fiel.
       if (mounted && pos == null && _location == LocationReadiness.ok) {
@@ -179,7 +180,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             error: (e, _) => Center(child: Text('Erro: $e')),
             data: (me) {
               final agent = (me['agent'] as Map?) ?? {};
-              return CustomScrollView(
+              return RefreshIndicator(
+                // Arrastar para actualizar tem de refazer o perfil E os KPIs.
+                // Antes nao existia aqui: o nome e a receita do dia ficavam
+                // presos ao primeiro carregamento e a unica saida era sair da
+                // app. `ref.refresh(...).future` espera mesmo pelos dados —
+                // `invalidate` devolvia logo e o indicador desaparecia antes.
+                onRefresh: () async {
+                  await Future.wait([
+                    ref.refresh(agentMeProvider.future),
+                    _loadSummary(),
+                  ]);
+                },
+                child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   // Top bar (custom, enterprise look)
@@ -205,10 +218,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                           IconButton(
                             iconSize: 22,
-                            icon: Icon(Icons.logout, color: txtMuted),
+                            tooltip: 'Perfil',
+                            icon: Icon(Icons.account_circle_outlined, color: txtMuted),
                             onPressed: () async {
                               await AppFeedback.click();
-                              if (await _confirmLogout(context)) await _logout();
+                              if (context.mounted) await context.push('/profile');
                             },
                           ),
                         ]),
@@ -260,14 +274,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
-                  // Secondary actions grid
+                  // Secondary actions grid — 3 colunas e cartoes mais baixos.
+                  // Com 2 colunas a 1.6, as 7 accoes ocupavam 4 linhas e a
+                  // ultima ficava fora do ecra num terminal de 5"; assim
+                  // cabem em 3 linhas sem rolagem.
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                     sliver: SliverGrid.count(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 1.6,
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 1.02,
                       children: [
                         FadeIn(delay: const Duration(milliseconds: 200), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.nfc, 'TOP UP', () async { AppFeedback.click(); await context.push('/cards'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 210), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.person_add_alt, 'Novo passageiro', () async { AppFeedback.click(); await context.push('/passengers/onboard'); _loadSummary(); })),
@@ -281,6 +298,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ],
+                ),
               );
             },
           ),
@@ -459,24 +477,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: border),
           ),
+          // Centrado e em coluna: em 3 colunas o cartao fica quadrado, e
+          // alinhar o icone acima do texto le-se melhor do que espalha-los
+          // pelos cantos.
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: txtMain.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, size: 18, color: txtMain),
               ),
-              Text(label, style: TextStyle(color: txtMain, fontSize: 13, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: txtMain, fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.15),
+              ),
             ],
           ),
         ),

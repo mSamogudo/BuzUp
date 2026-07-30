@@ -8,6 +8,7 @@ import '../../core/api_client.dart';
 import '../../core/feedback.dart';
 import '../../core/location.dart';
 import '../../core/providers.dart';
+import '../../core/labels.dart';
 import '../../core/theme.dart';
 
 /// Viagens do motorista: lista agrupada + ciclo iniciar/pausar/retomar/terminar.
@@ -146,7 +147,7 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
           if (trips.isEmpty) return _emptyState(txtMain, txtMuted);
           final groups = _group(trips);
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(driverTripsProvider),
+            onRefresh: () => ref.refresh(driverTripsProvider.future),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -322,13 +323,14 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
   }
 
   Widget _statusChip(String status) {
-    final (label, color) = switch (status) {
-      'boarding' => ('EMBARQUE', BuzUpColors.blueDark),
-      'departed' => ('EM VIAGEM', BuzUpColors.success),
-      'paused' => ('PAUSADA', Color(0xFFB58900)),
-      'scheduled' => ('AGENDADA', BuzUpColors.blue),
-      _ => (status.toUpperCase(), BuzUpColors.navy),
+    final color = switch (status) {
+      'boarding' => BuzUpColors.blueDark,
+      'departed' => BuzUpColors.success,
+      'paused' => const Color(0xFFB58900),
+      'scheduled' => BuzUpColors.blue,
+      _ => BuzUpColors.navy,
     };
+    final label = tripStatusLabel(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

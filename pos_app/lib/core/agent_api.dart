@@ -123,6 +123,17 @@ class AgentApi {
     return res.data ?? const {};
   }
 
+  /// Altera a propria senha (exige a actual). Endpoint partilhado com o portal.
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    await _http.post('/api/auth/change-password/', data: {
+      'old_password': oldPassword,
+      'new_password': newPassword,
+    });
+  }
+
   // ----- Device -----
   Future<Map<String, dynamic>> registerDevice({
     required String serialNumber,

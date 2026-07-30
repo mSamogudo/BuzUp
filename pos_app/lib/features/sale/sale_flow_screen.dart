@@ -12,6 +12,7 @@ import '../../core/bus_loader.dart';
 import '../../core/config.dart';
 import '../../core/feedback.dart';
 import '../../core/idempotency.dart';
+import '../../core/labels.dart';
 import '../../core/nfc.dart';
 import '../../core/providers.dart';
 import '../../core/stop_picker.dart';
@@ -350,7 +351,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                           leading: const Icon(Icons.directions_bus, color: Color(0xFF1D5FA7)),
                           title: Text('${t['route_code']} - ${t['route_name']}'),
                           subtitle: Text('${t['vehicle']} · motorista: ${t['driver']}'),
-                          trailing: Chip(label: Text(t['status'] ?? '', style: const TextStyle(fontSize: 10))),
+                          trailing: Chip(label: Text(tripStatusLabel((t['status'] ?? '').toString()), style: const TextStyle(fontSize: 10))),
                           onTap: () => _selectTrip(t),
                         ),
                       );

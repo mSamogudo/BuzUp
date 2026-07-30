@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/providers.dart';
+import '../../core/labels.dart';
 import '../../core/theme.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
@@ -214,7 +215,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
           Text('${it['amount']} MZN',
               style: TextStyle(color: fg, fontSize: 13.5, fontWeight: FontWeight.w800)),
-          Text(status.toUpperCase(),
+          Text(paymentStatusLabel(status),
               style: TextStyle(color: _statusColor(status), fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
         ]),
       ]),

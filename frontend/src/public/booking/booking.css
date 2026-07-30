@@ -44,9 +44,10 @@
 .bzbk-step b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;
   background:rgba(255,255,255,.16);font-size:11px}
 
-/* Painel */
+/* Painel — overflow visível: com hidden, o dropdown de origem/destino era
+   decapitado no limite inferior do cartão. */
 .bzbk-card{background:#fff;border:1px solid var(--line);border-radius:18px;
-  box-shadow:0 18px 44px rgba(13,59,102,.10);margin-top:-40px;position:relative;z-index:3;overflow:hidden}
+  box-shadow:0 18px 44px rgba(13,59,102,.10);margin-top:-40px;position:relative;z-index:3}
 .bzbk-card-in{padding:24px}
 @media(max-width:640px){.bzbk-card-in{padding:18px}}
 .bzbk-h2{font-size:19px;font-weight:800;color:var(--navy);margin:0 0 4px}
@@ -56,9 +57,14 @@
 .bzbk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .bzbk-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 @media(max-width:680px){.bzbk-grid-3{grid-template-columns:1fr}}
-/* Origem/destino e documento/número ficam a par mesmo em telemóvel:
-   dois campos curtos por linha poupam uma dobra inteira de rolagem. */
-@media(max-width:680px){.bzbk-grid{gap:10px}}
+/* Em telemóvel só os pares realmente curtos (data + passageiros) ficam lado
+   a lado; campos com texto ou dropdown (origem/destino, telefone, documento)
+   ocupam a linha inteira — a meia coluna cortava placeholders e espremia o
+   dropdown de pesquisa. */
+@media(max-width:680px){
+  .bzbk-grid{gap:10px}
+  .bzbk-field-wide{grid-column:1/-1}
+}
 @media(max-width:400px){.bzbk-grid{grid-template-columns:1fr}}
 .bzbk-field{display:flex;flex-direction:column;gap:6px}
 .bzbk-label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em}
@@ -98,6 +104,14 @@
 .bzbk-seats-left{color:var(--ok);font-weight:700}
 .bzbk-seats-few{color:#B58900;font-weight:700}
 .bzbk-seats-none{color:var(--danger);font-weight:700}
+/* Ecrã estreito: hora + preço na primeira linha, rota e detalhes por baixo a
+   toda a largura — senão o meio partia em quatro linhas apertadas. */
+@media(max-width:560px){
+  .bzbk-trip{flex-wrap:wrap;gap:2px 12px;padding:12px 14px}
+  .bzbk-trip-time{min-width:0;font-size:19px}
+  .bzbk-trip-price{margin-left:auto;font-size:16px}
+  .bzbk-trip-main{order:3;flex:1 1 100%}
+}
 
 /* Barra de acção fixa em telemóvel: o botão principal está sempre ao polegar,
    sem obrigar a rolar até ao fim da planta de lugares. */
@@ -208,7 +222,7 @@
   box-shadow:0 12px 32px rgba(7,30,73,.14)}
 .bzbk-combo-opt{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   padding:9px 11px;border-radius:8px;font-size:14px;color:var(--ink);cursor:pointer}
-.bzbk-combo-opt small{font-size:11px;color:var(--muted);letter-spacing:.04em}
+.bzbk-combo-opt small{font-size:11px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;flex:0 0 auto}
 .bzbk-combo-opt.is-hi{background:var(--bg)}
 .bzbk-combo-opt.is-sel{font-weight:700;color:var(--navy)}
 .bzbk-combo-empty{padding:12px 11px;font-size:13px;color:var(--muted)}

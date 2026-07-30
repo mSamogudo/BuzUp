@@ -288,12 +288,12 @@ export default function BookingPage() {
                 <h2 className="bzbk-h2">Para onde vai?</h2>
                 <p className="bzbk-lead">Indique o percurso, a data da viagem e quantos bilhetes precisa.</p>
                 <div className="bzbk-grid">
-                  <div className="bzbk-field">
+                  <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="o"><MapPin size={12} style={{ verticalAlign: -2 }} /> Origem</label>
                     <StopCombo id="o" onChange={setOrigin} placeholder="Escreva para procurar"
                       stops={stops} value={origin} />
                   </div>
-                  <div className="bzbk-field">
+                  <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="d"><MapPin size={12} style={{ verticalAlign: -2 }} /> Destino</label>
                     <StopCombo exclude={origin} id="d" onChange={setDestination}
                       placeholder="Escreva para procurar" stops={stops} value={destination} />
@@ -412,14 +412,14 @@ export default function BookingPage() {
                         onChange={(e) => setPaxField(i, "name", e.target.value)} />
                     </div>
                     <div className="bzbk-grid" style={{ marginTop: 12 }}>
-                      <div className="bzbk-field">
+                      <div className="bzbk-field bzbk-field-wide">
                         <label className="bzbk-label">Documento</label>
                         <select className="bzbk-select" value={p.document_type}
                           onChange={(e) => setPaxField(i, "document_type", e.target.value)}>
                           {DOC_TYPES.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                         </select>
                       </div>
-                      <div className="bzbk-field">
+                      <div className="bzbk-field bzbk-field-wide">
                         <label className="bzbk-label">Número</label>
                         <input className="bzbk-input" value={p.document_number} required
                           onChange={(e) => setPaxField(i, "document_number", e.target.value)} />
@@ -485,13 +485,13 @@ export default function BookingPage() {
                 </div>
 
                 <div className="bzbk-grid">
-                  <div className="bzbk-field">
+                  <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="ph">Telemóvel para pagamento</label>
                     <input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
                       value={phone} required onChange={(e) => setPhone(e.target.value)} />
                     <span className="bzbk-hint">Vai receber um pedido de PIN neste número.</span>
                   </div>
-                  <div className="bzbk-field">
+                  <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="em">Email (opcional)</label>
                     <input id="em" className="bzbk-input" type="email" placeholder="para receber o bilhete"
                       value={email} onChange={(e) => setEmail(e.target.value)} />

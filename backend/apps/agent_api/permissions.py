@@ -47,6 +47,24 @@ def provision_pos_agent(user):
     return agent
 
 
+def driver_only_scope(user):
+    """Devolve o Driver quando o utilizador e SO motorista.
+
+    Um motorista tem perfil de Agente (ver `provision_pos_agent`) para poder
+    entrar no POS, mas nao tem a liberdade comercial do agente: vende apenas
+    nas viagens que lhe estao alocadas. Quem tem `pos.operate` (agente) ou e
+    superuser fica fora deste ambito e continua a escolher qualquer viagem.
+    """
+    from apps.core.permissions.base import has_capabilities
+    from apps.trips.models import Driver
+
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    if getattr(user, "is_superuser", False) or has_capabilities(user, ("pos.operate",)):
+        return None
+    return Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).first()
+
+
 def get_authorized_device(user, serial_number: str | None = None) -> Device | None:
     """Resolve o dispositivo da operacao.
 

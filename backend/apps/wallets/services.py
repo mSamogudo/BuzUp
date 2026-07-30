@@ -79,7 +79,11 @@ def credit_wallet(
         wallet.save(update_fields=["balance_cached", "updated_at"])
 
     if notify:
-        _notify_transaction(wallet, tx)
+        # Depois do commit: quando esta funcao corre dentro de uma transacao
+        # maior (venda POS por cartao, confirmacao de pagamento), o SMS de 20s
+        # retinha o lock da carteira. E evita avisar de um movimento que o
+        # rollback desfez.
+        transaction.on_commit(lambda: _notify_transaction(wallet, tx))
 
     return tx
 
@@ -125,6 +129,10 @@ def debit_wallet(
         wallet.save(update_fields=["balance_cached", "updated_at"])
 
     if notify:
-        _notify_transaction(wallet, tx)
+        # Depois do commit: quando esta funcao corre dentro de uma transacao
+        # maior (venda POS por cartao, confirmacao de pagamento), o SMS de 20s
+        # retinha o lock da carteira. E evita avisar de um movimento que o
+        # rollback desfez.
+        transaction.on_commit(lambda: _notify_transaction(wallet, tx))
 
     return tx

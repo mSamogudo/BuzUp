@@ -10,6 +10,7 @@ from apps.core.permissions import HasCapabilities
 from apps.core.viewsets import BaseModelViewSet
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
+from apps.payments.services.idempotency import get_or_create_payment_intent
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.wallets.api.serializers import TopupRequestSerializer, WalletSerializer, WalletTransactionSerializer
 from apps.wallets.models import Wallet, WalletTransaction
@@ -62,18 +63,10 @@ class TopupView(APIView):
         payer_phone = serializer.validated_data["payer_phone"]
         idempotency_key = request.headers.get("Idempotency-Key", uuid4().hex)
 
-        existing = PaymentIntent.objects.filter(idempotency_key=idempotency_key).first()
-        if existing:
-            return Response({
-                "payment_intent": str(existing.uuid),
-                "reference": existing.reference,
-                "status": existing.status,
-            })
-
         ref = f"TOP-{uuid4().hex[:12].upper()}"
-        pi = PaymentIntent.objects.create(
-            reference=ref,
+        pi, created = get_or_create_payment_intent(
             idempotency_key=idempotency_key,
+            reference=ref,
             purpose=PaymentIntent.Purpose.MOBILE_WALLET_TOPUP,
             amount=amount,
             payer_phone=payer_phone,
@@ -81,6 +74,14 @@ class TopupView(APIView):
             status=PaymentIntent.Status.PENDING,
             created_by=request.user,
         )
+        # Pedido repetido (o cliente reenviou por timeout): devolve a recarga em
+        # curso em vez de abrir uma segunda no gateway.
+        if not created:
+            return Response({
+                "payment_intent": str(pi.uuid),
+                "reference": pi.reference,
+                "status": pi.status,
+            })
 
         gateway = get_payment_gateway(payer_phone=payer_phone)
         result = gateway.initiate_payment(

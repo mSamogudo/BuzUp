@@ -15,6 +15,7 @@ from apps.packages.models import Package
 from apps.packages.services import PackageError, subscribe_passenger
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
+from apps.payments.services.idempotency import get_or_create_payment_intent
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.agent_api.permissions import IsActiveAgent
 from apps.core.permissions import HasCapabilities
@@ -181,11 +182,17 @@ class PosCardTopupView(APIView):
         amount = data["amount"]
         payer_phone = data["payer_phone"]
         ref = f"POS-{uuid4().hex[:12].upper()}"
-        idempotency_key = f"pos-topup-{ref}"
+        # A chave tem de vir do cliente para que a repeticao do MESMO pedido
+        # seja reconhecida. Gerada aqui, cada toque no botao era uma recarga
+        # nova — duplo toque cobrava duas vezes ao passageiro.
+        client_key = request.headers.get("Idempotency-Key", "").strip()
+        idempotency_key = (
+            f"pos-topup-{request.user.id}-{client_key}" if client_key else f"pos-topup-{ref}"
+        )
 
-        pi = PaymentIntent.objects.create(
-            reference=ref,
+        pi, created = get_or_create_payment_intent(
             idempotency_key=idempotency_key,
+            reference=ref,
             purpose=PaymentIntent.Purpose.POS_CARD_TOPUP,
             amount=amount,
             payer_phone=payer_phone,
@@ -193,6 +200,13 @@ class PosCardTopupView(APIView):
             status=PaymentIntent.Status.PENDING,
             created_by=request.user,
         )
+        if not created:
+            return Response({
+                "payment_reference": pi.reference,
+                "status": pi.status,
+                "duplicate": True,
+                "detail": "Recarga ja iniciada com este pedido.",
+            })
 
         gateway = get_payment_gateway(payer_phone=payer_phone)
         result = gateway.initiate_payment(

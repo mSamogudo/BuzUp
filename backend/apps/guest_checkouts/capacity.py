@@ -78,3 +78,38 @@ def sale_state(trip) -> tuple[bool, str]:
         return False, "Partida esgotada."
 
     return True, ""
+
+
+class SeatsUnavailable(Exception):
+    """Lotacao esgotada ou venda encerrada, com motivo legivel."""
+
+
+def lock_trip_for_sale(trip, quantity: int = 1):
+    """Bloqueia a partida e confirma que ha lugar — devolve a Trip bloqueada.
+
+    Tem de ser chamado DENTRO de um `transaction.atomic()`: o lock so vale ate
+    ao fim da transacao. Contar lugares sem bloquear a linha da viagem nao
+    impede sobrevenda — dois vendedores contam 49 de 50 ao mesmo tempo e ambos
+    aceitam. `of=("self",)` porque a viatura e nullable (LEFT JOIN) e o
+    Postgres recusa FOR UPDATE sobre o lado nullable de um outer join.
+    """
+    from apps.trips.models import Trip
+
+    locked = (Trip.objects.select_related("route", "vehicle")
+              .select_for_update(of=("self",))
+              .filter(pk=getattr(trip, "pk", trip))
+              .first())
+    if locked is None:
+        raise SeatsUnavailable("Partida nao encontrada.")
+
+    can_sell, reason = sale_state(locked)
+    if not can_sell:
+        raise SeatsUnavailable(reason)
+
+    available = seats_available(locked)
+    if available is not None and quantity > available:
+        raise SeatsUnavailable(
+            f"Restam apenas {available} lugares nesta partida."
+            if available else "Partida esgotada."
+        )
+    return locked

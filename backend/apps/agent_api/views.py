@@ -30,6 +30,7 @@ import hashlib
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse as DjangoHttpResponse
 from django.conf import settings as django_settings
@@ -41,7 +42,13 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.audit.services import audit, client_ip
-from apps.agent_api.permissions import IsActiveAgent, get_agent_profile, get_authorized_device, provision_pos_agent
+from apps.agent_api.permissions import (
+    IsActiveAgent,
+    driver_only_scope,
+    get_agent_profile,
+    get_authorized_device,
+    provision_pos_agent,
+)
 from apps.agent_api.sales import SaleError, create_pos_sale, request_payment
 from apps.agent_api.serializers import (
     AgentDeviceHeartbeatSerializer,
@@ -84,6 +91,12 @@ def _trip_payload(trip: Trip) -> dict:
         "planned_departure_at": trip.planned_departure_at.isoformat() if trip.planned_departure_at else None,
         "status": trip.status,
     }
+
+
+def _trip_in_scope(user, trip: Trip) -> bool:
+    """O motorista opera so as viagens que conduz; o agente opera todas."""
+    driver = driver_only_scope(user)
+    return driver is None or trip.driver_id == driver.id
 
 
 def _ticket_payload(tp: DigitalTravelPass) -> dict:
@@ -524,6 +537,10 @@ class AgentTripListView(APIView):
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
             status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
         )
+        # Motorista ve apenas as viagens que conduz; o agente escolhe qualquer.
+        driver = driver_only_scope(request.user)
+        if driver:
+            qs = qs.filter(driver=driver)
         route_id = request.query_params.get("route")
         if route_id:
             qs = qs.filter(route_id=route_id)
@@ -538,6 +555,8 @@ class AgentTripDetailView(APIView):
         trip = Trip.objects.select_related("route", "vehicle", "driver").filter(pk=trip_id).first()
         if not trip:
             return Response({"detail": "Viagem nao encontrada."}, status=404)
+        if not _trip_in_scope(request.user, trip):
+            return Response({"detail": "Esta viagem nao lhe esta alocada."}, status=403)
         stops = list(
             RouteStop.objects.select_related("stop").filter(route=trip.route, stop__status="active")
             .order_by("direction", "sequence")
@@ -561,6 +580,8 @@ class AgentFareQuoteView(APIView):
         trip = Trip.objects.select_related("route").filter(pk=trip_id).first()
         if not trip:
             return Response({"detail": "Viagem nao encontrada."}, status=404)
+        if not _trip_in_scope(request.user, trip):
+            return Response({"detail": "Esta viagem nao lhe esta alocada."}, status=403)
         if trip.status not in [Trip.Status.BOARDING, Trip.Status.DEPARTED]:
             return Response({"detail": "Viagem nao esta em circulacao."}, status=400)
 
@@ -601,6 +622,13 @@ class AgentSaleCreateView(APIView):
         agent = get_agent_profile(request.user)
         device = get_authorized_device(request.user, serial_number=data.get("device_serial"))
         method = data.get("payment_method", "mobile_money")
+
+        # O motorista vende so na viagem que conduz. Validado aqui e nao apenas
+        # na app: o filtro da lista e conveniencia, isto e a regra.
+        if data.get("trip_id"):
+            sale_trip = Trip.objects.filter(pk=data["trip_id"]).first()
+            if sale_trip and not _trip_in_scope(request.user, sale_trip):
+                return Response({"detail": "Esta viagem nao lhe esta alocada."}, status=403)
 
         # Honour Idempotency-Key: if a sale with the same key was already
         # processed for this agent, return the existing record instead of
@@ -1174,9 +1202,33 @@ class AgentTicketVerifyView(APIView):
 
         consumed = False
         if consume:
-            tp.status = DigitalTravelPass.Status.USED
-            tp.used_at = timezone.now()
-            tp.save(update_fields=["status", "used_at", "updated_at"])
+            # Marcar como usado tem de ser atomico: dois validadores a ler o
+            # mesmo QR no mesmo instante viam ambos ACTIVE e ambos gravavam
+            # USED — duas pessoas embarcavam com um bilhete. O lock re-le o
+            # estado e o segundo pedido perde a corrida de forma visivel.
+            with transaction.atomic():
+                # of=("self",): `guest_checkout` e nullable, logo select_related
+                # gera LEFT JOIN e o Postgres recusa FOR UPDATE sobre o lado
+                # nullable de um outer join.
+                locked = (DigitalTravelPass.objects
+                          .select_related("guest_checkout")
+                          .select_for_update(of=("self",))
+                          .get(pk=tp.pk))
+                if locked.status == DigitalTravelPass.Status.USED:
+                    audit("TICKET_VERIFY_REJECTED", actor=request.user,
+                          entity_type="travel_pass", entity_id=str(locked.id),
+                          after={"reason": "already_used_race",
+                                 "used_at": locked.used_at.isoformat() if locked.used_at else ""})
+                    return Response({
+                        "valid": False,
+                        "reason": "Bilhete ja utilizado.",
+                        "ticket": _ticket_payload(locked),
+                        "consumed": False,
+                    }, status=409)
+                locked.status = DigitalTravelPass.Status.USED
+                locked.used_at = timezone.now()
+                locked.save(update_fields=["status", "used_at", "updated_at"])
+                tp = locked
             consumed = True
             audit("TICKET_USED", actor=request.user,
                   entity_type="travel_pass", entity_id=str(tp.id),
@@ -1192,7 +1244,10 @@ class AgentTicketVerifyView(APIView):
                     route=tp.trip.route if tp.trip_id else None,
                     trip=tp.trip if tp.trip_id else None,
                     amount_debited=tp.fare_amount,
-                    idempotency_key=f"verify-{tp.id}-{tp.used_at.timestamp()}",
+                    # Um bilhete e consumido UMA vez: a chave e o proprio
+                    # bilhete, para que uma segunda gravacao seja recusada pela
+                    # unique em vez de duplicar o registo de auditoria.
+                    idempotency_key=f"verify-{tp.id}",
                     device=Device.objects.filter(assigned_agent=request.user).first(),
                 )
             except Exception:

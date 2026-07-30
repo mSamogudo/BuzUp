@@ -9,6 +9,7 @@ from uuid import uuid4
 from django.utils import timezone
 
 from apps.fares.services import NoFareFoundError, quote_fare
+from apps.guest_checkouts.capacity import SeatsUnavailable, lock_trip_for_sale
 from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_code
 from apps.guest_checkouts.models import DigitalTravelPass
 from apps.packages.models import PackageRoute, PassengerPackage
@@ -110,6 +111,15 @@ def purchase_travel_pass(
     package_meta: dict = {}
 
     with transaction.atomic():
+        # Lotacao: a compra na app tambem ocupa lugar. Sem este lock, o mesmo
+        # ultimo lugar podia ser vendido pela app, pelo site e pelo POS ao
+        # mesmo tempo. Trip antes de Wallet, como nos restantes caminhos.
+        if trip is not None:
+            try:
+                trip = lock_trip_for_sale(trip, 1)
+            except SeatsUnavailable as e:
+                raise PurchaseError(str(e)) from e
+
         wallet_amount = base_fare
         if subscription:
             wallet_amount = consume_package_trip(subscription, base_fare)

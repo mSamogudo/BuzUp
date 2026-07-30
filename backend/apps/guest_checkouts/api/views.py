@@ -187,17 +187,20 @@ class GuestCheckoutCreateView(APIView):
                 linked_passenger=linked_passenger,
             )
 
-        idempotency_key = f"gc-{ref}"
-        pi = PaymentIntent.objects.create(
-            reference=f"PAY-{ref}",
-            idempotency_key=idempotency_key,
-            purpose=PaymentIntent.Purpose.GUEST_TRAVEL_PASS,
-            amount=total,
-            payer_phone=data["payer_phone"],
-            guest_checkout=gc,
-            status=PaymentIntent.Status.PENDING,
-            expires_at=gc.expires_at,
-        )
+            # Dentro do MESMO atomic que o checkout: se a intencao de pagamento
+            # falhar, o checkout tambem desaparece. Estando fora, um erro aqui
+            # deixava um PAYMENT_PENDING commitado a ocupar o lugar 30 minutos
+            # sem nunca haver pagamento a decorrer.
+            pi = PaymentIntent.objects.create(
+                reference=f"PAY-{ref}",
+                idempotency_key=f"gc-{ref}",
+                purpose=PaymentIntent.Purpose.GUEST_TRAVEL_PASS,
+                amount=total,
+                payer_phone=data["payer_phone"],
+                guest_checkout=gc,
+                status=PaymentIntent.Status.PENDING,
+                expires_at=gc.expires_at,
+            )
 
         gateway = get_payment_gateway(payer_phone=data["payer_phone"])
         result = gateway.initiate_payment(

@@ -28,6 +28,24 @@ def _resolve_device(serial: str) -> Device | None:
     return Device.objects.filter(serial_number=serial).first()
 
 
+def _wallet_reference(idempotency_key: str) -> str:
+    """Referencia do debito derivada da chave de idempotencia.
+
+    Tem de ser (a) deterministica — a repeticao do mesmo pedido cai na unique
+    constraint e o chamador devolve o evento ja existente — e (b) injectiva:
+    chaves DIFERENTES nunca podem dar a mesma referencia.
+
+    Antes era `VAL-{chave[:16]}`. Como as chaves geradas pelo servidor tem a
+    forma `card-<uid>-<trip>-<timestamp>`, o corte a 16 caracteres deixava
+    cair justamente o timestamp: todas as validacoes do mesmo cartao na mesma
+    viagem produziam a MESMA referencia, a segunda rebentava na unique da
+    WalletTransaction e o cartao ficava sem poder ser cobrado nessa viagem.
+    O hash mantem o determinismo sem perder informacao.
+    """
+    digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    return f"VAL-{digest[:40]}"
+
+
 def _charge_with_package_fallback(
     passenger_account,
     wallet,
@@ -49,7 +67,7 @@ def _charge_with_package_fallback(
                     amount=actual_charge,
                     tx_type=WalletTransaction.Type.FARE_DEBIT,
                     source=f"validation:{idempotency_key}",
-                    reference=f"VAL-{idempotency_key[:16]}",
+                    reference=_wallet_reference(idempotency_key),
                     metadata=metadata,
                 )
                 return actual_charge, f"package_partial:{sub.package.name}", tx.reference
@@ -60,7 +78,7 @@ def _charge_with_package_fallback(
             amount=base_fare,
             tx_type=WalletTransaction.Type.FARE_DEBIT,
             source=f"validation:{idempotency_key}",
-            reference=f"VAL-{idempotency_key[:16]}",
+            reference=_wallet_reference(idempotency_key),
             metadata=metadata,
         )
         return base_fare, "wallet", tx.reference

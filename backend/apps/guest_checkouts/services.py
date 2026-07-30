@@ -84,8 +84,14 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
             travel_pass._raw_token = raw_token
             passes.append(travel_pass)
 
+    # SMS só depois do commit. Esta função é chamada de dentro de transacções
+    # que detêm locks de dinheiro (venda POS por cartão bloqueia a carteira);
+    # com o gateway de SMS a 20s por mensagem, uma venda de 10 bilhetes retinha
+    # o lock ~200s e punha validações e recargas do mesmo passageiro em fila.
+    # on_commit também garante que ninguém recebe SMS de um bilhete cujo
+    # rollback o fez desaparecer.
     for p in passes:
-        _deliver_pass_sms(gc, p)
+        transaction.on_commit(lambda pass_=p: _deliver_pass_sms(gc, pass_))
 
     return passes
 

@@ -16,6 +16,7 @@ from django.utils import timezone
 from apps.audit.services import audit
 from apps.devices.models import Device
 from apps.fares.services import FareConflictError, NoFareFoundError, quote_fare
+from apps.guest_checkouts.capacity import SeatsUnavailable, lock_trip_for_sale
 from apps.guest_checkouts.models import GuestCheckout
 from apps.notifications.services import notify_by_phone
 from apps.packages.services import consume_package_trip, find_active_package_for_route
@@ -113,6 +114,14 @@ def create_pos_sale(
     disp_ccy, disp_total, disp_rate = display_snapshot(total, display_currency)
 
     with transaction.atomic():
+        # Lotacao: sem este lock, um agente e um comprador web vendiam o mesmo
+        # ultimo lugar ao mesmo tempo (a compra web ja bloqueava, o POS nao).
+        if trip is not None:
+            try:
+                trip = lock_trip_for_sale(trip, quantity)
+            except SeatsUnavailable as e:
+                raise SaleError(str(e)) from e
+
         gc = GuestCheckout.objects.create(
             reference=ref,
             payer_phone=phone,
@@ -283,6 +292,14 @@ def create_card_sale(
     from apps.wallets.models import Wallet  # local import to avoid cycle
 
     with transaction.atomic():
+        # Ordem dos locks fixa em todo o sistema — Trip antes de Wallet — para
+        # que dois caminhos concorrentes nunca se cruzem em deadlock.
+        if trip is not None:
+            try:
+                trip = lock_trip_for_sale(trip, quantity)
+            except SeatsUnavailable as e:
+                raise SaleError(str(e)) from e
+
         wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
         if wallet.status != Wallet.Status.ACTIVE:
             raise SaleError("Carteira bloqueada.")

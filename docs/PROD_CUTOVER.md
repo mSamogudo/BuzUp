@@ -130,6 +130,9 @@ Sem estas duas linhas a operação para, e o modo como para não é óbvio:
   com a rede móvel a oscilar uma parte nunca chega. O passageiro pagou no
   M-Pesa, o dinheiro saiu, e fica sem bilhete — sem que nada o detecte. A
   reclamação aparece dias depois, no balcão, sem prova do que se passou.
+- **Sem `retry_failed_sms`**: uma falha do provedor de SMS era definitiva. O
+  bilhete fica emitido e pago, e o link nunca chega — o que deixa sem nada
+  precisamente quem compra sem smartphone e depende do SMS.
 
 ```sh
 # no servidor, como root — o padrão dos outros projectos é /etc/cron.d/
@@ -141,6 +144,8 @@ cat > /etc/cron.d/buzup-prod-jobs <<'EOF'
 */5 * * * * root docker exec buzup_backend_prod python manage.py expire_stale >> /var/log/buzup-expire-prod.log 2>&1
 # Perguntar ao gateway o que aconteceu aos pagamentos pendentes (webhooks perdidos)
 */5 * * * * root docker exec buzup_backend_prod python manage.py reconcile_payments >> /var/log/buzup-reconcile-prod.log 2>&1
+# Reenviar SMS que falharam por erro transitório do provedor
+*/10 * * * * root docker exec buzup_backend_prod python manage.py retry_failed_sms >> /var/log/buzup-sms-retry-prod.log 2>&1
 EOF
 chmod 644 /etc/cron.d/buzup-prod-jobs
 ```
@@ -150,6 +155,7 @@ Verificar no dia seguinte:
 tail -5 /var/log/buzup-trips-prod.log      # "N viagens geradas."
 tail -5 /var/log/buzup-expire-prod.log     # "expirados: checkouts=… intents=… pacotes=…"
 tail -5 /var/log/buzup-reconcile-prod.log  # "verificados=… confirmados=… revisao_manual=…"
+tail -5 /var/log/buzup-sms-retry-prod.log  # "candidatos=… reenviados=… entregues=…"
 ```
 
 **`revisao_manual` > 0 exige acção humana.** São pagamentos que o gateway

@@ -31,7 +31,14 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BrandingSettings
-        fields = ("platform_name", "updated_at", *LOGO_FIELDS)
+        fields = (
+            "platform_name", "updated_at",
+            # Contactos: publicos de proposito — o bilhete, o site e as apps
+            # mostram-nos a quem precisa deles, e nao ha nada de sensivel num
+            # numero de apoio.
+            "emergency_phone", "support_phone", "support_email",
+            *LOGO_FIELDS,
+        )
         read_only_fields = ("updated_at",)
         extra_kwargs = {
             name: {"write_only": True, "required": False, "allow_null": True}

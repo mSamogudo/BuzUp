@@ -13,7 +13,8 @@ class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         fields = ("id", "uuid", "registration", "make", "model_name", "seated_capacity",
-                  "standing_capacity", "status", "livrete", "livrete_url", "created_at", "updated_at")
+                  "standing_capacity", "seat_layout", "last_row_seats",
+                  "status", "livrete", "livrete_url", "created_at", "updated_at")
         read_only_fields = ("id", "uuid", "livrete_url", "created_at", "updated_at")
 
     def get_livrete_url(self, obj):

@@ -65,6 +65,7 @@ def _draw_ticket_page(c: canvas.Canvas, travel_pass: DigitalTravelPass, token: s
     _draw_template(c, nominal=_is_nominal(travel_pass))
     _draw_dynamic_fields(c, travel_pass, ref)
     _draw_qr(c, token, ref)
+    _draw_emergency_contact(c, nominal=_is_nominal(travel_pass))
     c.restoreState()
 
 
@@ -230,6 +231,46 @@ def _draw_qr(c: canvas.Canvas, data: str, ref: str) -> None:
         min_size=28,
         color=NAVY,
     )
+
+
+def _draw_emergency_contact(c: canvas.Canvas, *, nominal: bool = False) -> None:
+    """Contacto de emergencia, na faixa inferior do bilhete.
+
+    Um passageiro com um problema a bordo — autocarro avariado, acidente,
+    bilhete recusado — tem o bilhete na mao. E ai que o numero tem de estar, e
+    nao num site que ninguem vai procurar nesse momento. Configurado no portal
+    (Tarifas > Contactos); sem numero definido, nao se desenha nada.
+    """
+    try:
+        from apps.branding.models import BrandingSettings
+
+        settings_row = BrandingSettings.load()
+    except Exception:
+        return
+
+    phone = (settings_row.emergency_phone or settings_row.support_phone or "").strip()
+    if not phone:
+        return
+
+    # O lado livre depende da variante: no bilhete nominal a coluna esquerda
+    # esta ocupada pelo nome e pelo documento, e a direita so tem o LUGAR; no
+    # bilhete ao portador e o contrario (a direita tem "Apresente este QR
+    # code"). Escrever sempre no mesmo sitio tapava um dos dois.
+    if nominal:
+        box_x, box_y, box_w, box_h = 682, 1218, 228, 86
+    else:
+        box_x, box_y, box_w, box_h = 122, 1258, 226, 86
+    c.setFillColor(colors.white)
+    c.roundRect(box_x, _pdf_y(box_y + box_h), box_w, box_h, 10, fill=1, stroke=0)
+
+    c.setFillColor(ORANGE)
+    c.setFont("Helvetica-Bold", 15)
+    c.drawString(box_x + 14, _baseline(box_y + 12, 15), "EMERGENCIA / APOIO")
+
+    size = _fit_size(c, phone, "Helvetica-Bold", box_w - 28, 30, 17)
+    c.setFillColor(NAVY)
+    c.setFont("Helvetica-Bold", size)
+    c.drawString(box_x + 14, _baseline(box_y + 40, size), phone)
 
 
 def _text(c: canvas.Canvas, x: float, y_top: float, value: str, *, size: int, font: str, color) -> None:

@@ -42,6 +42,14 @@ class BrandingSettings(BaseModel):
     powered_by_logo = models.FileField(upload_to="branding/", blank=True)
     favicon = models.FileField(upload_to="branding/", blank=True)
 
+    # Contactos do operador, impressos no bilhete e mostrados nas apps.
+    # Um passageiro com um problema a bordo (autocarro avariado, acidente,
+    # bilhete recusado) tem o bilhete na mao — e ai que o numero tem de estar,
+    # nao num site que ele nao vai procurar nesse momento.
+    emergency_phone = models.CharField(max_length=32, blank=True)
+    support_phone = models.CharField(max_length=32, blank=True)
+    support_email = models.EmailField(blank=True)
+
     class Meta:
         verbose_name = "Configuracao de marca"
         verbose_name_plural = "Configuracao de marca"

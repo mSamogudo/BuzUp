@@ -9,9 +9,25 @@ class Route(BaseModel):
         INACTIVE = "inactive", "Inactiva"
         SUSPENDED = "suspended", "Suspensa"
 
+    class ServiceType(models.TextChoices):
+        URBAN = "urban", "Urbano / Interurbano"
+        INTERPROVINCIAL = "interprovincial", "Interprovincial"
+        INTERNATIONAL = "international", "Internacional"
+
+    # Rotas onde o lugar e marcado. Numa carreira urbana ninguem escolhe
+    # assento — entra, valida e senta-se onde houver; obrigar a escolher seria
+    # um passo inutil numa compra que tem de ser rapida. Numa viagem
+    # interprovincial ou internacional, de varias horas, o lugar e do
+    # passageiro e tem de ser escolhido.
+    SEATED_SERVICE_TYPES = ("interprovincial", "international")
+
     code = models.CharField(max_length=32, db_index=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    service_type = models.CharField(
+        max_length=20, choices=ServiceType.choices, default=ServiceType.URBAN,
+        help_text="Determina se o passageiro escolhe o lugar na compra.",
+    )
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
 
     class Meta:
@@ -25,6 +41,17 @@ class Route(BaseModel):
             from apps.core.utils import generate_code_from_name
             self.code = generate_code_from_name(self.name, "RT", Route, "code", instance=self)
         super().save(*args, **kwargs)
+
+    @property
+    def requires_seat_selection(self) -> bool:
+        """O passageiro escolhe o lugar nesta rota?
+
+        Derivado do tipo de servico em vez de ser um campo proprio: eram dois
+        valores a poder discordar, e o operador ja diz o que a rota e quando a
+        cria. O site, a app e o POS leem isto — nenhum deles pergunta ao
+        passageiro que tipo de viagem esta a comprar.
+        """
+        return self.service_type in self.SEATED_SERVICE_TYPES
 
     def __str__(self):
         return f"{self.code} - {self.name}"

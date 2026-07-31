@@ -47,11 +47,15 @@ class RouteStopSerializer(serializers.ModelSerializer):
 
 class RouteSerializer(serializers.ModelSerializer):
     stop_count = serializers.SerializerMethodField()
+    # Derivado do tipo de servico: o portal mostra-o para o operador ver a
+    # consequencia da escolha sem ter de a decorar.
+    requires_seat_selection = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Route
-        fields = ("id", "uuid", "code", "name", "description", "status", "stop_count", "created_at", "updated_at")
-        read_only_fields = ("id", "uuid", "code", "created_at", "updated_at")
+        fields = ("id", "uuid", "code", "name", "description", "service_type",
+                  "requires_seat_selection", "status", "stop_count", "created_at", "updated_at")
+        read_only_fields = ("id", "uuid", "code", "requires_seat_selection", "created_at", "updated_at")
 
     def get_stop_count(self, obj):
         return obj.route_stops.values("direction", "stop_id").distinct().count()
@@ -60,11 +64,13 @@ class RouteSerializer(serializers.ModelSerializer):
 class RouteDetailSerializer(serializers.ModelSerializer):
     stops = RouteStopSerializer(source="route_stops", many=True, read_only=True)
     stop_count = serializers.SerializerMethodField()
+    requires_seat_selection = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Route
-        fields = ("id", "uuid", "code", "name", "description", "status", "stop_count", "stops", "created_at", "updated_at")
-        read_only_fields = ("id", "uuid", "code", "created_at", "updated_at")
+        fields = ("id", "uuid", "code", "name", "description", "service_type",
+                  "requires_seat_selection", "status", "stop_count", "stops", "created_at", "updated_at")
+        read_only_fields = ("id", "uuid", "code", "requires_seat_selection", "created_at", "updated_at")
 
     def get_stop_count(self, obj):
         return obj.route_stops.values("direction", "stop_id").distinct().count()

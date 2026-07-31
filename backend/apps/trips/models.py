@@ -19,6 +19,20 @@ class Vehicle(BaseModel):
     model_name = models.CharField(max_length=64, blank=True)
     seated_capacity = models.PositiveIntegerField(default=0)
     standing_capacity = models.PositiveIntegerField(default=0)
+    # Disposicao dos bancos, vista de tras para a frente: "<esquerda>+<direita>".
+    # A planta que o passageiro ve tem de corresponder ao autocarro real — num
+    # 1+2 (comum nos interprovinciais, com bancos individuais de um lado) uma
+    # planta 2+2 mostraria lugares que nao existem, e o passageiro escolheria
+    # um assento que nao vai encontrar.
+    SEAT_LAYOUTS = ("1+1", "1+2", "2+1", "2+2", "2+3", "3+2")
+    seat_layout = models.CharField(
+        max_length=8,
+        choices=[(value, value.replace("+", " + ")) for value in SEAT_LAYOUTS],
+        default="2+2",
+        help_text="Bancos de cada lado do corredor, ex.: 2+2, 1+2, 3+2.",
+    )
+    # Ultima fila corrida (sem corredor). Zero = a ultima fila segue o layout.
+    last_row_seats = models.PositiveSmallIntegerField(default=0)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     # Livrete (documento de registo do veiculo) — PDF ou imagem.
     livrete = models.FileField(upload_to="vehicles/livrete/", blank=True)

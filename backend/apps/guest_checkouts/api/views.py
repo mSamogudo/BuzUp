@@ -337,6 +337,10 @@ class PublicTripSearchView(APIView):
                 "direction": segment.direction if segment else "",
                 "status": trip.status,
                 "fare_amount": fare_amount,
+                # O cliente nao pergunta ao passageiro que tipo de viagem e:
+                # le daqui se ha lugar a marcar e salta a etapa quando nao ha.
+                "service_type": trip.route.service_type,
+                "seat_selection": trip.route.requires_seat_selection,
                 # Disponibilidade legivel: o site mostra "3 lugares" ou o
                 # motivo de indisponibilidade, nunca um botao morto.
                 "seats_available": seats_available(trip, taken=taken),

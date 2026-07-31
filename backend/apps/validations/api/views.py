@@ -189,6 +189,7 @@ class PurchaseTravelPassView(APIView):
                 origin_stop_id=data.get("origin_stop_id"),
                 destination_stop_id=data.get("destination_stop_id"),
                 trip_id=data.get("trip_id"),
+                seat=data.get("seat") or "",
                 passenger_package_id=data.get("passenger_package_id"),
                 use_package=data.get("use_package", True),
                 display_currency=data.get("display_currency") or "MZN",
@@ -247,4 +248,11 @@ class TravelPassQuoteView(APIView):
         except NoFareFoundError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # A app nao pergunta ao passageiro que tipo de viagem e — a rota que sai
+        # da origem e do destino e que diz se ha lugar a marcar, e so entao a
+        # app mostra o passo da partida e da planta.
+        quote["route_id"] = route.id
+        quote["route_code"] = route.code
+        quote["service_type"] = route.service_type
+        quote["requires_seat_selection"] = route.requires_seat_selection
         return Response(quote)

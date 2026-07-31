@@ -67,6 +67,7 @@ def purchase_travel_pass(
     origin_stop_id: int | None = None,
     destination_stop_id: int | None = None,
     trip_id: int | None = None,
+    seat: str = "",
     passenger_package_id: int | None = None,
     use_package: bool = True,
     display_currency: str = "MZN",
@@ -85,13 +86,31 @@ def purchase_travel_pass(
 
     origin = Stop.objects.filter(pk=origin_stop_id).first() if origin_stop_id else None
     destination = Stop.objects.filter(pk=destination_stop_id).first() if destination_stop_id else None
+    # Nas carreiras com lugar marcado o bilhete vende-se com antecedencia, por
+    # isso uma partida ainda agendada tambem serve. Nas urbanas continua a ser
+    # so o autocarro que esta ali a embarcar.
+    sellable = [Trip.Status.BOARDING, Trip.Status.DEPARTED]
+    if route.requires_seat_selection:
+        sellable = [Trip.Status.SCHEDULED, *sellable]
     trip = Trip.objects.filter(
-        pk=trip_id,
-        route=route,
-        status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
+        pk=trip_id, route=route, status__in=sellable,
     ).first() if trip_id else None
     if trip_id and not trip:
         raise PurchaseError("Autocarro nao esta disponivel para compra.")
+
+    # Sem esta guarda, a app vendia um bilhete interprovincial sem partida e
+    # sem lugar: ninguem descontava a lotacao e o autocarro podia sair com mais
+    # gente do que bancos. So se descobria a bordo.
+    seat = (seat or "").strip().upper()
+    if route.requires_seat_selection:
+        if trip is None:
+            raise PurchaseError("Escolha a partida para esta viagem.")
+        if not seat:
+            raise PurchaseError("Escolha o lugar para esta viagem.")
+    elif seat:
+        # Carreira urbana nao marca lugar; guardar um numero de banco daria ao
+        # passageiro a ideia de que tem lugar reservado.
+        seat = ""
 
     try:
         resolve_route_segment(route, origin_stop_id, destination_stop_id)
@@ -119,6 +138,15 @@ def purchase_travel_pass(
                 trip = lock_trip_for_sale(trip, 1)
             except SeatsUnavailable as e:
                 raise PurchaseError(str(e)) from e
+
+            # Sob o lock: entre ver a planta e pagar, o lugar pode ter sido
+            # vendido no balcao ou no site. Verificar antes do lock deixava as
+            # duas compras passar e duas pessoas com o mesmo banco.
+            if seat:
+                from apps.guest_checkouts.seatmap import occupied_seats
+
+                if seat in occupied_seats(trip):
+                    raise PurchaseError(f"O lugar {seat} ja foi ocupado. Escolha outro.")
 
         wallet_amount = base_fare
         if subscription:
@@ -216,6 +244,7 @@ def purchase_travel_pass(
             origin_stop_ref=origin,
             destination_stop_ref=destination,
             trip=trip,
+            seat_number=seat,
             # O bilhete comprado na app e NOMINAL: leva os dados do titular
             # da conta, como pedido pelo cliente.
             passenger_name=(passenger.full_name or "")[:255],

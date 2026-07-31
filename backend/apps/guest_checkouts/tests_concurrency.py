@@ -336,3 +336,114 @@ class PosSeatSaleTests(ConcurrencyBase):
             len(vendidos), 1,
             f"o mesmo lugar foi vendido duas vezes: {results}",
         )
+
+
+class AppSeatPurchaseTests(ConcurrencyBase):
+    """Compra na app do passageiro com lugar marcado.
+
+    Antes desta guarda a app vendia um bilhete interprovincial sem partida e
+    sem lugar: ninguem descontava a lotacao e o autocarro podia sair com mais
+    gente do que bancos.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.route.service_type = Route.ServiceType.INTERPROVINCIAL
+        self.route.save(update_fields=["service_type"])
+        self.vehicle.seated_capacity = 20
+        self.vehicle.save(update_fields=["seated_capacity"])
+
+    def _passenger(self, phone):
+        acc = PassengerAccount.objects.create(
+            full_name=f"Passageiro {phone}", phone_number=phone,
+            status=PassengerAccount.Status.ACTIVE,
+        )
+        Wallet.objects.create(
+            passenger_account=acc, balance_cached=Decimal("5000.00"),
+            status=Wallet.Status.ACTIVE,
+        )
+        acc.refresh_from_db()
+        return acc
+
+    def _buy(self, phone="842000001", seat="4A", trip_id=-1):
+        from apps.guest_checkouts.purchase import purchase_travel_pass
+
+        return purchase_travel_pass(
+            passenger=self._passenger(phone), route_id=self.route.id,
+            origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+            trip_id=self.trip.id if trip_id == -1 else trip_id,
+            seat=seat, use_package=False,
+        )
+
+    def test_seat_is_recorded_on_the_pass(self):
+        tp = self._buy(seat="4A")
+        self.assertEqual(tp.seat_number, "4A")
+        self.assertEqual(tp.trip_id, self.trip.id)
+
+    def test_interprovincial_without_a_seat_is_refused(self):
+        from apps.guest_checkouts.purchase import PurchaseError
+
+        with self.assertRaises(PurchaseError) as ctx:
+            self._buy(seat="")
+        self.assertIn("lugar", str(ctx.exception).lower())
+
+    def test_interprovincial_without_a_departure_is_refused(self):
+        from apps.guest_checkouts.purchase import PurchaseError
+
+        with self.assertRaises(PurchaseError) as ctx:
+            self._buy(trip_id=None)
+        self.assertIn("partida", str(ctx.exception).lower())
+
+    def test_urban_route_ignores_the_seat(self):
+        """Numa carreira urbana ninguem marca lugar — guardar um numero de
+        banco daria ao passageiro a ideia errada de que tem lugar reservado."""
+        self.route.service_type = Route.ServiceType.URBAN
+        self.route.save(update_fields=["service_type"])
+
+        tp = self._buy(seat="9Z")
+        self.assertEqual(tp.seat_number, "")
+
+    def test_seat_already_sold_at_the_counter_is_refused(self):
+        from apps.agent_api.sales import create_pos_sale
+        from apps.guest_checkouts.purchase import PurchaseError
+        from apps.trips.models import Agent
+
+        agent = Agent.objects.create(full_name="Agente Balcao", status=Agent.Status.ACTIVE)
+        create_pos_sale(
+            agent=agent, device=None, trip_id=self.trip.id, route_id=None,
+            origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+            passenger_phone="841999999", quantity=1, seats=["6B"],
+        )
+
+        with self.assertRaises(PurchaseError) as ctx:
+            self._buy(seat="6B")
+        self.assertIn("6B", str(ctx.exception))
+
+    def test_app_and_counter_cannot_take_the_same_seat_at_once(self):
+        """A corrida a valer: a app e o balcao no mesmo lugar, ao mesmo tempo."""
+        from apps.agent_api.sales import SaleError, create_pos_sale
+        from apps.guest_checkouts.purchase import PurchaseError
+        from apps.trips.models import Agent
+
+        agent = Agent.objects.create(full_name="Agente Corrida", status=Agent.Status.ACTIVE)
+
+        def take(i):
+            try:
+                if i == 0:
+                    tp = self._buy(phone="842000010", seat="8C")
+                    return f"levou:app:{tp.id}"
+                gc, _ = create_pos_sale(
+                    agent=agent, device=None, trip_id=self.trip.id, route_id=None,
+                    origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+                    passenger_phone="841000010", quantity=1, seats=["8C"],
+                )
+                return f"levou:balcao:{gc.reference}"
+            except (PurchaseError, SaleError) as e:
+                return f"recusado:{e}"
+
+        results = run_together(take, n=2)
+        levaram = [r for r in results if isinstance(r, str) and r.startswith("levou")]
+        self.assertEqual(
+            len(levaram), 1,
+            f"o mesmo lugar 8C foi dado a duas pessoas: {results}",
+        )

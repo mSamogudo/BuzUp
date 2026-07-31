@@ -10,21 +10,35 @@ import 'logger.dart';
 /// Marca configuravel no portal (apps/branding). Cada slot e uma URL absoluta
 /// (ou "" quando nao definido). Cai sempre para o asset embutido na app.
 class Branding {
-  const Branding(this.platformName, this.logos);
+  const Branding(this.platformName, this.logos, [this.contacts = const {}]);
 
   final String platformName;
   final Map<String, String> logos; // chave = <slot>_url
+  /// Contactos configurados no portal e impressos no bilhete.
+  final Map<String, String> contacts;
 
   static const empty = Branding('BuzUp', {});
 
   String url(String slot) => logos['${slot}_url'] ?? '';
 
+  /// Numero que o passageiro liga se algo correr mal a bordo. Cai para o apoio
+  /// geral quando nao ha linha de emergencia dedicada.
+  String get emergencyPhone =>
+      (contacts['emergency_phone']?.trim().isNotEmpty ?? false)
+          ? contacts['emergency_phone']!.trim()
+          : (contacts['support_phone'] ?? '').trim();
+
+  static const _contactKeys = ['emergency_phone', 'support_phone', 'support_email'];
+
   static Branding fromJson(Map<String, dynamic> j) {
     final logos = <String, String>{};
+    final contacts = <String, String>{};
     j.forEach((k, v) {
-      if (k.endsWith('_url') && v is String) logos[k] = v;
+      if (v is! String) return;
+      if (k.endsWith('_url')) logos[k] = v;
+      if (_contactKeys.contains(k)) contacts[k] = v;
     });
-    return Branding((j['platform_name'] as String?) ?? 'BuzUp', logos);
+    return Branding((j['platform_name'] as String?) ?? 'BuzUp', logos, contacts);
   }
 }
 
@@ -45,11 +59,19 @@ class BrandingController extends StateNotifier<Branding> {
       final lines = raw.split('\n');
       final name = lines.isNotEmpty ? lines.first : 'BuzUp';
       final logos = <String, String>{};
+      final contacts = <String, String>{};
       for (final l in lines.skip(1)) {
         final i = l.indexOf('=');
-        if (i > 0) logos[l.substring(0, i)] = l.substring(i + 1);
+        if (i <= 0) continue;
+        final k = l.substring(0, i);
+        final v = l.substring(i + 1);
+        if (Branding._contactKeys.contains(k)) {
+          contacts[k] = v;
+        } else {
+          logos[k] = v;
+        }
       }
-      state = Branding(name, logos);
+      state = Branding(name, logos, contacts);
     } catch (_) {/* ignora cache corrompida */}
   }
 
@@ -67,6 +89,7 @@ class BrandingController extends StateNotifier<Branding> {
       final prefs = await SharedPreferences.getInstance();
       final buf = StringBuffer(b.platformName);
       b.logos.forEach((k, v) => buf.write('\n$k=$v'));
+      b.contacts.forEach((k, v) => buf.write('\n$k=$v'));
       await prefs.setString(_kCacheKey, buf.toString());
     } catch (e) {
       Log.warn('branding refresh failed', error: e);

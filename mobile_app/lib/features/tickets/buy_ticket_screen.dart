@@ -9,6 +9,7 @@ import '../../core/api_client.dart';
 import '../../core/bus_loader.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
+import '../../core/seat_picker.dart';
 import '../../core/theme.dart';
 import 'stop_picker.dart';
 
@@ -33,6 +34,18 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
 
   int? _originId;
   int? _destinationId;
+
+  // Lugar marcado. A app nunca pergunta ao passageiro que tipo de viagem e:
+  // o orcamento devolve `requires_seat_selection` a partir da rota que liga a
+  // origem ao destino, e so entao aparecem a partida e a planta. Numa carreira
+  // urbana estes passos nem existem.
+  bool _seatsRequired = false;
+  DateTime _travelDate = DateTime.now();
+  List<Map<String, dynamic>> _departures = const [];
+  bool _loadingDepartures = false;
+  int? _tripId;
+  Map<String, dynamic>? _seatMap;
+  String? _seat;
   List<Map> _stops = const [];
   bool _usePackage = true;
 
@@ -99,7 +112,20 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           );
       Log.info('ticket.quote ok', data: res);
       if (!mounted) return;
-      setState(() => _quote = res);
+      final needsSeat = res['requires_seat_selection'] == true;
+      setState(() {
+        _quote = res;
+        if (needsSeat != _seatsRequired) {
+          // Mudar de uma carreira urbana para uma interprovincial (ou o
+          // contrario) invalida a partida e o lugar escolhidos antes.
+          _seatsRequired = needsSeat;
+          _tripId = null;
+          _seat = null;
+          _seatMap = null;
+          _departures = const [];
+        }
+      });
+      if (_seatsRequired) await _loadDepartures();
     } on DioException catch (e) {
       Log.warn('ticket.quote failed', error: e.message);
       if (!mounted) return;
@@ -109,11 +135,61 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     }
   }
 
+  String get _dateIso =>
+      '${_travelDate.year.toString().padLeft(4, "0")}-'
+      '${_travelDate.month.toString().padLeft(2, "0")}-'
+      '${_travelDate.day.toString().padLeft(2, "0")}';
+
+  Future<void> _loadDepartures() async {
+    if (_originId == null || _destinationId == null) return;
+    setState(() {
+      _loadingDepartures = true;
+      _departures = const [];
+      _tripId = null;
+      _seat = null;
+      _seatMap = null;
+    });
+    try {
+      final items = await ref.read(passengerApiProvider).searchDepartures(
+            originStopId: _originId!,
+            destinationStopId: _destinationId!,
+            date: _dateIso,
+          );
+      if (!mounted) return;
+      // So partidas ainda a venda: mostrar as esgotadas dava um toque sem
+      // resposta e a impressao de que a compra falhou.
+      setState(() => _departures = items.where((t) => t['on_sale'] == true).toList());
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = ApiClient.extractError(e));
+    } finally {
+      if (mounted) setState(() => _loadingDepartures = false);
+    }
+  }
+
+  Future<void> _selectDeparture(int tripId) async {
+    setState(() {
+      _tripId = tripId;
+      _seat = null;
+      _seatMap = null;
+    });
+    try {
+      final map = await ref.read(passengerApiProvider).tripSeats(tripId);
+      if (!mounted) return;
+      setState(() => _seatMap = map);
+    } on DioException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = ApiClient.extractError(e));
+    }
+  }
+
   Future<void> _purchaseWithWallet() async {
     try {
       final res = await ref.read(passengerApiProvider).purchaseTicket(
             originStopId: _originId,
             destinationStopId: _destinationId,
+            tripId: _tripId,
+            seat: _seat,
             usePackage: _usePackage,
             displayCurrency: _currency,
           );
@@ -155,6 +231,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             originName: (originStop?['name'] ?? '').toString(),
             destinationName: (destStop?['name'] ?? '').toString(),
             payerPhone: phone,
+            tripId: _tripId,
+            seat: _seat,
             displayCurrency: _currency,
           );
       Log.info('ticket.direct ok', data: 'ref=${res['checkout_reference']} status=${res['status']}');
@@ -302,6 +380,24 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                     _refreshQuote();
                   },
                 ),
+                if (_seatsRequired) ...[
+                  const SizedBox(height: 12),
+                  _departurePicker(),
+                  if (_seatMap != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _seat == null ? 'Escolha o seu lugar' : 'Lugar $_seat',
+                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 8),
+                    SeatPicker(
+                      seatMap: _seatMap!,
+                      picked: _seat == null ? const [] : [_seat!],
+                      maxPick: 1,
+                      onToggle: (label) => setState(() => _seat = _seat == label ? null : label),
+                    ),
+                  ],
+                ],
                 const SizedBox(height: 12),
                 _methodSelector(),
                 if (_method == _PayMethod.wallet)
@@ -346,7 +442,15 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: (_originId == null || _destinationId == null || _purchasing) ? null : _purchase,
+                  onPressed: (_originId == null ||
+                          _destinationId == null ||
+                          _purchasing ||
+                          // Nas interprovinciais nao se compra sem partida nem
+                          // lugar — o servidor recusa, e mais vale o botao
+                          // dizer porque do que a compra falhar depois.
+                          (_seatsRequired && (_tripId == null || _seat == null)))
+                      ? null
+                      : _purchase,
                   child: _purchasing
                       ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : Text(_payButtonLabel()),
@@ -354,6 +458,103 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  /// Data e lista de partidas do dia. So aparece nas rotas com lugar marcado,
+  /// onde o bilhete se compra para uma partida concreta e nao para "o proximo
+  /// autocarro que vier".
+  Widget _departurePicker() {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Expanded(
+            child: Text('Partida', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+          ),
+          TextButton.icon(
+            icon: const Icon(Icons.calendar_today, size: 15),
+            label: Text(_dateIso),
+            onPressed: () async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _travelDate,
+                firstDate: DateTime(now.year, now.month, now.day),
+                lastDate: now.add(const Duration(days: 90)),
+              );
+              if (picked == null) return;
+              setState(() => _travelDate = picked);
+              await _loadDepartures();
+            },
+          ),
+        ]),
+        if (_loadingDepartures)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 14),
+            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+          )
+        else if (_departures.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              'Sem partidas a venda nesta data. Escolha outro dia.',
+              style: TextStyle(fontSize: 12.5, color: BuzUpColors.muted),
+            ),
+          )
+        else
+          for (final t in _departures) _departureTile(t),
+      ]),
+    );
+  }
+
+  Widget _departureTile(Map<String, dynamic> t) {
+    final id = t['trip_id'] as int?;
+    final selected = id != null && id == _tripId;
+    final departure = (t['departure'] ?? '').toString();
+    final hour = departure.length >= 16 ? departure.substring(11, 16) : '--:--';
+    final seats = t['seats_available'];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: id == null ? null : () => _selectDeparture(id),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: selected ? BuzUpColors.blue.withValues(alpha: 0.08) : null,
+            border: Border.all(
+              color: selected ? BuzUpColors.blue : const Color(0xFFE4EBF3),
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Row(children: [
+            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                size: 18, color: selected ? BuzUpColors.blue : BuzUpColors.muted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(hour, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                Text(
+                  '${t['route_name'] ?? t['route_code'] ?? ''}'
+                  '${t['vehicle'] != null ? " · ${t['vehicle']}" : ""}',
+                  style: const TextStyle(fontSize: 11.5, color: BuzUpColors.muted),
+                ),
+              ]),
+            ),
+            if (seats is int)
+              Text('$seats lugares',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: BuzUpColors.muted)),
+          ]),
         ),
       ),
     );

@@ -156,6 +156,31 @@ class PassengerApi {
     return res.data ?? const {};
   }
 
+  /// Partidas publicas para um par origem/destino numa data. Usado quando a
+  /// rota marca lugar: o passageiro escolhe a partida antes do assento.
+  Future<List<Map<String, dynamic>>> searchDepartures({
+    required int originStopId,
+    required int destinationStopId,
+    required String date,
+  }) async {
+    final res = await _http.get<Map<String, dynamic>>(
+      '/api/public/trips/',
+      query: {
+        'origin': originStopId,
+        'destination': destinationStopId,
+        'date': date,
+      },
+    );
+    final items = (res.data?['trips'] as List?) ?? const [];
+    return items.map((e) => (e as Map).cast<String, dynamic>()).toList();
+  }
+
+  /// Planta de lugares de uma partida, com os ja ocupados.
+  Future<Map<String, dynamic>> tripSeats(int tripId) async {
+    final res = await _http.get<Map<String, dynamic>>('/api/public/trips/$tripId/seats/');
+    return res.data ?? const {};
+  }
+
   /// Quote a fare without committing: returns amount, discount, package usage.
   /// `routeId` is optional — the backend infers the route from origin+destination.
   Future<Map<String, dynamic>> quoteTicket({
@@ -187,6 +212,7 @@ class PassengerApi {
     int? originStopId,
     int? destinationStopId,
     int? tripId,
+    String? seat,
     int? passengerPackageId,
     bool usePackage = true,
     String displayCurrency = 'MZN',
@@ -198,6 +224,7 @@ class PassengerApi {
         if (originStopId != null) 'origin_stop_id': originStopId,
         if (destinationStopId != null) 'destination_stop_id': destinationStopId,
         if (tripId != null) 'trip_id': tripId,
+        if (seat != null && seat.isNotEmpty) 'seat': seat,
         if (passengerPackageId != null) 'passenger_package_id': passengerPackageId,
         'use_package': usePackage,
         'display_currency': displayCurrency,
@@ -222,6 +249,8 @@ class PassengerApi {
     required String originName,
     required String destinationName,
     required String payerPhone,
+    int? tripId,
+    String? seat,
     String displayCurrency = 'MZN',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
@@ -233,6 +262,8 @@ class PassengerApi {
         'origin_stop_id': originStopId,
         'destination_stop_id': destinationStopId,
         'quantity': 1,
+        if (tripId != null) 'trip_id': tripId,
+        if (seat != null && seat.isNotEmpty) 'passengers': [{'seat': seat}],
         'display_currency': displayCurrency,
       },
     );

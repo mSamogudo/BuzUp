@@ -60,6 +60,9 @@ class PurchaseTravelPassSerializer(serializers.Serializer):
     origin_stop_id = serializers.IntegerField(required=False)
     destination_stop_id = serializers.IntegerField(required=False)
     trip_id = serializers.IntegerField(required=False)
+    # Lugar escolhido na planta. So as rotas interprovinciais e internacionais
+    # o marcam — nas urbanas vem vazio e e ignorado.
+    seat = serializers.CharField(max_length=8, required=False, allow_blank=True, default="")
     passenger_package_id = serializers.IntegerField(required=False, allow_null=True)
     use_package = serializers.BooleanField(required=False, default=True)
     # Moeda em que a app mostrou o preco (ex.: ZAR). So exibicao; o debito da

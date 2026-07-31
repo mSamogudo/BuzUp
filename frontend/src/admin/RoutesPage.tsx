@@ -13,7 +13,13 @@ import { useConfirm } from "../ui/ConfirmDialog";
 
 type RouteDirection = "outbound" | "inbound";
 
-interface RouteRecord { id: number; uuid: string; code: string; name: string; description: string; status: string; stop_count: number; created_at: string; }
+interface RouteRecord { id: number; uuid: string; code: string; name: string; description: string; status: string; service_type: string; stop_count: number; created_at: string; }
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  urban: "Urbano / Interurbano",
+  interprovincial: "Interprovincial",
+  international: "Internacional",
+};
+
 interface RouteStopRecord { id?: number; uuid?: string; stop_id: number; stop_code?: string; stop_name: string; sequence: number; distance_from_start_km: string; direction: RouteDirection; }
 
 const DIRECTIONS: RouteDirection[] = ["outbound", "inbound"];
@@ -29,9 +35,9 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
   const [editId, setEditId] = useState<number | null>(null);
   const [viewing, setViewing] = useState<any>(null);
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", status: "active" });
+  const [form, setForm] = useState({ name: "", description: "", status: "active", service_type: "urban" });
   const f = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
-  const reset = () => { setEditId(null); setModalOpen(false); setForm({ name: "", description: "", status: "active" }); };
+  const reset = () => { setEditId(null); setModalOpen(false); setForm({ name: "", description: "", status: "active", service_type: "urban" }); };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true);
@@ -73,6 +79,7 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
       <SectionCard title={t(lc, "routes")}>
         <DataTable columns={[
           { header: t(lc, "route"), render: (r: RouteRecord) => <TablePrimaryCell title={r.code} subtitle={r.name} /> },
+          { header: "Tipo", render: (r: RouteRecord) => SERVICE_TYPE_LABELS[r.service_type] || "Urbano / Interurbano" },
           { header: t(lc, "routeStops"), render: (r: RouteRecord) => String(r.stop_count || 0) },
           { header: t(lc, "status"), render: (r: RouteRecord) => <StatusBadge value={r.status} /> },
           { header: t(lc, "created"), render: (r: RouteRecord) => formatDateTime(r.created_at) },
@@ -80,7 +87,7 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
             <div className="admin-inline-actions">
               <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => void openDetail(r)} />
               <TableActionButton icon={<MapPin size={15} />} label={t(lc, "manageStops")} onClick={() => navigate(`/app/routes/${r.id}/stops`)} />
-              <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setForm({ name: r.name, description: r.description, status: r.status }); }} />
+              <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setForm({ name: r.name, description: r.description, status: r.status, service_type: r.service_type || "urban" }); }} />
               <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={() => remove(r)} tone="danger" />
             </div>
           )},
@@ -131,8 +138,12 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "name")}</span><input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "status")}</span><select value={form.status} onChange={(e) => f("status", e.target.value)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option><option value="suspended">{t(lc, "suspended")}</option></select></label>
+            <label className="field"><span>Tipo de serviço</span><select value={form.service_type} onChange={(e) => f("service_type", e.target.value)}><option value="urban">Urbano / Interurbano</option><option value="interprovincial">Interprovincial</option><option value="international">Internacional</option></select></label>
             <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
           </div>
+          <p className="dash-kpi-note" style={{ marginTop: 4 }}>
+            O tipo de serviço decide se o passageiro escolhe lugar: nas carreiras urbanas ninguém escolhe, nas interprovinciais e internacionais a planta do autocarro é mostrada na compra. Escolher mal faz o passo desaparecer ou aparecer onde não devia.
+          </p>
           <div className="admin-form-actions">
             <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
             <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>

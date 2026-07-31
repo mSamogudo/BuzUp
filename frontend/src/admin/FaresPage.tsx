@@ -33,7 +33,11 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   const { data: fees, loading: lF, reload: rF } = useAsyncData<AdminFee[]>(feesLoader, [token]);
   const { data: fxRates, loading: lX, reload: rX } = useAsyncData<ExchangeRate[]>(fxLoader, [token]);
   const reload = () => { rP(); rR(); rF(); rX(); };
-  const [tab, setTab] = useState<"rules" | "products" | "fees" | "fx">("rules");
+  const [tab, setTab] = useState<"rules" | "products" | "fees" | "fx" | "contacts">("rules");
+  // Contactos vivem no branding (singleton), nao numa lista — por isso o
+  // formulario e carregado uma vez e gravado com PATCH, sem modal.
+  const [contacts, setContacts] = useState({ emergency_phone: "", support_phone: "", support_email: "" });
+  const [contactsLoaded, setContactsLoaded] = useState(false);
   const [feeModal, setFeeModal] = useState(false);
   const [editFee, setEditFee] = useState<number | null>(null);
   const [feeForm, setFeeForm] = useState({ code: "", name: "", kind: "card_issuance", amount: "0.00", currency: "MZN", description: "", is_active: true });
@@ -50,6 +54,20 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   const [pForm, setPForm] = useState({ name: "", product_type: "single_trip", status: "active" });
   const [rForm, setRForm] = useState({ fare_product: "", route: "", origin_stop: "", destination_stop: "", calculation_method: "fixed", fixed_amount: "", amount_per_km: "", min_amount: "", max_amount: "", distance_min_km: "", distance_max_km: "", passenger_class: "standard", priority: "0" });
   const [routeStopOpts, setRouteStopOpts] = useState<StopOption[]>([]);
+
+  useEffect(() => {
+    if (tab !== "contacts" || contactsLoaded) return;
+    apiFetch("/api/branding/", token!)
+      .then((d) => {
+        setContacts({
+          emergency_phone: d?.emergency_phone || "",
+          support_phone: d?.support_phone || "",
+          support_email: d?.support_email || "",
+        });
+        setContactsLoaded(true);
+      })
+      .catch((err) => showToast("danger", err instanceof Error ? err.message : "Erro"));
+  }, [tab, contactsLoaded, token]);
 
   useEffect(() => {
     if (!ruleModal || !rForm.route) {
@@ -130,7 +148,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         { key: "products", label: t(lc, "fareProducts"), count: (products || []).length },
         { key: "fees", label: "Taxas administrativas", count: (fees || []).length },
         { key: "fx", label: "Câmbio", count: (fxRates || []).length },
-      ]} value={tab} onChange={(k) => setTab(k as "rules" | "products" | "fees" | "fx")} />
+        { key: "contacts", label: "Contactos" },
+      ]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
 
       {tab === "rules" && (
         <SectionCard title={t(lc, "fareRules")}>
@@ -235,6 +254,45 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               </div>
             )},
           ]} rows={fxRates || []} rowKey={(r) => r.uuid} loading={lX} emptyMessage="Sem taxas de câmbio — os preços aparecem só em meticais." />
+        </SectionCard>
+      )}
+
+      {tab === "contacts" && (
+        <SectionCard
+          title="Contactos no bilhete"
+          description="Aparecem impressos em cada bilhete e nas apps. O número de emergência é o que o passageiro liga se alguma coisa correr mal durante a viagem — deve atender 24 horas."
+        >
+          <form className="admin-form" onSubmit={async (e: FormEvent) => {
+            e.preventDefault();
+            setBusy(true);
+            try {
+              await apiPatch("/api/branding/", token!, contacts);
+              showToast("success", "Contactos actualizados. Os bilhetes emitidos a partir de agora já os levam.");
+            } catch (err) {
+              showToast("danger", err instanceof Error ? err.message : "Erro");
+            } finally { setBusy(false); }
+          }}>
+            <div className="admin-form-grid">
+              <label className="field"><span>Número de emergência</span>
+                <input value={contacts.emergency_phone} placeholder="ex: 800 123 456"
+                       onChange={(e) => setContacts((c) => ({ ...c, emergency_phone: e.target.value }))} />
+              </label>
+              <label className="field"><span>Número de apoio ao cliente</span>
+                <input value={contacts.support_phone} placeholder="ex: 84 000 0000"
+                       onChange={(e) => setContacts((c) => ({ ...c, support_phone: e.target.value }))} />
+              </label>
+              <label className="field"><span>Email de apoio</span>
+                <input type="email" value={contacts.support_email} placeholder="ex: apoio@exemplo.co.mz"
+                       onChange={(e) => setContacts((c) => ({ ...c, support_email: e.target.value }))} />
+              </label>
+            </div>
+            <p className="dash-kpi-note" style={{ marginTop: 8 }}>
+              Deixar em branco tira o contacto do bilhete. Um bilhete sem número de emergência não dá ao passageiro nenhuma forma de pedir ajuda a bordo.
+            </p>
+            <div className="admin-form-actions">
+              <button className="primary-button" disabled={busy || !contactsLoaded} type="submit">{busy ? t(lc, "saving") : t(lc, "update")}</button>
+            </div>
+          </form>
         </SectionCard>
       )}
 

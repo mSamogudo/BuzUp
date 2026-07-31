@@ -91,6 +91,8 @@ def _trip_payload(trip: Trip) -> dict:
         "driver": trip.driver.full_name if trip.driver else "",
         "planned_departure_at": trip.planned_departure_at.isoformat() if trip.planned_departure_at else None,
         "status": trip.status,
+        "service_type": trip.route.service_type,
+        "seat_selection": trip.route.requires_seat_selection,
     }
 
 
@@ -580,6 +582,12 @@ class AgentTripDetailView(APIView):
             seen.setdefault(rs.stop_id, {"id": rs.stop_id, "code": rs.stop.code, "name": rs.stop.name})
         payload = _trip_payload(trip)
         payload["stops"] = list(seen.values())
+        # Planta de lugares: o POS precisa dela para as rotas que marcam lugar
+        # (interprovincial, internacional). Nas urbanas vem `has_seat_map`
+        # falso e o agente vende sem passar por aqui.
+        from apps.guest_checkouts.seatmap import seat_map
+
+        payload["seat_map"] = seat_map(trip)
         return Response(payload)
 
 
@@ -684,6 +692,7 @@ class AgentSaleCreateView(APIView):
                     quantity=data.get("quantity", 1),
                     idempotency_key=idem_full,
                     display_currency=data.get("display_currency") or "MZN",
+                    seats=data.get("seats") or [],
                 )
                 # Card payment is confirmed synchronously; return final state.
                 return Response({
@@ -711,6 +720,7 @@ class AgentSaleCreateView(APIView):
                 quantity=data.get("quantity", 1),
                 idempotency_key=idem_full,
                 display_currency=data.get("display_currency") or "MZN",
+                seats=data.get("seats") or [],
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)

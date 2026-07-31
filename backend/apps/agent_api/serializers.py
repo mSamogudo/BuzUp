@@ -64,6 +64,12 @@ class AgentSaleSerializer(serializers.Serializer):
     display_currency = serializers.CharField(
         max_length=3, required=False, allow_blank=True, default="MZN",
     )
+    # Lugares escolhidos, quando a rota os marca (interprovincial e
+    # internacional). Vazio nas carreiras urbanas, onde ninguem escolhe.
+    seats = serializers.ListField(
+        child=serializers.CharField(max_length=8),
+        required=False, allow_empty=True, default=list,
+    )
 
     def validate(self, attrs):
         if not attrs.get("trip_id") and not attrs.get("route_id"):
@@ -77,6 +83,13 @@ class AgentSaleSerializer(serializers.Serializer):
         elif method == "card":
             if not attrs.get("card_uid") and not attrs.get("qr_token"):
                 raise serializers.ValidationError("Indique card_uid ou qr_token para pagamento por cartao.")
+
+        seats = attrs.get("seats") or []
+        if seats:
+            if len(set(seats)) != len(seats):
+                raise serializers.ValidationError({"seats": "Lugar repetido na mesma venda."})
+            if len(seats) != attrs.get("quantity", 1):
+                raise serializers.ValidationError({"seats": "Indique um lugar por bilhete."})
         return attrs
 
 

@@ -33,6 +33,30 @@ class SaleError(Exception):
     pass
 
 
+def _seat_payload(seats: list[str] | None, quantity: int) -> list[dict]:
+    """Lugares no formato que `issue_guest_pass` ja consome (um por bilhete)."""
+    chosen = [s for s in (seats or []) if s]
+    if not chosen:
+        return []
+    return [{"seat": chosen[i] if i < len(chosen) else ""} for i in range(quantity)]
+
+
+def _assert_seats_free(trip, seats: list[str] | None) -> None:
+    """Confirma que os lugares continuam livres. Chamar SOB o lock da viagem.
+
+    Sem isto, dois agentes a vender ao mesmo tempo na mesma partida podiam
+    atribuir o mesmo lugar a duas pessoas — e so se descobria a bordo.
+    """
+    chosen = {s for s in (seats or []) if s}
+    if not chosen or trip is None:
+        return
+    from apps.guest_checkouts.seatmap import occupied_seats
+
+    clash = sorted(chosen & occupied_seats(trip))
+    if clash:
+        raise SaleError(f"Lugar(es) ja ocupado(s): {', '.join(clash)}. Escolha outro.")
+
+
 def create_pos_sale(
     *,
     agent,
@@ -45,6 +69,7 @@ def create_pos_sale(
     quantity: int = 1,
     idempotency_key: str = "",
     display_currency: str = "MZN",
+    seats: list[str] | None = None,
 ) -> tuple[GuestCheckout, PaymentIntent]:
     """Create a sale + initiate payment for an agent's POS terminal.
 
@@ -121,11 +146,13 @@ def create_pos_sale(
                 trip = lock_trip_for_sale(trip, quantity)
             except SeatsUnavailable as e:
                 raise SaleError(str(e)) from e
+            _assert_seats_free(trip, seats)
 
         gc = GuestCheckout.objects.create(
             reference=ref,
             payer_phone=phone,
             buyer_name="",
+            passengers=_seat_payload(seats, quantity),
             route_code=route.code,
             route_name=route.name,
             origin_stop=origin.name,
@@ -191,6 +218,7 @@ def create_card_sale(
     quantity: int = 1,
     idempotency_key: str = "",
     display_currency: str = "MZN",
+    seats: list[str] | None = None,
 ) -> tuple[GuestCheckout, PaymentIntent, list]:
     """Card-based POS sale: lookup card -> debit wallet -> confirm + issue.
 
@@ -299,6 +327,7 @@ def create_card_sale(
                 trip = lock_trip_for_sale(trip, quantity)
             except SeatsUnavailable as e:
                 raise SaleError(str(e)) from e
+            _assert_seats_free(trip, seats)
 
         wallet = Wallet.objects.select_for_update().get(pk=wallet.pk)
         if wallet.status != Wallet.Status.ACTIVE:
@@ -340,6 +369,7 @@ def create_card_sale(
             reference=ref,
             payer_phone=phone,
             buyer_name=pa.full_name or "",
+            passengers=_seat_payload(seats, quantity),
             route_code=route.code,
             route_name=route.name,
             origin_stop=origin.name,

@@ -279,3 +279,60 @@ class QrPassBurnTests(TicketDoubleValidationTests):
 
         self.assertEqual(first.status, ValidationEvent.Status.DENIED)
         self.assertEqual(second.id, first.id, "a repeticao devia devolver a mesma recusa")
+
+
+class PosSeatSaleTests(ConcurrencyBase):
+    """Venda no POS com lugar marcado (interprovincial/internacional)."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.trips.models import Agent
+
+        self.route.service_type = Route.ServiceType.INTERNATIONAL
+        self.route.save(update_fields=["service_type"])
+        # Espaço para vários lugares nesta suite (a base tem 1 só).
+        self.vehicle.seated_capacity = 20
+        self.vehicle.seat_layout = "1+2"
+        self.vehicle.save(update_fields=["seated_capacity", "seat_layout"])
+        self.agent = Agent.objects.create(full_name="Agente Lugares", status=Agent.Status.ACTIVE)
+
+    def _sell(self, seats, phone="841000001", quantity=None):
+        from apps.agent_api.sales import create_pos_sale
+
+        return create_pos_sale(
+            agent=self.agent, device=None, trip_id=self.trip.id, route_id=None,
+            origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+            passenger_phone=phone, quantity=quantity or max(len(seats), 1),
+            seats=seats,
+        )
+
+    def test_seat_is_recorded_on_the_ticket(self):
+        gc, _pi = self._sell(["3B"])
+        self.assertEqual(gc.passengers, [{"seat": "3B"}])
+
+    def test_two_agents_cannot_sell_the_same_seat(self):
+        from apps.agent_api.sales import SaleError
+
+        self._sell(["5A"], phone="841000001")
+
+        with self.assertRaises(SaleError) as ctx:
+            self._sell(["5A"], phone="841000002")
+        self.assertIn("5A", str(ctx.exception))
+
+    def test_simultaneous_sales_of_the_same_seat(self):
+        """A corrida a valer: dois agentes, o mesmo lugar, ao mesmo tempo."""
+        from apps.agent_api.sales import SaleError
+
+        def sell(i):
+            try:
+                gc, _ = self._sell(["7C"], phone=f"84100{i:04d}")
+                return f"vendido:{gc.reference}"
+            except SaleError as e:
+                return f"recusado:{e}"
+
+        results = run_together(sell, n=2)
+        vendidos = [r for r in results if isinstance(r, str) and r.startswith("vendido")]
+        self.assertEqual(
+            len(vendidos), 1,
+            f"o mesmo lugar foi vendido duas vezes: {results}",
+        )

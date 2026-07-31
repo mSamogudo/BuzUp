@@ -15,6 +15,7 @@ import '../../core/idempotency.dart';
 import '../../core/labels.dart';
 import '../../core/nfc.dart';
 import '../../core/providers.dart';
+import '../../core/seat_picker.dart';
 import '../../core/stop_picker.dart';
 import '../../core/theme.dart';
 
@@ -58,6 +59,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   Map<String, double> _rates = const {};
   String _currency = 'MZN';
 
+  // Planta de lugares: so existe nas rotas que marcam lugar (interprovincial
+  // e internacional). Nas urbanas vem vazia e o passo nem aparece.
+  Map<String, dynamic>? _seatMap;
+  final List<String> _pickedSeats = [];
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +79,10 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   }
 
   double? get _rate => _currency == 'MZN' ? null : _rates[_currency];
+
+  /// A rota desta partida marca lugar? Quem decide e o backend (tipo de
+  /// servico da rota) — o agente nao responde a nenhuma pergunta sobre isso.
+  bool get _seatsRequired => _seatMap?['has_seat_map'] == true;
 
   String _inDisplay(num mzn) {
     final r = _rate;
@@ -112,6 +122,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       final detail = await ref.read(agentApiProvider).trip(trip['id'] as int);
       setState(() {
         _stops = (detail['stops'] as List?) ?? [];
+        _seatMap = (detail['seat_map'] as Map?)?.cast<String, dynamic>();
+        _pickedSeats.clear();
         _step = 1;
       });
     } on DioException catch (e) {
@@ -182,12 +194,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         quantity: _quantity,
         deviceSerial: serial,
         displayCurrency: _currency,
+        seats: _seatsRequired ? List<String>.from(_pickedSeats) : const [],
         // A assinatura inclui tudo o que define a venda: se o agente voltar
         // atras e corrigir o destino ou a quantidade, a chave roda sozinha e a
         // venda seguinte nao e confundida com a anterior.
         idempotencyKey: _idem.keyFor(
           'sale:${_selectedTrip!['id']}:$_originId:$_destinationId:$_quantity'
-          ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}:$_currency',
+          ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}:$_currency'
+          ':${_pickedSeats.join(",")}',
         ),
       );
       // O servidor respondeu: a venda seguinte e nova e leva chave nova.
@@ -217,8 +231,36 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _error = ApiClient.extractError(e);
         _step = 2;
       });
+      // Se o lugar entretanto foi vendido por outro agente, a planta que esta
+      // no ecra ja mente. Recarrega-la evita o agente insistir no mesmo lugar.
+      if (_seatsRequired && (_error ?? '').toLowerCase().contains('ocupado')) {
+        await _refreshSeatMap();
+      }
     }
     if (mounted) setState(() {});
+  }
+
+  /// Recarrega a planta e larga os lugares que entretanto ficaram ocupados.
+  Future<void> _refreshSeatMap() async {
+    final trip = _selectedTrip;
+    if (trip == null) return;
+    try {
+      final detail = await ref.read(agentApiProvider).trip(trip['id'] as int);
+      final map = (detail['seat_map'] as Map?)?.cast<String, dynamic>();
+      if (map == null || !mounted) return;
+      final taken = <String>{
+        for (final row in (map['rows'] as List? ?? const []))
+          for (final side in ['left', 'right'])
+            for (final s in ((row as Map)[side] as List? ?? const []))
+              if ((s as Map)['occupied'] == true) s['label'].toString(),
+      };
+      setState(() {
+        _seatMap = map;
+        _pickedSeats.removeWhere(taken.contains);
+      });
+    } catch (_) {
+      // Falhar a recarregar a planta nao pode esconder o erro da venda.
+    }
   }
 
   void _startPolling() {
@@ -440,7 +482,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('Quantidade'),
                 Row(children: [
-                  IconButton(icon: const Icon(Icons.remove), onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null),
+                  IconButton(icon: const Icon(Icons.remove), onPressed: _quantity > 1 ? () => setState(() {
+                    _quantity--;
+                    // Baixar a quantidade tem de largar os lugares a mais,
+                    // senao ficavam escolhidos mais lugares do que bilhetes.
+                    while (_pickedSeats.length > _quantity) {
+                      _pickedSeats.removeLast();
+                    }
+                  }) : null),
                   Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   IconButton(icon: const Icon(Icons.add), onPressed: _quantity < 10 ? () => setState(() => _quantity++) : null),
                 ]),
@@ -463,6 +512,32 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             ]),
           ),
         ),
+        if (_seatsRequired) ...[
+          const SizedBox(height: 12),
+          Row(children: [
+            const Icon(Icons.event_seat, size: 16, color: BuzUpColors.blue),
+            const SizedBox(width: 6),
+            Text(
+              _pickedSeats.length == _quantity
+                  ? 'Lugares: ${_pickedSeats.join(", ")}'
+                  : 'Escolha ${_quantity - _pickedSeats.length} lugar(es)',
+              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          SeatPicker(
+            seatMap: _seatMap!,
+            picked: _pickedSeats,
+            maxPick: _quantity,
+            onToggle: (label) => setState(() {
+              if (_pickedSeats.contains(label)) {
+                _pickedSeats.remove(label);
+              } else if (_pickedSeats.length < _quantity) {
+                _pickedSeats.add(label);
+              }
+            }),
+          ),
+        ],
         const SizedBox(height: 12),
         _methodPicker(),
         const SizedBox(height: 10),
@@ -487,7 +562,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          onPressed: _requestPayment,
+          onPressed: (_seatsRequired && _pickedSeats.length != _quantity)
+              ? null
+              : _requestPayment,
         ),
         TextButton(onPressed: () => setState(() => _step = 1), child: const Text('Voltar')),
       ]),
@@ -931,6 +1008,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             _cardUid = null;
             _qrToken = null;
             _scannedCard = null;
+            _seatMap = null;
+            _pickedSeats.clear();
             _idem.rotate();
             _paymentRef = null;
             _saleRef = null;

@@ -118,3 +118,31 @@ certbot certonly --webroot -w /var/www/certbot -d buzup.co.mz -d www.buzup.co.mz
 ```
 
 Nao executar `docker compose --profile standalone` no servidor compartilhado, porque esse modo tenta publicar a porta 80 directamente e pode colidir com CONDOVISIT, ETICKETING ou o proxy central.
+
+## Monitorizacao
+
+`scripts/monitor_prod.sh` corre no proprio servidor via cron e verifica os
+sites (HTTP 200) e o estado dos containers, alertando por webhook.
+
+Isso cobre "um container caiu" mas **nao** cobre "o servidor caiu": um monitor
+que vive na maquina que morreu nao tem como avisar ninguem. Para fechar essa
+lacuna e preciso um monitor **externo**, fora deste servidor. Duas opcoes, a
+escolher conforme a conta que a UpDigital ja tenha:
+
+**A. Verificacao externa (UptimeRobot, Better Uptime, Pingdom)** — cria um
+monitor HTTP a apontar para `https://buzup.updigital.co.mz/api/health/`, de 5
+em 5 minutos, com alerta por email/SMS ao fim de 2 falhas seguidas. Nao exige
+nada do lado do servidor.
+
+**B. Dead man's switch (healthchecks.io)** — o servidor faz ping periodico e o
+servico alerta quando o ping **deixa** de chegar. Cobre tambem o caso de o cron
+em si morrer. Ja ha suporte no script: basta apontar `MONITOR_WEBHOOK_URL` para
+o URL de ping e o cron passa a bater la de 5 em 5 minutos.
+
+```sh
+printf '*/5 * * * * root MONITOR_WEBHOOK_URL=https://hc-ping.com/<uuid> /opt/buzup-ops/monitor_prod.sh >/dev/null 2>&1\n' \
+    > /etc/cron.d/buzup-monitor
+```
+
+Enquanto nenhuma das duas estiver activa, uma queda do servidor fora do horario
+de expediente so se descobre quando alguem tentar usar o sistema.

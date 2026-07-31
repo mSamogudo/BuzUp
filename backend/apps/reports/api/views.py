@@ -595,7 +595,9 @@ class ExportValidationsView(APIView):
             "Passageiro", "Cartao", "Dispositivo", "Falha",
         ])
 
-        for v in qs[:5000]:
+        page = list(qs[:MAX_ROWS + 1])
+        csv_truncated = len(page) > MAX_ROWS
+        for v in page[:MAX_ROWS]:
             writer.writerow([
                 v.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 v.validation_type,
@@ -610,12 +612,14 @@ class ExportValidationsView(APIView):
                 v.failure_reason,
             ])
 
+        _warn_if_truncated(writer, csv_truncated)
         response = HttpResponse(output.getvalue(), content_type="text/csv")
         response["Content-Disposition"] = "attachment; filename=validations.csv"
+        response["X-Report-Truncated"] = "1" if csv_truncated else "0"
         return response
 
 
-from apps.reports.builder import REGISTRY, aggregate_totals
+from apps.reports.builder import MAX_ROWS, REGISTRY, aggregate_totals
 from apps.reports.exporters import render_pdf, render_xlsx
 from rest_framework.authentication import BaseAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -653,6 +657,23 @@ def _parse_filters(request):
         if qp.get(key):
             out[key] = qp[key]
     return out
+
+
+def _warn_if_truncated(writer, truncated: bool) -> None:
+    """Escreve o aviso como ultima linha do CSV.
+
+    Quem abre o ficheiro no Excel ve o corte; um cabecalho HTTP nao sobrevive a
+    um ficheiro guardado e reenviado, e era assim que o relatorio incompleto
+    passava por completo.
+    """
+    if not truncated:
+        return
+    writer.writerow([])
+    writer.writerow([
+        f"ATENCAO: mostradas apenas as primeiras {MAX_ROWS} linhas. "
+        "Ha mais movimentos no periodo — reduza o intervalo de datas ou filtre "
+        "para obter o ficheiro completo."
+    ])
 
 
 def _filters_summary(filters: dict) -> str:
@@ -707,12 +728,23 @@ class ReportBuilderRunView(APIView):
         filters = _parse_filters(request)
         rows = spec.build_rows(filters)
         totals = aggregate_totals(spec, rows)
+        # O aviso tem de ir DENTRO do documento: e o PDF/XLSX que segue por
+        # email e serve de base a reconciliacao, e um relatorio cortado com ar
+        # de completo faz as contas nao baterem sem ninguem perceber porque.
+        truncated = bool(getattr(rows, "truncated", False))
 
         df = filters.get("date_from")
         dt_to = filters.get("date_to")
         period_from = df.date().isoformat() if df else ""
         period_to = (dt_to - timedelta(seconds=1)).date().isoformat() if dt_to else ""
         filters_summary = _filters_summary(filters)
+        if truncated:
+            aviso = (
+                f"ATENCAO: mostradas apenas as primeiras {MAX_ROWS} linhas — "
+                "ha mais movimentos no periodo. Reduza o intervalo de datas ou "
+                "filtre por rota/agente para obter o relatorio completo."
+            )
+            filters_summary = f"{filters_summary} · {aviso}" if filters_summary else aviso
 
         # NOTE: using `output` (not `format`) so DRF's content negotiator
         # doesn't intercept it and return 404 for unknown renderers.
@@ -725,6 +757,7 @@ class ReportBuilderRunView(APIView):
                 totals=totals, filters_summary=filters_summary,
             )
             resp = HttpResponse(pdf, content_type="application/pdf")
+            resp["X-Report-Truncated"] = "1" if truncated else "0"
             resp["Content-Disposition"] = f'inline; filename="relatorio-{kind}-{period_from}-{period_to}.pdf"'
             return resp
 
@@ -735,6 +768,7 @@ class ReportBuilderRunView(APIView):
                 totals=totals, filters_summary=filters_summary,
             )
             resp = HttpResponse(data, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            resp["X-Report-Truncated"] = "1" if truncated else "0"
             resp["Content-Disposition"] = f'attachment; filename="relatorio-{kind}-{period_from}-{period_to}.xlsx"'
             return resp
 
@@ -755,6 +789,11 @@ class ReportBuilderRunView(APIView):
             ],
             "row_count": len(rows),
             "truncated": len(rows) > 500,
+            # Diferente de `truncated`: aquele diz que a pre-visualizacao mostra
+            # so 500 linhas das que ha; este diz que a propria consulta bateu no
+            # tecto e ha movimentos que nem sequer foram lidos.
+            "row_limit_reached": truncated,
+            "row_limit": MAX_ROWS,
         })
 
 
@@ -778,7 +817,9 @@ class ExportTransactionsView(APIView):
             "Saldo Antes", "Saldo Depois", "Passageiro", "Fonte", "Estado",
         ])
 
-        for t in qs[:5000]:
+        page = list(qs[:MAX_ROWS + 1])
+        csv_truncated = len(page) > MAX_ROWS
+        for t in page[:MAX_ROWS]:
             passenger_name = ""
             if t.wallet and t.wallet.passenger_account:
                 passenger_name = t.wallet.passenger_account.full_name
@@ -795,8 +836,10 @@ class ExportTransactionsView(APIView):
                 t.status,
             ])
 
+        _warn_if_truncated(writer, csv_truncated)
         response = HttpResponse(output.getvalue(), content_type="text/csv")
         response["Content-Disposition"] = "attachment; filename=transactions.csv"
+        response["X-Report-Truncated"] = "1" if csv_truncated else "0"
         return response
 
 

@@ -254,10 +254,13 @@ def _resolve_digital_travel_pass(
     except DigitalTravelPass.DoesNotExist:
         pass
 
+    # O que o passageiro leu e o codigo inteiro: nao se volta a cortar. Aceitam-se
+    # os dois comprimentos porque os bilhetes emitidos antes de o codigo passar a
+    # 6 caracteres continuam impressos com 4.
     normalized = "".join(ch for ch in lookup.upper() if ch.isalnum())
-    short_code = ticket_short_code(normalized)
-    if len(short_code) != 4 or normalized != short_code:
+    if not (4 <= len(normalized) <= 8) or normalized != lookup.upper().replace(" ", ""):
         raise DigitalTravelPass.DoesNotExist
+    short_code = normalized
 
     now = timezone.now()
     # Janela pela VALIDADE, nao pela data de compra: um bilhete comprado tres
@@ -293,7 +296,9 @@ def _resolve_digital_travel_pass(
         legacy = [
             candidate
             for candidate in qs.filter(short_code="").order_by("-created_at")[:200]
-            if ticket_short_code(ticket_reference(candidate)) == short_code
+            # Calcular com o comprimento que foi lido: um bilhete antigo tem 4
+            # e um recente tem 6, e ambos tem de bater certo.
+            if ticket_short_code(ticket_reference(candidate), len(short_code)) == short_code
         ]
     candidates = stored + legacy
     if len(candidates) == 1:

@@ -60,6 +60,8 @@ interface ReportResult {
   columns: { key: string; label: string }[];
   rows: Record<string, unknown>[];
   row_count: number; truncated: boolean;
+  /** A consulta bateu no tecto: ha movimentos que nem sequer foram lidos. */
+  row_limit_reached?: boolean; row_limit?: number;
 }
 interface Lookup { id: number; full_name?: string; name?: string; code?: string; phone_number?: string; }
 
@@ -425,11 +427,19 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
                 loading={false}
                 emptyMessage="Sem registos no periodo / filtros indicados."
               />
-              {result.truncated && (
-                <p style={{ fontSize: 12, color: "#6B6356", marginTop: 6 }}>
-                  <Sliders size={11} /> Apenas as primeiras 500 linhas sao mostradas. Use PDF/Excel para obter ate 5000.
+              {result.row_limit_reached ? (
+                // Nao e o mesmo que mostrar so 500 na tabela: aqui a propria
+                // consulta parou no tecto, e o PDF/Excel sai igualmente
+                // incompleto. Dizer "use PDF para obter tudo" seria mentira.
+                <p style={{ fontSize: 12, color: "#B4432B", marginTop: 6, fontWeight: 600 }}>
+                  <Sliders size={11} /> Ha mais movimentos do que as {result.row_limit ?? 5000} linhas que o relatorio consegue trazer.
+                  O PDF e o Excel saem igualmente incompletos — reduza o intervalo de datas ou filtre por rota/agente.
                 </p>
-              )}
+              ) : result.truncated ? (
+                <p style={{ fontSize: 12, color: "#6B6356", marginTop: 6 }}>
+                  <Sliders size={11} /> Apenas as primeiras 500 linhas sao mostradas aqui. O PDF e o Excel trazem o periodo completo.
+                </p>
+              ) : null}
             </>
           )}
         </SectionCard>

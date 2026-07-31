@@ -625,7 +625,7 @@ def _travel_pass_payload(tp) -> dict:
     return because the request is authenticated and ownership-checked.
 
     Also includes `reference` (human-readable, ex: GC-AB12-01) and `short_code`
-    (4-char alphanum, shown big below the QR) so the agent can validate by
+    (codigo curto alfanumerico, grande por baixo do QR) so the agent can validate by
     typing the short code when the QR scan fails.
     """
     from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_code

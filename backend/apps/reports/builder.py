@@ -3,7 +3,7 @@ under a single API. Each entry defines:
 
   - title (human-readable)
   - columns (list of (key, label) pairs used by the table preview + exports)
-  - build_rows(filters) → list[dict]  (lazy execution; keep it under 5000)
+  - build_rows(filters) → RowSet (list[dict] com um sinal de truncagem)
 
 The view layer (`views.py`) hands the right entry to the JSON/PDF/Excel
 renderers so the frontend has ONE endpoint to call regardless of the report
@@ -20,6 +20,34 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.payments.models import PaymentIntent
+
+# Tecto de linhas por relatorio. Existe porque o documento e construido inteiro
+# em memoria antes de ser enviado, e um pedido sem tecto conseguia derrubar o
+# worker.
+MAX_ROWS = 5000
+
+
+class RowSet(list):
+    """Linhas de um relatorio, com a informacao de se ficaram a faltar.
+
+    Antes o corte era mudo: um relatorio financeiro com 7000 movimentos saia com
+    5000 e com ar de completo, e quem reconciliava so descobria a diferenca ao
+    nao bater certo com a contabilidade. O sinal viaja com as linhas para o
+    documento poder dize-lo em cima.
+    """
+
+    truncated = False
+
+
+def _capped(rows: list) -> RowSet:
+    """Corta no tecto e marca se sobrava mais.
+
+    Os chamadores pedem `MAX_ROWS + 1` linhas a base de dados exactamente para
+    esta funcao conseguir distinguir "sao mesmo 5000" de "sao mais de 5000".
+    """
+    out = RowSet(rows[:MAX_ROWS])
+    out.truncated = len(rows) > MAX_ROWS
+    return out
 
 
 def _mask(phone: str | None) -> str:
@@ -65,7 +93,7 @@ def _rows_sales(filters: dict) -> list[dict]:
         qs = qs.filter(provider__icontains=filters["provider"])
 
     out = []
-    for pi in qs[:5000]:
+    for pi in qs[:MAX_ROWS + 1]:
         gc = pi.guest_checkout
         meta = pi.metadata or {}
         out.append({
@@ -84,7 +112,7 @@ def _rows_sales(filters: dict) -> list[dict]:
             "provider": pi.provider or "",
             "status": pi.status,
         })
-    return out
+    return _capped(out)
 
 
 SALES = ("sales", "Vendas (bilhetes guest)", [
@@ -122,7 +150,7 @@ def _rows_topups(filters: dict) -> list[dict]:
         qs = qs.filter(metadata__kind=kind)
 
     out = []
-    for pi in qs[:5000]:
+    for pi in qs[:MAX_ROWS + 1]:
         meta = pi.metadata or {}
         # Distinguish wallet topup vs package vs issuance vs recovery
         kind = meta.get("kind") or (
@@ -139,7 +167,7 @@ def _rows_topups(filters: dict) -> list[dict]:
             "provider": pi.provider or "",
             "status": pi.status,
         })
-    return out
+    return _capped(out)
 
 
 TOPUPS = ("topups", "Recargas / Pacotes / Emissoes", [
@@ -174,7 +202,7 @@ def _rows_validations(filters: dict) -> list[dict]:
         qs = qs.filter(device_id=int(filters["device_id"]))
 
     out = []
-    for v in qs[:5000]:
+    for v in qs[:MAX_ROWS + 1]:
         out.append({
             "created_at": v.created_at,
             "validation_type": v.validation_type,
@@ -185,7 +213,7 @@ def _rows_validations(filters: dict) -> list[dict]:
             "failure_reason": v.failure_reason or "",
             "passenger": v.passenger_account.full_name if v.passenger_account_id else "",
         })
-    return out
+    return _capped(out)
 
 
 VALIDATIONS = ("validations", "Validacoes", [
@@ -221,7 +249,7 @@ def _rows_onboardings(filters: dict) -> list[dict]:
         qs = qs.filter(metadata__agent_user_id=int(filters["agent_user_id"]))
 
     out = []
-    for pi in qs[:5000]:
+    for pi in qs[:MAX_ROWS + 1]:
         meta = pi.metadata or {}
         out.append({
             "created_at": pi.created_at,
@@ -234,7 +262,7 @@ def _rows_onboardings(filters: dict) -> list[dict]:
             "payer": _mask(pi.payer_phone),
             "status": pi.status,
         })
-    return out
+    return _capped(out)
 
 
 ONBOARDING = ("onboarding", "Registo de passageiros (com cartao)", [
@@ -267,7 +295,7 @@ def _rows_recoveries(filters: dict) -> list[dict]:
         qs = qs.filter(metadata__agent_user_id=int(filters["agent_user_id"]))
 
     out = []
-    for pi in qs[:5000]:
+    for pi in qs[:MAX_ROWS + 1]:
         meta = pi.metadata or {}
         out.append({
             "created_at": pi.created_at,
@@ -280,7 +308,7 @@ def _rows_recoveries(filters: dict) -> list[dict]:
             "agent_user_id": meta.get("agent_user_id"),
             "status": pi.status,
         })
-    return out
+    return _capped(out)
 
 
 RECOVERIES = ("recoveries", "Recuperacao de cartoes", [

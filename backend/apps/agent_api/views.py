@@ -1132,12 +1132,13 @@ class AgentTicketPdfView(APIView):
 
 
 class AgentTicketVerifyView(APIView):
-    """Verify a QR token OR a shortcode (last 4 chars of reference) and
+    """Verify a QR token OR a shortcode (tail of the reference) and
     (by default) consume the ticket.
 
     Body:
       - token: full QR token string, OR
-      - shortcode: 4-char (last) of the GuestCheckout reference (case-insensitive)
+      - shortcode: codigo curto impresso no bilhete (case-insensitive). Sao 6
+        caracteres nos bilhetes actuais e 4 nos emitidos antes da mudanca.
 
     Pass `consume=false` to only check status without marking used.
     """
@@ -1158,9 +1159,13 @@ class AgentTicketVerifyView(APIView):
                   .first())
             lookup_kind = "qr"
         elif shortcode:
-            # 4-char shortcode matches the last 4 chars of GuestCheckout.reference
-            if len(shortcode) != 4:
-                return Response({"valid": False, "reason": "Shortcode deve ter 4 caracteres."}, status=400)
+            # Aceita os dois comprimentos: os bilhetes emitidos antes de o
+            # codigo passar a 6 caracteres estao impressos com 4, e continuam
+            # em circulacao.
+            if not (4 <= len(shortcode) <= 8) or not shortcode.isalnum():
+                return Response(
+                    {"valid": False, "reason": "Codigo curto invalido."}, status=400,
+                )
             # Procura pelo codigo gravado NO BILHETE. Antes procurava-se pelo
             # fim da referencia do checkout, o que nunca casava com o codigo
             # impresso em compras de 2+ bilhetes (ref BASE-01, BASE-02...).

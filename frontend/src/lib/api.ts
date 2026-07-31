@@ -156,3 +156,39 @@ export async function apiPublic(path: string, options?: RequestInit) {
   if (res.status === 204) return null;
   return res.json();
 }
+
+
+/** Descarrega um ficheiro protegido sem pôr credenciais no URL.
+ *
+ * O caminho antigo era `<a href="...?token=<JWT>">`, porque um link não envia
+ * o cabeçalho `Authorization`. Só que o URL fica gravado no log de acessos e
+ * no histórico do browser — e o que lá ficava era o token de acesso completo,
+ * que dá acesso a tudo o que o utilizador pode fazer. Pedir com `fetch` e
+ * entregar o resultado como blob mantém a credencial no cabeçalho.
+ */
+export async function apiDownload(path: string, token: string, filename: string) {
+  const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    throw new Error(`Falha ao descarregar (${res.status}).`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Igual, mas devolve um URL de objecto para mostrar num `<img>`.
+ *
+ * Quem chamar tem de revogar o URL quando deixar de precisar dele, senão o
+ * blob fica preso em memória enquanto a página estiver aberta.
+ */
+export async function apiBlobUrl(path: string, token: string): Promise<string> {
+  const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    throw new Error(`Falha ao carregar imagem (${res.status}).`);
+  }
+  return URL.createObjectURL(await res.blob());
+}

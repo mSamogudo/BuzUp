@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from apps.core.download_auth import DownloadTicketAuthentication
+from apps.core.download_scopes import CARD_QR
 from apps.cards.api.serializers import CardAssignSerializer, CardLookupSerializer, CardReplaceSerializer, CardSerializer
 from apps.cards.models import Card
 from apps.cards.services import activate_card, assign_card_to_passenger, block_card, replace_card, CardError
@@ -60,32 +62,20 @@ class CardLookupView(APIView):
         return Response(CardSerializer(card).data)
 
 
-class _QueryTokenJWTAuthentication(JWTAuthentication):
-    """Accept JWT in ?token=... so <img src=...> tags work for QR PNGs."""
-
-    def authenticate(self, request):
-        result = super().authenticate(request)
-        if result is not None:
-            return result
-        token = request.query_params.get("token") if hasattr(request, "query_params") else request.GET.get("token")
-        if not token:
-            return None
-        validated = self.get_validated_token(token)
-        return (self.get_user(validated), validated)
-
-
 class CardQrPngView(APIView):
     """Render the QR code of a digital card as a PNG.
 
     Authorisation:
       - admin staff with `cards.read` capability, OR
       - the passenger themselves (PassengerAccount.user == request.user)
-    The token may come from the standard `Authorization: Bearer` header OR
-    from `?token=...` so the image can be embedded via <img src>.
+    O acesso vem do cabecalho `Authorization: Bearer` ou, quando a imagem e
+    embebida num `<img src>` que nao leva cabecalhos, de um bilhete de curta
+    duracao em `?t=...`.
     """
 
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication, _QueryTokenJWTAuthentication]
+    authentication_classes = [JWTAuthentication, DownloadTicketAuthentication]
+    download_scope = CARD_QR
 
     def get(self, request, card_id: int):
         try:

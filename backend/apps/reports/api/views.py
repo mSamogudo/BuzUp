@@ -619,24 +619,14 @@ class ExportValidationsView(APIView):
         return response
 
 
+from apps.core.download_auth import DownloadTicketAuthentication
+from apps.core.download_scopes import REPORT_BUILDER
 from apps.reports.builder import MAX_ROWS, REGISTRY, aggregate_totals
 from apps.reports.exporters import render_pdf, render_xlsx
 from rest_framework.authentication import BaseAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
-class _QueryTokenJWT(JWTAuthentication):
-    """Allow ?token=... so an anchor link can stream PDFs/XLSX."""
-
-    def authenticate(self, request):
-        result = super().authenticate(request)
-        if result is not None:
-            return result
-        token = request.query_params.get("token") if hasattr(request, "query_params") else request.GET.get("token")
-        if not token:
-            return None
-        validated = self.get_validated_token(token)
-        return (self.get_user(validated), validated)
 
 
 def _parse_filters(request):
@@ -716,7 +706,8 @@ class ReportBuilderListView(APIView):
 
 class ReportBuilderRunView(APIView):
     permission_classes = [IsAuthenticated, HasCapabilities]
-    authentication_classes = [JWTAuthentication, _QueryTokenJWT]
+    authentication_classes = [JWTAuthentication, DownloadTicketAuthentication]
+    download_scope = REPORT_BUILDER
     required_capabilities = ("reports.read",)
 
     def get(self, request, kind: str):

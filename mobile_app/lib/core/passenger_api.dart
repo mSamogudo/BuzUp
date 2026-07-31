@@ -233,6 +233,20 @@ class PassengerApi {
     return res.data ?? const {};
   }
 
+  /// Bilhete de curta duracao para abrir um ficheiro protegido por link.
+  ///
+  /// O browser do sistema nao envia o cabecalho `Authorization`, por isso o
+  /// acesso tem de ir no URL. O que ia antes era o token de acesso completo —
+  /// e um URL fica gravado no log do servidor e no historico do browser. O
+  /// bilhete vale minutos e so serve para aquele tipo de ficheiro.
+  Future<String> downloadTicket(String scope) async {
+    final res = await _http.post<Map<String, dynamic>>(
+      '/api/auth/download-ticket/',
+      data: {'scope': scope},
+    );
+    return (res.data?['ticket'] ?? '').toString();
+  }
+
   /// Taxas de cambio de exibicao configuradas no portal (ex.: {"ZAR": "4.10"}).
   /// A cobranca e sempre em MZN — isto so alimenta a visualizacao de precos.
   Future<Map<String, dynamic>> exchangeRates() async {

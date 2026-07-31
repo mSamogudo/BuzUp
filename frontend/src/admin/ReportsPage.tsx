@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, FileSpreadsheet, FileText, RefreshCw, Search, Sliders } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { apiDownload, apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell, useAsyncData, type TableColumn } from "../ui/common";
@@ -199,11 +200,21 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
     } finally { setRunning(false); }
   };
 
-  const exportUrl = (format: "pdf" | "xlsx") => {
+  // Descarga com o token no cabecalho, nao no URL: o URL fica gravado no log
+  // do nginx e no historico do browser, e o que la ficava era o token de
+  // acesso completo.
+  const exportReport = async (format: "pdf" | "xlsx") => {
     const qs = new URLSearchParams(buildQS());
     qs.set("output", format);
-    qs.set("token", token || "");
-    return `/api/admin/reports/builder/${kind}/?${qs.toString()}`;
+    try {
+      await apiDownload(
+        `/api/admin/reports/builder/${kind}/?${qs.toString()}`,
+        token!,
+        `relatorio-${kind}.${format}`,
+      );
+    } catch (e) {
+      showToast("danger", e instanceof Error ? e.message : "Erro ao exportar.");
+    }
   };
 
   const formatCell = (key: string, value: unknown): string => {
@@ -405,8 +416,8 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             <button className="primary-button" type="button" onClick={runReport} disabled={running}>
               <Search size={15} /> {running ? "A gerar..." : "Gerar pre-visualizacao"}
             </button>
-            <a className="icon-text-button" href={exportUrl("pdf")} target="_blank" rel="noreferrer"><FileText size={15} /><span>PDF</span></a>
-            <a className="icon-text-button" href={exportUrl("xlsx")} target="_blank" rel="noreferrer"><FileSpreadsheet size={15} /><span>Excel</span></a>
+            <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf")}><FileText size={15} /><span>PDF</span></button>
+            <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx")}><FileSpreadsheet size={15} /><span>Excel</span></button>
           </div>
 
           {result && (

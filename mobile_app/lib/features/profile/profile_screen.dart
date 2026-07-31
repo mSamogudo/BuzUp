@@ -124,13 +124,19 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _downloadExtract(BuildContext context, WidgetRef ref) async {
-    final token = await ref.read(secureStoreProvider).getAccess();
-    if (token == null || token.isEmpty) return;
-    // The backend extract endpoint accepts `?token=` (see
-    // PassengerPortalExtractView authentication_classes), so the OS browser
-    // can fetch the PDF directly without an Authorization header.
+    // O browser do sistema nao envia `Authorization`, por isso o acesso vai no
+    // URL. Vai um bilhete de curta duracao e de ambito unico, e nao o token de
+    // acesso — que ficava gravado no log do servidor e no historico e dava
+    // acesso a toda a conta.
+    final String ticket;
+    try {
+      ticket = await ref.read(passengerApiProvider).downloadTicket('passenger_extract');
+    } catch (_) {
+      return;
+    }
+    if (ticket.isEmpty) return;
     final url = '${AppConfig.apiBaseUrl}/api/auth/me/passenger-portal/extract/'
-        '?token=${Uri.encodeQueryComponent(token)}';
+        '?t=${Uri.encodeQueryComponent(ticket)}';
     try {
       final ok = await launchUrl(
         Uri.parse(url),

@@ -164,7 +164,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _qrCard(String cardNumber, int cardId, String token, dynamic tr) {
-    final url = '${AppConfig.apiBaseUrl}/api/cards/$cardId/qr.png?token=${Uri.encodeQueryComponent(token)}';
+    // O token vai no cabecalho, nao no URL: um URL com o token de acesso ficava
+    // gravado no log do servidor. De caminho, o URL passa a ser estavel, por
+    // isso a cache da imagem deixa de ser invalidada a cada renovacao de token.
+    final url = '${AppConfig.apiBaseUrl}/api/cards/$cardId/qr.png';
     final surface = Theme.of(context).colorScheme.surface;
     final outline = Theme.of(context).colorScheme.outline;
     final muted = Theme.of(context).brightness == Brightness.dark
@@ -188,6 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           child: CachedNetworkImage(
             imageUrl: url,
+            httpHeaders: {'Authorization': 'Bearer $token'},
             width: 196, height: 196,
             fit: BoxFit.contain,
             placeholder: (_, _) => const SizedBox(

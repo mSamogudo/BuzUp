@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.users.api.otp_views import OtpRequestView, OtpVerifyView, PhoneCheckView
 from apps.users.api.views import (
+    DownloadTicketView,
     BuzUpTokenObtainPairView,
     BuzUpTokenRefreshView,
     ChangePasswordView,
@@ -36,6 +37,7 @@ urlpatterns = [
     path("me/passenger-portal/tickets/", PassengerPortalTicketsView.as_view(), name="passenger_portal_tickets"),
     path("me/passenger-portal/tickets/<int:ticket_id>/", PassengerPortalTicketDetailView.as_view(), name="passenger_portal_ticket_detail"),
     path("change-password/", ChangePasswordView.as_view(), name="auth_change_password"),
+    path("download-ticket/", DownloadTicketView.as_view(), name="auth_download_ticket"),
     path("password-reset/", PublicPasswordResetView.as_view(), name="auth_password_reset"),
     path("passenger/check/", PhoneCheckView.as_view(), name="passenger_check"),
     path("otp/request/", OtpRequestView.as_view(), name="otp_request"),

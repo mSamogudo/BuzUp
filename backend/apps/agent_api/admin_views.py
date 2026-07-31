@@ -14,23 +14,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from apps.core.download_auth import DownloadTicketAuthentication
+from apps.core.download_scopes import AGENT_DAY_CLOSE
 from apps.agent_api.exporters import session_pdf, session_xlsx, summary_pdf, summary_xlsx
 from apps.agent_api.models import AgentDayClose
 from apps.core.permissions import HasCapabilities
-
-
-class QueryTokenJWTAuthentication(JWTAuthentication):
-    """Accepts JWT in ?token=... too, so anchor tags can download files."""
-
-    def authenticate(self, request):
-        result = super().authenticate(request)
-        if result is not None:
-            return result
-        token = request.query_params.get("token") if hasattr(request, "query_params") else request.GET.get("token")
-        if not token:
-            return None
-        validated = self.get_validated_token(token)
-        return (self.get_user(validated), validated)
 
 
 class AdminAgentDayCloseListView(APIView):
@@ -257,7 +245,8 @@ def _aggregate_summary(date_from, date_to) -> dict:
 
 class _BaseExportView(APIView):
     permission_classes = [IsAuthenticated, HasCapabilities]
-    authentication_classes = [JWTAuthentication, QueryTokenJWTAuthentication]
+    authentication_classes = [JWTAuthentication, DownloadTicketAuthentication]
+    download_scope = AGENT_DAY_CLOSE
     required_capabilities = ("reports.read",)
 
 

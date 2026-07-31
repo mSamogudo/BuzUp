@@ -6,6 +6,9 @@ from uuid import uuid4
 
 from django.http import HttpResponse
 from django.utils import timezone
+from apps.core.download_auth import DownloadTicketAuthentication
+from apps.core.download_scopes import DOWNLOAD_SCOPES, PASSENGER_EXTRACT
+from apps.core.download_tokens import DEFAULT_MAX_AGE, make_download_ticket
 from rest_framework.throttling import AnonRateThrottle
 from django.utils.dateparse import parse_date
 from rest_framework import status
@@ -466,32 +469,35 @@ class PassengerPortalTransactionDetailView(APIView):
         return Response(payload)
 
 
-class _QueryTokenJWTAuthentication:
-    """Light wrapper: accept JWT in `?token=` so mobile can `launchUrl()` the
-    extract PDF without exposing JWT in HTTP headers (which browsers won't
-    set for plain link opens). Mirror of the helper in cards/api/views.py.
+class DownloadTicketView(APIView):
+    """Emite um bilhete de curta duracao para abrir um ficheiro por link.
+
+    Um `<a href>` nao leva cabecalho `Authorization`, e por isso os downloads
+    levavam o JWT no URL — onde fica gravado no log do nginx e no historico do
+    browser. O cliente pede aqui um bilhete (com o cabecalho, como deve ser) e
+    poe no URL esse valor, que vale minutos e so para aquele tipo de ficheiro.
     """
-    def authenticate(self, request):
-        from rest_framework_simplejwt.authentication import JWTAuthentication
-        jwt_auth = JWTAuthentication()
-        result = jwt_auth.authenticate(request)
-        if result is not None:
-            return result
-        token = (
-            request.query_params.get("token")
-            if hasattr(request, "query_params")
-            else request.GET.get("token")
-        )
-        if not token:
-            return None
-        validated = jwt_auth.get_validated_token(token)
-        return (jwt_auth.get_user(validated), validated)
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        scope = (request.data.get("scope") or "").strip()
+        if scope not in DOWNLOAD_SCOPES:
+            return Response(
+                {"detail": "Tipo de ficheiro desconhecido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({
+            "ticket": make_download_ticket(request.user, scope),
+            "expires_in": DEFAULT_MAX_AGE,
+        })
 
 
 class PassengerPortalExtractView(APIView):
-    # Allow ?token= so the mobile can open the PDF via a browser intent
-    # (no Authorization header). Header auth still works for the portal.
-    authentication_classes = [_QueryTokenJWTAuthentication]
+    # A app abre o PDF por intent do browser, que nao envia cabecalhos: o
+    # acesso vai num bilhete de curta duracao no URL, nao no JWT.
+    authentication_classes = [DownloadTicketAuthentication]
+    download_scope = PASSENGER_EXTRACT
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

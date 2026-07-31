@@ -19,6 +19,17 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=csv_config)
 # POS. Set to True only in staging/test envs (or for staff users).
 ALLOW_AGENT_CARD_CAPTURE = config("ALLOW_AGENT_CARD_CAPTURE", default=False, cast=bool)
 
+# Compatibilidade: os downloads antigos levavam o JWT de acesso em `?token=`.
+# Um URL fica gravado no log do nginx e no historico do browser, e o JWT de
+# acesso da acesso a toda a conta — por isso o caminho novo usa bilhetes de
+# curta duracao e de ambito unico (apps/core/download_tokens.py).
+#
+# Isto fica True enquanto houver apps instaladas que so sabem construir o link
+# antigo; desliga-lo hoje tirava-lhes o extracto em PDF. PASSAR A FALSE assim
+# que as versoes novas estiverem distribuidas — enquanto for True, o problema
+# que os bilhetes resolvem continua de pe.
+ALLOW_JWT_IN_QUERY_STRING = config("ALLOW_JWT_IN_QUERY_STRING", default=True, cast=bool)
+
 # Default issuance fee charged to a passenger when they receive a new card
 # on the POS. Configurable so commercial can change without code release.
 CARD_ISSUE_FEE = config("CARD_ISSUE_FEE", default="50.00")

@@ -1,9 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart' show launchUrl, LaunchMode;
 
+import '../../core/api_client.dart';
 import '../../core/bus_loader.dart';
 import '../../core/config.dart';
 import '../../core/logger.dart';
@@ -79,9 +81,22 @@ class _ExtractScreenState extends ConsumerState<ExtractScreen> {
       return;
     }
     final df = DateFormat('yyyy-MM-dd');
+    // Bilhete de curta duracao em vez do token de acesso: o URL vai parar ao
+    // log do servidor e ao historico do browser, e o token de acesso dava
+    // acesso a toda a conta.
+    final String ticket;
+    try {
+      ticket = await ref.read(passengerApiProvider).downloadTicket('passenger_extract');
+    } on DioException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ApiClient.extractError(e))),
+      );
+      return;
+    }
     final url =
         '${AppConfig.apiBaseUrl}/api/auth/me/passenger-portal/extract/'
-        '?token=${Uri.encodeQueryComponent(token)}'
+        '?t=${Uri.encodeQueryComponent(ticket)}'
         '&date_from=${df.format(_range.start)}'
         '&date_to=${df.format(_range.end)}';
     final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);

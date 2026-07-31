@@ -17,7 +17,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { apiFetch, apiPost, apiPublic } from "../lib/api";
+import { apiBlobUrl, apiDownload, apiFetch, apiPost, apiPublic } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useAuth } from "../auth/AuthContext";
@@ -115,6 +115,9 @@ export default function PassengerPortalPage() {
   const navigate = useNavigate();
 
   const [data, setData] = useState<PortalData | null>(null);
+  // O QR e puxado com o token no cabecalho: um `<img src>` com o token no URL
+  // deixava a credencial no log do servidor e no historico do browser.
+  const [qrSrc, setQrSrc] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -178,6 +181,21 @@ export default function PassengerPortalPage() {
       // silent
     }
   }, []);
+
+  useEffect(() => {
+    const cardId = data?.card_id;
+    if (!cardId || !token) { setQrSrc(""); return; }
+    let alive = true;
+    let created = "";
+    apiBlobUrl(`/api/cards/${cardId}/qr.png`, token)
+      .then((url) => {
+        created = url;
+        if (alive) setQrSrc(url); else URL.revokeObjectURL(url);
+      })
+      .catch(() => undefined);
+    // Sem revogar, cada recarga do portal deixava um blob preso em memoria.
+    return () => { alive = false; if (created) URL.revokeObjectURL(created); };
+  }, [data?.card_id, token]);
 
   useEffect(() => {
     let active = true;
@@ -769,21 +787,22 @@ export default function PassengerPortalPage() {
                         }}
                       >
                         <img
-                          src={`/api/cards/${data.card_id}/qr.png?token=${encodeURIComponent(token)}`}
+                          src={qrSrc}
                           alt="QR do meu cartao"
                           style={{ width: 220, height: 220 }}
                         />
                         <small style={{ color: "#6B6356", textAlign: "center" }}>
                           Mostre este QR ao agente para comprar bilhetes ou recarregar a sua carteira.
                         </small>
-                        <a
+                        <button
                           className="primary-button"
-                          href={`/api/cards/${data.card_id}/qr.png?token=${encodeURIComponent(token)}`}
-                          download={`buzup-qr-${data.card_number}.png`}
-                          style={{ textDecoration: "none" }}
+                          type="button"
+                          onClick={() => void apiDownload(
+                            `/api/cards/${data.card_id}/qr.png`, token, `buzup-qr-${data.card_number}.png`,
+                          ).catch(() => undefined)}
                         >
                           Descarregar QR
-                        </a>
+                        </button>
                       </div>
                     )}
                   </>

@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Eye, Lock, QrCode, RefreshCw } from "lucide-react";
-import { apiFetch, apiPost } from "../lib/api";
+import { apiBlobUrl, apiDownload, apiFetch, apiPost } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
@@ -19,6 +19,24 @@ export default function DigitalCardsPage() {
   const [filter, setFilter] = useState<"active" | "inactive">("active");
   const [viewing, setViewing] = useState<CardRecord | null>(null);
   const [qrCard, setQrCard] = useState<CardRecord | null>(null);
+  // A imagem e puxada com o token no cabecalho e mostrada a partir de um blob.
+  // Um `<img src>` com o token no URL punha a credencial no log do servidor e
+  // no historico do browser.
+  const [qrSrc, setQrSrc] = useState("");
+
+  useEffect(() => {
+    if (!qrCard) { setQrSrc(""); return; }
+    let alive = true;
+    let created = "";
+    apiBlobUrl(`/api/cards/${qrCard.id}/qr.png`, token!)
+      .then((url) => {
+        created = url;
+        if (alive) setQrSrc(url); else URL.revokeObjectURL(url);
+      })
+      .catch((e) => showToast("danger", e instanceof Error ? e.message : "Erro ao carregar QR."));
+    // Sem revogar, cada abertura do modal deixava um blob preso em memoria.
+    return () => { alive = false; if (created) URL.revokeObjectURL(created); };
+  }, [qrCard, token]);
 
   const all = cards || [];
   const filtered = filter === "active" ? all.filter((c) => c.status === "active") : all.filter((c) => c.status !== "active");
@@ -73,7 +91,7 @@ export default function DigitalCardsPage() {
         {qrCard && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "8px 0" }}>
             <img
-              src={`/api/cards/${qrCard.id}/qr.png?token=${encodeURIComponent(token || "")}`}
+              src={qrSrc}
               alt="QR"
               style={{ width: 280, height: 280, background: "#fff", borderRadius: 12, padding: 8, border: "1px solid #E7E1D4" }}
             />
@@ -81,13 +99,15 @@ export default function DigitalCardsPage() {
               Mostre este QR ao agente para cobranca de bilhetes ou recarga.<br />
               Cartao: <strong>{qrCard.card_number}</strong>
             </p>
-            <a
+            <button
               className="icon-text-button"
-              href={`/api/cards/${qrCard.id}/qr.png?token=${encodeURIComponent(token || "")}`}
-              download={`buzup-qr-${qrCard.card_number}.png`}
+              type="button"
+              onClick={() => void apiDownload(
+                `/api/cards/${qrCard.id}/qr.png`, token!, `buzup-qr-${qrCard.card_number}.png`,
+              ).catch((e) => showToast("danger", e instanceof Error ? e.message : "Erro"))}
             >
               <QrCode size={15} /><span>Descarregar PNG</span>
-            </a>
+            </button>
           </div>
         )}
       </AdminModal>

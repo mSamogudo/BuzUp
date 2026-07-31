@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Coins, Eye, FileSpreadsheet, FileText, RefreshCw, Search, X } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { apiDownload, apiFetch } from "../lib/api";
+import { showToast } from "../lib/toast";
 import { formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useAuth } from "../auth/AuthContext";
@@ -128,13 +129,26 @@ export default function AgentRevenuePage() {
     }
   };
 
-  const exportUrl = (kind: "pdf" | "xlsx", scope: "session" | "summary", id?: number) => {
-    if (scope === "session" && id) return `/api/agent/admin/day-closes/${id}/export.${kind}?token=${encodeURIComponent(token || "")}`;
-    const qs = new URLSearchParams();
-    if (dateFrom) qs.set("date_from", dateFrom);
-    if (dateTo) qs.set("date_to", dateTo);
-    qs.set("token", token || "");
-    return `/api/agent/admin/revenue/export.${kind}?${qs.toString()}`;
+  // O token vai no cabecalho, nao no URL: um URL fica gravado no log do nginx
+  // e no historico do browser, e ali ia o token de acesso completo.
+  const exportReport = async (kind: "pdf" | "xlsx", scope: "session" | "summary", id?: number) => {
+    let path: string;
+    let name: string;
+    if (scope === "session" && id) {
+      path = `/api/agent/admin/day-closes/${id}/export.${kind}`;
+      name = `fecho-${id}.${kind}`;
+    } else {
+      const qs = new URLSearchParams();
+      if (dateFrom) qs.set("date_from", dateFrom);
+      if (dateTo) qs.set("date_to", dateTo);
+      path = `/api/agent/admin/revenue/export.${kind}?${qs.toString()}`;
+      name = `receita-agentes.${kind}`;
+    }
+    try {
+      await apiDownload(path, token!, name);
+    } catch (e) {
+      showToast("danger", e instanceof Error ? e.message : "Erro ao exportar.");
+    }
   };
 
   const sessionColumns: TableColumn<DayCloseRow>[] = [
@@ -169,12 +183,12 @@ export default function AgentRevenuePage() {
       render: (r) => (
         <span style={{ display: "inline-flex", gap: 6 }}>
           <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => openDetail(r)} />
-          <a className="admin-inline-button admin-inline-button-icon" href={exportUrl("pdf", "session", r.id)} target="_blank" rel="noreferrer" title="Exportar PDF">
+          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("pdf", "session", r.id)} title="Exportar PDF">
             <FileText size={15} />
-          </a>
-          <a className="admin-inline-button admin-inline-button-icon" href={exportUrl("xlsx", "session", r.id)} target="_blank" rel="noreferrer" title="Exportar Excel">
+          </button>
+          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("xlsx", "session", r.id)} title="Exportar Excel">
             <FileSpreadsheet size={15} />
-          </a>
+          </button>
         </span>
       ),
     },
@@ -208,12 +222,12 @@ export default function AgentRevenuePage() {
           <button className="icon-text-button" onClick={reloadBoth} type="button">
             <RefreshCw size={15} /><span>Actualizar</span>
           </button>
-          <a className="icon-text-button" href={exportUrl("pdf", "summary")} target="_blank" rel="noreferrer">
+          <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf", "summary")}>
             <FileText size={15} /><span>PDF Resumo</span>
-          </a>
-          <a className="icon-text-button" href={exportUrl("xlsx", "summary")} target="_blank" rel="noreferrer">
+          </button>
+          <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx", "summary")}>
             <FileSpreadsheet size={15} /><span>Excel Resumo</span>
-          </a>
+          </button>
         </>
       }
     >
@@ -304,12 +318,12 @@ export default function AgentRevenuePage() {
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
-              <a className="icon-text-button" href={exportUrl("pdf", "session", detail.id)} target="_blank" rel="noreferrer">
+              <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf", "session", detail.id)}>
                 <FileText size={15} /><span>PDF da sessao</span>
-              </a>
-              <a className="icon-text-button" href={exportUrl("xlsx", "session", detail.id)} target="_blank" rel="noreferrer">
+              </button>
+              <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx", "session", detail.id)}>
                 <FileSpreadsheet size={15} /><span>Excel da sessao</span>
-              </a>
+              </button>
             </div>
 
             <SectionCard title={`Vendas (${(detail.payload.sales || []).length})`}>

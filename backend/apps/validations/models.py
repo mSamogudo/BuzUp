@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import models
 
 from apps.core.models import BaseModel
@@ -64,6 +65,13 @@ class ValidationEvent(BaseModel):
     device = models.ForeignKey(
         "devices.Device", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="validation_events",
+    )
+    # Quem validou (agente/motorista). O `device` sozinho nao chega: um agente
+    # a validar de um telemovel nao registado criava eventos que o fecho do
+    # dia dele nunca encontrava.
+    validated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="validations_performed",
     )
     amount_debited = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     status = models.CharField(max_length=16, choices=Status.choices)

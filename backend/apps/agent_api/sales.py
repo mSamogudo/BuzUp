@@ -138,6 +138,17 @@ def create_pos_sale(
     from apps.fares.services import display_snapshot
     disp_ccy, disp_total, disp_rate = display_snapshot(total, display_currency)
 
+    # Mesma regra da compra na app: se o telefone do passageiro tiver conta
+    # activa, o bilhete entra-lhe na conta (alem do SMS que recebe sempre).
+    # Ha contas gravadas com e sem o indicativo 258 — aceita as duas formas.
+    from apps.passengers.models import PassengerAccount
+    phone_forms = {phone}
+    if phone.startswith("258") and len(phone) == 12:
+        phone_forms.add(phone[3:])
+    linked = PassengerAccount.objects.filter(
+        phone_number__in=phone_forms, status=PassengerAccount.Status.ACTIVE,
+    ).first()
+
     with transaction.atomic():
         # Lotacao: sem este lock, um agente e um comprador web vendiam o mesmo
         # ultimo lugar ao mesmo tempo (a compra web ja bloqueava, o POS nao).
@@ -168,6 +179,7 @@ def create_pos_sale(
             exchange_rate=disp_rate,
             status=GuestCheckout.Status.PAYMENT_PENDING,
             expires_at=timezone.now() + timedelta(minutes=15),
+            linked_passenger=linked,
         )
 
         pi = PaymentIntent.objects.create(
@@ -385,6 +397,9 @@ def create_card_sale(
             exchange_rate=disp_rate,
             status=GuestCheckout.Status.PAYMENT_PENDING,
             expires_at=timezone.now() + timedelta(minutes=15),
+            # O cartao pertence a uma conta conhecida: sem isto o bilhete
+            # nascia orfao e nunca aparecia na app do titular.
+            linked_passenger=pa,
         )
         pi = PaymentIntent.objects.create(
             reference=f"PAY-{ref}",

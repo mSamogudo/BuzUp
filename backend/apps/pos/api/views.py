@@ -133,6 +133,9 @@ class PosCardValidateView(APIView):
             device_serial=session.device.serial_number,
             idempotency_key=data["idempotency_key"],
         )
+        if event.validated_by_id is None:
+            event.validated_by = request.user
+            event.save(update_fields=["validated_by", "updated_at"])
 
         return Response(ValidationEventSerializer(event).data)
 
@@ -157,6 +160,9 @@ class PosQrValidateView(APIView):
             device_serial=session.device.serial_number,
             idempotency_key=data["idempotency_key"],
         )
+        if event.validated_by_id is None:
+            event.validated_by = request.user
+            event.save(update_fields=["validated_by", "updated_at"])
 
         return Response(ValidationEventSerializer(event).data)
 

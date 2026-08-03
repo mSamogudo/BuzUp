@@ -59,6 +59,14 @@ from apps.validations.services import validate_card, validate_qr_account, valida
 from apps.wallets.services import InsufficientBalanceError, WalletBlockedError
 
 
+def _stamp_validator(event: ValidationEvent, user) -> None:
+    """Grava quem validou, sem sobrepor (retry idempotente devolve o evento
+    original — que pode ser de outro agente)."""
+    if event.pk and event.validated_by_id is None:
+        event.validated_by = user
+        event.save(update_fields=["validated_by", "updated_at"])
+
+
 class ValidationEventViewSet(BaseModelViewSet):
     queryset = ValidationEvent.all_objects.select_related(
         "route", "device", "passenger_account",
@@ -110,6 +118,7 @@ class ValidateCardView(APIView):
             device_serial=device.serial_number if device else "",
             idempotency_key=data["idempotency_key"],
         )
+        _stamp_validator(event, request.user)
 
         return Response(ValidationEventSerializer(event).data)
 
@@ -131,6 +140,7 @@ class ValidateQrView(APIView):
             device_serial=device.serial_number if device else "",
             idempotency_key=data["idempotency_key"],
         )
+        _stamp_validator(event, request.user)
 
         return Response(ValidationEventSerializer(event).data)
 
@@ -152,6 +162,7 @@ class ValidateGuestPassView(APIView):
             device_serial=device.serial_number if device else "",
             idempotency_key=data["idempotency_key"],
         )
+        _stamp_validator(event, request.user)
 
         return Response(ValidationEventSerializer(event).data)
 

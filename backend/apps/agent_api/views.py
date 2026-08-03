@@ -933,8 +933,11 @@ class AgentDayCloseView(APIView):
         device_ids = list(
             Device.objects.filter(assigned_agent=user).values_list("id", flat=True)
         )
+        # Por device OU por autor: um agente a validar de um telemovel nao
+        # registado nao tinha device atribuido e as validacoes dele sumiam
+        # do fecho (e do ecra de historico do POS, que le este payload).
         validations_qs = ValidationEvent.objects.filter(
-            device_id__in=device_ids,
+            Q(device_id__in=device_ids) | Q(validated_by=user),
             created_at__gte=since, created_at__lt=day_end,
         ).order_by("-created_at")
 
@@ -1292,6 +1295,7 @@ class AgentTicketVerifyView(APIView):
                     # unique em vez de duplicar o registo de auditoria.
                     idempotency_key=f"verify-{tp.id}",
                     device=Device.objects.filter(assigned_agent=request.user).first(),
+                    validated_by=request.user,
                 )
             except Exception:
                 pass  # ValidationEvent is bookkeeping; never blocks the validation success
@@ -1382,6 +1386,13 @@ class AgentCardValidationView(APIView):
             )
         except Exception as e:
             return Response({"valid": False, "reason": str(e)}, status=400)
+
+        # Regista quem validou: e por aqui (ou pelo device) que o fecho do dia
+        # encontra as validacoes do agente. Nao sobrepoe um valor ja gravado
+        # (retry idempotente devolve o evento original de outro agente).
+        if event.validated_by_id is None:
+            event.validated_by = request.user
+            event.save(update_fields=["validated_by", "updated_at"])
 
         approved = event.status == "approved"
         return Response({

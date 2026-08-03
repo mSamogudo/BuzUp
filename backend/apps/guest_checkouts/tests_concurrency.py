@@ -233,6 +233,93 @@ class CardChargeRepeatTests(ConcurrencyBase):
         )
 
 
+class PosSaleAccountLinkTests(CardChargeRepeatTests):
+    """Bilhete vendido no POS tem de aparecer na conta do passageiro.
+
+    O incidente: compra por QR do cartao no POS emitia o bilhete sem
+    `passenger_account`, e a app (que filtra por essa FK) nunca o mostrava.
+    """
+
+    def _agent(self):
+        from apps.trips.models import Agent
+        return Agent.objects.create(full_name="Agente Link", status=Agent.Status.ACTIVE)
+
+    def test_card_sale_links_ticket_to_the_cardholder(self):
+        from apps.agent_api.sales import create_card_sale
+
+        gc, _pi, passes = create_card_sale(
+            agent=self._agent(), device=None, trip_id=self.trip.id, route_id=None,
+            origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+            card_uid=self.card.card_uid, quantity=1,
+        )
+        self.assertEqual(gc.linked_passenger_id, self.passenger.id)
+        self.assertEqual(len(passes), 1)
+        self.assertEqual(passes[0].passenger_account_id, self.passenger.id,
+                         "o bilhete do titular do cartao nao entrou na conta dele")
+        # A mesma query da app/portal tem de o encontrar.
+        self.assertTrue(
+            DigitalTravelPass.objects.filter(passenger_account=self.passenger,
+                                             pk=passes[0].pk).exists())
+
+    def test_phone_sale_links_when_phone_has_an_account(self):
+        from apps.agent_api.sales import create_pos_sale
+
+        gc, _pi = create_pos_sale(
+            agent=self._agent(), device=None, trip_id=self.trip.id, route_id=None,
+            origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+            passenger_phone="841234567",  # a conta guarda 258841234567
+            quantity=1,
+        )
+        self.assertEqual(gc.linked_passenger_id, self.passenger.id)
+
+    def test_phone_sale_without_account_stays_unlinked(self):
+        from apps.agent_api.sales import create_pos_sale
+
+        gc, _pi = create_pos_sale(
+            agent=self._agent(), device=None, trip_id=self.trip.id, route_id=None,
+            origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
+            passenger_phone="847777777", quantity=1,
+        )
+        self.assertIsNone(gc.linked_passenger_id)
+
+
+class DayCloseCountsValidationsTests(TicketDoubleValidationTests):
+    """Fecho do dia de um agente SEM device registado.
+
+    O incidente: as validacoes so entravam no fecho atraves do device
+    atribuido; um agente a validar do proprio telemovel (sem Device) fechava
+    o dia sempre a zeros.
+    """
+
+    def test_validation_without_device_still_counts_in_day_close(self):
+        from django.contrib.auth import get_user_model
+        from rest_framework.test import APIClient
+
+        from apps.trips.models import Agent
+
+        tp, raw = self._issue_pass()
+        User = get_user_model()
+        user = User.objects.create_user(username="agente_semdev", password="x",
+                                        phone="841888888")
+        Agent.objects.create(user=user, full_name="Agente Sem Device",
+                             status=Agent.Status.ACTIVE)
+
+        client = APIClient()
+        client.force_authenticate(user=user)
+        res = client.post("/api/agent/tickets/verify/", {"token": raw, "consume": True},
+                          format="json")
+        self.assertEqual(res.status_code, 200, res.data)
+        self.assertTrue(res.data.get("consumed"), res.data)
+
+        fecho = client.get("/api/agent/day-close/")
+        self.assertEqual(fecho.status_code, 200)
+        self.assertEqual(
+            fecho.data["totals"]["validations"], 1,
+            "a validacao feita sem device registado sumiu do fecho",
+        )
+        self.assertEqual(len(fecho.data["validations"]), 1)
+
+
 class QrPassBurnTests(TicketDoubleValidationTests):
     """Bilhete queimado sem registo do embarque — negava a quem pagou."""
 

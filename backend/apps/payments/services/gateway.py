@@ -323,6 +323,16 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
     else:
         result = "FAILED"
 
+    # Erros crus do gateway/operador nao servem para mostrar ao passageiro
+    # ("Server Error" a seco ja chegou ao ecra da app). Troca por uma frase
+    # que diga o que fazer; o payload original fica na metadata do intent.
+    raw_provider_errors = {"server error", "internal server error", "bad gateway",
+                           "service unavailable", "gateway timeout"}
+    if detail and detail.strip().lower() in raw_provider_errors:
+        operadora = "M-Pesa" if provider == "MPESA" else "e-Mola"
+        detail = (f"O servico {operadora} esta temporariamente indisponivel. "
+                  "Tente novamente dentro de alguns minutos.")
+
     if not detail:
         if result == "SUCCESS":
             detail = "Pagamento confirmado."

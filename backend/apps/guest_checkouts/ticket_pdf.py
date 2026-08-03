@@ -25,6 +25,11 @@ NAVY = colors.HexColor("#071E49")
 ORANGE = colors.HexColor("#E47B11")
 RED = colors.HexColor("#D32F2F")
 
+# Caixa do cartao DENTRO do JPG do template (medida ao pixel; o resto do JPG
+# e um mate branco a volta). Em coordenadas de desenho, com o y de baixo.
+CARD_X0, CARD_Y0, CARD_X1, CARD_Y1 = 104.0, 42.0, 924.0, 1494.0
+CARD_RADIUS = 40.0
+
 
 def generate_ticket_pdf(travel_pass: DigitalTravelPass, token: str | None = None) -> bytes:
     return generate_tickets_pdf([(travel_pass, token or travel_pass.token)])
@@ -62,11 +67,59 @@ def _draw_ticket_page(c: canvas.Canvas, travel_pass: DigitalTravelPass, token: s
     c.saveState()
     c.scale(TICKET_SCALE, TICKET_SCALE)
     ref = ticket_reference(travel_pass, sequence=sequence, total=total)
+
+    # O JPG do template tem o cartao sobre um mate branco: impresso, parecia
+    # um cartao pequeno perdido numa folha em branco. Aqui a pagina ganha um
+    # fundo proprio e o cartao e ampliado (escala UNIFORME, para nao deformar
+    # QR nem logotipo) ate ocupar a altura toda, recortado pelos cantos
+    # redondos e com uma sombra suave por baixo.
+    _draw_page_background(c)
+
+    margin = 14.0
+    s = (DESIGN_HEIGHT - 2 * margin) / (CARD_Y1 - CARD_Y0)
+    card_w = (CARD_X1 - CARD_X0) * s
+    tx = (DESIGN_WIDTH - card_w) / 2 - CARD_X0 * s
+    ty = margin - CARD_Y0 * s
+
+    c.saveState()
+    c.translate(tx, ty)
+    c.scale(s, s)
+
+    # Sombra (fora do recorte, senao era cortada).
+    try:
+        c.setFillAlpha(0.18)
+        c.setFillColor(NAVY)
+        c.roundRect(CARD_X0 - 4, CARD_Y0 - 10, CARD_X1 - CARD_X0 + 8,
+                    CARD_Y1 - CARD_Y0 + 8, CARD_RADIUS, fill=1, stroke=0)
+        c.setFillAlpha(1)
+    except AttributeError:
+        pass  # reportlab sem alpha: segue sem sombra
+
+    clip = c.beginPath()
+    clip.roundRect(CARD_X0, CARD_Y0, CARD_X1 - CARD_X0, CARD_Y1 - CARD_Y0, CARD_RADIUS)
+    c.clipPath(clip, stroke=0, fill=0)
+
     _draw_template(c, nominal=_is_nominal(travel_pass))
     _draw_dynamic_fields(c, travel_pass, ref)
     _draw_qr(c, token, ref)
     _draw_emergency_contact(c, nominal=_is_nominal(travel_pass))
     c.restoreState()
+    c.restoreState()
+
+
+def _draw_page_background(c: canvas.Canvas) -> None:
+    """Fundo da pagina: gradiente azul-claro discreto em vez de branco puro."""
+    try:
+        c.saveState()
+        c.linearGradient(
+            0, DESIGN_HEIGHT, 0, 0,
+            (colors.HexColor("#F5F8FC"), colors.HexColor("#D7E1EE")),
+            extend=True,
+        )
+        c.restoreState()
+    except Exception:
+        c.setFillColor(colors.HexColor("#EDF2F8"))
+        c.rect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT, fill=1, stroke=0)
 
 
 def _is_nominal(tp: DigitalTravelPass) -> bool:

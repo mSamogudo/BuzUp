@@ -23,6 +23,9 @@ interface TripValidation { id: number; validation_type: string; status: string; 
 interface TripPass { uuid: string; payer_phone: string; fare_amount: string; status: string; origin_stop: string; destination_stop: string; created_at: string; used_at: string | null; }
 interface TripActivityEvent { event_type: string; occurred_at: string; driver_name: string; metadata: Record<string, unknown>; }
 
+interface TripStop { sequence: number; name: string; code: string; direction: string; }
+interface TripOccupancy { capacity: number; sold: number; seats_taken: string[]; }
+
 interface TripDetail {
   id: number;
   uuid: string;
@@ -37,6 +40,9 @@ interface TripDetail {
   activity_closed_at?: string | null;
   pause_seconds?: number;
   status: string;
+  service_type?: string;
+  stops?: TripStop[];
+  occupancy?: TripOccupancy;
   revenue_summary?: RevenueSummary;
   closure_summary?: RevenueSummary;
   purchases?: TripPurchase[];
@@ -44,6 +50,12 @@ interface TripDetail {
   travel_passes?: TripPass[];
   activity_events?: TripActivityEvent[];
 }
+
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  urban: "Urbano / Interurbano",
+  interprovincial: "Interprovincial",
+  international: "Internacional",
+};
 
 const LIVE_STATUSES = new Set(["boarding", "departed", "paused"]);
 
@@ -101,6 +113,10 @@ export default function TripDetailPage() {
   const purchases = trip.purchases || [];
   const passes = trip.travel_passes || [];
   const events = trip.activity_events || [];
+  // Mostra o sentido de ida; sem "outbound" definido, mostra o que houver.
+  const allStops = trip.stops || [];
+  const outbound = allStops.filter((s) => s.direction === "outbound");
+  const stops = outbound.length > 0 ? outbound : allStops;
 
   return (
     <PageFrame
@@ -139,13 +155,51 @@ export default function TripDetailPage() {
         </div>
         <div className="detail-fields" style={{ fontSize: 13 }}>
           <div className="detail-field"><dt>{t(lc, "route")}</dt><dd>{trip.route_code} - {trip.route_name}</dd></div>
+          <div className="detail-field"><dt>Tipo de servico</dt><dd>{SERVICE_TYPE_LABELS[trip.service_type || ""] || "-"}</dd></div>
           <div className="detail-field"><dt>{t(lc, "vehicles")}</dt><dd>{trip.vehicle_registration || "-"}</dd></div>
           <div className="detail-field"><dt>{t(lc, "drivers")}</dt><dd>{trip.driver_name || "-"}</dd></div>
           <div className="detail-field"><dt>{t(lc, "plannedDeparture")}</dt><dd>{formatDateTime(trip.planned_departure_at)}</dd></div>
           <div className="detail-field"><dt>Inicio actividade</dt><dd>{formatDateTime(trip.activity_started_at || null)}</dd></div>
           <div className="detail-field"><dt>Fecho actividade</dt><dd>{formatDateTime(trip.activity_closed_at || null)}</dd></div>
+          {trip.occupancy && trip.occupancy.capacity > 0 ? (
+            <div className="detail-field">
+              <dt>Ocupacao</dt>
+              <dd>
+                {trip.occupancy.sold}/{trip.occupancy.capacity} lugares
+                {trip.occupancy.seats_taken.length > 0
+                  ? ` · marcados: ${trip.occupancy.seats_taken.join(", ")}`
+                  : ""}
+              </dd>
+            </div>
+          ) : null}
         </div>
       </SectionCard>
+
+      {stops.length > 0 ? (
+        <SectionCard title={`Paragens do percurso (${stops.length})`}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {stops.map((s, i) => (
+              <span key={`${s.direction}-${s.sequence}-${s.code}`} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "5px 10px", borderRadius: 999, fontSize: 12.5,
+                    background: i === 0 || i === stops.length - 1 ? "var(--app-accent)" : "var(--app-surface-muted, #f1f5f9)",
+                    color: i === 0 || i === stops.length - 1 ? "#fff" : "var(--app-text)",
+                    border: "1px solid var(--app-border)",
+                    fontWeight: 600,
+                  }}
+                  title={s.code}
+                >
+                  <span style={{ opacity: 0.65, fontSize: 11 }}>{s.sequence}</span>
+                  {s.name}
+                </span>
+                {i < stops.length - 1 ? <span style={{ color: "var(--app-text-muted)" }}>→</span> : null}
+              </span>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
 
       <div className="admin-metric-grid">
         <MetricCard

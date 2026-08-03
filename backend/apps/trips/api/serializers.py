@@ -272,9 +272,52 @@ class TripDetailSerializer(TripSerializer):
     travel_passes = serializers.SerializerMethodField()
     activity_events = serializers.SerializerMethodField()
     revenue_summary = serializers.SerializerMethodField()
+    stops = serializers.SerializerMethodField()
+    service_type = serializers.CharField(source="route.service_type", read_only=True, default="")
+    occupancy = serializers.SerializerMethodField()
 
     class Meta(TripSerializer.Meta):
-        fields = TripSerializer.Meta.fields + ("purchases", "validations", "travel_passes", "activity_events", "revenue_summary")
+        fields = TripSerializer.Meta.fields + (
+            "purchases", "validations", "travel_passes", "activity_events",
+            "revenue_summary", "stops", "service_type", "occupancy",
+        )
+
+    def get_stops(self, obj):
+        """Paragens da rota, na ordem do percurso (sentido de ida)."""
+        return [
+            {
+                "sequence": rs.sequence,
+                "name": rs.stop.name,
+                "code": rs.stop.code,
+                "direction": rs.direction,
+            }
+            for rs in obj.route.route_stops.select_related("stop")
+            .order_by("direction", "sequence")
+        ]
+
+    def get_occupancy(self, obj):
+        """Lotacao: capacidade, bilhetes vendidos e lugares marcados."""
+        from apps.guest_checkouts.seatmap import occupied_seats
+
+        from django.utils import timezone as _tz
+
+        capacity = obj.vehicle.seated_capacity if obj.vehicle_id and obj.vehicle else 0
+        sold = 0
+        for gc in obj.guest_checkouts.filter(status="issued"):
+            sold += gc.quantity
+        # Reservas com pagamento em curso ainda ocupam lugar ate expirarem.
+        for gc in obj.guest_checkouts.filter(
+            status="payment_pending", expires_at__gt=_tz.now(),
+        ):
+            sold += gc.quantity
+        # Compras da app criam o passe sem checkout — contam a parte.
+        sold += (
+            obj.travel_passes.filter(guest_checkout__isnull=True)
+            .exclude(status__in=("cancelled", "refunded"))
+            .count()
+        )
+        seats = sorted(occupied_seats(obj))
+        return {"capacity": capacity, "sold": sold, "seats_taken": seats}
 
     def get_purchases(self, obj):
         return [

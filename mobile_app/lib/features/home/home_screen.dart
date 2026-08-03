@@ -164,50 +164,101 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _qrCard(String cardNumber, int cardId, String token, dynamic tr) {
-    // O token vai no cabecalho, nao no URL: um URL com o token de acesso ficava
-    // gravado no log do servidor. De caminho, o URL passa a ser estavel, por
-    // isso a cache da imagem deixa de ser invalidada a cada renovacao de token.
-    final url = '${AppConfig.apiBaseUrl}/api/cards/$cardId/qr.png';
+    // O QR sempre aberto ocupava ~250px e empurrava as accoes rapidas para
+    // fora do ecra. Fica um cartao compacto; tocar abre o QR em grande num
+    // dialogo — que e tambem quando ele e preciso, na hora de mostrar ao
+    // agente.
     final surface = Theme.of(context).colorScheme.surface;
     final outline = Theme.of(context).colorScheme.outline;
     final muted = Theme.of(context).brightness == Brightness.dark
         ? BuzUpColors.mutedDark : BuzUpColors.muted;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: surface,
+    return Material(
+      color: surface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: outline),
-      ),
-      child: Column(children: [
-        Text(tr('home.showAgent'),
-            style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w700, color: muted)),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.all(8),
+        onTap: () => _showQrDialog(cardNumber, cardId, token, tr),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: outline),
           ),
-          child: CachedNetworkImage(
-            imageUrl: url,
-            httpHeaders: {'Authorization': 'Bearer $token'},
-            width: 196, height: 196,
-            fit: BoxFit.contain,
-            placeholder: (_, _) => const SizedBox(
-              width: 196, height: 196,
-              child: Center(child: BusLoader(size: 110, label: '')),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: BuzUpColors.blue.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.qr_code_2, size: 26, color: BuzUpColors.blue),
             ),
-            errorWidget: (_, _, _) => const SizedBox(
-              width: 196, height: 196,
-              child: Center(child: Icon(Icons.qr_code_2, size: 80, color: BuzUpColors.muted)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${tr('home.cardPrefix')} $cardNumber',
+                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+                Text(tr('home.showAgent'),
+                    style: TextStyle(fontSize: 11.5, color: muted, fontWeight: FontWeight.w600)),
+              ]),
             ),
-          ),
+            const Icon(Icons.chevron_right, color: BuzUpColors.mutedDark),
+          ]),
         ),
-        const SizedBox(height: 6),
-        Text('${tr('home.cardPrefix')} $cardNumber',
-            style: TextStyle(fontSize: 12, color: muted, fontWeight: FontWeight.w700)),
-      ]),
+      ),
+    );
+  }
+
+  void _showQrDialog(String cardNumber, int cardId, String token, dynamic tr) {
+    // O token vai no cabecalho, nao no URL: um URL com o token de acesso ficava
+    // gravado no log do servidor. De caminho, o URL passa a ser estavel, por
+    // isso a cache da imagem deixa de ser invalidada a cada renovacao de token.
+    final url = '${AppConfig.apiBaseUrl}/api/cards/$cardId/qr.png';
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(tr('home.showAgent'),
+                style: const TextStyle(
+                    fontSize: 11, letterSpacing: 1.6,
+                    fontWeight: FontWeight.w800, color: BuzUpColors.muted)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE4EBF3)),
+              ),
+              child: CachedNetworkImage(
+                imageUrl: url,
+                httpHeaders: {'Authorization': 'Bearer $token'},
+                width: 260, height: 260,
+                fit: BoxFit.contain,
+                placeholder: (_, _) => const SizedBox(
+                  width: 260, height: 260,
+                  child: Center(child: BusLoader(size: 110, label: '')),
+                ),
+                errorWidget: (_, _, _) => const SizedBox(
+                  width: 260, height: 260,
+                  child: Center(child: Icon(Icons.qr_code_2, size: 90, color: BuzUpColors.muted)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text('${tr('home.cardPrefix')} $cardNumber',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Fechar'),
+            ),
+          ]),
+        ),
+      ),
     );
   }
 

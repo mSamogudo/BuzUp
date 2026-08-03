@@ -9,7 +9,7 @@ import '../../core/api_client.dart';
 import '../../core/bus_loader.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
-import '../../core/seat_picker.dart';
+import '../../core/seat_map_screen.dart';
 import '../../core/theme.dart';
 import 'stop_picker.dart';
 
@@ -385,17 +385,9 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                   _departurePicker(),
                   if (_seatMap != null) ...[
                     const SizedBox(height: 12),
-                    Text(
-                      _seat == null ? 'Escolha o seu lugar' : 'Lugar $_seat',
-                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 8),
-                    SeatPicker(
-                      seatMap: _seatMap!,
-                      picked: _seat == null ? const [] : [_seat!],
-                      maxPick: 1,
-                      onToggle: (label) => setState(() => _seat = _seat == label ? null : label),
-                    ),
+                    // A planta abre num ecrã proprio: embutida aqui obrigava a
+                    // rolar ate ao fim para chegar ao botao de pagar.
+                    _seatSummaryCard(),
                   ],
                 ],
                 const SizedBox(height: 12),
@@ -560,6 +552,61 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     );
   }
 
+  /// Card-resumo do lugar: mostra o estado e abre o ecrã da planta.
+  Widget _seatSummaryCard() {
+    final hasSeat = _seat != null;
+    return Material(
+      color: hasSeat ? const Color(0xFFEFF7F1) : const Color(0xFFFFF6E8),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: _openSeatMap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: hasSeat ? const Color(0xFFBFE3C8) : const Color(0xFFF2DDBB),
+            ),
+          ),
+          child: Row(children: [
+            Icon(Icons.event_seat,
+                size: 20, color: hasSeat ? const Color(0xFF2A9D8F) : const Color(0xFFB07B24)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  hasSeat ? 'Lugar $_seat' : 'Escolher o seu lugar',
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  hasSeat ? 'Toque para alterar' : 'Obrigatorio nesta rota',
+                  style: const TextStyle(fontSize: 11, color: BuzUpColors.muted),
+                ),
+              ]),
+            ),
+            const Icon(Icons.chevron_right, color: BuzUpColors.mutedDark),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSeatMap() async {
+    final map = _seatMap;
+    if (map == null) return;
+    final picked = await SeatMapScreen.pick(
+      context,
+      seatMap: map,
+      maxPick: 1,
+      initialPicked: _seat == null ? const [] : [_seat!],
+      title: 'Escolha o seu lugar',
+    );
+    if (picked != null && picked.isNotEmpty && mounted) {
+      setState(() => _seat = picked.first);
+    }
+  }
+
   Widget _methodSelector() {
     Widget option(_PayMethod m, IconData icon, String title, String subtitle) {
       final selected = _method == m;
@@ -710,14 +757,16 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             child: Text(directPay ? 'A PAGAR POR M-PESA/E-MOLA' : 'A PAGAR DA CARTEIRA',
                 style: const TextStyle(color: Colors.white, fontSize: 11.5, letterSpacing: 1.2, fontWeight: FontWeight.w900)),
           ),
-          Text(_fmtMzn(due),
+          // A moeda ESCOLHIDA e a que aparece em grande; a outra fica na
+          // linha pequena. O debito continua sempre em MZN.
+          Text(rate != null ? _fmtDisplay(due) : _fmtMzn(due),
               style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.3)),
         ]),
         if (rate != null) Padding(
           padding: const EdgeInsets.only(top: 2),
           child: Align(
             alignment: Alignment.centerRight,
-            child: Text('≈ ${_fmtDisplay(due)} · o debito e sempre em MZN',
+            child: Text('≈ ${_fmtMzn(due)} · o debito e sempre em MZN',
                 style: const TextStyle(color: Colors.white70, fontSize: 11)),
           ),
         ),

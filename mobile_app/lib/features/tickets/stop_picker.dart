@@ -41,15 +41,21 @@ class StopPickerField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
+          // O label fica sempre em cima; sem isto, com o campo vazio o label
+          // era desenhado DENTRO do campo por cima do texto de placeholder.
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          hintText: 'Toque para procurar...',
           suffixIcon: const Icon(Icons.search, size: 20),
         ),
         isEmpty: selected == null,
-        child: Text(
-          selected?['name']?.toString() ?? 'Toque para procurar...',
-          style: selected == null
-              ? const TextStyle(color: BuzUpColors.muted)
-              : const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        child: selected == null
+            ? const SizedBox.shrink()
+            : Text(
+                selected['name']?.toString() ?? '-',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
       ),
     );
   }

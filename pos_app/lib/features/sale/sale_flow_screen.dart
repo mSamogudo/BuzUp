@@ -15,7 +15,7 @@ import '../../core/idempotency.dart';
 import '../../core/labels.dart';
 import '../../core/nfc.dart';
 import '../../core/providers.dart';
-import '../../core/seat_picker.dart';
+import '../../core/seat_map_screen.dart';
 import '../../core/stop_picker.dart';
 import '../../core/theme.dart';
 
@@ -496,8 +496,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               ]),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold)),
+                // A moeda ESCOLHIDA aparece em grande; a outra na linha
+                // pequena. A cobranca e sempre em MZN.
                 Text(
-                  '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
+                  _rate != null
+                      ? _inDisplay(_unitFare() * _quantity)
+                      : '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
                 ),
               ]),
@@ -505,7 +509,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '≈ ${_inDisplay(_unitFare() * _quantity)} · cobranca em MZN',
+                    '≈ ${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN · cobranca em MZN',
                     style: const TextStyle(fontSize: 11.5),
                   ),
                 ),
@@ -514,29 +518,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ),
         if (_seatsRequired) ...[
           const SizedBox(height: 12),
-          Row(children: [
-            const Icon(Icons.event_seat, size: 16, color: BuzUpColors.blue),
-            const SizedBox(width: 6),
-            Text(
-              _pickedSeats.length == _quantity
-                  ? 'Lugares: ${_pickedSeats.join(", ")}'
-                  : 'Escolha ${_quantity - _pickedSeats.length} lugar(es)',
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
-            ),
-          ]),
-          const SizedBox(height: 8),
-          SeatPicker(
-            seatMap: _seatMap!,
-            picked: _pickedSeats,
-            maxPick: _quantity,
-            onToggle: (label) => setState(() {
-              if (_pickedSeats.contains(label)) {
-                _pickedSeats.remove(label);
-              } else if (_pickedSeats.length < _quantity) {
-                _pickedSeats.add(label);
-              }
-            }),
-          ),
+          // A planta abre num ecrã próprio (um passo): embutida aqui obrigava
+          // a rolar o formulário todo para chegar ao botão de pagar.
+          _seatSummaryCard(),
         ],
         const SizedBox(height: 12),
         _methodPicker(),
@@ -726,6 +710,67 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ),
       );
     });
+  }
+
+  /// Card-resumo dos lugares: mostra o estado e abre o ecrã da planta.
+  Widget _seatSummaryCard() {
+    final complete = _pickedSeats.length == _quantity;
+    return Material(
+      color: complete ? const Color(0xFFEFF7F1) : const Color(0xFFFFF6E8),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: _openSeatMap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: complete ? const Color(0xFFBFE3C8) : const Color(0xFFF2DDBB),
+            ),
+          ),
+          child: Row(children: [
+            Icon(Icons.event_seat,
+                size: 20, color: complete ? const Color(0xFF2A9D8F) : const Color(0xFFB07B24)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  complete
+                      ? 'Lugares: ${_pickedSeats.join(", ")}'
+                      : 'Escolher ${_quantity == 1 ? 'o lugar' : '$_quantity lugares'}',
+                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+                ),
+                Text(
+                  complete ? 'Toque para alterar' : 'Obrigatorio nesta rota',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7A8F)),
+                ),
+              ]),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF9AA9BC)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSeatMap() async {
+    if (_seatMap == null) return;
+    final picked = await SeatMapScreen.pick(
+      context,
+      seatMap: _seatMap!,
+      maxPick: _quantity,
+      initialPicked: _pickedSeats,
+      subtitle:
+          '${_selectedTrip?['route_code'] ?? ''} · ${_fare?['origin'] ?? ''} → ${_fare?['destination'] ?? ''}',
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _pickedSeats
+          ..clear()
+          ..addAll(picked);
+      });
+    }
   }
 
   Widget _methodPicker() {

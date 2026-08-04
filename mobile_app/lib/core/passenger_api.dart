@@ -274,18 +274,33 @@ class PassengerApi {
     String displayCurrency = 'MZN',
     String? emergencyName,
     String? emergencyPhone,
+    String passengerName = '',
+    String documentType = '',
+    String documentNumber = '',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/guest-checkouts/',
       data: {
         'payer_phone': payerPhone,
+        if (passengerName.isNotEmpty) 'buyer_name': passengerName,
         'origin_stop': originName,
         'destination_stop': destinationName,
         'origin_stop_id': originStopId,
         'destination_stop_id': destinationStopId,
         'quantity': 1,
         if (tripId != null) 'trip_id': tripId,
-        if (seat != null && seat.isNotEmpty) 'passengers': [{'seat': seat}],
+        // O bilhete das rotas com lugar marcado e NOMINAL: o servidor exige
+        // o nome do passageiro. Sem isto a compra por M-Pesa/e-Mola numa
+        // rota interprovincial era recusada.
+        if (seat != null && seat.isNotEmpty)
+          'passengers': [
+            {
+              'seat': seat,
+              'name': passengerName,
+              if (documentType.isNotEmpty) 'document_type': documentType,
+              if (documentNumber.isNotEmpty) 'document_number': documentNumber,
+            }
+          ],
         if (emergencyName != null && emergencyName.isNotEmpty)
           'emergency_contact_name': emergencyName,
         if (emergencyPhone != null && emergencyPhone.isNotEmpty)

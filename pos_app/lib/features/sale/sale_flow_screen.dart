@@ -550,6 +550,19 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         else
           _cardCapturePanel(),
         const SizedBox(height: 18),
+        if (_missingForSale().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              const Icon(Icons.info_outline, size: 16, color: Color(0xFFB07B24)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(_missingForSale(),
+                    style: const TextStyle(fontSize: 12.5, color: Color(0xFFB07B24),
+                        fontWeight: FontWeight.w600)),
+              ),
+            ]),
+          ),
         FilledButton.icon(
           style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(54)),
           icon: Icon(_paymentMethod == 'card' ? Icons.credit_card : Icons.payment),
@@ -559,11 +572,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           ),
           // Sem lugares ou sem contacto de emergencia, o servidor recusa a
           // venda — mais vale o botao dizer porque do que falhar depois.
-          onPressed: (_seatsRequired &&
-                  (_pickedSeats.length != _quantity ||
-                      _emergPhoneCtrl.text.trim().length != 9))
-              ? null
-              : _requestPayment,
+          onPressed: _missingForSale().isEmpty ? _requestPayment : null,
         ),
         TextButton(onPressed: () => setState(() => _step = 1), child: const Text('Voltar')),
       ]),
@@ -778,6 +787,22 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ]),
       ),
     );
+  }
+
+  /// O que falta para poder cobrar, em palavras. Vazio quando nao falta nada.
+  ///
+  /// Um botao cinzento sem explicacao deixa o agente parado com o passageiro
+  /// a frente, sem saber o que fazer.
+  String _missingForSale() {
+    if (!_seatsRequired) return '';
+    if (_pickedSeats.length != _quantity) {
+      final f = _quantity - _pickedSeats.length;
+      return f > 0 ? 'Escolha mais $f lugar(es).' : 'Escolheu lugares a mais.';
+    }
+    if (_emergPhoneCtrl.text.trim().length != 9) {
+      return 'Indique o contacto de emergencia (9 digitos).';
+    }
+    return '';
   }
 
   /// Card-resumo dos lugares: mostra o estado e abre o ecrã da planta.

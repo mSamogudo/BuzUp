@@ -86,6 +86,11 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   Widget build(BuildContext context) {
     final missing = widget.maxPick - _picked.length;
     return Scaffold(
+      // Este ecra nao tem campos de texto. Sem isto, abrir a planta com o
+      // teclado ainda aberto (vindo do formulario) dava-lhe menos altura, o
+      // banco era calculado pequeno e o autocarro aparecia encolhido — so
+      // "crescia" quando o teclado fechava e o ecra era recalculado.
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF2F5FA),
       appBar: AppBar(
         title: Column(

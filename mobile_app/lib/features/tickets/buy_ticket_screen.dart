@@ -51,6 +51,9 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   // serve. Numa carreira urbana nem aparece.
   final _emergencyNameCtrl = TextEditingController();
   final _emergencyPhoneCtrl = TextEditingController();
+  String _holderName = '';
+  String _holderDocType = '';
+  String _holderDocNumber = '';
   List<Map> _stops = const [];
   bool _usePackage = true;
 
@@ -77,9 +80,18 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     // Prefill do telemovel com o numero da conta (o passageiro pode trocar).
     ref.read(passengerApiProvider).me().then((me) {
       final phone = (me['phone'] ?? '').toString();
-      if (mounted && _phoneCtrl.text.isEmpty && phone.isNotEmpty) {
+      if (!mounted) return;
+      if (_phoneCtrl.text.isEmpty && phone.isNotEmpty) {
         _phoneCtrl.text = phone.startsWith('258') ? phone.substring(3) : phone;
       }
+      // O bilhete das rotas com lugar marcado e nominal e o servidor exige o
+      // nome; guarda-se o do titular da conta para a compra directa o enviar.
+      final p = (me['passenger'] as Map?) ?? me;
+      setState(() {
+        _holderName = (p['full_name'] ?? me['full_name'] ?? '').toString();
+        _holderDocType = (p['document_type'] ?? '').toString();
+        _holderDocNumber = (p['document_number'] ?? '').toString();
+      });
     }).catchError((_) {});
   }
 
@@ -100,6 +112,23 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     final r = _rate;
     if (r == null) return _fmtMzn(mzn);
     return '${(mzn / r).toStringAsFixed(2)} $_currency';
+  }
+
+  /// O que falta para poder pagar, em palavras. Devolve vazio quando nao
+  /// falta nada.
+  ///
+  /// Um botao desactivado sem explicacao e um beco sem saida: o passageiro
+  /// escolhe o lugar, volta ao formulario e o botao continua cinzento sem
+  /// dizer que falta o contacto de emergencia.
+  String _missingForPurchase() {
+    if (_originId == null || _destinationId == null) return 'Escolha a origem e o destino.';
+    if (!_seatsRequired) return '';
+    if (_tripId == null) return 'Escolha a partida.';
+    if (_seat == null) return 'Escolha o seu lugar.';
+    if (_emergencyPhoneCtrl.text.trim().isEmpty) {
+      return 'Indique o telefone do contacto de emergencia.';
+    }
+    return '';
   }
 
   Future<void> _refreshQuote() async {
@@ -245,6 +274,9 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             displayCurrency: _currency,
             emergencyName: _emergencyNameCtrl.text.trim(),
             emergencyPhone: _emergencyPhoneCtrl.text.trim(),
+            passengerName: _holderName,
+            documentType: _holderDocType,
+            documentNumber: _holderDocNumber,
           );
       Log.info('ticket.direct ok', data: 'ref=${res['checkout_reference']} status=${res['status']}');
       final reference = (res['checkout_reference'] ?? '').toString();
@@ -417,7 +449,9 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                     subtitle: const Text('Quando activo, desconta primeiro do saldo do pacote.', style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted)),
                   ),
                 if (_method == _PayMethod.mobileMoney) ...[
-                  const SizedBox(height: 4),
+                  // 4px deixava o campo colado aos cartoes de metodo, como se
+                  // fizesse parte do cartao seleccionado.
+                  const SizedBox(height: 14),
                   TextField(
                     controller: _phoneCtrl,
                     keyboardType: TextInputType.phone,
@@ -446,17 +480,20 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                   child: Text(_error!, style: const TextStyle(color: BuzUpColors.danger, fontSize: 12.5)),
                 ),
                 const SizedBox(height: 16),
+                if (_missingForPurchase().isNotEmpty && !_purchasing)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(children: [
+                      const Icon(Icons.info_outline, size: 15, color: BuzUpColors.muted),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(_missingForPurchase(),
+                            style: const TextStyle(fontSize: 12, color: BuzUpColors.muted)),
+                      ),
+                    ]),
+                  ),
                 FilledButton(
-                  onPressed: (_originId == null ||
-                          _destinationId == null ||
-                          _purchasing ||
-                          // Nas interprovinciais nao se compra sem partida nem
-                          // lugar — o servidor recusa, e mais vale o botao
-                          // dizer porque do que a compra falhar depois.
-                          (_seatsRequired && (_tripId == null || _seat == null)) ||
-                          // O contacto de emergencia e obrigatorio nas mesmas
-                          // rotas: o servidor recusa sem ele.
-                          (_seatsRequired && _emergencyPhoneCtrl.text.trim().isEmpty))
+                  onPressed: (_purchasing || _missingForPurchase().isNotEmpty)
                       ? null
                       : _purchase,
                   child: _purchasing

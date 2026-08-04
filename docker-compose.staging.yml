@@ -48,6 +48,12 @@ services:
     logging: *buzup-logging
     # Host is RAM-constrained (shared with other stacks): 2 workers is plenty
     # for this traffic, and --max-requests recycles workers to cap memory creep.
+    #
+    # As threads sao o que falta va: 2 workers *sync* significa que dois
+    # pedidos demorados ao mesmo tempo — um relatorio pesado, uma chamada ao
+    # gateway de pagamento — deixavam a API sem capacidade nenhuma. Com
+    # threads, um pedido preso deixa de bloquear o worker inteiro. A producao
+    # ja corria assim (3x4); o staging tinha ficado para tras.
     mem_limit: 400m
     command:
       [
@@ -57,6 +63,8 @@ services:
         "0.0.0.0:8000",
         "--workers",
         "2",
+        "--threads",
+        "4",
         "--max-requests",
         "800",
         "--max-requests-jitter",

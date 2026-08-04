@@ -121,6 +121,30 @@ def _draw_col_headers(c, x_left, y, columns, col_widths, line_h, width):
 # PDF
 # ---------------------------------------------------------------------------
 
+def _load_logos() -> dict:
+    """Logótipos do cabeçalho e do rodapé, lidos UMA vez por documento.
+
+    Um relatório no tecto tem 193 páginas e o logótipo é desenhado em todas.
+    Sem isto, cada página reabria e descodificava o PNG e o reportlab voltava
+    a hashá-lo em MD5 para o deduplicar: eram 12,8 dos 16,3 segundos do
+    relatório, com um dos dois workers preso todo esse tempo. Lidos aqui, o
+    reportlab reconhece o mesmo objecto e reaproveita-o.
+    """
+    return {
+        "header": (
+            _branding_image("report_logo")
+            or _branding_image("primary_logo")
+            or _safe_image(_asset("tpm-tur-logo", "tpm_dark.png"))
+            or _safe_image(_asset("tpm-tur-logo", "tpm_light.png"))
+        ),
+        "footer": (
+            _branding_image("powered_by_logo")
+            or _safe_image(_asset("up-digital-logo", "up_digital_dark.png"))
+            or _safe_image(_asset("up-digital-logo", "up_digital_light.png"))
+        ),
+    }
+
+
 def render_pdf(
     title: str,
     period_from: str,
@@ -134,8 +158,10 @@ def render_pdf(
     page = landscape(A4)
     width, height = page
     c = canvas.Canvas(buf, pagesize=page)
+    logos = _load_logos()
 
-    _draw_header(c, width, height, title=title, period_from=period_from, period_to=period_to)
+    _draw_header(c, width, height, title=title, period_from=period_from,
+                 period_to=period_to, logos=logos)
 
     y = height - 32 * mm
 
@@ -163,19 +189,20 @@ def render_pdf(
     y = _draw_table(c, x_left=10 * mm, y=y, width=width - 20 * mm,
                    columns=columns, col_widths=col_widths,
                    rows=rows, page_size=page,
-                   title=title, period_from=period_from, period_to=period_to)
+                   title=title, period_from=period_from, period_to=period_to,
+                   logos=logos)
 
-    _draw_footer(c, width)
+    _draw_footer(c, width, logos)
     c.save()
     return buf.getvalue()
 
 
-def _draw_header(c, width, height, *, title, period_from, period_to):
+def _draw_header(c, width, height, *, title, period_from, period_to, logos=None):
     band_h = 22 * mm
     c.setFillColor(NAVY)
     c.rect(0, height - band_h, width, band_h, fill=1, stroke=0)
 
-    logo = (
+    logo = (logos or {}).get("header") if logos is not None else (
         _branding_image("report_logo")
         or _branding_image("primary_logo")
         or _safe_image(_asset("tpm-tur-logo", "tpm_dark.png"))
@@ -227,7 +254,7 @@ def _draw_totals(c, width, y, totals):
 
 
 def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
-                title="", period_from="", period_to=""):
+                title="", period_from="", period_to="", logos=None):
     line_h = 6 * mm
     page_w, page_h = page_size
     # A quebra de pagina tem de respeitar o rodape (14mm) + uma linha.
@@ -241,11 +268,28 @@ def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
         c.drawString(x_left + 4, y - 4 * mm, "Sem registos no periodo / filtros indicados.")
         return y - 8 * mm
 
+    # Um relatorio no tecto tem 5000 linhas x 8 colunas = 40 000 celulas, e
+    # cada uma media o texto com `stringWidth` — 13s de worker preso, e neste
+    # servidor um worker preso e um dos dois que servem a operacao inteira.
+    # Os valores repetem-se muito (estado, rota, tipo, datas do mesmo dia),
+    # por isso guarda-se o resultado por (texto, largura da coluna). A cache
+    # vive so durante este documento: nao ha risco de ficar desactualizada.
+    cell_cache: dict[tuple[str, int], tuple[str, bool]] = {}
+
+    def _cell(txt: str, w: float):
+        key = (txt, int(w))
+        hit = cell_cache.get(key)
+        if hit is None:
+            hit = (_fit_text(c, txt, "Helvetica", 8, w - 4), _is_numeric_cell(txt))
+            cell_cache[key] = hit
+        return hit
+
     for i, row in enumerate(rows):
         if y < min_y:
-            _draw_footer(c, page_w)
+            _draw_footer(c, page_w, logos)
             c.showPage()
-            _draw_header(c, page_w, page_h, title=title, period_from=period_from, period_to=period_to)
+            _draw_header(c, page_w, page_h, title=title, period_from=period_from,
+                         period_to=period_to, logos=logos)
             y = page_h - 30 * mm
             y = _draw_col_headers(c, x_left, y, columns, col_widths, line_h, width)
 
@@ -257,9 +301,8 @@ def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
         x = x_left
         baseline = y - line_h + 1.8 * mm
         for (key, _), w in zip(columns, col_widths):
-            txt = _stringify(row.get(key))
-            fitted = _fit_text(c, txt, "Helvetica", 8, w - 4)
-            if _is_numeric_cell(txt):
+            fitted, numeric = _cell(_stringify(row.get(key)), w)
+            if numeric:
                 c.drawRightString(x + w - 2, baseline, fitted)
             else:
                 c.drawString(x + 2, baseline, fitted)
@@ -268,11 +311,11 @@ def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
     return y - 4 * mm
 
 
-def _draw_footer(c, width):
+def _draw_footer(c, width, logos=None):
     band_h = 14 * mm
     c.setFillColor(SOFT_BG)
     c.rect(0, 0, width, band_h, fill=1, stroke=0)
-    up = (
+    up = (logos or {}).get("footer") if logos is not None else (
         _branding_image("powered_by_logo")
         or _safe_image(_asset("up-digital-logo", "up_digital_dark.png"))
         or _safe_image(_asset("up-digital-logo", "up_digital_light.png"))

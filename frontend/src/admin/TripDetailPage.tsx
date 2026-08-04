@@ -24,6 +24,24 @@ interface TripPass { uuid: string; payer_phone: string; fare_amount: string; sta
 interface TripActivityEvent { event_type: string; occurred_at: string; driver_name: string; metadata: Record<string, unknown>; }
 
 interface TripStop { sequence: number; name: string; code: string; direction: string; }
+interface ManifestEntry {
+  key: string; seat: string; passenger_name: string; document: string; phone: string;
+  origin: string; destination: string; fare_amount: string; channel_label: string;
+  payment_label: string; boarding: string; emergency_name: string; emergency_phone: string;
+}
+interface ManifestPayment { method: string; label: string; count: number; amount: string }
+interface Manifest {
+  formal: boolean;
+  totals: {
+    aboard: number; expected: number; no_show: number; total: number;
+    capacity: number; fare_total: string; by_payment: ManifestPayment[];
+  };
+  entries: ManifestEntry[];
+}
+
+const BOARDING_LABELS: Record<string, string> = {
+  aboard: "A bordo", expected: "Aguarda", no_show: "Faltou",
+};
 interface TripOccupancy { capacity: number; sold: number; seats_taken: string[]; }
 
 interface TripDetail {
@@ -68,6 +86,7 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [tab, setTab] = useState("validations");
+  const [manifest, setManifest] = useState<Manifest | null>(null);
 
   const load = useCallback(async () => {
     if (!token || !tripId) return;
@@ -83,6 +102,15 @@ export default function TripDetailPage() {
   }, [token, tripId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  // O manifesto é lido à parte: depois do fecho vem a fotografia guardada,
+  // e não um recálculo — é esse o documento que vale.
+  useEffect(() => {
+    if (!token || !tripId) return;
+    apiFetch(`/api/trips/${tripId}/manifest/`, token)
+      .then((d) => setManifest(d))
+      .catch(() => setManifest(null));
+  }, [token, tripId, trip?.status]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -241,6 +269,7 @@ export default function TripDetailPage() {
             { key: "validations", label: t(lc, "validations"), count: validations.length },
             { key: "purchases", label: t(lc, "guestCheckouts"), count: purchases.length },
             { key: "passes", label: t(lc, "passesIssued"), count: passes.length },
+            { key: "manifest", label: "Manifesto", count: manifest?.totals?.total ?? 0 },
             { key: "events", label: "Eventos", count: events.length },
           ]}
           value={tab}
@@ -301,6 +330,62 @@ export default function TripDetailPage() {
             emptyMessage="Sem passes."
             filterable={false}
           />
+        )}
+
+        {tab === "manifest" && (
+          manifest === null ? (
+            <p style={{ color: "var(--app-text-muted)", textAlign: "center", padding: 20 }}>
+              Sem manifesto para esta viagem.
+            </p>
+          ) : (
+            <>
+              <div className="admin-metric-grid" style={{ marginBottom: 12 }}>
+                <MetricCard label="A bordo" value={String(manifest.totals.aboard)} />
+                <MetricCard label="Por embarcar" value={String(manifest.totals.expected)} />
+                <MetricCard label="Faltas" value={String(manifest.totals.no_show)} />
+                <MetricCard label="Valor" value={formatCurrency(manifest.totals.fare_total)} />
+              </div>
+              {manifest.totals.by_payment?.length ? (
+                <p style={{ fontSize: 12.5, color: "var(--app-text-muted)", marginTop: 0 }}>
+                  <strong>Por forma de pagamento:</strong>{" "}
+                  {manifest.totals.by_payment
+                    .map((p) => `${p.label} ${formatCurrency(p.amount)} (${p.count})`)
+                    .join(" · ")}
+                </p>
+              ) : null}
+              {!manifest.formal ? (
+                <p style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
+                  Carreira urbana: registo de bordo, sem dados nominais. O manifesto
+                  formal existe nas rotas interprovinciais e internacionais.
+                </p>
+              ) : null}
+              <DataTable
+                columns={[
+                  { header: "Lugar", render: (r: ManifestEntry) => r.seat || "—" },
+                  { header: "Passageiro", render: (r: ManifestEntry) => (
+                    <TablePrimaryCell
+                      title={r.passenger_name || "Passageiro avulso"}
+                      subtitle={r.phone || undefined}
+                      meta={r.document || undefined}
+                    />
+                  ) },
+                  { header: "Emergência", render: (r: ManifestEntry) =>
+                    `${r.emergency_name} ${r.emergency_phone}`.trim() || "—" },
+                  { header: "Destino", render: (r: ManifestEntry) => r.destination || "—" },
+                  { header: "Pagamento", render: (r: ManifestEntry) => r.payment_label },
+                  { header: t(lc, "amount"), render: (r: ManifestEntry) => formatCurrency(r.fare_amount) },
+                  { header: t(lc, "status"), render: (r: ManifestEntry) => (
+                    <StatusBadge value={BOARDING_LABELS[r.boarding] || r.boarding} />
+                  ) },
+                ]}
+                rows={manifest.entries}
+                rowKey={(r) => r.key}
+                loading={false}
+                emptyMessage="Ainda não há passageiros nesta viagem."
+                filterable={false}
+              />
+            </>
+          )
         )}
 
         {tab === "events" && (

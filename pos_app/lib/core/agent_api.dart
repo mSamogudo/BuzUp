@@ -219,6 +219,15 @@ class AgentApi {
     return res.data ?? const {};
   }
 
+  /// Manifesto de bordo da viagem: quem vai dentro do autocarro.
+  ///
+  /// Enquanto a viagem decorre e calculado ao vivo (cresce a cada embarque);
+  /// depois do fecho devolve a fotografia guardada.
+  Future<Map<String, dynamic>> driverTripManifest(int tripId) async {
+    final res = await _http.get<Map<String, dynamic>>('/api/driver/trips/$tripId/manifest/');
+    return res.data ?? const {};
+  }
+
   Future<Map<String, dynamic>> quoteFare({
     required int tripId,
     required int originStopId,

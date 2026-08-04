@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../core/feedback.dart';
@@ -10,6 +11,11 @@ import '../../core/location.dart';
 import '../../core/providers.dart';
 import '../../core/labels.dart';
 import '../../core/theme.dart';
+import 'manifest_screen.dart';
+
+/// Cinzento de apoio. O tema do POS nao define um `muted`; este e o
+/// mesmo tom ja usado nos restantes ecrans do terminal.
+const _muted = Color(0xFF6B7A8F);
 
 /// Viagens do motorista: lista agrupada + ciclo iniciar/pausar/retomar/terminar.
 /// So acessivel a utilizadores com perfil de motorista activo (a home esconde
@@ -83,6 +89,14 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
     }
   }
 
+  Future<void> _openManifest(Map<String, dynamic> t) {
+    return ManifestScreen.open(
+      context,
+      tripId: t['id'] as int,
+      title: '${t['route_code'] ?? ''} · ${t['route_name'] ?? ''}',
+    );
+  }
+
   Future<void> _confirmClose(Map<String, dynamic> trip) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -104,6 +118,7 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
     final validations = (closure['validations'] as Map?)?.cast<String, dynamic>() ?? const {};
     final approved = validations['approved'] ?? 0;
     final denied = validations['denied'] ?? 0;
+    final tripId = trip['id'] as int?;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -119,10 +134,35 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
             const SizedBox(height: 6),
             Text('Receita da viagem: ${closure['total_revenue'] ?? '0.00'} MZN',
                 style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            const Text(
+              'A viagem ficou trancada com o manifesto e a receita apurados. '
+              'Falta declarar a caixa do dia.',
+              style: TextStyle(fontSize: 12, color: _muted, height: 1.35),
+            ),
           ],
         ),
         actions: [
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          if (tripId != null)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _openManifest(trip);
+              },
+              child: const Text('Ver manifesto'),
+            ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Mais tarde')),
+          // O fecho de caixa e o passo seguinte natural: e aqui que o
+          // motorista declara o que recebeu em mao.
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.push('/day-close');
+            },
+            child: const Text('FECHO DE CAIXA'),
+          ),
         ],
       ),
     );
@@ -301,12 +341,24 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
           ),
         );
 
+    // O ciclo da viagem tem tres momentos e cada um tem a sua accao:
+    // abrir o EMBARQUE no terminal, PARTIR (e essa a hora de saida), e
+    // TERMINAR. Antes havia um botao so, que abria o embarque e ja marcava a
+    // partida — a hora de saida ficava errada por todo o tempo que o
+    // autocarro esteve parado a encher.
     switch (status) {
       case 'scheduled':
-        return [primary('INICIAR', hasVehicle ? () => _run(id, 'start') : null)];
+        return [primary('ABRIR EMBARQUE', hasVehicle ? () => _run(id, 'start') : null)];
       case 'boarding':
+        return [
+          secondary('Manifesto', () => _openManifest(t)),
+          const SizedBox(width: 10),
+          primary('INICIAR VIAGEM', () => _run(id, 'depart')),
+        ];
       case 'departed':
         return [
+          secondary('Manifesto', () => _openManifest(t)),
+          const SizedBox(width: 10),
           secondary('Pausar', () => _run(id, 'pause')),
           const SizedBox(width: 10),
           primary('TERMINAR', () => _confirmClose(t)),

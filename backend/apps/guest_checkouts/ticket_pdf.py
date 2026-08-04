@@ -190,30 +190,51 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
     valid_value = valid_until.strftime("%d/%m/%Y %H:%M") if valid_until else "-"
     _text_fit(c, 446, 1013, valid_value, max_width=295, max_size=34, min_size=25, color=NAVY)
 
+    _draw_passenger_name(c, tp)
     _draw_passenger_block(c, tp)
 
 
-def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
-    """Dados do passageiro DENTRO do cartao, ladeando o QR.
+def _draw_passenger_name(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
+    """Nome do passageiro no topo, dentro da faixa azul por baixo do logo.
 
-    Coluna esquerda (x 130..344): nome (ate 2 linhas) e documento.
-    Coluna direita (x 688..906): lugar — a zona onde o template nominal tem o
-    bloco "Apresente este QR code" apagado. So aparece em bilhetes nominais;
-    o urbano ao portador continua limpo e mantem o texto de ajuda.
+    E o primeiro dado que o fiscal procura num bilhete nominal, e ali le-se de
+    relance sem ter de descer ate ao QR.
+
+    Fica a ESQUERDA e limitado a 470: a metade direita da faixa tem o desenho
+    do autocarro e da ponte, e um nome comprido entrava por cima deles.
+    """
+    if not _is_nominal(tp) or not tp.passenger_name:
+        return
+
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 19)
+    c.drawString(130, _baseline(298, 19), "PASSAGEIRO")
+
+    _text_fit(c, 130, 326, tp.passenger_name,
+              max_width=470, max_size=44, min_size=24, color=colors.white)
+
+
+def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
+    """Lugar e documento DENTRO do cartao, ladeando o QR.
+
+    Coluna esquerda (x 130..344): lugar e documento. O lugar ocupa o lugar que
+    era do nome — o nome subiu para o topo, por baixo do logo, e aqui o que
+    interessa a quem embarca e saber para que banco vai.
+
+    So aparece em bilhetes nominais; o urbano ao portador continua limpo e
+    mantem o texto de ajuda.
     """
     if not _is_nominal(tp):
         return
 
     left_x, left_width = 130, 214
     y = 1102
-    if tp.passenger_name:
-        y = _labeled_value(c, left_x, y, "PASSAGEIRO", tp.passenger_name, max_width=left_width, wrap=True)
+    if tp.seat_number:
+        y = _labeled_value(c, left_x, y, "LUGAR", tp.seat_number,
+                           max_width=left_width, max_size=44)
     if tp.document_number:
         doc_label = dict(DigitalTravelPass.DocumentType.choices).get(tp.document_type, "DOCUMENTO")
         _labeled_value(c, left_x, y, doc_label.upper(), tp.document_number, max_width=left_width)
-
-    if tp.seat_number:
-        _labeled_value(c, 688, 1102, "LUGAR", tp.seat_number, max_width=218, max_size=44)
 
 
 def _labeled_value(

@@ -359,21 +359,52 @@ class _TicketCanvas extends StatelessWidget {
             ),
           ),
 
-          // Dados do passageiro dentro do cartao, ladeando o QR — mesmas
-          // coordenadas do PDF: coluna esquerda (x=130) nome + documento,
-          // coluna direita (x=688) o lugar.
-          if (nominal) ...[
+          // Nome do passageiro no topo, dentro da faixa azul por baixo do
+          // logo — mesmas coordenadas do PDF (`_draw_passenger_name`). E o
+          // primeiro dado que o fiscal procura, e ali le-se de relance sem ter
+          // de descer ate ao QR.
+          //
+          // A ESQUERDA e limitado a 470: a metade direita da faixa tem o
+          // desenho do autocarro e da ponte, e um nome comprido entrava por
+          // cima deles.
+          if (nominal && passengerName.isNotEmpty) ...[
+            const Positioned(
+              left: 130, top: 298,
+              child: Text('PASSAGEIRO',
+                  maxLines: 1,
+                  style: TextStyle(
+                      fontSize: 19, color: Colors.white,
+                      fontWeight: FontWeight.w800, height: 1.0)),
+            ),
+            Positioned(
+              left: 130, top: 326, width: 470,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(passengerName,
+                    maxLines: 1, softWrap: false,
+                    style: const TextStyle(
+                        fontSize: 44, color: Colors.white,
+                        fontWeight: FontWeight.w900, height: 1.0)),
+              ),
+            ),
+          ],
+
+          // Lugar e documento dentro do cartao, ladeando o QR — mesmas
+          // coordenadas do PDF. O lugar ocupa o sitio que era do nome: a quem
+          // embarca, o que interessa aqui e saber para que banco vai.
+          if (nominal)
             Positioned(
               left: 130, top: 1102, width: 214,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (passengerName.isNotEmpty) ...[
-                  const Text('PASSAGEIRO', style: _labelStyle),
+                if (seat.isNotEmpty) ...[
+                  const Text('LUGAR', style: _labelStyle),
                   const SizedBox(height: 6),
-                  Text(passengerName,
-                      maxLines: 2, overflow: TextOverflow.ellipsis,
+                  Text(seat,
+                      maxLines: 1, softWrap: false,
                       style: const TextStyle(
-                          fontSize: 30, color: _navy,
-                          fontWeight: FontWeight.w900, height: 1.15)),
+                          fontSize: 44, color: _navy,
+                          fontWeight: FontWeight.w900, height: 1.0)),
                   const SizedBox(height: 16),
                 ],
                 if (documentNumber.isNotEmpty) ...[
@@ -394,20 +425,6 @@ class _TicketCanvas extends StatelessWidget {
                 ],
               ]),
             ),
-            if (seat.isNotEmpty)
-              Positioned(
-                left: 688, top: 1102, width: 218,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('LUGAR', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  Text(seat,
-                      maxLines: 1, softWrap: false,
-                      style: const TextStyle(
-                          fontSize: 44, color: _navy,
-                          fontWeight: FontWeight.w900, height: 1.0)),
-                ]),
-              ),
-          ],
 
           // Linha de emergencia/apoio da operadora — mesmas coordenadas do PDF
           // (`_draw_emergency_contact`). O lado livre depende da variante: no

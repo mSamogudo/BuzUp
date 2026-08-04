@@ -163,6 +163,29 @@ void main() {
     expect(find.text('RESUMO DA COMPRA'), findsOneWidget);
   });
 
+  testWidgets('pagar por M-Pesa sem numero diz o que falta', (tester) async {
+    await _pump(tester, _FakeApi(seated: false));
+    await _chooseRoute(tester);
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('M-Pesa / e-Mola'));
+    await tester.pumpAndSettle();
+    // O numero da conta ja vem preenchido; apagado, o botao tem de dizer
+    // porque fechou em vez de so ficar cinzento.
+    await tester.enterText(find.byType(TextField).last, '');
+    await tester.pumpAndSettle();
+    expect(find.text('Indique o numero de telemovel que paga (9 digitos).'),
+        findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNull);
+
+    await tester.enterText(find.byType(TextField).last, '841234567');
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNotNull);
+  });
+
   testWidgets('rota com lugar marcado tem tres passos', (tester) async {
     await _pump(tester, _FakeApi(seated: true, departures: _departuresOk));
     await _chooseRoute(tester);
@@ -319,8 +342,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Contacto de emergencia'), findsOneWidget);
 
-    // Voltar atras e trocar o destino: a partida escolhida era da rota
-    // anterior e nao pode sobreviver.
+    // Escolher a partida rola ate ao contacto de emergencia; para trocar o
+    // destino e preciso subir outra vez.
+    await tester.drag(find.byType(ListView), const Offset(0, 600));
+    await tester.pumpAndSettle();
+
+    // Trocar o destino: a partida escolhida era da rota anterior e nao pode
+    // sobreviver.
     await tester.tap(find.text('Destino'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Xai-Xai Terminal').last);

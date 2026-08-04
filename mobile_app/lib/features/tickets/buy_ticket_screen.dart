@@ -65,6 +65,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   // serve. Numa carreira urbana nem aparece.
   final _emergencyNameCtrl = TextEditingController();
   final _emergencyPhoneCtrl = TextEditingController();
+  final _searchScroll = ScrollController();
   String _holderName = '';
   String _holderDocType = '';
   String _holderDocNumber = '';
@@ -125,6 +126,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     _phoneCtrl.dispose();
     _emergencyNameCtrl.dispose();
     _emergencyPhoneCtrl.dispose();
+    _searchScroll.dispose();
     super.dispose();
   }
 
@@ -321,12 +323,31 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       final map = await ref.read(passengerApiProvider).tripSeats(tripId);
       if (!mounted) return;
       setState(() => _seatMap = map);
+      _revealEmergencyCard();
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _error = ApiClient.extractError(e));
     } finally {
       if (mounted) setState(() => _loadingSeatMap = false);
     }
+  }
+
+  /// Rola ate ao contacto de emergencia depois de escolhida a partida.
+  ///
+  /// O cartao nasce por baixo da lista de partidas: com oito partidas fica
+  /// fora do ecra, e o passageiro le "indique o telefone do contacto de
+  /// emergencia" sem ver campo nenhum onde o escrever.
+  void _revealEmergencyCard() {
+    if (!_seatsRequired) return;
+    if (_emergencyPhoneCtrl.text.trim().isNotEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_searchScroll.hasClients) return;
+      _searchScroll.animateTo(
+        _searchScroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   // --- compra ---------------------------------------------------------------
@@ -596,6 +617,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
 
   Widget _searchStep() {
     return ListView(
+      controller: _searchScroll,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
       children: [
         StopPickerField(
@@ -907,6 +929,9 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
               hintText: '84xxxxxxx / 86xxxxxxx',
               helperText: 'Vai receber o pedido de PIN neste numero.',
             ),
+            // Sem isto a linha "indique o numero..." por cima do botao so
+            // desaparecia quando alguma outra coisa redesenhasse o ecra.
+            onChanged: (_) => setState(() {}),
           ),
         ],
         const SizedBox(height: 12),
@@ -1198,6 +1223,10 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         if (_seat == null) return 'Toque num lugar livre para o escolher.';
         return '';
       case _Step.payment:
+        if (_method == _PayMethod.mobileMoney &&
+            _phoneCtrl.text.replaceAll(RegExp(r'\D'), '').length < 9) {
+          return 'Indique o numero de telemovel que paga (9 digitos).';
+        }
         return '';
     }
   }

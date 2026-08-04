@@ -216,6 +216,8 @@ class PassengerApi {
     int? passengerPackageId,
     bool usePackage = true,
     String displayCurrency = 'MZN',
+    String? emergencyName,
+    String? emergencyPhone,
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/travel-passes/purchase/',
@@ -226,6 +228,10 @@ class PassengerApi {
         if (tripId != null) 'trip_id': tripId,
         if (seat != null && seat.isNotEmpty) 'seat': seat,
         if (passengerPackageId != null) 'passenger_package_id': passengerPackageId,
+        if (emergencyName != null && emergencyName.isNotEmpty)
+          'emergency_contact_name': emergencyName,
+        if (emergencyPhone != null && emergencyPhone.isNotEmpty)
+          'emergency_contact_phone': emergencyPhone,
         'use_package': usePackage,
         'display_currency': displayCurrency,
       },
@@ -266,6 +272,8 @@ class PassengerApi {
     int? tripId,
     String? seat,
     String displayCurrency = 'MZN',
+    String? emergencyName,
+    String? emergencyPhone,
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/guest-checkouts/',
@@ -278,6 +286,10 @@ class PassengerApi {
         'quantity': 1,
         if (tripId != null) 'trip_id': tripId,
         if (seat != null && seat.isNotEmpty) 'passengers': [{'seat': seat}],
+        if (emergencyName != null && emergencyName.isNotEmpty)
+          'emergency_contact_name': emergencyName,
+        if (emergencyPhone != null && emergencyPhone.isNotEmpty)
+          'emergency_contact_phone': emergencyPhone,
         'display_currency': displayCurrency,
       },
     );

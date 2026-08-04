@@ -693,6 +693,8 @@ class AgentSaleCreateView(APIView):
                     idempotency_key=idem_full,
                     display_currency=data.get("display_currency") or "MZN",
                     seats=data.get("seats") or [],
+                    emergency_contact_name=data.get("emergency_contact_name") or "",
+                    emergency_contact_phone=data.get("emergency_contact_phone") or "",
                 )
                 # Card payment is confirmed synchronously; return final state.
                 return Response({
@@ -721,6 +723,8 @@ class AgentSaleCreateView(APIView):
                 idempotency_key=idem_full,
                 display_currency=data.get("display_currency") or "MZN",
                 seats=data.get("seats") or [],
+                emergency_contact_name=data.get("emergency_contact_name") or "",
+                emergency_contact_phone=data.get("emergency_contact_phone") or "",
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)

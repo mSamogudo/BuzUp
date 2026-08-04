@@ -249,6 +249,8 @@ class AgentApi {
     String? idempotencyKey,
     String displayCurrency = 'MZN',
     List<String> seats = const [],
+    String emergencyName = '',
+    String emergencyPhone = '',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/sales/',
@@ -265,6 +267,8 @@ class AgentApi {
         'auto_request_payment': autoRequestPayment,
         'display_currency': displayCurrency,
         if (seats.isNotEmpty) 'seats': seats,
+        if (emergencyName.isNotEmpty) 'emergency_contact_name': emergencyName,
+        if (emergencyPhone.isNotEmpty) 'emergency_contact_phone': emergencyPhone,
       },
       options: _idempotent(idempotencyKey),
     );

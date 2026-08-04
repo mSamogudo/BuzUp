@@ -46,6 +46,11 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   int? _tripId;
   Map<String, dynamic>? _seatMap;
   String? _seat;
+  // Contacto de emergencia: pedido nas mesmas rotas que marcam lugar
+  // (interprovincial/internacional), porque e para o manifesto de bordo que
+  // serve. Numa carreira urbana nem aparece.
+  final _emergencyNameCtrl = TextEditingController();
+  final _emergencyPhoneCtrl = TextEditingController();
   List<Map> _stops = const [];
   bool _usePackage = true;
 
@@ -81,6 +86,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   @override
   void dispose() {
     _phoneCtrl.dispose();
+    _emergencyNameCtrl.dispose();
+    _emergencyPhoneCtrl.dispose();
     super.dispose();
   }
 
@@ -192,6 +199,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             seat: _seat,
             usePackage: _usePackage,
             displayCurrency: _currency,
+            emergencyName: _emergencyNameCtrl.text.trim(),
+            emergencyPhone: _emergencyPhoneCtrl.text.trim(),
           );
       Log.info('ticket.purchase ok', data: 'id=${res['id']}');
       ref.invalidate(meProvider);
@@ -234,6 +243,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             tripId: _tripId,
             seat: _seat,
             displayCurrency: _currency,
+            emergencyName: _emergencyNameCtrl.text.trim(),
+            emergencyPhone: _emergencyPhoneCtrl.text.trim(),
           );
       Log.info('ticket.direct ok', data: 'ref=${res['checkout_reference']} status=${res['status']}');
       final reference = (res['checkout_reference'] ?? '').toString();
@@ -389,6 +400,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                     // rolar ate ao fim para chegar ao botao de pagar.
                     _seatSummaryCard(),
                   ],
+                  const SizedBox(height: 12),
+                  _emergencyCard(),
                 ],
                 const SizedBox(height: 12),
                 _methodSelector(),
@@ -440,7 +453,10 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                           // Nas interprovinciais nao se compra sem partida nem
                           // lugar — o servidor recusa, e mais vale o botao
                           // dizer porque do que a compra falhar depois.
-                          (_seatsRequired && (_tripId == null || _seat == null)))
+                          (_seatsRequired && (_tripId == null || _seat == null)) ||
+                          // O contacto de emergencia e obrigatorio nas mesmas
+                          // rotas: o servidor recusa sem ele.
+                          (_seatsRequired && _emergencyPhoneCtrl.text.trim().isEmpty))
                       ? null
                       : _purchase,
                   child: _purchasing
@@ -553,6 +569,62 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   }
 
   /// Card-resumo do lugar: mostra o estado e abre o ecrã da planta.
+  /// Contacto de emergência, pedido só nas viagens longas.
+  ///
+  /// Numa viagem de horas, longe de casa, é o único modo de avisar a família
+  /// se algo correr mal — e não serve de nada pedi-lo depois do acidente. Vai
+  /// para o manifesto de bordo que o motorista leva.
+  Widget _emergencyCard() {
+    final outline = Theme.of(context).colorScheme.outline;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: outline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: const [
+          Icon(Icons.emergency_share_outlined, size: 18, color: BuzUpColors.orange),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text('Contacto de emergencia',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        const SizedBox(height: 2),
+        const Text(
+          'Quem avisamos se algo correr mal durante a viagem. Vai no manifesto de bordo.',
+          style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted, height: 1.35),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _emergencyNameCtrl,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Nome',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: 'Ex.: Maria Sitoe',
+            prefixIcon: Icon(Icons.person_outline, size: 20),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _emergencyPhoneCtrl,
+          keyboardType: TextInputType.phone,
+          decoration: const InputDecoration(
+            labelText: 'Telefone',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: '84/85/86/87...',
+            prefixIcon: Icon(Icons.phone_outlined, size: 20),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      ]),
+    );
+  }
+
   Widget _seatSummaryCard() {
     final hasSeat = _seat != null;
     return Material(

@@ -57,6 +57,22 @@ def _assert_seats_free(trip, seats: list[str] | None) -> None:
         raise SaleError(f"Lugar(es) ja ocupado(s): {', '.join(clash)}. Escolha outro.")
 
 
+def _emergency_for(route, name: str, phone: str) -> tuple[str, str]:
+    """Contacto de emergencia, validado contra a regra da rota.
+
+    Obrigatorio onde ha manifesto de bordo (interprovincial/internacional):
+    o agente ao balcao e quem tem o passageiro a frente, e e o unico momento
+    em que da para perguntar. Numa carreira urbana nao se guarda.
+    """
+    name = (name or "").strip()
+    phone = (phone or "").strip()
+    if getattr(route, "requires_emergency_contact", False):
+        if not phone:
+            raise SaleError("Indique o contacto de emergencia do passageiro.")
+        return name[:120], phone[:20]
+    return "", ""
+
+
 def create_pos_sale(
     *,
     agent,
@@ -70,6 +86,8 @@ def create_pos_sale(
     idempotency_key: str = "",
     display_currency: str = "MZN",
     seats: list[str] | None = None,
+    emergency_contact_name: str = "",
+    emergency_contact_phone: str = "",
 ) -> tuple[GuestCheckout, PaymentIntent]:
     """Create a sale + initiate payment for an agent's POS terminal.
 
@@ -149,6 +167,9 @@ def create_pos_sale(
         phone_number__in=phone_forms, status=PassengerAccount.Status.ACTIVE,
     ).first()
 
+    emerg_name, emerg_phone = _emergency_for(
+        route, emergency_contact_name, emergency_contact_phone)
+
     with transaction.atomic():
         # Lotacao: sem este lock, um agente e um comprador web vendiam o mesmo
         # ultimo lugar ao mesmo tempo (a compra web ja bloqueava, o POS nao).
@@ -180,6 +201,8 @@ def create_pos_sale(
             status=GuestCheckout.Status.PAYMENT_PENDING,
             expires_at=timezone.now() + timedelta(minutes=15),
             linked_passenger=linked,
+            emergency_contact_name=emerg_name,
+            emergency_contact_phone=emerg_phone,
         )
 
         pi = PaymentIntent.objects.create(
@@ -231,6 +254,8 @@ def create_card_sale(
     idempotency_key: str = "",
     display_currency: str = "MZN",
     seats: list[str] | None = None,
+    emergency_contact_name: str = "",
+    emergency_contact_phone: str = "",
 ) -> tuple[GuestCheckout, PaymentIntent, list]:
     """Card-based POS sale: lookup card -> debit wallet -> confirm + issue.
 
@@ -375,6 +400,7 @@ def create_card_sale(
         # (after package discount) so the ticket shows what was charged, not
         # the gross fare.
         net_unit = (charged_total / quantity).quantize(Decimal("0.01")) if quantity else charged_total
+        _card_emerg = _emergency_for(route, emergency_contact_name, emergency_contact_phone)
         from apps.fares.services import display_snapshot
         disp_ccy, disp_total, disp_rate = display_snapshot(charged_total, display_currency)
         gc = GuestCheckout.objects.create(
@@ -400,6 +426,8 @@ def create_card_sale(
             # O cartao pertence a uma conta conhecida: sem isto o bilhete
             # nascia orfao e nunca aparecia na app do titular.
             linked_passenger=pa,
+            emergency_contact_name=_card_emerg[0],
+            emergency_contact_phone=_card_emerg[1],
         )
         pi = PaymentIntent.objects.create(
             reference=f"PAY-{ref}",

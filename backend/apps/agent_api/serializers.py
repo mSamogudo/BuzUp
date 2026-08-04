@@ -66,6 +66,10 @@ class AgentSaleSerializer(serializers.Serializer):
     )
     # Lugares escolhidos, quando a rota os marca (interprovincial e
     # internacional). Vazio nas carreiras urbanas, onde ninguem escolhe.
+    # Contacto de emergencia: obrigatorio nas rotas com manifesto de bordo.
+    # A validacao vive na venda, que e quem sabe a rota.
+    emergency_contact_name = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
+    emergency_contact_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
     seats = serializers.ListField(
         child=serializers.CharField(max_length=8),
         required=False, allow_empty=True, default=list,

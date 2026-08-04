@@ -42,6 +42,11 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
     buyer_name = serializers.CharField(max_length=255, required=False, default="", allow_blank=True)
     buyer_email = serializers.EmailField(required=False, allow_blank=True, default="")
     passengers = PassengerInputSerializer(many=True, required=False, default=list)
+    # Contacto de emergencia da compra: obrigatorio nas rotas com manifesto
+    # de bordo (interprovincial/internacional). Validado na vista, que resolve
+    # a rota.
+    emergency_contact_name = serializers.CharField(max_length=120, required=False, default="", allow_blank=True)
+    emergency_contact_phone = serializers.CharField(max_length=20, required=False, default="", allow_blank=True)
     # Opcional: a app do passageiro só escolhe origem + destino e o backend
     # infere o corredor (como na compra por carteira).
     route_code = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")

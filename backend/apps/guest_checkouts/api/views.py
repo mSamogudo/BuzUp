@@ -97,6 +97,20 @@ class GuestCheckoutCreateView(APIView):
             except RouteSegmentError as e:
                 return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Contacto de emergencia: obrigatorio onde ha manifesto de bordo.
+        # Numa carreira urbana nem se guarda — sao dados de terceiros que nao
+        # foram pedidos nem vao ser usados.
+        emerg_name = (data.get("emergency_contact_name") or "").strip()[:120]
+        emerg_phone = (data.get("emergency_contact_phone") or "").strip()[:20]
+        if route and getattr(route, "requires_emergency_contact", False):
+            if not emerg_phone:
+                return Response(
+                    {"detail": "Indique o contacto de emergencia para esta viagem."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            emerg_name, emerg_phone = "", ""
+
         unit_amount = data.get("unit_amount") or 0
         if route and origin and destination:
             try:
@@ -185,6 +199,8 @@ class GuestCheckoutCreateView(APIView):
                 expires_at=timezone.now() + timedelta(minutes=30),
                 trip=trip,
                 linked_passenger=linked_passenger,
+                emergency_contact_name=emerg_name,
+                emergency_contact_phone=emerg_phone,
             )
 
             # Dentro do MESMO atomic que o checkout: se a intencao de pagamento

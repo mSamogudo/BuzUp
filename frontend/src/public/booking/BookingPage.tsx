@@ -75,6 +75,11 @@ export default function BookingPage() {
   const [picked, setPicked] = useState<string[]>([]);
   const [pax, setPax] = useState<Passenger[]>([]);
   const [phone, setPhone] = useState("");
+  // Contacto de emergência: obrigatório nas rotas que marcam lugar
+  // (interprovincial/internacional), porque é para o manifesto de bordo que
+  // serve. Numa carreira urbana o campo nem aparece.
+  const [emergName, setEmergName] = useState("");
+  const [emergPhone, setEmergPhone] = useState("");
   const [email, setEmail] = useState("");
   const [method, setMethod] = useState<"mpesa" | "emola">("mpesa");
 
@@ -236,6 +241,8 @@ export default function BookingPage() {
           trip_id: trip.trip_id,
           quantity: qty,
           passengers: pax,
+          emergency_contact_name: emergName,
+          emergency_contact_phone: emergPhone.replace(/\D/g, ""),
           display_currency: currency,
         }),
       });
@@ -427,6 +434,31 @@ export default function BookingPage() {
                     </div>
                   </div>
                 ))}
+                {hasSeatMap ? (
+                  <div className="bzbk-pax bzbk-pax-emergency">
+                    <div className="bzbk-pax-head">
+                      <span className="bzbk-pax-title">Contacto de emergência</span>
+                    </div>
+                    <p className="bzbk-lead" style={{ marginTop: -4 }}>
+                      Quem avisamos se algo correr mal durante a viagem. Vai no
+                      manifesto de bordo que segue com o motorista.
+                    </p>
+                    <div className="bzbk-grid" style={{ marginTop: 12 }}>
+                      <div className="bzbk-field bzbk-field-wide">
+                        <label className="bzbk-label">Nome</label>
+                        <input className="bzbk-input" value={emergName} required
+                          placeholder="Ex.: Maria Sitoe"
+                          onChange={(e) => setEmergName(e.target.value)} />
+                      </div>
+                      <div className="bzbk-field bzbk-field-wide">
+                        <label className="bzbk-label">Telefone</label>
+                        <input className="bzbk-input" value={emergPhone} required
+                          inputMode="tel" placeholder="84/85/86/87..."
+                          onChange={(e) => setEmergPhone(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button"
                     onClick={() => setStep(hasSeatMap ? "seats" : "trips")}>

@@ -391,6 +391,8 @@ class PosSeatSaleTests(ConcurrencyBase):
             origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
             passenger_phone=phone, quantity=quantity or max(len(seats), 1),
             seats=seats,
+            emergency_contact_name="Familiar",
+            emergency_contact_phone="848111222",
         )
 
     def test_seat_is_recorded_on_the_ticket(self):
@@ -503,6 +505,7 @@ class AppSeatPurchaseTests(ConcurrencyBase):
             agent=agent, device=None, trip_id=self.trip.id, route_id=None,
             origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
             passenger_phone="841999999", quantity=1, seats=["6B"],
+            emergency_contact_name="Familiar", emergency_contact_phone="848111222",
         )
 
         with self.assertRaises(PurchaseError) as ctx:
@@ -526,6 +529,7 @@ class AppSeatPurchaseTests(ConcurrencyBase):
                     agent=agent, device=None, trip_id=self.trip.id, route_id=None,
                     origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
                     passenger_phone="841000010", quantity=1, seats=["8C"],
+                    emergency_contact_name="Familiar", emergency_contact_phone="848111222",
                 )
                 return f"levou:balcao:{gc.reference}"
             except (PurchaseError, SaleError) as e:

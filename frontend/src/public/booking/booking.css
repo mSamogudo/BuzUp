@@ -244,3 +244,7 @@
 @media (prefers-reduced-motion: reduce){
   .bzbk *{transition:none!important;animation-duration:.01ms!important}
 }
+
+/* Contacto de emergência: mesmo cartão dos passageiros, com um tom que o
+   distingue — não é mais um passageiro, é informação sobre a viagem toda. */
+.bzbk-pax-emergency { background: #FFF9F0; border-color: #F2DDBB; }

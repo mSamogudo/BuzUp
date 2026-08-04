@@ -63,6 +63,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   // e internacional). Nas urbanas vem vazia e o passo nem aparece.
   Map<String, dynamic>? _seatMap;
   final List<String> _pickedSeats = [];
+  // Contacto de emergencia: obrigatorio nas mesmas rotas que marcam lugar
+  // (interprovincial/internacional). Vai para o manifesto de bordo — o agente
+  // ao balcao e quem tem o passageiro a frente para perguntar.
+  final _emergNameCtrl = TextEditingController();
+  final _emergPhoneCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -94,6 +99,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   void dispose() {
     _pollTimer?.cancel();
     NfcCardReader.stop();
+    _emergNameCtrl.dispose();
+    _emergPhoneCtrl.dispose();
     super.dispose();
   }
 
@@ -195,6 +202,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         deviceSerial: serial,
         displayCurrency: _currency,
         seats: _seatsRequired ? List<String>.from(_pickedSeats) : const [],
+        emergencyName: _seatsRequired ? _emergNameCtrl.text.trim() : '',
+        emergencyPhone: _seatsRequired ? _emergPhoneCtrl.text.trim() : '',
         // A assinatura inclui tudo o que define a venda: se o agente voltar
         // atras e corrigir o destino ou a quantidade, a chave roda sozinha e a
         // venda seguinte nao e confundida com a anterior.
@@ -521,6 +530,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           // A planta abre num ecrã próprio (um passo): embutida aqui obrigava
           // a rolar o formulário todo para chegar ao botão de pagar.
           _seatSummaryCard(),
+          const SizedBox(height: 10),
+          _emergencyFields(),
         ],
         const SizedBox(height: 12),
         _methodPicker(),
@@ -546,7 +557,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
-          onPressed: (_seatsRequired && _pickedSeats.length != _quantity)
+          // Sem lugares ou sem contacto de emergencia, o servidor recusa a
+          // venda — mais vale o botao dizer porque do que falhar depois.
+          onPressed: (_seatsRequired &&
+                  (_pickedSeats.length != _quantity ||
+                      _emergPhoneCtrl.text.trim().length != 9))
               ? null
               : _requestPayment,
         ),
@@ -710,6 +725,59 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         ),
       );
     });
+  }
+
+  /// Contacto de emergência do passageiro, pedido só nas viagens longas.
+  ///
+  /// Vai para o manifesto de bordo. O balcão é o único momento em que há
+  /// alguém a quem perguntar — depois do acidente já não serve.
+  Widget _emergencyFields() {
+    return Card(
+      color: const Color(0xFFFFF6E8),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: const [
+            Icon(Icons.emergency_share_outlined, size: 18, color: Color(0xFFB07B24)),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('Contacto de emergencia',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+            ),
+          ]),
+          const Text('Obrigatorio nesta rota. Vai no manifesto de bordo.',
+              style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7A8F))),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _emergNameCtrl,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Nome',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              hintText: 'Ex.: Maria Sitoe',
+              prefixIcon: Icon(Icons.person_outline),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _emergPhoneCtrl,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(9),
+            ],
+            decoration: const InputDecoration(
+              labelText: 'Telefone (9 digitos)',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              hintText: '84/85/86/87...',
+              prefixIcon: Icon(Icons.phone_outlined),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ]),
+      ),
+    );
   }
 
   /// Card-resumo dos lugares: mostra o estado e abre o ecrã da planta.

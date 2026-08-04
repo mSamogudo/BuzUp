@@ -51,11 +51,18 @@ const _seatMap = {
 /// assinaturas ficarem presas as reais — se um metodo mudar, isto deixa de
 /// compilar em vez de passar a testar uma coisa que ja nao existe.
 class _FakeApi extends PassengerApi {
-  _FakeApi({required this.seated, this.departures = const []})
-      : super(ApiClient(SecureStore()));
+  _FakeApi({
+    required this.seated,
+    this.departures = const [],
+    this.holderDocument = '',
+  }) : super(ApiClient(SecureStore()));
 
   final bool seated;
   final List<Map<String, dynamic>> departures;
+
+  /// BI já guardado na conta. Vazio = conta sem documento, que é quando a
+  /// compra o tem de perguntar.
+  final String holderDocument;
 
   @override
   Future<Map<String, dynamic>> publicTrips({int? routeId}) async =>
@@ -64,10 +71,34 @@ class _FakeApi extends PassengerApi {
   @override
   Future<Map<String, dynamic>> exchangeRates() async => const {'rates': {}};
 
+  /// As regras a sério, como o servidor as devolve: os testes exercitam a
+  /// validação verdadeira do BI, não uma versão amaciada.
   @override
-  Future<Map<String, dynamic>> me() async => const {
+  Future<List<Map<String, dynamic>>> documentTypes() async => [
+        {
+          'value': 'bi', 'label': 'Bilhete de Identidade',
+          'pattern': r'^\d{12}[A-Z]$', 'max_length': 13,
+          'placeholder': '110100123456A',
+          'help': '13 caracteres: 12 digitos seguidos de uma letra.',
+          'digits_only': false,
+        },
+        {
+          'value': 'passport', 'label': 'Passaporte',
+          'pattern': r'^[A-Z0-9]{6,9}$', 'max_length': 9,
+          'placeholder': 'AB1234567',
+          'help': '6 a 9 caracteres, so letras e numeros.',
+          'digits_only': false,
+        },
+      ];
+
+  @override
+  Future<Map<String, dynamic>> me() async => {
         'phone': '258841234567',
-        'passenger': {'full_name': 'Ana Cossa'},
+        'passenger': {
+          'full_name': 'Ana Cossa',
+          if (holderDocument.isNotEmpty) 'document_type': 'bi',
+          if (holderDocument.isNotEmpty) 'document_number': holderDocument,
+        },
       };
 
   @override
@@ -131,6 +162,21 @@ Future<void> _chooseRoute(WidgetTester tester) async {
   await tester.tap(find.text('Xai-Xai Terminal').last);
   await tester.pumpAndSettle();
 }
+
+/// Preenche o que a viagem longa exige antes de escolher o lugar: documento
+/// (quando a conta nao o tem) e contacto de emergencia.
+Future<void> _preencherDadosDaViagem(WidgetTester tester,
+    {bool comDocumento = true}) async {
+  if (comDocumento) {
+    await tester.enterText(find.byType(TextField).first, '110100123456A');
+    await tester.pumpAndSettle();
+  }
+  await tester.enterText(find.byType(TextField).last, '849999999');
+  await tester.pumpAndSettle();
+}
+
+FilledButton _actionButton(WidgetTester tester) =>
+    tester.widget<FilledButton>(find.byType(FilledButton).last);
 
 /// O rotulo do botao de accao, seja qual for o passo.
 String _actionLabel(WidgetTester tester) {
@@ -215,6 +261,21 @@ void main() {
 
     await tester.tap(find.text('06:30'));
     await tester.pumpAndSettle();
+
+    // O que falta aparece por ordem, um de cada vez — nao uma lista de
+    // reclamacoes de uma vez so.
+    expect(find.text('Indique o numero do documento.'), findsOneWidget);
+
+    // Um BI com a forma errada e recusado ANTES do pagamento, com a regra por
+    // palavras em vez de um "invalido" seco.
+    await tester.enterText(find.byType(TextField).first, '12345');
+    await tester.pumpAndSettle();
+    expect(find.text('13 caracteres: 12 digitos seguidos de uma letra.'),
+        findsWidgets);
+    expect(_actionButton(tester).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField).first, '110100123456A');
+    await tester.pumpAndSettle();
     expect(find.text('Indique o telefone do contacto de emergencia.'),
         findsOneWidget);
 
@@ -225,13 +286,43 @@ void main() {
     expect(_actionLabel(tester), 'ESCOLHER LUGAR');
   });
 
+  testWidgets('conta que ja tem BI nao volta a pedir o documento',
+      (tester) async {
+    await _pump(tester, _FakeApi(
+      seated: true, departures: _departuresOk, holderDocument: '110100123456A'));
+    await _chooseRoute(tester);
+    await tester.tap(find.text('06:30'));
+    await tester.pumpAndSettle();
+
+    // Quem ja registou o documento no perfil nao o escreve a cada compra.
+    expect(find.text('Documento de identificacao'), findsNothing);
+    expect(find.text('Indique o numero do documento.'), findsNothing);
+
+    await tester.enterText(find.byType(TextField).last, '849999999');
+    await tester.pumpAndSettle();
+    expect(_actionLabel(tester), 'ESCOLHER LUGAR');
+  });
+
+  testWidgets('BI guardado com forma invalida volta a ser pedido',
+      (tester) async {
+    // Contas antigas podem ter um numero que a regra actual ja nao aceita.
+    // Melhor pedi-lo outra vez do que deixar a compra ser recusada pelo
+    // servidor depois de escolhido o lugar.
+    await _pump(tester, _FakeApi(
+      seated: true, departures: _departuresOk, holderDocument: '123'));
+    await _chooseRoute(tester);
+    await tester.tap(find.text('06:30'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Documento de identificacao'), findsOneWidget);
+  });
+
   testWidgets('no passo do lugar ha sempre botao para avancar', (tester) async {
     await _pump(tester, _FakeApi(seated: true, departures: _departuresOk));
     await _chooseRoute(tester);
     await tester.tap(find.text('06:30'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
+    await _preencherDadosDaViagem(tester);
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
 
@@ -265,8 +356,7 @@ void main() {
     await _chooseRoute(tester);
     await tester.tap(find.text('06:30'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
+    await _preencherDadosDaViagem(tester);
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
 
@@ -286,8 +376,7 @@ void main() {
     await _chooseRoute(tester);
     await tester.tap(find.text('06:30'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
+    await _preencherDadosDaViagem(tester);
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
     await tester.tap(find.text('2C'));
@@ -316,8 +405,7 @@ void main() {
     await _chooseRoute(tester);
     await tester.tap(find.text('06:30'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
+    await _preencherDadosDaViagem(tester);
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
     await tester.tap(find.text('2C'));

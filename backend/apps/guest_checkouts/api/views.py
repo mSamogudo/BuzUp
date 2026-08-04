@@ -131,6 +131,29 @@ class GuestCheckoutCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Documento de identificacao: so nas viagens interprovinciais e
+        # internacionais, onde o bilhete e nominal, entra no manifesto de bordo
+        # e pode ser conferido na fronteira. Numa carreira urbana ninguem mostra
+        # o BI para apanhar o autocarro do bairro — pedi-lo seria guardar dados
+        # pessoais sem necessidade e travar uma compra que tem de ser rapida.
+        #
+        # A FORMA do numero ja foi validada no serializer; aqui decide-se se ele
+        # e sequer preciso.
+        if route.requires_seat_selection:
+            for i, p in enumerate(passengers, start=1):
+                if not (p.get("document_number") or "").strip():
+                    return Response(
+                        {"detail": f"Indique o documento do passageiro {i}. "
+                                   "E obrigatorio nesta viagem."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+        else:
+            # Nao guardar o que nao foi pedido: se o cliente enviar documento
+            # numa carreira urbana, ele nao entra na base.
+            for p in passengers:
+                p["document_type"] = ""
+                p["document_number"] = ""
+
         total = unit_amount * quantity
         ref = f"GC-{uuid4().hex[:18].upper()}"
 
@@ -429,6 +452,24 @@ class PublicTripSeatsView(APIView):
             "sale_unavailable_reason": reason,
         })
         return Response(data)
+
+
+class PublicDocumentTypesView(APIView):
+    """Tipos de documento aceites e a forma de cada um.
+
+    O portal le daqui o limite do campo, o exemplo e a regra por palavras, em
+    vez de os ter escritos outra vez em TypeScript. Assim a validacao do
+    formulario e a do servidor nao podem discordar — e quando um formato mudar,
+    muda num sitio so.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        from apps.guest_checkouts.documents import public_rules
+
+        return Response({"document_types": public_rules()})
 
 
 class PublicBusInfoView(APIView):

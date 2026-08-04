@@ -26,13 +26,35 @@ interface TripOpt {
 }
 interface Passenger { name: string; document_type: string; document_number: string; seat: string }
 
-const DOC_TYPES = [
-  { value: "bi", label: "Bilhete de Identidade" },
-  { value: "passport", label: "Passaporte" },
-  { value: "dire", label: "DIRE" },
-  { value: "cedula", label: "Cédula" },
-  { value: "other", label: "Outro" },
+/// Forma de cada tipo de documento. Vem de `/api/public/document-types/`, o
+/// mesmo sítio que o servidor usa para validar — escrever as regras outra vez
+/// aqui garantia que um dia deixavam de concordar, e o campo passava a aceitar
+/// o que a compra recusa.
+interface DocRule {
+  value: string; label: string; pattern: string; max_length: number;
+  placeholder: string; help: string; digits_only: boolean;
+}
+
+/// Usada só até as regras chegarem do servidor (e se a rede falhar): deixa o
+/// formulário utilizável em vez de o bloquear.
+const DOC_FALLBACK: DocRule[] = [
+  { value: "bi", label: "Bilhete de Identidade", pattern: "^[A-Z0-9]{4,32}$",
+    max_length: 32, placeholder: "", help: "", digits_only: false },
+  { value: "passport", label: "Passaporte", pattern: "^[A-Z0-9]{4,32}$",
+    max_length: 32, placeholder: "", help: "", digits_only: false },
+  { value: "dire", label: "DIRE", pattern: "^[A-Z0-9]{4,32}$",
+    max_length: 32, placeholder: "", help: "", digits_only: false },
+  { value: "cedula", label: "Cédula", pattern: "^[A-Z0-9]{4,32}$",
+    max_length: 32, placeholder: "", help: "", digits_only: false },
+  { value: "other", label: "Outro", pattern: "^[A-Z0-9]{4,32}$",
+    max_length: 32, placeholder: "", help: "", digits_only: false },
 ];
+
+/// Tira o que é só aspecto (espaços, traços) e põe em maiúsculas — a mesma
+/// normalização que o servidor faz antes de gravar.
+function normalizeDoc(raw: string) {
+  return raw.replace(/[\s.\-/]/g, "").toUpperCase();
+}
 
 async function getJson(path: string) {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" } });
@@ -71,7 +93,15 @@ export default function BookingPage() {
   const [trips, setTrips] = useState<TripOpt[]>([]);
   const [trip, setTrip] = useState<TripOpt | null>(null);
   const [rows, setRows] = useState<SeatRow[]>([]);
+  // `hasSeatMap` diz se HÁ PLANTA a desenhar; `needsIdentity` diz se a ROTA é
+  // interprovincial/internacional. Não são a mesma coisa: uma rota longa cuja
+  // viatura ainda não tem lotação registada vende sem planta, mas continua a
+  // precisar de documento e de contacto de emergência. Usar a planta como
+  // critério escondia esses campos e a compra era recusada pelo servidor sem
+  // o comprador ter onde os escrever.
   const [hasSeatMap, setHasSeatMap] = useState(true);
+  const [needsIdentity, setNeedsIdentity] = useState(true);
+  const [docRules, setDocRules] = useState<DocRule[]>(DOC_FALLBACK);
   const [picked, setPicked] = useState<string[]>([]);
   const [pax, setPax] = useState<Passenger[]>([]);
   const [phone, setPhone] = useState("");
@@ -100,6 +130,9 @@ export default function BookingPage() {
     getJson("/api/public/trips/?sellable=1")
       .then((d) => setStops(d.stops || []))
       .catch(() => setStops([]));
+    getJson("/api/public/document-types/")
+      .then((d) => { if (d.document_types?.length) setDocRules(d.document_types); })
+      .catch(() => { /* fica a lista de recurso: melhor comprar do que travar */ });
     getJson("/api/public/exchange-rate/")
       .then((d) => {
         const parsed: Record<string, number> = {};
@@ -187,6 +220,7 @@ export default function BookingPage() {
     try {
       const d = await getJson(`/api/public/trips/${t.trip_id}/seats/`);
       setHasSeatMap(Boolean(d.has_seat_map));
+      setNeedsIdentity(Boolean(d.seat_selection));
       setRows(d.rows || []);
       setStep(d.has_seat_map ? "seats" : "pax");
       if (!d.has_seat_map) startPax([]);
@@ -213,7 +247,44 @@ export default function BookingPage() {
     setPax((prev) => prev.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
   };
 
-  const paxValid = pax.length > 0 && pax.every((p) => p.name.trim().length >= 3 && p.document_number.trim().length >= 4);
+  const docRule = useCallback(
+    (type: string) => docRules.find((d) => d.value === type) || docRules[docRules.length - 1],
+    [docRules],
+  );
+
+  /// O que está errado no documento deste passageiro, por palavras. Vazio
+  /// quando está bem — ou quando a viagem nem pede documento.
+  const docError = useCallback((p: Passenger) => {
+    if (!needsIdentity) return "";
+    const rule = docRule(p.document_type);
+    const num = normalizeDoc(p.document_number);
+    if (!num) return `Indique o número do documento (${rule.label}).`;
+    if (!new RegExp(rule.pattern).test(num)) return `${rule.label}: ${rule.help}`;
+    return "";
+  }, [needsIdentity, docRule]);
+
+  /// O que falta para avançar, por palavras. Um botão cinzento e calado deixa
+  /// o comprador sem saber o que corrigir — e o erro só aparecia quando o
+  /// servidor recusava a compra, já depois de escolher o lugar.
+  const paxMissing = useMemo(() => {
+    if (pax.length === 0) return "Indique quem viaja.";
+    for (let i = 0; i < pax.length; i++) {
+      const p = pax[i];
+      const quem = pax.length === 1 ? "" : ` do passageiro ${i + 1}`;
+      if (p.name.trim().length < 3) return `Indique o nome completo${quem}.`;
+      const erro = docError(p);
+      if (erro) return pax.length === 1 ? erro : `Passageiro ${i + 1}: ${erro}`;
+    }
+    if (needsIdentity) {
+      if (emergName.trim().length < 3) return "Indique o nome do contacto de emergência.";
+      if (!/^\d{9}$/.test(emergPhone.replace(/\D/g, ""))) {
+        return "Indique o telefone do contacto de emergência (9 dígitos).";
+      }
+    }
+    return "";
+  }, [pax, docError, needsIdentity, emergName, emergPhone]);
+
+  const paxValid = paxMissing === "";
   const phoneValid = /^\d{9}$/.test(phone.replace(/\D/g, ""));
   const unit = Number(trip?.fare_amount || 0);
   const total = unit * qty;
@@ -404,7 +475,9 @@ export default function BookingPage() {
               <div>
                 <h2 className="bzbk-h2">Quem viaja?</h2>
                 <p className="bzbk-lead">
-                  O bilhete é nominal. Em viagens internacionais o documento é conferido na fronteira.
+                  {needsIdentity
+                    ? "O bilhete é nominal. Em viagens internacionais o documento é conferido na fronteira."
+                    : "Basta o nome de quem viaja. Nesta carreira não é preciso documento."}
                 </p>
                 {pax.map((p, i) => (
                   <div className="bzbk-pax" key={i}>
@@ -418,23 +491,57 @@ export default function BookingPage() {
                         placeholder="Como está no documento"
                         onChange={(e) => setPaxField(i, "name", e.target.value)} />
                     </div>
-                    <div className="bzbk-grid" style={{ marginTop: 12 }}>
-                      <div className="bzbk-field bzbk-field-wide">
-                        <label className="bzbk-label">Documento</label>
-                        <select className="bzbk-select" value={p.document_type}
-                          onChange={(e) => setPaxField(i, "document_type", e.target.value)}>
-                          {DOC_TYPES.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                        </select>
-                      </div>
-                      <div className="bzbk-field bzbk-field-wide">
-                        <label className="bzbk-label">Número</label>
-                        <input className="bzbk-input" value={p.document_number} required
-                          onChange={(e) => setPaxField(i, "document_number", e.target.value)} />
-                      </div>
-                    </div>
+                    {/* Documento só nas viagens interprovinciais e
+                        internacionais. Numa carreira urbana ninguém mostra o BI
+                        para apanhar o autocarro do bairro. */}
+                    {needsIdentity && (() => {
+                      const rule = docRule(p.document_type);
+                      const erro = docError(p);
+                      // Só se avisa depois de escrever alguma coisa: acusar um
+                      // campo ainda vazio é ralhar antes da falta.
+                      const mostraErro = p.document_number.trim() !== "" && erro !== "";
+                      return (
+                        <div className="bzbk-grid" style={{ marginTop: 12 }}>
+                          <div className="bzbk-field bzbk-field-wide">
+                            <label className="bzbk-label">Documento</label>
+                            <select className="bzbk-select" value={p.document_type}
+                              onChange={(e) => setPaxField(i, "document_type", e.target.value)}>
+                              {docRules.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="bzbk-field bzbk-field-wide">
+                            <label className="bzbk-label">Número</label>
+                            <input
+                              className={`bzbk-input${mostraErro ? " bzbk-input-error" : ""}`}
+                              value={p.document_number}
+                              required
+                              maxLength={rule.max_length}
+                              placeholder={rule.placeholder}
+                              inputMode={rule.digits_only ? "numeric" : "text"}
+                              autoCapitalize="characters"
+                              autoComplete="off"
+                              spellCheck={false}
+                              aria-invalid={mostraErro}
+                              // Normaliza enquanto se escreve: o campo passa a
+                              // recusar o que o servidor recusaria, em vez de
+                              // deixar chegar ao pagamento para falhar la.
+                              onChange={(e) => setPaxField(i, "document_number", normalizeDoc(e.target.value))}
+                            />
+                            <span className={mostraErro ? "bzbk-hint bzbk-hint-error" : "bzbk-hint"}>
+                              {mostraErro ? erro : rule.help}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ))}
-                {hasSeatMap ? (
+                {/* Quem decide é a ROTA, não a existência de planta: uma
+                    interprovincial cuja viatura ainda não tem lotação registada
+                    vende sem planta e continua a precisar deste contacto. Com
+                    `hasSeatMap` aqui, o campo desaparecia e o servidor recusava
+                    a compra sem o comprador ter onde o escrever. */}
+                {needsIdentity ? (
                   <div className="bzbk-pax bzbk-pax-emergency">
                     <div className="bzbk-pax-head">
                       <span className="bzbk-pax-title">Contacto de emergência</span>
@@ -459,6 +566,9 @@ export default function BookingPage() {
                     </div>
                   </div>
                 ) : null}
+                {paxMissing && (
+                  <p className="bzbk-hint" style={{ marginTop: 14 }}>{paxMissing}</p>
+                )}
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button"
                     onClick={() => setStep(hasSeatMap ? "seats" : "trips")}>

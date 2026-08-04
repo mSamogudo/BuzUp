@@ -74,6 +74,11 @@
 .bzbk-input:focus,.bzbk-select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(45,140,240,.16)}
 .bzbk-input:disabled,.bzbk-select:disabled{background:#F3F6FA;color:var(--muted)}
 .bzbk-hint{font-size:12px;color:var(--muted)}
+/* Campo com valor que o servidor recusaria. Cor E `aria-invalid` no input:
+   quem usa leitor de ecra nao ve a moldura vermelha. */
+.bzbk-input-error{border-color:var(--danger,#D64545)}
+.bzbk-input-error:focus{border-color:var(--danger,#D64545);box-shadow:0 0 0 3px rgba(214,69,69,.16)}
+.bzbk-hint-error{color:var(--danger,#D64545);font-weight:600}
 
 /* Botões */
 .bzbk-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:var(--blue);color:#fff;

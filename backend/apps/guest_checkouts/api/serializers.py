@@ -1,6 +1,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from apps.guest_checkouts.documents import DocumentError, validate_document
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 
 
@@ -32,8 +33,21 @@ class PassengerInputSerializer(serializers.Serializer):
     seat = serializers.CharField(max_length=8, required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
-        if attrs.get("document_type") and not attrs.get("document_number"):
+        """Valida a FORMA do documento; se ele e sequer preciso decide-se na
+        vista, que e quem conhece a rota.
+
+        O numero fica normalizado (sem espacos nem tracos, em maiusculas) para
+        o mesmo documento nao aparecer de duas maneiras no manifesto.
+        """
+        numero = attrs.get("document_number") or ""
+        if attrs.get("document_type") and not numero.strip():
             raise serializers.ValidationError({"document_number": "Indique o numero do documento."})
+        if numero.strip():
+            try:
+                attrs["document_number"] = validate_document(
+                    attrs.get("document_type") or "other", numero)
+            except DocumentError as e:
+                raise serializers.ValidationError({"document_number": str(e)})
         return attrs
 
 

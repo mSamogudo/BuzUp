@@ -6,6 +6,7 @@ from apps.guest_checkouts.api.views import (
     GuestCheckoutLookupView,
     GuestCheckoutViewSet,
     PublicBusInfoView,
+    PublicDocumentTypesView,
     PublicTripSearchView,
     PublicTripSeatsView,
     TicketPdfView,
@@ -21,5 +22,6 @@ urlpatterns = [
     path("public/trips/", PublicTripSearchView.as_view(), name="public-trip-search"),
     path("public/trips/<int:trip_id>/seats/", PublicTripSeatsView.as_view(), name="public-trip-seats"),
     path("public/bus/<uuid:vehicle_uuid>/", PublicBusInfoView.as_view(), name="public-bus-info"),
+    path("public/document-types/", PublicDocumentTypesView.as_view(), name="public-document-types"),
     path("public/ticket/<str:token>/", TicketPdfView.as_view(), name="public-ticket-pdf"),
 ]

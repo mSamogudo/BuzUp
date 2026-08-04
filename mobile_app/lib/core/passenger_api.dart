@@ -260,6 +260,14 @@ class PassengerApi {
     return res.data ?? const {};
   }
 
+  /// Formatos aceites de documento de identificacao, tal como o servidor os
+  /// valida. A app le daqui em vez de os ter escritos outra vez em Dart.
+  Future<List<Map<String, dynamic>>> documentTypes() async {
+    final res = await _http.get<Map<String, dynamic>>('/api/public/document-types/');
+    final items = (res.data?['document_types'] as List?) ?? const [];
+    return items.map((e) => (e as Map).cast<String, dynamic>()).toList();
+  }
+
   /// Compra directa com M-Pesa/e-Mola (sem passar pela carteira): cria um
   /// checkout ligado a conta autenticada e dispara o pedido de PIN no numero
   /// indicado. Devolve {checkout_reference, status, payment_status, ...}.

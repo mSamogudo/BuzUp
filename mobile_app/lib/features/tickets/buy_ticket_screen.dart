@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../core/bus_loader.dart';
+import '../../core/documents.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
 import '../../core/seat_map_screen.dart';
@@ -69,6 +70,14 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   String _holderName = '';
   String _holderDocType = '';
   String _holderDocNumber = '';
+
+  // Documento de identificacao: exigido nas rotas interprovinciais e
+  // internacionais, onde o bilhete e nominal e pode ser conferido na fronteira.
+  // So se PERGUNTA quando a conta ainda nao tem um valido guardado — quem ja
+  // registou o BI no perfil nao o volta a escrever a cada compra.
+  List<DocumentRule> _docRules = kDocumentFallback;
+  String _docType = 'bi';
+  final _docNumberCtrl = TextEditingController();
   bool _usePackage = true;
   // Os pacotes especiais sao passes do dia-a-dia: so valem em carreiras
   // urbanas/interurbanas. Quem decide e o servidor (tipo de servico da rota);
@@ -100,6 +109,10 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         _loadingStops = false;
       });
     });
+    ref.read(passengerApiProvider).documentTypes().then((items) {
+      if (!mounted || items.isEmpty) return;
+      setState(() => _docRules = items.map(DocumentRule.fromJson).toList());
+    }).catchError((_) {/* fica a lista de recurso: melhor comprar do que travar */});
     ref.read(passengerApiProvider).exchangeRates().then((d) {
       final parsed = <String, double>{};
       (d['rates'] as Map?)?.forEach((k, v) {
@@ -131,6 +144,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     _phoneCtrl.dispose();
     _emergencyNameCtrl.dispose();
     _emergencyPhoneCtrl.dispose();
+    _docNumberCtrl.dispose();
     _searchScroll.dispose();
     super.dispose();
   }
@@ -183,6 +197,34 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   String _stopName(int? id) {
     for (final s in _stops) {
       if (s['id'] == id) return (s['name'] ?? '').toString();
+    }
+    return '';
+  }
+
+  // --- documento ------------------------------------------------------------
+
+  /// A conta ja tem um documento que serve? Se sim, nao se pergunta nada.
+  bool get _holderDocIsUsable {
+    if (_holderDocNumber.trim().isEmpty) return false;
+    return ruleFor(_docRules, _holderDocType).accepts(_holderDocNumber);
+  }
+
+  /// O tipo e o numero que vao com a compra: os da conta quando servem, os
+  /// escritos agora quando nao.
+  String get _effectiveDocType => _holderDocIsUsable ? _holderDocType : _docType;
+  String get _effectiveDocNumber => _holderDocIsUsable
+      ? normalizeDocument(_holderDocNumber)
+      : normalizeDocument(_docNumberCtrl.text);
+
+  /// O que esta errado no documento escrito, por palavras. Vazio quando esta
+  /// bem — ou quando nao ha nada a perguntar.
+  String _docProblem() {
+    if (!_seatsRequired || _holderDocIsUsable) return '';
+    final regra = ruleFor(_docRules, _docType);
+    final numero = normalizeDocument(_docNumberCtrl.text);
+    if (numero.isEmpty) return 'Indique o numero do documento.';
+    if (!regra.accepts(numero)) {
+      return regra.help.isEmpty ? '${regra.label}: numero invalido.' : regra.help;
     }
     return '';
   }
@@ -408,8 +450,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             emergencyName: _emergencyNameCtrl.text.trim(),
             emergencyPhone: _emergencyPhoneCtrl.text.trim(),
             passengerName: _holderName,
-            documentType: _holderDocType,
-            documentNumber: _holderDocNumber,
+            documentType: _effectiveDocType,
+            documentNumber: _effectiveDocNumber,
           );
       Log.info('ticket.direct ok', data: 'ref=${res['checkout_reference']} status=${res['status']}');
       final reference = (res['checkout_reference'] ?? '').toString();
@@ -659,6 +701,10 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           const SizedBox(height: 10),
           _departuresBlock(),
           if (_tripId != null) ...[
+            if (!_holderDocIsUsable) ...[
+              const SizedBox(height: 14),
+              _documentCard(),
+            ],
             const SizedBox(height: 14),
             _emergencyCard(),
           ],
@@ -821,6 +867,86 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Documento de identificação, pedido só nas viagens longas — e só quando a
+  /// conta ainda não tem um guardado.
+  ///
+  /// O bilhete destas rotas é nominal: entra no manifesto de bordo e pode ser
+  /// conferido na fronteira. Numa carreira urbana não aparece.
+  Widget _documentCard() {
+    final regra = ruleFor(_docRules, _docType);
+    final problema = _docProblem();
+    // Só se avisa depois de escrever alguma coisa: acusar um campo ainda vazio
+    // é ralhar antes da falta.
+    final mostraErro = _docNumberCtrl.text.trim().isNotEmpty && problema.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE4EBF3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: const [
+          Icon(Icons.badge_outlined, size: 18, color: BuzUpColors.blue),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text('Documento de identificacao',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        const SizedBox(height: 2),
+        const Text(
+          'O bilhete desta viagem e nominal e pode ser conferido na fronteira.',
+          style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted, height: 1.35),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _docType,
+          decoration: const InputDecoration(
+            labelText: 'Tipo',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            prefixIcon: Icon(Icons.description_outlined, size: 20),
+          ),
+          items: [
+            for (final r in _docRules)
+              DropdownMenuItem(value: r.value, child: Text(r.label)),
+          ],
+          onChanged: (v) => setState(() => _docType = v ?? 'bi'),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _docNumberCtrl,
+          maxLength: regra.maxLength,
+          keyboardType: regra.digitsOnly ? TextInputType.number : TextInputType.text,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(
+            labelText: 'Numero',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: regra.placeholder,
+            counterText: '',
+            prefixIcon: const Icon(Icons.pin_outlined, size: 20),
+            helperText: mostraErro ? null : regra.help,
+            helperMaxLines: 2,
+            errorText: mostraErro ? problema : null,
+            errorMaxLines: 2,
+          ),
+          // Normaliza enquanto se escreve: o campo passa a recusar o que o
+          // servidor recusaria, em vez de deixar chegar ao pagamento.
+          onChanged: (v) {
+            final limpo = normalizeDocument(v);
+            if (limpo != v) {
+              _docNumberCtrl.value = TextEditingValue(
+                text: limpo,
+                selection: TextSelection.collapsed(offset: limpo.length),
+              );
+            }
+            setState(() {});
+          },
+        ),
+      ]),
     );
   }
 
@@ -1221,6 +1347,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         if (!_seatsRequired) return '';
         if (_departures.isEmpty) return 'Escolha uma data com partidas.';
         if (_tripId == null) return 'Escolha a hora de partida.';
+        final doc = _docProblem();
+        if (doc.isNotEmpty) return doc;
         if (_emergencyPhoneCtrl.text.trim().isEmpty) {
           return 'Indique o telefone do contacto de emergencia.';
         }

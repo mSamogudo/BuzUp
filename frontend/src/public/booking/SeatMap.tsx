@@ -35,7 +35,10 @@ export default function SeatMap({
 
   return (
     <div>
-      <div className="bzbk-bus">
+      {/* `--rows` deixa o CSS calcular o tamanho do banco para a planta caber
+          na altura disponível: com bancos de tamanho fixo, um autocarro de 15
+          filas ficava com 1000px numa caixa de 430 e obrigava a rolar tudo. */}
+      <div className="bzbk-bus" style={{ ["--rows" as string]: Math.max(1, rows.length) }}>
         <div className="bzbk-bus-head">
           <span>FRENTE DO AUTOCARRO</span>
           <span aria-hidden>🚍</span>
@@ -51,7 +54,7 @@ export default function SeatMap({
                 <div
                   className="bzbk-row bzbk-row-full"
                   key={r.row}
-                  style={{ gridTemplateColumns: `repeat(${widest}, minmax(0,1fr))` }}
+                  style={{ gridTemplateColumns: `repeat(${widest}, var(--seat))` }}
                 >
                   {left.map((s) => <SeatButton key={s.label} seat={s} {...seatProps} />)}
                 </div>
@@ -64,7 +67,7 @@ export default function SeatMap({
                 key={r.row}
                 style={{
                   gridTemplateColumns:
-                    `repeat(${left.length}, minmax(0,1fr)) 22px repeat(${right.length}, minmax(0,1fr))`,
+                    `repeat(${left.length}, var(--seat)) 22px repeat(${right.length}, var(--seat))`,
                 }}
               >
                 {left.map((s) => <SeatButton key={s.label} seat={s} {...seatProps} />)}

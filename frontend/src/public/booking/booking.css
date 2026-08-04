@@ -123,31 +123,43 @@
 }
 
 /* Mapa de lugares */
-.bzbk-bus{border:1.5px solid var(--line);border-radius:18px;padding:16px;background:var(--bg);max-width:340px;margin:0 auto}
+/* O tamanho do banco sai da altura disponível e do número de filas (`--rows`,
+   posto pelo componente), em vez de esticar para encher 340px de largura.
+   Com bancos a `1fr` num 2+2 cada um ficava com ~63px de lado e as 15 filas
+   davam ~1000px dentro de uma caixa de 430 — cartões enormes e a planta toda
+   por rolar. Assim o autocarro cabe de uma vez. */
+.bzbk-bus{--gap:6px;--avail:min(70vh,700px);
+  --seat:clamp(30px, calc((var(--avail) - (var(--rows) - 1) * var(--gap)) / var(--rows)), 44px);
+  border:1.5px solid var(--line);border-radius:18px;padding:14px;background:var(--bg);
+  width:max-content;max-width:100%;margin:0 auto}
 .bzbk-bus-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;
   font-weight:700;color:var(--muted);padding:0 4px 12px;border-bottom:1px dashed var(--line);margin-bottom:12px}
 /* minmax(0,1fr): com `1fr` o piso min-content dos botões (aspect-ratio)
    inflava as colunas e a planta rebentava a largura em telemóvel. */
 /* As colunas vem do componente (o layout muda com o autocarro: 2+2, 1+2,
    3+2); aqui fica so o espacamento. */
-.bzbk-row{display:grid;gap:8px;margin-bottom:8px;align-items:center}
+.bzbk-row{display:grid;gap:var(--gap);margin-bottom:var(--gap);align-items:center;justify-content:center}
+/* A ultima fila nao leva margem: senao a planta ficava 6px mais alta do que
+   a caixa calculada para ela e rolava por causa desses 6px. */
+.bzbk-row:last-child{margin-bottom:0}
 /* Fila corrida do fundo: sem corredor a meio. */
-.bzbk-row-full{gap:8px}
+.bzbk-row-full{gap:var(--gap)}
 .bzbk-aisle{font-size:10px;color:#B7C4D3;text-align:center}
-.bzbk-seat{aspect-ratio:1;min-width:0;padding:0;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;
+.bzbk-seat{width:var(--seat);height:var(--seat);min-width:0;padding:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(9.5px,calc(var(--seat) * .3),13px);font-weight:700;
   border:1.5px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);cursor:pointer;font-family:inherit;
-  transition:all .13s}
+  transition:background .13s,border-color .13s,color .13s,box-shadow .13s}
 .bzbk-seat:hover:not(:disabled){border-color:var(--blue);color:var(--blue2)}
 .bzbk-seat.is-taken{background:#E7ECF2;color:#A9B7C6;border-color:#E7ECF2;cursor:not-allowed}
 .bzbk-seat.is-picked{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 10px rgba(45,140,240,.35)}
-/* A planta rola dentro da sua própria caixa: a página não cresce 12 filas. */
-.bzbk-bus-scroll{max-height:min(52vh,430px);overflow-y:auto;padding-right:4px;
+/* A caixa tem exactamente a altura para que o banco foi calculado: no caso
+   normal não rola nada. Fica rolável na mesma para quando o banco bate no
+   mínimo de 26px (autocarros muito longos em ecrãs baixos). */
+.bzbk-bus-scroll{max-height:var(--avail);overflow-y:auto;padding-right:2px;
   -webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 @media(max-width:720px){
-  .bzbk-bus{padding:12px;max-width:100%}
-  .bzbk-bus-scroll{max-height:46vh}
-  .bzbk-row{gap:6px;margin-bottom:6px}
-  .bzbk-seat{font-size:11px;border-radius:8px}
+  .bzbk-bus{--avail:min(64vh,600px);padding:12px}
+  .bzbk-seat{border-radius:8px}
 }
 .bzbk-legend{display:flex;gap:16px;justify-content:center;margin-top:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
 .bzbk-legend i{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:6px;vertical-align:-2px;

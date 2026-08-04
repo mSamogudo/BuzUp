@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Clock, RefreshCw, Wallet, XCircle } from "lucide-react";
-import { apiFetch } from "../lib/api";
+import { ArrowLeft, CheckCircle2, Clock, Download, RefreshCw, Wallet, XCircle } from "lucide-react";
+import { apiDownload, apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
@@ -87,6 +87,27 @@ export default function TripDetailPage() {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [tab, setTab] = useState("validations");
   const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  /** Descarrega o manifesto em PDF.
+   *
+   * Pede primeiro um bilhete de descarga de curta duração: o PDF leva nomes,
+   * documentos e contactos de emergência dos passageiros, por isso o pedido
+   * vai autenticado e o ficheiro chega por blob — nunca com o token no URL,
+   * que ficaria gravado no log do servidor.
+   */
+  const downloadManifest = useCallback(async () => {
+    if (!token || !tripId) return;
+    setDownloading(true);
+    try {
+      await apiDownload(`/api/trips/${tripId}/manifest.pdf`, token,
+        `manifesto-${trip?.route_code || tripId}.pdf`);
+    } catch (err) {
+      showToast("danger", err instanceof Error ? err.message : "Não foi possível descarregar o manifesto.");
+    } finally {
+      setDownloading(false);
+    }
+  }, [token, tripId, trip?.route_code]);
 
   const load = useCallback(async () => {
     if (!token || !tripId) return;
@@ -158,6 +179,12 @@ export default function TripDetailPage() {
           <button className="icon-text-button" onClick={() => void load()} type="button">
             <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
           </button>
+          {manifest && manifest.totals.total > 0 ? (
+            <button className="icon-text-button" onClick={() => void downloadManifest()}
+              disabled={downloading} type="button">
+              <Download size={16} /><span>{downloading ? "A preparar..." : "Manifesto PDF"}</span>
+            </button>
+          ) : null}
         </>
       }
     >
@@ -353,6 +380,13 @@ export default function TripDetailPage() {
                     .join(" · ")}
                 </p>
               ) : null}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+                <button className="icon-text-button" onClick={() => void downloadManifest()}
+                  disabled={downloading} type="button">
+                  <Download size={15} />
+                  <span>{downloading ? "A preparar..." : "Descarregar manifesto (PDF)"}</span>
+                </button>
+              </div>
               {!manifest.formal ? (
                 <p style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
                   Carreira urbana: registo de bordo, sem dados nominais. O manifesto

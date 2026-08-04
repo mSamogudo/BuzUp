@@ -17,6 +17,13 @@ import 'stop_picker.dart';
 /// directamente com M-Pesa/e-Mola, sem ser obrigado a carregar a carteira.
 enum _PayMethod { wallet, mobileMoney }
 
+/// Os passos da compra.
+///
+/// Numa carreira urbana o passo do lugar nao existe: entra-se, valida-se e
+/// senta-se onde houver. Ai a compra sao dois passos — viagem e pagamento —
+/// como sempre foi.
+enum _Step { search, seat, payment }
+
 class BuyTicketScreen extends ConsumerStatefulWidget {
   const BuyTicketScreen({super.key});
 
@@ -25,7 +32,12 @@ class BuyTicketScreen extends ConsumerStatefulWidget {
 }
 
 class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
-  Future<Map<String, dynamic>>? _trips;
+  _Step _step = _Step.search;
+
+  List<Map> _stops = const [];
+  bool _loadingStops = true;
+  String? _stopsError;
+
   Map<String, dynamic>? _quote;
   bool _quoting = false;
   bool _purchasing = false;
@@ -35,17 +47,19 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   int? _originId;
   int? _destinationId;
 
-  // Lugar marcado. A app nunca pergunta ao passageiro que tipo de viagem e:
-  // o orcamento devolve `requires_seat_selection` a partir da rota que liga a
-  // origem ao destino, e so entao aparecem a partida e a planta. Numa carreira
-  // urbana estes passos nem existem.
+  // A app nunca pergunta ao passageiro que tipo de viagem e: o orcamento
+  // devolve `requires_seat_selection` a partir da rota que liga a origem ao
+  // destino, e so entao aparecem a partida, a planta e o contacto de
+  // emergencia. Numa carreira urbana estes passos nem existem.
   bool _seatsRequired = false;
   DateTime _travelDate = DateTime.now();
   List<Map<String, dynamic>> _departures = const [];
   bool _loadingDepartures = false;
   int? _tripId;
   Map<String, dynamic>? _seatMap;
+  bool _loadingSeatMap = false;
   String? _seat;
+
   // Contacto de emergencia: pedido nas mesmas rotas que marcam lugar
   // (interprovincial/internacional), porque e para o manifesto de bordo que
   // serve. Numa carreira urbana nem aparece.
@@ -54,7 +68,6 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   String _holderName = '';
   String _holderDocType = '';
   String _holderDocNumber = '';
-  List<Map> _stops = const [];
   bool _usePackage = true;
 
   _PayMethod _method = _PayMethod.wallet;
@@ -68,7 +81,19 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   @override
   void initState() {
     super.initState();
-    _trips = ref.read(passengerApiProvider).publicTrips();
+    ref.read(passengerApiProvider).publicTrips().then((d) {
+      if (!mounted) return;
+      setState(() {
+        _stops = (d['stops'] as List?)?.cast<Map>() ?? const [];
+        _loadingStops = false;
+      });
+    }).catchError((e) {
+      if (!mounted) return;
+      setState(() {
+        _stopsError = e is DioException ? ApiClient.extractError(e) : '$e';
+        _loadingStops = false;
+      });
+    });
     ref.read(passengerApiProvider).exchangeRates().then((d) {
       final parsed = <String, double>{};
       (d['rates'] as Map?)?.forEach((k, v) {
@@ -103,6 +128,40 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     super.dispose();
   }
 
+  // --- passos ---------------------------------------------------------------
+
+  /// Os passos desta compra, por ordem. Numa carreira urbana sao dois.
+  List<String> get _stepLabels => _seatsRequired
+      ? const ['Viagem', 'Lugar', 'Pagamento']
+      : const ['Viagem', 'Pagamento'];
+
+  int get _stepIndex => _seatsRequired
+      ? _step.index
+      : (_step == _Step.payment ? 1 : 0);
+
+  void _goTo(_Step s) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _step = s;
+      _error = null;
+    });
+  }
+
+  /// Recuar um passo. Devolve false quando ja estamos no primeiro — ai quem
+  /// chama fecha o ecra.
+  bool _back() {
+    switch (_step) {
+      case _Step.search:
+        return false;
+      case _Step.seat:
+        _goTo(_Step.search);
+        return true;
+      case _Step.payment:
+        _goTo(_seatsRequired ? _Step.seat : _Step.search);
+        return true;
+    }
+  }
+
   double? get _rate => _currency == 'MZN' ? null : _rates[_currency];
 
   String _fmtMzn(num n) =>
@@ -114,21 +173,34 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     return '${(mzn / r).toStringAsFixed(2)} $_currency';
   }
 
-  /// O que falta para poder pagar, em palavras. Devolve vazio quando nao
-  /// falta nada.
-  ///
-  /// Um botao desactivado sem explicacao e um beco sem saida: o passageiro
-  /// escolhe o lugar, volta ao formulario e o botao continua cinzento sem
-  /// dizer que falta o contacto de emergencia.
-  String _missingForPurchase() {
-    if (_originId == null || _destinationId == null) return 'Escolha a origem e o destino.';
-    if (!_seatsRequired) return '';
-    if (_tripId == null) return 'Escolha a partida.';
-    if (_seat == null) return 'Escolha o seu lugar.';
-    if (_emergencyPhoneCtrl.text.trim().isEmpty) {
-      return 'Indique o telefone do contacto de emergencia.';
+  String _stopName(int? id) {
+    for (final s in _stops) {
+      if (s['id'] == id) return (s['name'] ?? '').toString();
     }
     return '';
+  }
+
+  Map<String, dynamic>? get _selectedDeparture {
+    for (final t in _departures) {
+      if (t['trip_id'] == _tripId) return t;
+    }
+    return null;
+  }
+
+  // --- dados ----------------------------------------------------------------
+
+  Future<void> _onRouteChanged() async {
+    // Trocar de par origem/destino invalida tudo o que dependia da rota
+    // anterior: a partida, o lugar e ate o tipo de viagem.
+    setState(() {
+      _tripId = null;
+      _seat = null;
+      _seatMap = null;
+      _departures = const [];
+      _quote = null;
+      _error = null;
+    });
+    await _refreshQuote();
   }
 
   Future<void> _refreshQuote() async {
@@ -152,8 +224,6 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       setState(() {
         _quote = res;
         if (needsSeat != _seatsRequired) {
-          // Mudar de uma carreira urbana para uma interprovincial (ou o
-          // contrario) invalida a partida e o lugar escolhidos antes.
           _seatsRequired = needsSeat;
           _tripId = null;
           _seat = null;
@@ -175,6 +245,33 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       '${_travelDate.year.toString().padLeft(4, "0")}-'
       '${_travelDate.month.toString().padLeft(2, "0")}-'
       '${_travelDate.day.toString().padLeft(2, "0")}';
+
+  String get _dateLabel {
+    const meses = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
+    ];
+    final hoje = DateTime.now();
+    final ehHoje = _travelDate.year == hoje.year &&
+        _travelDate.month == hoje.month &&
+        _travelDate.day == hoje.day;
+    final d = '${_travelDate.day} ${meses[_travelDate.month - 1]}';
+    return ehHoje ? '$d (hoje)' : d;
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _travelDate,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 90)),
+      helpText: 'Data da viagem',
+    );
+    if (picked == null) return;
+    setState(() => _travelDate = picked);
+    await _loadDepartures();
+  }
 
   Future<void> _loadDepartures() async {
     if (_originId == null || _destinationId == null) return;
@@ -208,6 +305,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       _tripId = tripId;
       _seat = null;
       _seatMap = null;
+      _loadingSeatMap = true;
     });
     try {
       final map = await ref.read(passengerApiProvider).tripSeats(tripId);
@@ -216,8 +314,12 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _error = ApiClient.extractError(e));
+    } finally {
+      if (mounted) setState(() => _loadingSeatMap = false);
     }
   }
+
+  // --- compra ---------------------------------------------------------------
 
   Future<void> _purchaseWithWallet() async {
     try {
@@ -255,19 +357,13 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       setState(() => _error = 'Indique o numero de telemovel que paga (9 digitos).');
       return;
     }
-    Map? originStop;
-    Map? destStop;
-    for (final s in _stops) {
-      if (s['id'] == _originId) originStop = s;
-      if (s['id'] == _destinationId) destStop = s;
-    }
     try {
       setState(() => _waitingMessage = 'A contactar a carteira movel...');
       final res = await ref.read(passengerApiProvider).directCheckout(
             originStopId: _originId!,
             destinationStopId: _destinationId!,
-            originName: (originStop?['name'] ?? '').toString(),
-            destinationName: (destStop?['name'] ?? '').toString(),
+            originName: _stopName(_originId),
+            destinationName: _stopName(_destinationId),
             payerPhone: phone,
             tripId: _tripId,
             seat: _seat,
@@ -377,188 +473,268 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     }
   }
 
+  // --- estrutura do ecra ----------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Comprar bilhete'),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/tickets'),
+    return PopScope(
+      // O botao "recuar" do Android recua um passo em vez de abandonar a
+      // compra: perder a partida e o lugar por carregar em recuar seria um
+      // castigo por explorar.
+      canPop: _step == _Step.search,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF2F5FA),
+        // O passo do lugar nao tem campos de texto e precisa da altura toda
+        // para calcular o tamanho do banco. Deixar o teclado (aberto no passo
+        // anterior) encolher o ecra fazia a planta aparecer pequena e so
+        // "crescer" quando o teclado fechava.
+        resizeToAvoidBottomInset: _step != _Step.seat,
+        appBar: AppBar(
+          title: Text(_appBarTitle()),
+          leading: IconButton(
+            icon: Icon(_step == _Step.search ? Icons.close : Icons.arrow_back),
+            onPressed: () {
+              if (_back()) return;
+              context.canPop() ? context.pop() : context.go('/tickets');
+            },
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: FutureBuilder<Map<String, dynamic>>(
-          future: _trips,
-          builder: (ctx, snap) {
-            if (snap.connectionState != ConnectionState.done) {
-              return const Center(child: BusLoader(label: 'A carregar paragens...'));
-            }
-            if (snap.hasError) {
-              return Center(child: Text('Erro: ${snap.error}', style: const TextStyle(color: BuzUpColors.danger)));
-            }
-            final data = snap.data ?? const {};
-            _stops = (data['stops'] as List?)?.cast<Map>() ?? const [];
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                StopPickerField(
-                  label: 'Origem',
-                  stops: _stops,
-                  selectedId: _originId,
-                  excludeId: _destinationId,
-                  onChanged: (v) {
-                    setState(() => _originId = v);
-                    _refreshQuote();
-                  },
-                ),
-                const SizedBox(height: 12),
-                StopPickerField(
-                  label: 'Destino',
-                  stops: _stops,
-                  selectedId: _destinationId,
-                  excludeId: _originId,
-                  onChanged: (v) {
-                    setState(() => _destinationId = v);
-                    _refreshQuote();
-                  },
-                ),
-                if (_seatsRequired) ...[
-                  const SizedBox(height: 12),
-                  _departurePicker(),
-                  if (_seatMap != null) ...[
-                    const SizedBox(height: 12),
-                    // A planta abre num ecrã proprio: embutida aqui obrigava a
-                    // rolar ate ao fim para chegar ao botao de pagar.
-                    _seatSummaryCard(),
-                  ],
-                  const SizedBox(height: 12),
-                  _emergencyCard(),
-                ],
-                const SizedBox(height: 12),
-                _methodSelector(),
-                if (_method == _PayMethod.wallet)
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    value: _usePackage,
-                    onChanged: (v) {
-                      setState(() => _usePackage = v);
-                      _refreshQuote();
-                    },
-                    title: const Text('Usar pacote especial se disponivel'),
-                    subtitle: const Text('Quando activo, desconta primeiro do saldo do pacote.', style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted)),
-                  ),
-                if (_method == _PayMethod.mobileMoney) ...[
-                  // 4px deixava o campo colado aos cartoes de metodo, como se
-                  // fizesse parte do cartao seleccionado.
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Telemovel que paga (M-Pesa ou e-Mola)',
-                      hintText: '84xxxxxxx / 86xxxxxxx',
-                      helperText: 'Vai receber o pedido de PIN neste numero.',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                if (_rates.isNotEmpty) _currencySelector(),
-                const SizedBox(height: 8),
-                _quoteCard(),
-                if (_waitingMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Row(children: [
-                      const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(_waitingMessage!, style: const TextStyle(fontSize: 12.5))),
-                    ]),
-                  ),
-                if (_error != null) Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(_error!, style: const TextStyle(color: BuzUpColors.danger, fontSize: 12.5)),
-                ),
-                const SizedBox(height: 16),
-                if (_missingForPurchase().isNotEmpty && !_purchasing)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(children: [
-                      const Icon(Icons.info_outline, size: 15, color: BuzUpColors.muted),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(_missingForPurchase(),
-                            style: const TextStyle(fontSize: 12, color: BuzUpColors.muted)),
-                      ),
-                    ]),
-                  ),
-                FilledButton(
-                  onPressed: (_purchasing || _missingForPurchase().isNotEmpty)
-                      ? null
-                      : _purchase,
-                  child: _purchasing
-                      ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : Text(_payButtonLabel()),
-                ),
-              ],
-            );
-          },
+        body: SafeArea(
+          child: Column(children: [
+            _stepHeader(),
+            Expanded(child: _stepBody()),
+            _bottomBar(),
+          ]),
         ),
       ),
     );
   }
 
-  /// Data e lista de partidas do dia. So aparece nas rotas com lugar marcado,
-  /// onde o bilhete se compra para uma partida concreta e nao para "o proximo
-  /// autocarro que vier".
-  Widget _departurePicker() {
-    final scheme = Theme.of(context).colorScheme;
+  String _appBarTitle() => switch (_step) {
+        _Step.search => 'Comprar bilhete',
+        _Step.seat => 'Escolha o seu lugar',
+        _Step.payment => 'Pagamento',
+      };
+
+  /// Barra de progresso dos passos.
+  ///
+  /// Barra segmentada e nao circulos numerados com legenda: as legendas
+  /// ("Pagamento") estouravam a linha num ecra de 320, e o que o passageiro
+  /// precisa de saber e so onde esta e quanto falta.
+  Widget _stepHeader() {
+    final labels = _stepLabels;
+    final current = _stepIndex;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outline),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Expanded(
-            child: Text('Partida', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
-          ),
-          TextButton.icon(
-            icon: const Icon(Icons.calendar_today, size: 15),
-            label: Text(_dateIso),
-            onPressed: () async {
-              final now = DateTime.now();
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _travelDate,
-                firstDate: DateTime(now.year, now.month, now.day),
-                lastDate: now.add(const Duration(days: 90)),
-              );
-              if (picked == null) return;
-              setState(() => _travelDate = picked);
-              await _loadDepartures();
-            },
-          ),
+          Text('PASSO ${current + 1} DE ${labels.length}',
+              style: const TextStyle(
+                  fontSize: 10.5, letterSpacing: 1.4,
+                  fontWeight: FontWeight.w800, color: BuzUpColors.muted)),
+          const Spacer(),
+          Text(labels[current],
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w900, color: BuzUpColors.navy)),
         ]),
-        if (_loadingDepartures)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 14),
-            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-          )
-        else if (_departures.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              'Sem partidas a venda nesta data. Escolha outro dia.',
-              style: TextStyle(fontSize: 12.5, color: BuzUpColors.muted),
+        const SizedBox(height: 8),
+        Row(children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                height: 4,
+                decoration: BoxDecoration(
+                  color: i <= current ? BuzUpColors.blue : const Color(0xFFDDE5EF),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
-          )
-        else
-          for (final t in _departures) _departureTile(t),
+          ],
+        ]),
       ]),
     );
+  }
+
+  Widget _stepBody() {
+    if (_loadingStops) {
+      return const Center(child: BusLoader(label: 'A carregar paragens...'));
+    }
+    if (_stopsError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('Erro: $_stopsError',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: BuzUpColors.danger)),
+        ),
+      );
+    }
+    return switch (_step) {
+      _Step.search => _searchStep(),
+      _Step.seat => _seatStep(),
+      _Step.payment => _paymentStep(),
+    };
+  }
+
+  // --- passo 1: viagem ------------------------------------------------------
+
+  Widget _searchStep() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+      children: [
+        StopPickerField(
+          label: 'Origem',
+          stops: _stops,
+          selectedId: _originId,
+          excludeId: _destinationId,
+          onChanged: (v) {
+            setState(() => _originId = v);
+            _onRouteChanged();
+          },
+        ),
+        const SizedBox(height: 12),
+        StopPickerField(
+          label: 'Destino',
+          stops: _stops,
+          selectedId: _destinationId,
+          excludeId: _originId,
+          onChanged: (v) {
+            setState(() => _destinationId = v);
+            _onRouteChanged();
+          },
+        ),
+        if (_quoting) ...[
+          const SizedBox(height: 20),
+          const Center(child: BusLoader(size: 120, label: 'A procurar viagens...')),
+        ] else if (_quote != null && !_seatsRequired) ...[
+          const SizedBox(height: 14),
+          _urbanAvailableCard(),
+        ] else if (_quote != null && _seatsRequired) ...[
+          const SizedBox(height: 14),
+          _dateRow(),
+          const SizedBox(height: 10),
+          _departuresBlock(),
+          if (_tripId != null) ...[
+            const SizedBox(height: 14),
+            _emergencyCard(),
+          ],
+        ],
+        if (_error != null) Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Text(_error!,
+              style: const TextStyle(color: BuzUpColors.danger, fontSize: 12.5)),
+        ),
+      ],
+    );
+  }
+
+  /// Carreira urbana: nao ha partida nem lugar a escolher. Confirma-se que a
+  /// viagem existe e passa-se ao pagamento — como sempre foi.
+  Widget _urbanAvailableCard() {
+    final base = double.tryParse('${_quote!['base_fare'] ?? _quote!['fare_amount'] ?? 0}') ?? 0;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF7F1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFE3C8)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.check_circle, color: Color(0xFF2A9D8F), size: 22),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Viagem disponivel',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 2),
+            Text(
+              'Carreira urbana: sem lugar marcado. Tarifa ${_fmtMzn(base)}.',
+              style: const TextStyle(fontSize: 12, color: BuzUpColors.muted, height: 1.35),
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _dateRow() {
+    return Row(children: [
+      const Icon(Icons.event, size: 18, color: BuzUpColors.muted),
+      const SizedBox(width: 8),
+      const Text('Data da viagem',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+      const Spacer(),
+      OutlinedButton.icon(
+        icon: const Icon(Icons.calendar_today, size: 15),
+        label: Text(_dateLabel, style: const TextStyle(fontWeight: FontWeight.w800)),
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        onPressed: _pickDate,
+      ),
+    ]);
+  }
+
+  Widget _departuresBlock() {
+    if (_loadingDepartures) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))),
+      );
+    }
+    if (_departures.isEmpty) {
+      // Sem partidas o passageiro fica sem saber o que fazer a seguir. A saida
+      // — escolher outro dia — passa a ser um botao grande no meio do vazio, e
+      // nao um link discreto no cabecalho.
+      return Container(
+        padding: const EdgeInsets.fromLTRB(18, 22, 18, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE4EBF3)),
+        ),
+        child: Column(children: [
+          const Icon(Icons.event_busy, size: 34, color: Color(0xFFB7C4D3)),
+          const SizedBox(height: 10),
+          Text('Sem partidas a venda em $_dateLabel',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          const Text('Esta ligacao pode ter partidas noutros dias.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.5, color: BuzUpColors.muted)),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            icon: const Icon(Icons.calendar_month, size: 18),
+            label: const Text('ESCOLHER OUTRA DATA',
+                style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.4)),
+            style: FilledButton.styleFrom(
+              backgroundColor: BuzUpColors.blue,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: _pickDate,
+          ),
+        ]),
+      );
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Padding(
+        padding: const EdgeInsets.only(left: 2, bottom: 6),
+        child: Text(
+          '${_departures.length} partida${_departures.length == 1 ? '' : 's'} em $_dateLabel',
+          style: const TextStyle(fontSize: 12, color: BuzUpColors.muted, fontWeight: FontWeight.w700),
+        ),
+      ),
+      for (final t in _departures) _departureTile(t),
+    ]);
   }
 
   Widget _departureTile(Map<String, dynamic> t) {
@@ -568,57 +744,60 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     final hour = departure.length >= 16 ? departure.substring(11, 16) : '--:--';
     final seats = t['seats_available'];
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: id == null ? null : () => _selectDeparture(id),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: selected ? BuzUpColors.blue.withValues(alpha: 0.08) : null,
-            border: Border.all(
-              color: selected ? BuzUpColors.blue : const Color(0xFFE4EBF3),
-              width: selected ? 1.6 : 1,
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected ? BuzUpColors.blue.withValues(alpha: 0.06) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: id == null ? null : () => _selectDeparture(id),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? BuzUpColors.blue : const Color(0xFFE4EBF3),
+                width: selected ? 1.6 : 1,
+              ),
             ),
+            child: Row(children: [
+              Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                  size: 18, color: selected ? BuzUpColors.blue : BuzUpColors.muted),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(hour, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                  Text(
+                    '${t['route_name'] ?? t['route_code'] ?? ''}'
+                    '${t['vehicle'] != null ? " · ${t['vehicle']}" : ""}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, color: BuzUpColors.muted),
+                  ),
+                ]),
+              ),
+              if (seats is int)
+                Text('$seats lugares',
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: BuzUpColors.muted)),
+            ]),
           ),
-          child: Row(children: [
-            Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                size: 18, color: selected ? BuzUpColors.blue : BuzUpColors.muted),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(hour, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
-                Text(
-                  '${t['route_name'] ?? t['route_code'] ?? ''}'
-                  '${t['vehicle'] != null ? " · ${t['vehicle']}" : ""}',
-                  style: const TextStyle(fontSize: 11.5, color: BuzUpColors.muted),
-                ),
-              ]),
-            ),
-            if (seats is int)
-              Text('$seats lugares',
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: BuzUpColors.muted)),
-          ]),
         ),
       ),
     );
   }
 
-  /// Card-resumo do lugar: mostra o estado e abre o ecrã da planta.
   /// Contacto de emergência, pedido só nas viagens longas.
   ///
   /// Numa viagem de horas, longe de casa, é o único modo de avisar a família
   /// se algo correr mal — e não serve de nada pedi-lo depois do acidente. Vai
   /// para o manifesto de bordo que o motorista leva.
   Widget _emergencyCard() {
-    final outline = Theme.of(context).colorScheme.outline;
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: outline),
+        border: Border.all(color: const Color(0xFFE4EBF3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: const [
@@ -634,7 +813,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           'Quem avisamos se algo correr mal durante a viagem. Vai no manifesto de bordo.',
           style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted, height: 1.35),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         TextField(
           controller: _emergencyNameCtrl,
           textCapitalization: TextCapitalization.words,
@@ -646,7 +825,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           ),
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         TextField(
           controller: _emergencyPhoneCtrl,
           keyboardType: TextInputType.phone,
@@ -662,58 +841,148 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     );
   }
 
-  Widget _seatSummaryCard() {
-    final hasSeat = _seat != null;
-    return Material(
-      color: hasSeat ? const Color(0xFFEFF7F1) : const Color(0xFFFFF6E8),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _openSeatMap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: hasSeat ? const Color(0xFFBFE3C8) : const Color(0xFFF2DDBB),
-            ),
-          ),
-          child: Row(children: [
-            Icon(Icons.event_seat,
-                size: 20, color: hasSeat ? const Color(0xFF2A9D8F) : const Color(0xFFB07B24)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(
-                  hasSeat ? 'Lugar $_seat' : 'Escolher o seu lugar',
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  hasSeat ? 'Toque para alterar' : 'Obrigatorio nesta rota',
-                  style: const TextStyle(fontSize: 11, color: BuzUpColors.muted),
-                ),
-              ]),
-            ),
-            const Icon(Icons.chevron_right, color: BuzUpColors.mutedDark),
-          ]),
+  // --- passo 2: lugar -------------------------------------------------------
+
+  Widget _seatStep() {
+    if (_loadingSeatMap || _seatMap == null) {
+      return const Center(child: BusLoader(label: 'A carregar a planta...'));
+    }
+    return Column(children: [
+      Expanded(
+        child: SeatMapView(
+          seatMap: _seatMap!,
+          picked: _seat == null ? const [] : [_seat!],
+          onToggle: (label) => setState(() => _seat = _seat == label ? null : label),
         ),
       ),
+      const SizedBox(height: 4),
+      const SeatLegend(),
+      const SizedBox(height: 8),
+    ]);
+  }
+
+  // --- passo 3: pagamento ---------------------------------------------------
+
+  Widget _paymentStep() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+      children: [
+        _tripSummaryCard(),
+        const SizedBox(height: 14),
+        const Text('Como quer pagar',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        _methodSelector(),
+        if (_method == _PayMethod.wallet)
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: _usePackage,
+            onChanged: (v) {
+              setState(() => _usePackage = v);
+              _refreshQuote();
+            },
+            title: const Text('Usar pacote especial se disponivel'),
+            subtitle: const Text('Quando activo, desconta primeiro do saldo do pacote.',
+                style: TextStyle(fontSize: 11.5, color: BuzUpColors.muted)),
+          ),
+        if (_method == _PayMethod.mobileMoney) ...[
+          // 4px deixava o campo colado aos cartoes de metodo, como se
+          // fizesse parte do cartao seleccionado.
+          const SizedBox(height: 14),
+          TextField(
+            controller: _phoneCtrl,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Telemovel que paga (M-Pesa ou e-Mola)',
+              hintText: '84xxxxxxx / 86xxxxxxx',
+              helperText: 'Vai receber o pedido de PIN neste numero.',
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (_rates.isNotEmpty) _currencySelector(),
+        const SizedBox(height: 10),
+        _quoteCard(),
+        if (_waitingMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Row(children: [
+              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(width: 10),
+              Expanded(child: Text(_waitingMessage!, style: const TextStyle(fontSize: 12.5))),
+            ]),
+          ),
+        if (_error != null) Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Text(_error!,
+              style: const TextStyle(color: BuzUpColors.danger, fontSize: 12.5)),
+        ),
+      ],
     );
   }
 
-  Future<void> _openSeatMap() async {
-    final map = _seatMap;
-    if (map == null) return;
-    final picked = await SeatMapScreen.pick(
-      context,
-      seatMap: map,
-      maxPick: 1,
-      initialPicked: _seat == null ? const [] : [_seat!],
-      title: 'Escolha o seu lugar',
+  /// O que se esta a comprar, em duas linhas. No passo do pagamento a origem,
+  /// a partida e o lugar ja foram escolhidos ha dois ecras — sem isto o
+  /// passageiro paga sem ver o que esta a pagar.
+  Widget _tripSummaryCard() {
+    final dep = _selectedDeparture;
+    final departure = (dep?['departure'] ?? '').toString();
+    final hour = departure.length >= 16 ? departure.substring(11, 16) : '';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE4EBF3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Icon(Icons.trip_origin, size: 15, color: BuzUpColors.blue),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(_stopName(_originId),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        const Padding(
+          padding: EdgeInsets.only(left: 7),
+          child: SizedBox(height: 14, child: VerticalDivider(width: 1, thickness: 1, color: Color(0xFFD5E0EC))),
+        ),
+        Row(children: [
+          const Icon(Icons.place, size: 15, color: BuzUpColors.orange),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(_stopName(_destinationId),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        if (_seatsRequired) ...[
+          const Divider(height: 18, color: Color(0xFFEDF2F8)),
+          Row(children: [
+            _chip(Icons.event, _dateLabel),
+            if (hour.isNotEmpty) ...[const SizedBox(width: 8), _chip(Icons.schedule, hour)],
+            if (_seat != null) ...[const SizedBox(width: 8), _chip(Icons.event_seat, 'Lugar $_seat')],
+          ]),
+        ],
+      ]),
     );
-    if (picked != null && picked.isNotEmpty && mounted) {
-      setState(() => _seat = picked.first);
-    }
+  }
+
+  Widget _chip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F6FB),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: BuzUpColors.mutedDark),
+        const SizedBox(width: 5),
+        Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800)),
+      ]),
+    );
   }
 
   Widget _methodSelector() {
@@ -791,20 +1060,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         child: const Center(child: BusLoader(size: 110, label: 'A calcular...')),
       );
     }
-    if (_quote == null) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
-        ),
-        child: const Text(
-          'Seleccione origem e destino para ver o preco.',
-          style: TextStyle(fontSize: 12.5, color: BuzUpColors.muted),
-        ),
-      );
-    }
+    if (_quote == null) return const SizedBox.shrink();
     // Quote response keys (from backend): base_fare, wallet_amount,
     // package_id, package_name, discount_type.
     final base = double.tryParse('${_quote!['base_fare'] ?? _quote!['fare_amount'] ?? 0}') ?? 0;
@@ -900,6 +1156,100 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         'fixed_amount' => 'Saldo especial do pacote',
         _ => 'Desconto do pacote',
       };
+
+  // --- barra de accao -------------------------------------------------------
+
+  /// O que falta para avancar deste passo, em palavras. Vazio = pode avancar.
+  ///
+  /// Um botao desactivado sem explicacao e um beco sem saida: o passageiro
+  /// escolhe o lugar, volta ao formulario e o botao continua cinzento sem
+  /// dizer que falta o contacto de emergencia.
+  String _missingForStep() {
+    switch (_step) {
+      case _Step.search:
+        if (_originId == null) return 'Escolha a origem.';
+        if (_destinationId == null) return 'Escolha o destino.';
+        if (_quoting) return 'A procurar viagens...';
+        if (_quote == null) return 'Nao ha ligacao entre estas paragens.';
+        if (!_seatsRequired) return '';
+        if (_departures.isEmpty) return 'Escolha uma data com partidas.';
+        if (_tripId == null) return 'Escolha a hora de partida.';
+        if (_emergencyPhoneCtrl.text.trim().isEmpty) {
+          return 'Indique o telefone do contacto de emergencia.';
+        }
+        return '';
+      case _Step.seat:
+        if (_seat == null) return 'Toque num lugar livre para o escolher.';
+        return '';
+      case _Step.payment:
+        return '';
+    }
+  }
+
+  String _actionLabel() {
+    switch (_step) {
+      case _Step.search:
+        return _seatsRequired ? 'ESCOLHER LUGAR' : 'CONTINUAR';
+      case _Step.seat:
+        return _seat == null ? 'ESCOLHA UM LUGAR' : 'AVANCAR COM O LUGAR $_seat';
+      case _Step.payment:
+        return _payButtonLabel();
+    }
+  }
+
+  void _onAction() {
+    switch (_step) {
+      case _Step.search:
+        _goTo(_seatsRequired ? _Step.seat : _Step.payment);
+      case _Step.seat:
+        _goTo(_Step.payment);
+      case _Step.payment:
+        _purchase();
+    }
+  }
+
+  /// Barra fixa no fundo: a accao do passo esta SEMPRE visivel, sem rolar.
+  Widget _bottomBar() {
+    final missing = _missingForStep();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE4EBF3))),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (missing.isNotEmpty && !_purchasing)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              const Icon(Icons.info_outline, size: 15, color: BuzUpColors.muted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(missing,
+                    style: const TextStyle(fontSize: 12, color: BuzUpColors.muted)),
+              ),
+            ]),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: BuzUpColors.blue,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: (_purchasing || missing.isNotEmpty) ? null : _onAction,
+            child: _purchasing
+                ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text(_actionLabel(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          ),
+        ),
+      ]),
+    );
+  }
 
   String _payButtonLabel() {
     if (_quote == null) return 'COMPRAR BILHETE';

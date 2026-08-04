@@ -5,13 +5,208 @@ import 'package:flutter/services.dart';
 
 import 'theme.dart';
 
-/// Ecrã de escolha de lugares a ecrã inteiro — um passo próprio do fluxo.
+/// A planta do autocarro, sem cromo de ecrã à volta.
 ///
-/// Antes a planta vivia embutida no formulário e obrigava a rolar; aqui o
-/// autocarro é desenhado de uma vez: o tamanho de cada banco é calculado para
-/// a planta caber no ecrã (só rola em autocarros invulgarmente longos). O
-/// corredor não é fixo — o servidor manda cada fila dividida em `left`/`right`
-/// conforme a disposição real (1+2, 2+2, 3+2...).
+/// O autocarro é desenhado de uma vez: o tamanho de cada banco é calculado
+/// para a planta caber no espaço disponível (só rola em autocarros
+/// invulgarmente longos). O corredor não é fixo — o servidor manda cada fila
+/// dividida em `left`/`right` conforme a disposição real (1+2, 2+2, 3+2...).
+///
+/// A selecção é do pai (`picked` + `onToggle`) e não deste widget: o mesmo
+/// desenho serve o ecrã próprio do POS e o passo embutido no assistente de
+/// compra da app do passageiro, que precisa do lugar escolhido para decidir
+/// se o botão de avançar acende.
+///
+/// **Precisa de altura limitada.** Dentro de uma `Column` use `Expanded`;
+/// dentro de um `ListView` a altura é infinita e o cálculo não funciona.
+class SeatMapView extends StatelessWidget {
+  const SeatMapView({
+    super.key,
+    required this.seatMap,
+    required this.picked,
+    required this.onToggle,
+  });
+
+  final Map<String, dynamic> seatMap;
+  final List<String> picked;
+  final ValueChanged<String> onToggle;
+
+  List get _rows => (seatMap['rows'] as List?) ?? const [];
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _rows;
+    if (rows.isEmpty) {
+      return const Center(
+        child: Text('Sem planta de lugares para esta viagem.',
+            style: TextStyle(color: Color(0xFF6B7A8F))),
+      );
+    }
+
+    // Quantos bancos tem a fila mais larga (para dimensionar as células).
+    var maxAcross = 1;
+    for (final r in rows) {
+      final m = r as Map;
+      final across = ((m['left'] as List?)?.length ?? 0) +
+          ((m['right'] as List?)?.length ?? 0);
+      if (across > maxAcross) maxAcross = across;
+    }
+
+    return LayoutBuilder(builder: (context, box) {
+      // Todas as medidas do cartao num sitio so: a largura do autocarro e o
+      // tamanho do banco sao calculados a partir DAS MESMAS constantes. Foi
+      // por isto ter sido feito a mao que a moldura de 1.5 (que o
+      // BoxDecoration soma ao padding) ficou de fora e cada fila estourava
+      // 3 pixeis.
+      final maxW = math.min(box.maxWidth, 380.0);
+      final wCell =
+          (maxW - _cardChromeW - _aisle - maxAcross * _seatGap) / maxAcross;
+      final hCell = (box.maxHeight - _cardChromeH - rows.length * _rowExtra) /
+          (rows.length * _seatRatio);
+
+      // A largura e um limite rigido — passar dela estoura a fila. A altura
+      // cede: quando nao chega, a planta rola dentro do autocarro.
+      final target = math.max(26.0, math.min(46.0, hCell));
+      final cell = math.max(18.0, math.min(target, wCell));
+
+      final busW = maxAcross * (cell + _seatGap) + _aisle + _cardChromeW;
+
+      final plan = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final row in rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _seatRow(row as Map, cell),
+            ),
+        ],
+      );
+
+      return Center(
+        child: Container(
+          width: busW,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Colors.white, Color(0xFFF6F9FD)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            // Frente arredondada: o desenho lê-se como um autocarro visto de
+            // cima, não como uma grelha qualquer.
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(46),
+              bottom: Radius.circular(18),
+            ),
+            border: Border.all(color: const Color(0xFFD8E2EE), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: BuzUpColors.navy.withValues(alpha: 0.10),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
+              child: Row(children: [
+                const Expanded(
+                  child: Text('FRENTE',
+                      style: TextStyle(
+                          fontSize: 10, letterSpacing: 2.4,
+                          fontWeight: FontWeight.w800, color: Color(0xFF9AA9BC))),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF4FA),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFD8E2EE)),
+                  ),
+                  child: const Icon(Icons.directions_bus_filled,
+                      size: 14, color: Color(0xFF6B7A8F)),
+                ),
+              ]),
+            ),
+            const Divider(height: 12, color: Color(0xFFE3EAF3)),
+            // SEMPRE rolavel. O tamanho do banco ja e calculado para caber, mas
+            // basta a estimativa da moldura falhar por 2 pixeis para a planta
+            // estourar; assim, no pior caso rola uns pixeis e ninguem se
+            // apercebe. Quando cabe — o caso normal — nao rola nada.
+            Flexible(child: SingleChildScrollView(child: plan)),
+          ]),
+        ),
+      );
+    });
+  }
+
+  Widget _seatRow(Map row, double cell) {
+    final left = (row['left'] as List?) ?? const [];
+    final right = (row['right'] as List?) ?? const [];
+    final fullWidth = row['full_width'] == true;
+
+    Widget seat(dynamic s) {
+      final m = s as Map;
+      final label = m['label']?.toString() ?? '';
+      final occupied = m['occupied'] == true;
+      final isPicked = picked.contains(label);
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: _Seat(
+          label: label,
+          size: cell,
+          kind: occupied
+              ? _SeatKind.occupied
+              : isPicked
+                  ? _SeatKind.picked
+                  : _SeatKind.free,
+          onTap: occupied ? null : () => onToggle(label),
+        ),
+      );
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      for (final s in left) seat(s),
+      if (!fullWidth)
+        SizedBox(
+          width: 26,
+          child: Text('${row['row']}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 10, color: Color(0xFFB7C4D3), fontWeight: FontWeight.w700)),
+        ),
+      for (final s in right) seat(s),
+    ]);
+  }
+}
+
+/// Legenda das tres cores de banco.
+///
+/// Wrap e nao Row: num ecra de 320 as tres legendas nao cabiam lado a lado e a
+/// linha estourava.
+class SeatLegend extends StatelessWidget {
+  const SeatLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 14,
+        runSpacing: 4,
+        children: [
+          _LegendDot(kind: _SeatKind.free, label: 'Livre'),
+          _LegendDot(kind: _SeatKind.picked, label: 'Escolhido'),
+          _LegendDot(kind: _SeatKind.occupied, label: 'Ocupado'),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ecrã de escolha de lugares a ecrã inteiro — um passo próprio do fluxo.
 ///
 /// Devolve a lista de lugares escolhidos via `Navigator.pop`.
 class SeatMapScreen extends StatefulWidget {
@@ -58,8 +253,6 @@ class SeatMapScreen extends StatefulWidget {
 
 class _SeatMapScreenState extends State<SeatMapScreen> {
   late final List<String> _picked = List.of(widget.initialPicked);
-
-  List get _rows => (widget.seatMap['rows'] as List?) ?? const [];
 
   void _toggle(String label) {
     setState(() {
@@ -133,23 +326,15 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
       ),
       body: SafeArea(
         child: Column(children: [
-          Expanded(child: Center(child: _bus(context))),
-          const SizedBox(height: 4),
-          // Wrap e nao Row: num ecra de 320 as tres legendas nao cabiam lado
-          // a lado e a linha estourava.
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 14,
-              runSpacing: 4,
-              children: [
-                _LegendDot(kind: _SeatKind.free, label: 'Livre'),
-                _LegendDot(kind: _SeatKind.picked, label: 'Escolhido'),
-                _LegendDot(kind: _SeatKind.occupied, label: 'Ocupado'),
-              ],
+          Expanded(
+            child: SeatMapView(
+              seatMap: widget.seatMap,
+              picked: _picked,
+              onToggle: _toggle,
             ),
           ),
+          const SizedBox(height: 4),
+          const SeatLegend(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             // Altura fixa: com a barra a mudar de altura conforme o texto, a
@@ -193,148 +378,6 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
         ]),
       ),
     );
-  }
-
-  Widget _bus(BuildContext context) {
-    final rows = _rows;
-    if (rows.isEmpty) {
-      return const Text('Sem planta de lugares para esta viagem.',
-          style: TextStyle(color: Color(0xFF6B7A8F)));
-    }
-
-    // Quantos bancos tem a fila mais larga (para dimensionar as células).
-    var maxAcross = 1;
-    for (final r in rows) {
-      final m = r as Map;
-      final across = ((m['left'] as List?)?.length ?? 0) +
-          ((m['right'] as List?)?.length ?? 0);
-      if (across > maxAcross) maxAcross = across;
-    }
-
-    return LayoutBuilder(builder: (context, box) {
-      // Todas as medidas do cartao num sitio so: a largura do autocarro e o
-      // tamanho do banco sao calculados a partir DAS MESMAS constantes. Foi
-      // por isto ter sido feito a mao que a moldura de 1.5 (que o
-      // BoxDecoration soma ao padding) ficou de fora e cada fila estourava
-      // 3 pixeis.
-      final maxW = math.min(box.maxWidth, 380.0);
-      final wCell =
-          (maxW - _cardChromeW - _aisle - maxAcross * _seatGap) / maxAcross;
-      final hCell = (box.maxHeight - _cardChromeH - rows.length * _rowExtra) /
-          (rows.length * _seatRatio);
-
-      // A largura e um limite rigido — passar dela estoura a fila. A altura
-      // cede: quando nao chega, a planta rola dentro do autocarro.
-      final target = math.max(26.0, math.min(46.0, hCell));
-      final cell = math.max(18.0, math.min(target, wCell));
-
-      final busW = maxAcross * (cell + _seatGap) + _aisle + _cardChromeW;
-
-      final plan = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final row in rows)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: _seatRow(row as Map, cell),
-            ),
-        ],
-      );
-
-      return Container(
-        width: busW,
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.white, Color(0xFFF6F9FD)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          // Frente arredondada: o desenho lê-se como um autocarro visto de
-          // cima, não como uma grelha qualquer.
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(46),
-            bottom: Radius.circular(18),
-          ),
-          border: Border.all(color: const Color(0xFFD8E2EE), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: BuzUpColors.navy.withValues(alpha: 0.10),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(6, 8, 6, 6),
-            child: Row(children: [
-              const Expanded(
-                child: Text('FRENTE',
-                    style: TextStyle(
-                        fontSize: 10, letterSpacing: 2.4,
-                        fontWeight: FontWeight.w800, color: Color(0xFF9AA9BC))),
-              ),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF4FA),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFD8E2EE)),
-                ),
-                child: const Icon(Icons.directions_bus_filled,
-                    size: 14, color: Color(0xFF6B7A8F)),
-              ),
-            ]),
-          ),
-          const Divider(height: 12, color: Color(0xFFE3EAF3)),
-          // SEMPRE rolavel. O tamanho do banco ja e calculado para caber, mas
-          // basta a estimativa da moldura falhar por 2 pixeis para a planta
-          // estourar; assim, no pior caso rola uns pixeis e ninguem se
-          // apercebe. Quando cabe — o caso normal — nao rola nada.
-          Flexible(child: SingleChildScrollView(child: plan)),
-        ]),
-      );
-    });
-  }
-
-  Widget _seatRow(Map row, double cell) {
-    final left = (row['left'] as List?) ?? const [];
-    final right = (row['right'] as List?) ?? const [];
-    final fullWidth = row['full_width'] == true;
-
-    Widget seat(dynamic s) {
-      final m = s as Map;
-      final label = m['label']?.toString() ?? '';
-      final occupied = m['occupied'] == true;
-      final picked = _picked.contains(label);
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: _Seat(
-          label: label,
-          size: cell,
-          kind: occupied
-              ? _SeatKind.occupied
-              : picked
-                  ? _SeatKind.picked
-                  : _SeatKind.free,
-          onTap: occupied ? null : () => _toggle(label),
-        ),
-      );
-    }
-
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      for (final s in left) seat(s),
-      if (!fullWidth)
-        SizedBox(
-          width: 26,
-          child: Text('${row['row']}',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 10, color: Color(0xFFB7C4D3), fontWeight: FontWeight.w700)),
-        ),
-      for (final s in right) seat(s),
-    ]);
   }
 }
 

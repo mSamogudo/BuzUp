@@ -88,12 +88,19 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F5FA),
       appBar: AppBar(
-        title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(widget.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          if (widget.subtitle.isNotEmpty)
-            Text(widget.subtitle,
-                style: const TextStyle(fontSize: 11.5, color: Colors.white70, fontWeight: FontWeight.w600)),
-        ]),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.title,
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            if (widget.subtitle.isNotEmpty)
+              Text(widget.subtitle,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11.5, color: Colors.white70, fontWeight: FontWeight.w600)),
+          ],
+        ),
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -123,16 +130,28 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
         child: Column(children: [
           Expanded(child: Center(child: _bus(context))),
           const SizedBox(height: 4),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: const [
-            _LegendDot(kind: _SeatKind.free, label: 'Livre'),
-            SizedBox(width: 16),
-            _LegendDot(kind: _SeatKind.picked, label: 'Escolhido'),
-            SizedBox(width: 16),
-            _LegendDot(kind: _SeatKind.occupied, label: 'Ocupado'),
-          ]),
+          // Wrap e nao Row: num ecra de 320 as tres legendas nao cabiam lado
+          // a lado e a linha estourava.
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 14,
+              runSpacing: 4,
+              children: [
+                _LegendDot(kind: _SeatKind.free, label: 'Livre'),
+                _LegendDot(kind: _SeatKind.picked, label: 'Escolhido'),
+                _LegendDot(kind: _SeatKind.occupied, label: 'Ocupado'),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-            child: Row(children: [
+            // Altura fixa: com a barra a mudar de altura conforme o texto, a
+            // planta era redimensionada a cada escolha de lugar.
+            child: SizedBox(
+              height: 48,
+              child: Row(children: [
               if (_picked.isNotEmpty)
                 Expanded(
                   child: Text(
@@ -145,6 +164,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
               else
                 const Expanded(
                   child: Text('Toque num lugar livre para o escolher.',
+                      maxLines: 2,
                       style: TextStyle(fontSize: 12, color: Color(0xFF6B7A8F))),
                 ),
               const SizedBox(width: 12),
@@ -162,7 +182,8 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                   style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.6),
                 ),
               ),
-            ]),
+              ]),
+            ),
           ),
         ]),
       ),
@@ -186,14 +207,23 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     }
 
     return LayoutBuilder(builder: (context, box) {
-      const aisle = 26.0;
-      const chrome = 96.0; // frente do autocarro + margens internas
-      final maxW = math.min(box.maxWidth - 32, 360.0);
-      final byWidth = (maxW - aisle - 24 - maxAcross * 6) / maxAcross;
-      final byHeight = (box.maxHeight - chrome - rows.length * 6) / rows.length;
-      final cell = math.max(30.0, math.min(46.0, math.min(byWidth, byHeight)));
-      final busW = maxAcross * (cell + 6) + aisle + 24;
-      final fits = byHeight >= 30.0;
+      // Todas as medidas do cartao num sitio so: a largura do autocarro e o
+      // tamanho do banco sao calculados a partir DAS MESMAS constantes. Foi
+      // por isto ter sido feito a mao que a moldura de 1.5 (que o
+      // BoxDecoration soma ao padding) ficou de fora e cada fila estourava
+      // 3 pixeis.
+      final maxW = math.min(box.maxWidth, 380.0);
+      final wCell =
+          (maxW - _cardChromeW - _aisle - maxAcross * _seatGap) / maxAcross;
+      final hCell = (box.maxHeight - _cardChromeH - rows.length * _rowExtra) /
+          (rows.length * _seatRatio);
+
+      // A largura e um limite rigido — passar dela estoura a fila. A altura
+      // cede: quando nao chega, a planta rola dentro do autocarro.
+      final target = math.max(26.0, math.min(46.0, hCell));
+      final cell = math.max(18.0, math.min(target, wCell));
+
+      final busW = maxAcross * (cell + _seatGap) + _aisle + _cardChromeW;
 
       final plan = Column(
         mainAxisSize: MainAxisSize.min,
@@ -254,10 +284,11 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             ]),
           ),
           const Divider(height: 12, color: Color(0xFFE3EAF3)),
-          if (fits)
-            plan
-          else
-            Flexible(child: SingleChildScrollView(child: plan)),
+          // SEMPRE rolavel. O tamanho do banco ja e calculado para caber, mas
+          // basta a estimativa da moldura falhar por 2 pixeis para a planta
+          // estourar; assim, no pior caso rola uns pixeis e ninguem se
+          // apercebe. Quando cabe — o caso normal — nao rola nada.
+          Flexible(child: SingleChildScrollView(child: plan)),
         ]),
       );
     });
@@ -302,6 +333,23 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   }
 }
 
+// --- medidas do cartao do autocarro -----------------------------------------
+// Mantidas juntas porque o calculo do tamanho do banco e a largura do cartao
+// TEM de usar exactamente os mesmos valores; qualquer um destes esquecido faz
+// a fila estourar.
+const double _aisle = 26.0;        // corredor, com o numero da fila
+const double _seatGap = 6.0;       // padding horizontal de cada banco (3+3)
+const double _cardPadH = 24.0;     // padding do cartao (12+12)
+const double _cardBorder = 3.0;    // moldura de 1.5 de cada lado
+const double _cardChromeW = _cardPadH + _cardBorder;
+// Vertical: margem (8+8) + padding (10+14) + moldura (3) + cabecalho (40) +
+// separador (12).
+const double _cardChromeH = 16 + 24 + _cardBorder + 40 + 12;
+// Altura de um banco = encosto (12% do lado) + assento (82%); mais 1.5 entre
+// os dois e 6 de separacao para a fila seguinte.
+const double _seatRatio = 0.94;
+const double _rowExtra = 1.5 + 6.0;
+
 enum _SeatKind { free, picked, occupied }
 
 /// Um banco visto de cima: encosto (barra) + assento, com estados animados.
@@ -338,20 +386,28 @@ class _Seat extends StatelessWidget {
       onTap: onTap,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         // Encosto do banco.
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+        //
+        // O tamanho vive no SizedBox e NAO no AnimatedContainer: a animar a
+        // largura, o banco ficava 140ms a interpolar do tamanho antigo sempre
+        // que a planta era redimensionada, e nesse intervalo a fila estourava.
+        // Anima-se so a cor.
+        SizedBox(
           width: size * 0.78,
           height: math.max(3.0, size * 0.12),
-          decoration: BoxDecoration(
-            color: backrest,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            decoration: BoxDecoration(
+              color: backrest,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+            ),
           ),
         ),
         const SizedBox(height: 1.5),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+        SizedBox(
           width: size,
           height: size * 0.82,
+          child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             gradient: picked
@@ -387,11 +443,21 @@ class _Seat extends StatelessWidget {
           ),
           child: occupied
               ? Icon(Icons.close, size: math.max(11.0, size * 0.32), color: fg)
-              : Text(label,
-                  style: TextStyle(
-                      fontSize: math.max(9.5, size * 0.26),
-                      fontWeight: FontWeight.w800,
-                      color: fg)),
+              // Etiquetas de 3 caracteres ("12A") em bancos pequenos: o
+              // FittedBox encolhe em vez de estourar.
+              : FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Text(label,
+                        maxLines: 1,
+                        style: TextStyle(
+                            fontSize: math.max(9.5, size * 0.26),
+                            fontWeight: FontWeight.w800,
+                            color: fg)),
+                  ),
+                ),
+          ),
         ),
       ]),
     );

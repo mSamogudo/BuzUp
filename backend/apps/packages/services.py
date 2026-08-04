@@ -108,6 +108,12 @@ def find_active_package_for_route(
     passenger: PassengerAccount,
     route: Route,
 ) -> PassengerPackage | None:
+    # Os pacotes sao passes do dia-a-dia: so valem nas carreiras urbanas e
+    # interurbanas. Numa interprovincial ou internacional nao ha desconto de
+    # pacote nem viagem de pacote a consumir. Ver Route.allows_package_discounts.
+    if not route.allows_package_discounts:
+        return None
+
     now = timezone.now()
     subs = PassengerPackage.objects.filter(
         passenger_account=passenger,

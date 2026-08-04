@@ -39,6 +39,17 @@ def _resolve_passenger_package(
     if not use_package and passenger_package_id is None:
         return None
 
+    # Pacotes so valem em carreiras urbanas/interurbanas. A verificacao esta
+    # tambem aqui, e nao so em find_active_package_for_route, porque indicar o
+    # pacote pelo id passa ao lado dessa funcao — era por ai que um pacote
+    # urbano podia pagar uma viagem interprovincial.
+    if not route.allows_package_discounts:
+        if passenger_package_id is not None:
+            raise PurchaseError(
+                "Os pacotes especiais so sao validos em viagens urbanas e interurbanas."
+            )
+        return None
+
     if passenger_package_id is not None:
         try:
             sub = PassengerPackage.objects.select_related("package").get(
@@ -310,7 +321,9 @@ def quote_for_passenger(
     base = quote.amount
 
     sub = None
-    if not use_package:
+    if not use_package or not route.allows_package_discounts:
+        # Numa interprovincial/internacional nao ha pacote a aplicar, mesmo que
+        # o passageiro tenha um activo e o cliente o indique pelo id.
         sub = None
     elif passenger_package_id is not None:
         try:

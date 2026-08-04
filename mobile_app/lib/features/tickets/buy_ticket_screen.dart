@@ -70,6 +70,11 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   String _holderDocType = '';
   String _holderDocNumber = '';
   bool _usePackage = true;
+  // Os pacotes especiais sao passes do dia-a-dia: so valem em carreiras
+  // urbanas/interurbanas. Quem decide e o servidor (tipo de servico da rota);
+  // aqui so se esconde o interruptor onde ele nao pode ser usado, para nao
+  // prometer um desconto que a compra ia recusar.
+  bool _allowsPackage = true;
 
   _PayMethod _method = _PayMethod.wallet;
   final _phoneCtrl = TextEditingController();
@@ -224,7 +229,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       final res = await ref.read(passengerApiProvider).quoteTicket(
             originStopId: _originId,
             destinationStopId: _destinationId,
-            usePackage: _usePackage,
+            usePackage: _usePackage && _allowsPackage,
           );
       Log.info('ticket.quote ok', data: res);
       if (!mounted) return;
@@ -232,6 +237,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       var typeChanged = false;
       setState(() {
         _quote = res;
+        _allowsPackage = res['allows_package_discounts'] != false;
         if (needsSeat != _seatsRequired) {
           _seatsRequired = needsSeat;
           _tripId = null;
@@ -359,7 +365,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             destinationStopId: _destinationId,
             tripId: _tripId,
             seat: _seat,
-            usePackage: _usePackage,
+            usePackage: _usePackage && _allowsPackage,
             displayCurrency: _currency,
             emergencyName: _emergencyNameCtrl.text.trim(),
             emergencyPhone: _emergencyPhoneCtrl.text.trim(),
@@ -905,7 +911,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         _methodSelector(),
-        if (_method == _PayMethod.wallet)
+        if (_method == _PayMethod.wallet && _allowsPackage)
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             value: _usePackage,

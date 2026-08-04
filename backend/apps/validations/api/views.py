@@ -268,4 +268,8 @@ class TravelPassQuoteView(APIView):
         quote["route_code"] = route.code
         quote["service_type"] = route.service_type
         quote["requires_seat_selection"] = route.requires_seat_selection
+        # Os pacotes so valem em carreiras urbanas/interurbanas. A app usa isto
+        # para nem mostrar o interruptor do pacote onde ele nao pode ser usado —
+        # e o servidor recusa na mesma, seja qual for a app.
+        quote["allows_package_discounts"] = route.allows_package_discounts
         return Response(quote)

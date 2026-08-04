@@ -70,6 +70,23 @@ class Route(BaseModel):
         return self.service_type in self.SEATED_SERVICE_TYPES
 
     @property
+    def allows_package_discounts(self) -> bool:
+        """Os pacotes especiais valem nesta rota?
+
+        So nas carreiras urbanas e interurbanas. Um pacote e um passe do
+        dia-a-dia — o trajecto de casa para o trabalho, comprado ao mes ou a
+        semana, com desconto por volume. Uma viagem interprovincial ou
+        internacional e outra coisa: bilhete nominal, lugar marcado, preco por
+        trajecto. Deixar um passe mensal cobrir Maputo-Joanesburgo era vender a
+        viagem longa ao preco da curta.
+
+        Fica aqui, e nao em cada canal, porque a regra tem de valer igual no
+        POS, na app do passageiro, na compra web e no momento da validacao —
+        onde a viagem do pacote seria consumida.
+        """
+        return self.service_type not in self.SEATED_SERVICE_TYPES
+
+    @property
     def requires_emergency_contact(self) -> bool:
         """Pede-se contacto de emergencia na compra?
 

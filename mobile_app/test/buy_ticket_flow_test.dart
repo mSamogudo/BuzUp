@@ -287,6 +287,30 @@ void main() {
     expect(_actionLabel(tester), 'ESCOLHER LUGAR');
   });
 
+  testWidgets('mexer no pacote no pagamento nao apaga o lugar escolhido',
+      (tester) async {
+    await _pump(tester, _FakeApi(seated: true, departures: _departuresOk));
+    await _chooseRoute(tester);
+    await tester.tap(find.text('06:30'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '849999999');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2C'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+
+    // O interruptor do pacote recalcula o preco. Recalcular NAO pode recarregar
+    // as partidas: isso largava a viagem e o lugar, e a compra seguia sem eles.
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PASSO 3 DE 3'), findsOneWidget);
+    expect(find.text('Lugar 2C'), findsOneWidget);
+  });
+
   testWidgets('trocar de destino larga a partida e o lugar ja escolhidos',
       (tester) async {
     await _pump(tester, _FakeApi(seated: true, departures: _departuresOk));

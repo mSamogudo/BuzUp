@@ -200,10 +200,16 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       _quote = null;
       _error = null;
     });
-    await _refreshQuote();
+    await _refreshQuote(reloadDepartures: true);
   }
 
-  Future<void> _refreshQuote() async {
+  /// Recalcula o preco.
+  ///
+  /// `reloadDepartures` so quando a ROTA muda: recarregar as partidas larga a
+  /// viagem e o lugar escolhidos, e fazer isso a partir do passo do pagamento
+  /// (onde o interruptor do pacote tambem recalcula) apagava em silencio o
+  /// lugar que o passageiro tinha acabado de escolher.
+  Future<void> _refreshQuote({bool reloadDepartures = false}) async {
     if (_originId == null || _destinationId == null) {
       setState(() => _quote = null);
       return;
@@ -221,6 +227,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
       Log.info('ticket.quote ok', data: res);
       if (!mounted) return;
       final needsSeat = res['requires_seat_selection'] == true;
+      var typeChanged = false;
       setState(() {
         _quote = res;
         if (needsSeat != _seatsRequired) {
@@ -229,9 +236,12 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           _seat = null;
           _seatMap = null;
           _departures = const [];
+          typeChanged = true;
         }
       });
-      if (_seatsRequired) await _loadDepartures();
+      if (_seatsRequired && (reloadDepartures || typeChanged)) {
+        await _loadDepartures();
+      }
     } on DioException catch (e) {
       Log.warn('ticket.quote failed', error: e.message);
       if (!mounted) return;
@@ -1170,7 +1180,13 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
         if (_originId == null) return 'Escolha a origem.';
         if (_destinationId == null) return 'Escolha o destino.';
         if (_quoting) return 'A procurar viagens...';
-        if (_quote == null) return 'Nao ha ligacao entre estas paragens.';
+        if (_quote == null) {
+          // Dizer "nao ha ligacao" quando o que houve foi um timeout seria
+          // mandar o passageiro procurar outro destino sem motivo.
+          return _error == null
+              ? 'Nao ha ligacao entre estas paragens.'
+              : 'Nao foi possivel calcular esta viagem.';
+        }
         if (!_seatsRequired) return '';
         if (_departures.isEmpty) return 'Escolha uma data com partidas.';
         if (_tripId == null) return 'Escolha a hora de partida.';

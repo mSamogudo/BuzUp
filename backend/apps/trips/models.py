@@ -170,7 +170,8 @@ class Trip(BaseModel):
 
 class TripActivityEvent(BaseModel):
     class EventType(models.TextChoices):
-        START = "start", "Inicio"
+        START = "start", "Abertura do embarque"
+        DEPART = "depart", "Partida"
         PAUSE = "pause", "Repouso"
         RESUME = "resume", "Retoma"
         CLOSE = "close", "Fecho"
@@ -214,6 +215,12 @@ class TripRevenueClosure(BaseModel):
     direct_payment_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     summary = models.JSONField(default=dict, blank=True)
+    # Manifesto TAL COMO ESTAVA no fecho. Guardado e nao recalculado: um
+    # bilhete cancelado dias depois nao pode mudar a lista de quem seguiu
+    # naquele autocarro. Ver `apps/trips/manifest.py`.
+    manifest = models.JSONField(default=dict, blank=True)
+    passengers_aboard = models.PositiveIntegerField(default=0)
+    passengers_no_show = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ("-closed_at",)

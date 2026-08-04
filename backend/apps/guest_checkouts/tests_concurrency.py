@@ -452,14 +452,17 @@ class AppSeatPurchaseTests(ConcurrencyBase):
         acc.refresh_from_db()
         return acc
 
-    def _buy(self, phone="842000001", seat="4A", trip_id=-1):
+    def _buy(self, phone="842000001", seat="4A", trip_id=-1, emergency="848111222"):
         from apps.guest_checkouts.purchase import purchase_travel_pass
 
+        # Rota interprovincial: o contacto de emergencia e obrigatorio (vai
+        # para o manifesto de bordo). Ver `Route.requires_emergency_contact`.
         return purchase_travel_pass(
             passenger=self._passenger(phone), route_id=self.route.id,
             origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
             trip_id=self.trip.id if trip_id == -1 else trip_id,
             seat=seat, use_package=False,
+            emergency_contact_name="Familiar", emergency_contact_phone=emergency,
         )
 
     def test_seat_is_recorded_on_the_pass(self):

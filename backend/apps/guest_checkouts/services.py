@@ -63,6 +63,16 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
                 document_type=person.get("document_type") or (linked.document_type if linked else "") or "",
                 document_number=(person.get("document_number") or (linked.document_number if linked else "") or "")[:64],
                 seat_number=(person.get("seat") or "")[:8],
+                # Contacto de emergencia: por passageiro quando vem, senao o
+                # da compra — numa familia que viaja junta, e o mesmo.
+                emergency_contact_name=(
+                    person.get("emergency_contact_name")
+                    or gc.emergency_contact_name or ""
+                )[:120],
+                emergency_contact_phone=(
+                    person.get("emergency_contact_phone")
+                    or gc.emergency_contact_phone or ""
+                )[:20],
                 departure_at=departure,
                 fare_amount=gc.unit_amount,
                 display_currency=gc.display_currency or "MZN",

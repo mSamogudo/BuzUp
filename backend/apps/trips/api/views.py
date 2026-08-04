@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -7,10 +8,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.download_auth import DownloadTicketAuthentication
+from apps.core.download_scopes import TRIP_MANIFEST
 from apps.core.permissions import HasCapabilities
 from apps.core.viewsets import BaseModelViewSet
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from apps.routes.services import RouteSegmentError, route_segments_for_stop_pair
 from apps.trips.activity import (
+    depart_trip_activity,
     TripActivityError,
     close_trip_activity,
     pause_trip_activity,
@@ -239,7 +244,9 @@ class DriverTripActionView(APIView):
             return Response({"detail": "Viagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            if self.action == "start":
+            if self.action == "depart":
+                trip = depart_trip_activity(trip, driver, request.user)
+            elif self.action == "start":
                 trip = start_trip_activity(trip, driver, request.user)
                 # Dispositivos livres: o terminal que inicia a viagem passa a
                 # ser a fonte da posicao do autocarro no mapa dos passageiros.
@@ -264,3 +271,75 @@ class DriverTripActionView(APIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(TripDetailSerializer(trip).data)
+
+
+class _ManifestMixin:
+    """Manifesto de uma partida, ao vivo ou fotografado.
+
+    Depois do fecho devolve a FOTOGRAFIA guardada, nao um recalculo: e isso
+    que faz do manifesto um documento e nao um relatorio que muda sozinho.
+    """
+
+    def _manifest_for(self, trip) -> dict:
+        closure = getattr(trip, "revenue_closure", None)
+        if closure is not None and closure.manifest:
+            return closure.manifest
+        from apps.trips.manifest import build_manifest
+        return build_manifest(trip, final=trip.status in {
+            Trip.Status.COMPLETED, Trip.Status.CANCELLED,
+        })
+
+
+class DriverTripManifestView(_ManifestMixin, APIView):
+    """Manifesto da viagem do proprio motorista."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk: int):
+        driver = resolve_driver_for_user(request.user)
+        if not driver:
+            return Response({"detail": "Motorista nao associado ao utilizador autenticado."},
+                            status=status.HTTP_404_NOT_FOUND)
+        trip = Trip.objects.select_related("route", "vehicle", "driver").filter(pk=pk).first()
+        if not trip:
+            return Response({"detail": "Viagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        if trip.driver_id != driver.id:
+            # Nao dizer "existe mas nao e tua": o manifesto tem nomes e
+            # documentos de passageiros.
+            return Response({"detail": "Viagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(self._manifest_for(trip))
+
+
+class TripManifestView(_ManifestMixin, APIView):
+    """Manifesto visto do portal (quem tem leitura de viagens)."""
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("trips.read",)
+
+    def get(self, request, pk: int):
+        trip = Trip.objects.select_related("route", "vehicle", "driver").filter(pk=pk).first()
+        if not trip:
+            return Response({"detail": "Viagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(self._manifest_for(trip))
+
+
+class TripManifestPdfView(_ManifestMixin, APIView):
+    """Manifesto em PDF, para fiscalizacao, seguradora e arquivo."""
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    authentication_classes = [JWTAuthentication, DownloadTicketAuthentication]
+    download_scope = TRIP_MANIFEST
+    required_capabilities = ("trips.read",)
+
+    def get(self, request, pk: int):
+        trip = Trip.objects.select_related("route", "vehicle", "driver").filter(pk=pk).first()
+        if not trip:
+            return Response({"detail": "Viagem nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        from apps.trips.manifest_pdf import render_manifest_pdf
+
+        data = self._manifest_for(trip)
+        pdf = render_manifest_pdf(data)
+        resp = HttpResponse(pdf, content_type="application/pdf")
+        nome = f"manifesto-{data.get('route_code') or trip.pk}-{trip.pk}.pdf"
+        resp["Content-Disposition"] = f'inline; filename="{nome}"'
+        return resp

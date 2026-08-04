@@ -229,8 +229,12 @@ def _draw_header(c, width, height, *, title, period_from, period_to, logos=None)
     c.drawRightString(width - 10 * mm, height - 10 * mm, title)
     c.setFillColor(colors.white)
     c.setFont("Helvetica", 8)
-    c.drawRightString(width - 10 * mm, height - 15 * mm,
-                     f"Periodo: {period_from} - {period_to} | Gerado {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    # Nem todos os documentos que usam este cabecalho tem periodo (o manifesto
+    # de bordo e de uma partida, nao de um intervalo); sem isto saia
+    # "Periodo:  - " a seco.
+    gerado = f"Gerado {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    periodo = f"Periodo: {period_from} - {period_to} | " if (period_from or period_to) else ""
+    c.drawRightString(width - 10 * mm, height - 15 * mm, f"{periodo}{gerado}")
 
 
 def _draw_totals(c, width, y, totals):

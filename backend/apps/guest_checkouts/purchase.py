@@ -71,6 +71,8 @@ def purchase_travel_pass(
     passenger_package_id: int | None = None,
     use_package: bool = True,
     display_currency: str = "MZN",
+    emergency_contact_name: str = "",
+    emergency_contact_phone: str = "",
 ) -> DigitalTravelPass:
     if passenger.status != PassengerAccount.Status.ACTIVE:
         raise PurchaseError("Conta bloqueada ou inactiva.")
@@ -111,6 +113,20 @@ def purchase_travel_pass(
         # Carreira urbana nao marca lugar; guardar um numero de banco daria ao
         # passageiro a ideia de que tem lugar reservado.
         seat = ""
+
+    # Contacto de emergencia: obrigatorio onde ha manifesto de bordo. Numa
+    # viagem de horas, longe de casa, e o unico modo de avisar a familia — e
+    # nao serve de nada pedi-lo depois do acidente.
+    emergency_contact_name = (emergency_contact_name or "").strip()
+    emergency_contact_phone = (emergency_contact_phone or "").strip()
+    if route.requires_emergency_contact:
+        if not emergency_contact_phone:
+            raise PurchaseError("Indique o contacto de emergencia para esta viagem.")
+    else:
+        # Carreira urbana nao pede: nao guardar dados de terceiros que nao
+        # foram pedidos nem vao ser usados.
+        emergency_contact_name = ""
+        emergency_contact_phone = ""
 
     try:
         resolve_route_segment(route, origin_stop_id, destination_stop_id)
@@ -248,6 +264,8 @@ def purchase_travel_pass(
             # O bilhete comprado na app e NOMINAL: leva os dados do titular
             # da conta, como pedido pelo cliente.
             passenger_name=(passenger.full_name or "")[:255],
+            emergency_contact_name=(emergency_contact_name or "")[:120],
+            emergency_contact_phone=(emergency_contact_phone or "")[:20],
             document_type=getattr(passenger, "document_type", "") or "",
             document_number=(getattr(passenger, "document_number", "") or "")[:64],
             # Show what the passenger actually paid (after any package

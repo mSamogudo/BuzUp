@@ -11,10 +11,12 @@ PASSENGER_EXTRACT = "passenger_extract"
 CARD_QR = "card_qr"
 REPORT_BUILDER = "report_builder"
 AGENT_DAY_CLOSE = "agent_day_close"
+TRIP_MANIFEST = "trip_manifest"
 
 DOWNLOAD_SCOPES = frozenset({
     PASSENGER_EXTRACT,
     CARD_QR,
     REPORT_BUILDER,
     AGENT_DAY_CLOSE,
+    TRIP_MANIFEST,
 })

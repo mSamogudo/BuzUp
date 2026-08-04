@@ -23,6 +23,11 @@ class GuestCheckout(BaseModel):
     payer_phone = models.CharField(max_length=20)
     buyer_name = models.CharField(max_length=255, blank=True)
     buyer_email = models.EmailField(blank=True)
+    # Contacto de emergencia da compra. Cada passageiro pode trazer o seu em
+    # `passengers[]`; este e o que vale quando nao trazem — o caso comum de
+    # uma familia que viaja junta e da o mesmo numero.
+    emergency_contact_name = models.CharField(max_length=120, blank=True)
+    emergency_contact_phone = models.CharField(max_length=20, blank=True)
     # Passageiros da compra (interurbano): [{name, document_type, document_number}].
     # Fica no checkout porque e recolhido ANTES do pagamento; e a fonte dos
     # passes emitidos quando o pagamento confirma.
@@ -134,6 +139,13 @@ class DigitalTravelPass(BaseModel):
     document_type = models.CharField(max_length=16, choices=DocumentType.choices, blank=True)
     document_number = models.CharField(max_length=64, blank=True)
     seat_number = models.CharField(max_length=8, blank=True)
+    # Quem avisar se algo correr mal. Recolhido nas rotas interprovinciais e
+    # internacionais (ver `Route.requires_emergency_contact`): sao horas de
+    # estrada longe de casa, e num acidente a primeira pergunta e "a quem se
+    # telefona". Vive no bilhete e nao so na conta porque quem viaja pode nao
+    # ser quem comprou.
+    emergency_contact_name = models.CharField(max_length=120, blank=True)
+    emergency_contact_phone = models.CharField(max_length=20, blank=True)
     # Copia da partida: o passe tem de sobreviver a alteracoes/remocao da viagem.
     departure_at = models.DateTimeField(null=True, blank=True)
     fare_amount = models.DecimalField(max_digits=12, decimal_places=2)

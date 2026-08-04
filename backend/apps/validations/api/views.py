@@ -201,6 +201,8 @@ class PurchaseTravelPassView(APIView):
                 destination_stop_id=data.get("destination_stop_id"),
                 trip_id=data.get("trip_id"),
                 seat=data.get("seat") or "",
+                emergency_contact_name=data.get("emergency_contact_name") or "",
+                emergency_contact_phone=data.get("emergency_contact_phone") or "",
                 passenger_package_id=data.get("passenger_package_id"),
                 use_package=data.get("use_package", True),
                 display_currency=data.get("display_currency") or "MZN",

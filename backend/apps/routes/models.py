@@ -53,6 +53,30 @@ class Route(BaseModel):
         """
         return self.service_type in self.SEATED_SERVICE_TYPES
 
+    @property
+    def requires_manifest(self) -> bool:
+        """Esta rota leva manifesto de bordo formal?
+
+        Interprovincial e internacional: horas de estrada, fronteiras e o
+        risco de um acidente longe de casa. Nesses casos a lista de quem vai
+        a bordo, com contacto de familiar, e um documento — e nao um mapa de
+        gestao. Numa carreira urbana ninguem entrega manifesto ao subir para
+        o autocarro do bairro.
+
+        Numa carreira urbana continua a haver registo de quem validou (esse
+        vive nas validacoes e no fecho da viagem); o que nao ha e a exigencia
+        de dados nominais e de contacto de emergencia.
+        """
+        return self.service_type in self.SEATED_SERVICE_TYPES
+
+    @property
+    def requires_emergency_contact(self) -> bool:
+        """Pede-se contacto de emergencia na compra?
+
+        Mesma regra do manifesto: e para o manifesto que este contacto serve.
+        """
+        return self.requires_manifest
+
     def __str__(self):
         return f"{self.code} - {self.name}"
 

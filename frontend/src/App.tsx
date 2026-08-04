@@ -7,7 +7,7 @@ import DashboardPage from "./admin/DashboardPage";
 import RoutesPage from "./admin/RoutesPage";
 import RouteStopsPage from "./admin/RouteStopsPage";
 import StopsPage from "./admin/StopsPage";
-import TripsPage from "./admin/TripsPage";
+import OperationPage from "./admin/OperationPage";
 import VehiclesPage from "./admin/VehiclesPage";
 import DriversPage from "./admin/DriversPage";
 import FaresPage from "./admin/FaresPage";
@@ -17,7 +17,6 @@ import PhysicalCardsPage from "./admin/PhysicalCardsPage";
 import DigitalCardsPage from "./admin/DigitalCardsPage";
 import FinancialPage from "./admin/FinancialPage";
 import WalletsPage from "./admin/WalletsPage";
-import SchedulesPage from "./admin/SchedulesPage";
 import GuestCheckoutsPage from "./admin/GuestCheckoutsPage";
 import PosSessionsPage from "./admin/PosSessionsPage";
 import DevicesPage from "./admin/DevicesPage";
@@ -85,9 +84,12 @@ function AppContent() {
           <Route path="routes" element={<RoutesPage />} />
           <Route path="routes/:routeId/stops" element={<RouteStopsPage />} />
           <Route path="stops" element={<StopsPage />} />
-          <Route path="trips" element={<TripsPage />} />
+          <Route path="trips" element={<OperationPage />} />
           <Route path="trips/:tripId" element={<TripDetailPage />} />
-          <Route path="schedules" element={<SchedulesPage />} />
+          {/* Horários deixaram de ter menu próprio: são um separador das
+              viagens. A rota antiga continua a funcionar para não partir
+              favoritos e ligações guardadas. */}
+          <Route path="schedules" element={<Navigate to="/app/trips?tab=programacoes" replace />} />
           <Route path="vehicles" element={<VehiclesPage />} />
           <Route path="drivers" element={<DriversPage />} />
           <Route path="fares" element={<FaresPage />} />

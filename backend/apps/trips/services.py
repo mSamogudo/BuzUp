@@ -7,6 +7,39 @@ from django.utils import timezone
 from apps.trips.models import RouteSchedule, Trip
 
 
+def count_daily_trips(schedule: RouteSchedule, target_date=None) -> int:
+    """Quantas viagens NOVAS este horario criaria neste dia, sem criar nada.
+
+    Serve a pre-visualizacao: antes de programar duas semanas de viagens, o
+    operador ve quantas vao nascer. Segue exactamente as mesmas regras de
+    `generate_daily_trips` — se divergirem, o numero mostrado mente.
+    """
+    if schedule.status != RouteSchedule.Status.ACTIVE:
+        return 0
+
+    date = target_date or timezone.now().date()
+    if schedule.days_of_week and date.weekday() not in schedule.days_of_week:
+        return 0
+
+    tz = timezone.get_current_timezone()
+    current_time = datetime.combine(date, schedule.start_time)
+    end_time = datetime.combine(date, schedule.end_time)
+
+    existing = set(
+        Trip.objects.filter(
+            schedule=schedule,
+            planned_departure_at__date=date,
+        ).values_list("planned_departure_at", flat=True)
+    )
+
+    count = 0
+    while current_time <= end_time:
+        if timezone.make_aware(current_time, tz) not in existing:
+            count += 1
+        current_time += timedelta(minutes=schedule.frequency_minutes)
+    return count
+
+
 def generate_daily_trips(schedule: RouteSchedule, target_date: datetime | None = None) -> list[Trip]:
     if schedule.status != RouteSchedule.Status.ACTIVE:
         return []

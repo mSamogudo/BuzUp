@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { CalendarClock, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
@@ -54,8 +54,21 @@ const EMPTY_FORM = {
   status: "active",
 };
 
-export default function SchedulesPage({ embedded }: { embedded?: boolean }) {
-  void embedded;
+/**
+ * Programações recorrentes por rota.
+ *
+ * `embedded` faz a página render­izar-se sem o cabeçalho próprio, para viver
+ * dentro do separador "Programações" da página de Operação — horários e
+ * viagens são a mesma tarefa vista de dois ângulos, e tê-los em dois menus
+ * separados obrigava o operador a saltar entre eles.
+ */
+export default function SchedulesPage({
+  embedded, onChanged, registerActions,
+}: {
+  embedded?: boolean;
+  onChanged?: () => void;
+  registerActions?: (actions: { create: () => void; reload: () => void }) => void;
+}) {
   const { token } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -132,7 +145,7 @@ export default function SchedulesPage({ embedded }: { embedded?: boolean }) {
       };
       if (editId) { await apiPatch(`/api/schedules/${editId}/`, token!, payload); showToast("success", "Horário actualizado."); }
       else { await apiPost("/api/schedules/", token!, payload); showToast("success", "Horário criado."); }
-      reset(); reload();
+      reset(); reload(); onChanged?.();
     } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
     finally { setBusy(false); }
   };
@@ -144,46 +157,20 @@ export default function SchedulesPage({ embedded }: { embedded?: boolean }) {
       tone: "danger",
     });
     if (!ok) return;
-    try { await apiDelete(`/api/schedules/${r.id}/`, token!); showToast("success", "Horário eliminado."); reload(); }
+    try { await apiDelete(`/api/schedules/${r.id}/`, token!); showToast("success", "Horário eliminado."); reload(); onChanged?.(); }
     catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
   };
 
-  // --- Geração de viagens -------------------------------------------------
-  const [genOpen, setGenOpen] = useState(false);
-  const [genBusy, setGenBusy] = useState(false);
-  const [genScheduleId, setGenScheduleId] = useState<string>("all");
-  const today = new Date().toLocaleDateString("pt-PT", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+  // A página embutida não desenha cabeçalho; entrega os seus botões ao
+  // contentor para eles viverem na barra de acções da página de Operação.
+  useEffect(() => {
+    registerActions?.({ create: () => { reset(); setModalOpen(true); }, reload });
+    // `reload` é estável (useAsyncData) e `reset` não depende de estado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registerActions, reload]);
 
-  const generate = async (e: FormEvent) => {
-    e.preventDefault();
-    const all = rows || [];
-    const targets = genScheduleId === "all"
-      ? all.filter((s) => s.status === "active")
-      : all.filter((s) => String(s.id) === genScheduleId);
-    if (targets.length === 0) { showToast("danger", "Nenhum horário activo para gerar viagens."); return; }
-    setGenBusy(true);
-    try {
-      let total = 0;
-      let failures = 0;
-      for (const s of targets) {
-        try {
-          const res = await apiPost("/api/trips/generate/", token!, { schedule_id: s.id });
-          total += Number(res?.generated ?? 0);
-        } catch { failures += 1; }
-      }
-      if (failures > 0 && total === 0) showToast("danger", "Não foi possível gerar viagens.");
-      else showToast("success", `${total} viagem(ns) criada(s) para hoje${failures ? ` (${failures} horário(s) com erro)` : ""}.`);
-      setGenOpen(false);
-    } finally { setGenBusy(false); }
-  };
-
-  return (
-    <PageFrame kicker="Operação" title="Horários"
-      action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>Actualizar</span></button>
-        <button className="icon-text-button" onClick={() => { setGenScheduleId("all"); setGenOpen(true); }} type="button"><CalendarClock size={16} /><span>Gerar viagens</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> Novo horário</button>
-      </>}>
+  const body = (
+    <>
       <SectionCard title="Horários" description="Programações recorrentes por rota, usadas para gerar as viagens do dia.">
         <DataTable columns={[
           { header: "Rota", render: (r: Schedule) => <TablePrimaryCell title={`${r.route_code} - ${r.route_name}`} subtitle={r.agent_name ? `Agente: ${r.agent_name}` : undefined} /> },
@@ -258,30 +245,19 @@ export default function SchedulesPage({ embedded }: { embedded?: boolean }) {
         </form>
       </AdminModal>
 
-      <AdminModal open={genOpen} onClose={() => setGenOpen(false)} title="Gerar viagens do dia"
-        description="Cria as viagens do dia de hoje a partir dos horários activos (viagens já existentes não são duplicadas).">
-        <form className="admin-form" onSubmit={generate}>
-          <div className="admin-form-grid">
-            <label className="field"><span>Data</span><input type="text" value={today} readOnly disabled /></label>
-            <label className="field"><span>Horário</span>
-              <select value={genScheduleId} onChange={(e) => setGenScheduleId(e.target.value)}>
-                <option value="all">Todos os horários activos</option>
-                {(rows || []).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.route_code} · {formatTime(s.start_time)}–{formatTime(s.end_time)} · {formatDays(s.days_of_week)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <small style={{ opacity: 0.7 }}>As viagens são sempre geradas para o dia actual; horários cujo dia da semana não inclui hoje não produzem viagens.</small>
-          <div className="admin-form-actions">
-            <button className="primary-button" disabled={genBusy} type="submit">{genBusy ? "A gerar..." : "Gerar viagens"}</button>
-            <button className="secondary-button" onClick={() => setGenOpen(false)} type="button">Cancelar</button>
-          </div>
-        </form>
-      </AdminModal>
       {confirmDialog}
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <PageFrame kicker="Operação" title="Horários"
+      action={<>
+        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>Actualizar</span></button>
+        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> Novo horário</button>
+      </>}>
+      {body}
     </PageFrame>
   );
 }

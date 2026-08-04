@@ -393,4 +393,16 @@ class TripSearchSerializer(serializers.Serializer):
 
 
 class GenerateTripsSerializer(serializers.Serializer):
-    schedule_id = serializers.IntegerField()
+    """Programacao de viagens a partir dos horarios.
+
+    `schedule_id` em falta significa "todos os horarios activos". O intervalo
+    e opcional e vale um dia (hoje) quando nao vem nada, para o comportamento
+    antigo continuar igual.
+    """
+
+    schedule_id = serializers.IntegerField(required=False, allow_null=True)
+    date_from = serializers.DateField(required=False)
+    # 30 dias e o tecto: um mes de programacao chega para planear, e evita que
+    # um engano num campo crie meio ano de viagens.
+    days = serializers.IntegerField(required=False, min_value=1, max_value=30, default=1)
+    preview = serializers.BooleanField(required=False, default=False)

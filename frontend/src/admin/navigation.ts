@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Bus,
-  CalendarClock,
   Coins,
   Cpu,
   CreditCard,
@@ -25,7 +24,6 @@ import {
   Wallet,
 } from "lucide-react";
 import type { TranslationKey } from "../lib/i18n";
-
 export type NavItem = {
   i18nKey: TranslationKey;
   path: string;
@@ -35,7 +33,6 @@ export type NavItem = {
   /** Capacidades que dão acesso (basta uma). Sem `caps`, é visível a todos. */
   caps?: string[];
 };
-
 export const NAV_ITEMS: NavItem[] = [
   { i18nKey: "dashboard", path: "/app", icon: LayoutDashboard, end: true },
   { i18nKey: "routes", path: "/app/routes", icon: Route, caps: ["routes.read"] },
@@ -43,7 +40,6 @@ export const NAV_ITEMS: NavItem[] = [
   { i18nKey: "vehicles", path: "/app/vehicles", icon: Truck, caps: ["vehicles.read"] },
   { i18nKey: "drivers", path: "/app/drivers", icon: UserCheck, caps: ["drivers.read"] },
   { i18nKey: "trips", path: "/app/trips", icon: Bus, caps: ["trips.read"] },
-  { i18nKey: "schedules", path: "/app/schedules", icon: CalendarClock, caps: ["trips.read"] },
   { i18nKey: "fares", path: "/app/fares", icon: Ticket, caps: ["fares.read"] },
   { i18nKey: "packages", path: "/app/packages", icon: Gift, caps: ["packages.read"] },
   { i18nKey: "passengers", path: "/app/passengers", icon: Users, caps: ["passengers.read"] },
@@ -64,7 +60,6 @@ export const NAV_ITEMS: NavItem[] = [
   { i18nKey: "audit", path: "/app/audit", icon: FileText, caps: ["audit.read"] },
   { i18nKey: "branding", path: "/app/branding", icon: Palette, caps: ["settings.manage"] },
 ];
-
 /** Itens visíveis para o utilizador: superuser vê tudo; senão basta uma capability. */
 export function visibleNavItems(items: NavItem[], caps: string[], isSuperuser: boolean): NavItem[] {
   if (isSuperuser) return items;

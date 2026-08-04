@@ -5466,3 +5466,72 @@ html[data-theme="dark"] .otp-digit:focus {
   white-space: nowrap;
   max-width: 150px;
 }
+
+/* ---------------------------------------------------------------------------
+   Assistente de programação de viagens
+   A geração era um botão que dizia o resultado depois de o fazer; aqui o
+   operador vê a distribuição por dia antes de confirmar.
+--------------------------------------------------------------------------- */
+.bztw-horizons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.bztw-chip {
+  min-height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--app-border); background: var(--app-surface);
+  color: var(--app-text); font: inherit; font-size: 13px; font-weight: 600;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.bztw-chip:hover { border-color: var(--app-accent); }
+.bztw-chip.is-on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+.bztw-days { width: 68px; }
+.bztw-days-unit { font-size: 13px; color: var(--app-text-muted); }
+
+.bztw-preview {
+  margin: 14px 0 4px; padding: 14px; border-radius: 14px;
+  border: 1px solid var(--app-border); background: var(--app-surface-soft);
+  min-height: 92px;
+}
+.bztw-preview-empty {
+  display: flex; align-items: center; gap: 8px; justify-content: center;
+  min-height: 64px; color: var(--app-text-muted); font-size: 13px;
+}
+.bztw-error { color: var(--app-danger, #ef4444); }
+.bztw-spin { animation: bztw-rot 1s linear infinite; }
+@keyframes bztw-rot { to { transform: rotate(360deg); } }
+
+.bztw-headline {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px;
+}
+.bztw-count { display: inline-flex; align-items: baseline; gap: 8px; color: var(--app-accent); }
+.bztw-count svg { align-self: center; }
+.bztw-count strong { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.bztw-count span { font-size: 13px; color: var(--app-text-muted); }
+.bztw-count.is-zero { color: var(--app-text-muted); }
+.bztw-range {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--app-text-muted); font-weight: 600;
+}
+.bztw-note { margin: 0; font-size: 12.5px; color: var(--app-text-muted); line-height: 1.5; }
+
+/* Barras por dia: leem-se de relance e o eixo não precisa de números. */
+.bztw-bars {
+  display: flex; align-items: flex-end; gap: 6px;
+  overflow-x: auto; padding-bottom: 2px;
+}
+.bztw-bar-col { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 26px; flex: 1 1 0; }
+.bztw-bar-track { display: flex; align-items: flex-end; height: 66px; width: 100%; }
+.bztw-bar {
+  width: 100%; border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 62%, #000));
+  transition: height .25s ease;
+}
+.bztw-bar.is-empty { background: var(--app-border); }
+.bztw-bar-n { font-size: 11px; font-weight: 800; color: var(--app-text); }
+.bztw-bar-d { font-size: 10px; color: var(--app-text-muted); }
+
+.bztw-schedules { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px dashed var(--app-border); }
+.bztw-schedules li {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 12.5px; padding: 3px 0; color: var(--app-text-muted);
+}
+.bztw-schedules li strong { color: var(--app-text); }
+.bztw-schedules .bztw-more { opacity: .75; font-style: italic; }

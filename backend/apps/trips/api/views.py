@@ -78,14 +78,69 @@ class GenerateTripsView(APIView):
     required_capabilities = ("trips.manage",)
 
     def post(self, request):
+        from datetime import timedelta
+
+        from apps.trips.services import count_daily_trips
+
         serializer = GenerateTripsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        try:
-            schedule = RouteSchedule.objects.get(pk=serializer.validated_data["schedule_id"])
-        except RouteSchedule.DoesNotExist:
-            return Response({"detail": "Programacao nao encontrada."}, status=status.HTTP_404_NOT_FOUND)
-        trips = generate_daily_trips(schedule)
-        return Response({"generated": len(trips)}, status=status.HTTP_201_CREATED)
+        data = serializer.validated_data
+
+        schedule_id = data.get("schedule_id")
+        if schedule_id:
+            schedules = list(RouteSchedule.objects.filter(pk=schedule_id))
+            if not schedules:
+                return Response({"detail": "Programacao nao encontrada."},
+                                status=status.HTTP_404_NOT_FOUND)
+        else:
+            # Sem horario indicado: todos os activos.
+            schedules = list(
+                RouteSchedule.objects.filter(status=RouteSchedule.Status.ACTIVE)
+                .select_related("route", "vehicle", "driver")
+            )
+
+        date_from = data.get("date_from") or timezone.now().date()
+        days = data.get("days") or 1
+        preview = data.get("preview", False)
+
+        per_day = []
+        per_schedule = {}
+        total = 0
+        for offset in range(days):
+            day = date_from + timedelta(days=offset)
+            day_total = 0
+            for schedule in schedules:
+                n = (count_daily_trips(schedule, day) if preview
+                     else len(generate_daily_trips(schedule, day)))
+                if n:
+                    day_total += n
+                    key = schedule.pk
+                    entry = per_schedule.setdefault(key, {
+                        "schedule_id": key,
+                        "route_code": schedule.route.code if schedule.route_id else "",
+                        "route_name": schedule.route.name if schedule.route_id else "",
+                        "count": 0,
+                    })
+                    entry["count"] += n
+            per_day.append({"date": day.isoformat(), "count": day_total})
+            total += day_total
+
+        return Response(
+            {
+                "generated": 0 if preview else total,
+                "preview": preview,
+                # `would_generate` responde sempre, para o assistente poder
+                # mostrar o numero antes e depois de confirmar.
+                "would_generate": total,
+                "days": days,
+                "date_from": date_from.isoformat(),
+                "date_to": (date_from + timedelta(days=days - 1)).isoformat(),
+                "schedules_considered": len(schedules),
+                "by_day": per_day,
+                "by_schedule": sorted(per_schedule.values(), key=lambda e: -e["count"]),
+            },
+            status=status.HTTP_200_OK if preview else status.HTTP_201_CREATED,
+        )
 
 
 class TripViewSet(BaseModelViewSet):

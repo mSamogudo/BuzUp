@@ -37,6 +37,15 @@ class DocumentRule {
 
   /// Este numero serve para este tipo de documento?
   bool accepts(String raw) => RegExp(pattern).hasMatch(normalizeDocument(raw));
+
+  /// O que o campo deixa mesmo escrever. Num documento so de digitos (DIRE,
+  /// cedula) as letras nem entram: mais vale o campo nao as aceitar do que
+  /// aceita-las para depois reclamar.
+  String filter(String raw) {
+    final limpo = normalizeDocument(raw);
+    final so = digitsOnly ? limpo.replaceAll(RegExp(r'\D'), '') : limpo;
+    return so.length > maxLength ? so.substring(0, maxLength) : so;
+  }
 }
 
 const kDocumentFallback = <DocumentRule>[

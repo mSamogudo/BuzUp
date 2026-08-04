@@ -56,6 +56,15 @@ function normalizeDoc(raw: string) {
   return raw.replace(/[\s.\-/]/g, "").toUpperCase();
 }
 
+/// O que o campo deixa mesmo escrever. Num documento só de dígitos (DIRE,
+/// cédula) as letras nem entram: mais vale o campo não as aceitar do que
+/// aceitá-las para depois reclamar.
+function filterDoc(raw: string, rule: DocRule) {
+  const limpo = normalizeDoc(raw);
+  return (rule.digits_only ? limpo.replace(/\D/g, "") : limpo)
+    .slice(0, rule.max_length);
+}
+
 async function getJson(path: string) {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" } });
   const body = await res.json().catch(() => ({}));
@@ -505,7 +514,17 @@ export default function BookingPage() {
                           <div className="bzbk-field bzbk-field-wide">
                             <label className="bzbk-label">Documento</label>
                             <select className="bzbk-select" value={p.document_type}
-                              onChange={(e) => setPaxField(i, "document_type", e.target.value)}>
+                              onChange={(e) => {
+                                // Trocar de tipo depois de escrever: o número
+                                // é refiltrado pela regra nova, senão ficavam
+                                // letras num campo que passou a ser só dígitos.
+                                const novo = e.target.value;
+                                setPax((prev) => prev.map((q, idx) => idx === i ? {
+                                  ...q,
+                                  document_type: novo,
+                                  document_number: filterDoc(q.document_number, docRule(novo)),
+                                } : q));
+                              }}>
                               {docRules.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                             </select>
                           </div>
@@ -515,7 +534,12 @@ export default function BookingPage() {
                               className={`bzbk-input${mostraErro ? " bzbk-input-error" : ""}`}
                               value={p.document_number}
                               required
-                              maxLength={rule.max_length}
+                              // Sem `maxLength`: ele corta o texto CRU, antes
+                              // de os espaços serem tirados. Um BI colado como
+                              // "1101 0012 3456 A" (17 caracteres) era truncado
+                              // a meio e ficava inválido sem se perceber
+                              // porquê. O limite é aplicado em `filterDoc`,
+                              // depois de normalizar.
                               placeholder={rule.placeholder}
                               inputMode={rule.digits_only ? "numeric" : "text"}
                               autoCapitalize="characters"
@@ -525,7 +549,7 @@ export default function BookingPage() {
                               // Normaliza enquanto se escreve: o campo passa a
                               // recusar o que o servidor recusaria, em vez de
                               // deixar chegar ao pagamento para falhar la.
-                              onChange={(e) => setPaxField(i, "document_number", normalizeDoc(e.target.value))}
+                              onChange={(e) => setPaxField(i, "document_number", filterDoc(e.target.value, rule))}
                             />
                             <span className={mostraErro ? "bzbk-hint bzbk-hint-error" : "bzbk-hint"}>
                               {mostraErro ? erro : rule.help}

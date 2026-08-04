@@ -914,12 +914,21 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             for (final r in _docRules)
               DropdownMenuItem(value: r.value, child: Text(r.label)),
           ],
-          onChanged: (v) => setState(() => _docType = v ?? 'bi'),
+          // Trocar de tipo depois de escrever: o numero e refiltrado pela regra
+          // nova, senao ficavam letras num campo que passou a ser so digitos.
+          onChanged: (v) => setState(() {
+            _docType = v ?? 'bi';
+            _docNumberCtrl.text = ruleFor(_docRules, _docType)
+                .filter(_docNumberCtrl.text);
+          }),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _docNumberCtrl,
-          maxLength: regra.maxLength,
+          // Sem `maxLength`: ele corta o texto CRU, antes de os espacos serem
+          // tirados. Um BI escrito "1101 0012 3456 A" (17 caracteres) era
+          // truncado a meio e ficava invalido sem o passageiro perceber
+          // porque. O limite e aplicado depois de normalizar, em `filter`.
           keyboardType: regra.digitsOnly ? TextInputType.number : TextInputType.text,
           textCapitalization: TextCapitalization.characters,
           decoration: InputDecoration(
@@ -936,7 +945,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
           // Normaliza enquanto se escreve: o campo passa a recusar o que o
           // servidor recusaria, em vez de deixar chegar ao pagamento.
           onChanged: (v) {
-            final limpo = normalizeDocument(v);
+            final limpo = regra.filter(v);
             if (limpo != v) {
               _docNumberCtrl.value = TextEditingValue(
                 text: limpo,

@@ -60,6 +60,41 @@ class FormatoTests(TestCase):
         with self.assertRaises(DocumentError):
             validate_document("passport", "AB12345678")
 
+    def test_dire_tem_12_digitos(self):
+        self.assertEqual(validate_document("dire", "123456789012"), "123456789012")
+        for mau in ["12345678901", "1234567890123", "12345678901A"]:
+            with self.assertRaises(DocumentError, msg=mau):
+                validate_document("dire", mau)
+
+    def test_cedula_tem_9_digitos(self):
+        self.assertEqual(validate_document("cedula", "123456789"), "123456789")
+        for mau in ["12345678", "1234567890", "12345678A"]:
+            with self.assertRaises(DocumentError, msg=mau):
+                validate_document("cedula", mau)
+
+    def test_documentos_de_numero_fixo_abrem_teclado_numerico(self):
+        # Sem isto o passageiro apanha o teclado de letras para escrever so
+        # digitos — e ao balcao, com fila atras, isso custa tempo.
+        for chave in ("dire", "cedula"):
+            self.assertTrue(DOCUMENT_RULES[chave]["digits_only"], msg=chave)
+        # O BI acaba em letra e o passaporte tem letras: teclado normal.
+        for chave in ("bi", "passport"):
+            self.assertFalse(DOCUMENT_RULES[chave]["digits_only"], msg=chave)
+
+    def test_comprimento_maximo_bate_certo_com_a_regra(self):
+        # O `max_length` limita o campo no formulario. Se for menor do que o
+        # que a regra aceita, o campo trava antes de o numero estar completo.
+        exemplos = {
+            "bi": "110100123456A",
+            "passport": "AB1234567",
+            "dire": "123456789012",
+            "cedula": "123456789",
+        }
+        for chave, numero in exemplos.items():
+            self.assertEqual(validate_document(chave, numero), numero)
+            self.assertGreaterEqual(
+                DOCUMENT_RULES[chave]["max_length"], len(numero), msg=chave)
+
     def test_numero_vazio_e_recusado(self):
         with self.assertRaises(DocumentError):
             validate_document("bi", "   ")

@@ -89,6 +89,13 @@ class _FakeApi extends PassengerApi {
           'help': '6 a 9 caracteres, so letras e numeros.',
           'digits_only': false,
         },
+        {
+          'value': 'cedula', 'label': 'Cedula',
+          'pattern': r'^\d{9}$', 'max_length': 9,
+          'placeholder': '123456789',
+          'help': '9 digitos.',
+          'digits_only': true,
+        },
       ];
 
   @override
@@ -284,6 +291,56 @@ void main() {
     expect(find.text('Indique o telefone do contacto de emergencia.'),
         findsNothing);
     expect(_actionLabel(tester), 'ESCOLHER LUGAR');
+  });
+
+  testWidgets('o campo do documento recusa o que nao cabe na regra',
+      (tester) async {
+    await _pump(tester, _FakeApi(seated: true, departures: _departuresOk));
+    await _chooseRoute(tester);
+    await tester.tap(find.text('06:30'));
+    await tester.pumpAndSettle();
+
+    final campo = find.byType(TextField).first;
+
+    // Espacos e minusculas sao arrumados enquanto se escreve — sem isto o
+    // mesmo BI ficava guardado de duas maneiras e o passageiro aparecia duas
+    // vezes no manifesto.
+    await tester.enterText(campo, '1101 0012 3456 a');
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(campo).controller!.text, '110100123456A');
+
+    // O BI nao passa dos 13: escrever mais nao estica o campo.
+    await tester.enterText(campo, '110100123456ABCDEF');
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(campo).controller!.text.length, 13);
+  });
+
+  testWidgets('cedula so aceita digitos e trocar de tipo limpa o que sobra',
+      (tester) async {
+    await _pump(tester, _FakeApi(seated: true, departures: _departuresOk));
+    await _chooseRoute(tester);
+    await tester.tap(find.text('06:30'));
+    await tester.pumpAndSettle();
+
+    final campo = find.byType(TextField).first;
+    await tester.enterText(campo, '110100123456A');
+    await tester.pumpAndSettle();
+
+    // Trocar de BI para cedula: a letra do BI nao pode sobreviver num campo
+    // que passou a ser so digitos, e o limite baixa de 13 para 9.
+    await tester.tap(find.text('Bilhete de Identidade').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cedula').last);
+    await tester.pumpAndSettle();
+
+    final texto = tester.widget<TextField>(campo).controller!.text;
+    expect(texto, '110100123');
+    expect(RegExp(r'^\d+$').hasMatch(texto), isTrue);
+
+    // E a partir daqui as letras nem entram.
+    await tester.enterText(campo, '12AB34CD56');
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(campo).controller!.text, '123456');
   });
 
   testWidgets('conta que ja tem BI nao volta a pedir o documento',

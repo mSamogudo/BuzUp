@@ -25,12 +25,15 @@ import re
 #   help        — a regra por palavras, para quando o valor nao passa
 #   digits_only — se o teclado do telemovel deve abrir numerico
 #
-# NOTA sobre o rigor de cada um: o BI mocambicano tem forma fixa (12 digitos e
-# uma letra de controlo) e o passaporte segue a norma ICAO (ate 9 caracteres
-# alfanumericos), por isso esses sao validados com rigor. Para o DIRE e a
-# cedula nao ha uma forma unica publicada que se possa impor sem risco de
-# recusar documentos legitimos, por isso ficam com limites largos: mais vale
-# aceitar um numero estranho do que impedir alguem de comprar bilhete.
+# Todos os formatos sao fixos e vem do documento real:
+#   BI          12 digitos + letra de controlo
+#   DIRE        12 digitos
+#   Cedula      9 digitos
+#   Passaporte  ate 9 alfanumericos (norma ICAO) — e o unico que e um
+#               intervalo, porque numa rota internacional viajam passaportes
+#               de varios paises e cada um tem o seu comprimento.
+# "Outro" fica largo por definicao: e a saida para o documento que nao cabe em
+# nenhuma destas caixas, e recusa-lo era impedir alguem de comprar bilhete.
 DOCUMENT_RULES: dict[str, dict] = {
     "bi": {
         "label": "Bilhete de Identidade",
@@ -50,19 +53,19 @@ DOCUMENT_RULES: dict[str, dict] = {
     },
     "dire": {
         "label": "DIRE",
-        "pattern": r"^[A-Z0-9]{6,20}$",
-        "max_length": 20,
-        "placeholder": "Numero do DIRE",
-        "help": "6 a 20 caracteres, so letras e numeros.",
-        "digits_only": False,
+        "pattern": r"^\d{12}$",
+        "max_length": 12,
+        "placeholder": "123456789012",
+        "help": "12 digitos.",
+        "digits_only": True,
     },
     "cedula": {
         "label": "Cedula",
-        "pattern": r"^[A-Z0-9]{4,20}$",
-        "max_length": 20,
-        "placeholder": "Numero da cedula",
-        "help": "4 a 20 caracteres, so letras e numeros.",
-        "digits_only": False,
+        "pattern": r"^\d{9}$",
+        "max_length": 9,
+        "placeholder": "123456789",
+        "help": "9 digitos.",
+        "digits_only": True,
     },
     "other": {
         "label": "Outro",

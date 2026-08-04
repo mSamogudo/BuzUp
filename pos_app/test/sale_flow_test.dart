@@ -86,12 +86,63 @@ class _FakeApi extends AgentApi {
 
   @override
   Future<Map<String, dynamic>> exchangeRates() async => const {'rates': {}};
+
+  /// O que a venda enviou. Serve para provar que o contacto de emergência que
+  /// chega ao servidor é o DESTA venda e não o da anterior.
+  final vendas = <Map<String, dynamic>>[];
+
+  @override
+  Future<Map<String, dynamic>> createSale({
+    required int tripId,
+    required int originStopId,
+    required int destinationStopId,
+    String paymentMethod = 'mobile_money',
+    String? passengerPhone,
+    String? cardUid,
+    String? qrToken,
+    int quantity = 1,
+    String? deviceSerial,
+    bool autoRequestPayment = true,
+    String? idempotencyKey,
+    String displayCurrency = 'MZN',
+    List<String> seats = const [],
+    String emergencyName = '',
+    String emergencyPhone = '',
+  }) async {
+    vendas.add({
+      'seats': seats,
+      'emergency_name': emergencyName,
+      'emergency_phone': emergencyPhone,
+      'quantity': quantity,
+      'currency': displayCurrency,
+      'phone': passengerPhone,
+    });
+    return {
+      'sale_reference': 'S-1',
+      'payment': {'reference': 'P-1', 'status': 'confirmed'},
+      'tickets': const [],
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> paymentStatus(String reference) async =>
+      {'status': 'confirmed', 'tickets': const []};
+}
+
+/// O armazenamento seguro assenta em canais de plataforma que não existem num
+/// teste. Só o número de série do aparelho é lido no fluxo de venda.
+class _FakeStore extends SecureStore {
+  @override
+  Future<String?> getDeviceSerial() async => 'POS-TESTE-1';
 }
 
 Future<void> _pump(WidgetTester tester, _FakeApi api) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [agentApiProvider.overrideWithValue(api)],
+      overrides: [
+        agentApiProvider.overrideWithValue(api),
+        secureStoreProvider.overrideWithValue(_FakeStore()),
+      ],
       child: const MaterialApp(home: SaleFlowScreen()),
     ),
   );
@@ -253,6 +304,66 @@ void main() {
     await tester.tap(find.byIcon(Icons.close).first, warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.text('Escolha mais 1 lugar.'), findsOneWidget);
+  });
+
+  testWidgets('nova venda nao herda nada da venda anterior', (tester) async {
+    final api = _FakeApi(seated: true);
+    await _pump(tester, api);
+
+    // Venda 1, completa.
+    await _ateTrajecto(tester);
+    await tester.enterText(find.byType(TextField).last, '840000001');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2C'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '841111111');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(api.vendas, hasLength(1));
+    expect(api.vendas.first['emergency_phone'], '840000001');
+    expect(api.vendas.first['seats'], ['2C']);
+
+    // NOVA VENDA: o passageiro seguinte e outra pessoa. Se o contacto de
+    // emergencia ficasse no ecra, o familiar do passageiro anterior seguia no
+    // manifesto de bordo do seguinte — e ninguem daria por isso.
+    await tester.tap(find.text('NOVA VENDA'));
+    await tester.pumpAndSettle();
+
+    // De volta ao inicio. A barra mostra 3 passos porque ainda nao se sabe se
+    // a rota marca lugar — so se sabe depois de escolhida a viagem.
+    expect(find.text('PASSO 1 DE 3'), findsOneWidget);
+    await _ateTrajecto(tester);
+    expect(find.text('840000001'), findsNothing,
+        reason: 'o contacto de emergencia da venda anterior ficou no ecra');
+    expect(find.text('Indique o contacto de emergencia (9 digitos).'),
+        findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNull);
+
+    // E o que chega ao servidor na venda 2 e o contacto DESTA venda.
+    await tester.enterText(find.byType(TextField).last, '840000002');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1A'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '842222222');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(api.vendas, hasLength(2));
+    expect(api.vendas.last['emergency_phone'], '840000002');
+    expect(api.vendas.last['seats'], ['1A']);
+    expect(api.vendas.last['quantity'], 1);
+    expect(api.vendas.last['currency'], 'MZN');
   });
 
   testWidgets('recuar do pagamento volta aos lugares, nao ao inicio',

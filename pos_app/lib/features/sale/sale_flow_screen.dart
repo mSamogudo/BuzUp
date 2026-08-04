@@ -114,6 +114,47 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     super.dispose();
   }
 
+  /// Limpa TUDO o que pertencia a venda anterior.
+  ///
+  /// O passageiro seguinte e outra pessoa. O contacto de emergencia ficava no
+  /// ecra depois de uma venda — os controladores de texto sobrevivem aos
+  /// rebuilds — e, se o agente nao reparasse, o familiar do passageiro
+  /// anterior seguia no manifesto de bordo do seguinte. O mesmo valia para a
+  /// moeda de exibicao, que fica congelada no bilhete.
+  ///
+  /// Escrito como um metodo unico, e nao espalhado pelo botao, para nao voltar
+  /// a esquecer um campo quando se acrescentar o proximo.
+  void _resetSale() {
+    _emergNameCtrl.clear();
+    _emergPhoneCtrl.clear();
+    setState(() {
+      _step = _Step.trip;
+      _selectedTrip = null;
+      _stops = [];
+      _originId = null;
+      _destinationId = null;
+      _fare = null;
+      _phone = '';
+      _quantity = 1;
+      _paymentMethod = 'mobile_money';
+      _cardUid = null;
+      _qrToken = null;
+      _scannedCard = null;
+      _seatMap = null;
+      _pickedSeats.clear();
+      _currency = 'MZN';
+      _idem.rotate();
+      _paymentRef = null;
+      _saleRef = null;
+      _paymentStatus = '';
+      _tickets = [];
+      _error = null;
+    });
+    // A venda que acabou de ser feita mudou a lotacao: recarregar evita
+    // oferecer lugares que ja nao existem.
+    _loadTrips();
+  }
+
   Future<void> _loadTrips() async {
     setState(() {
       _loadingTrips = true;
@@ -1373,28 +1414,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(50)),
           icon: const Icon(Icons.add),
           label: const Text('NOVA VENDA'),
-          onPressed: () => setState(() {
-            _step = _Step.trip;
-            _selectedTrip = null;
-            _stops = [];
-            _originId = null;
-            _destinationId = null;
-            _fare = null;
-            _phone = '';
-            _quantity = 1;
-            _paymentMethod = 'mobile_money';
-            _cardUid = null;
-            _qrToken = null;
-            _scannedCard = null;
-            _seatMap = null;
-            _pickedSeats.clear();
-            _idem.rotate();
-            _paymentRef = null;
-            _saleRef = null;
-            _paymentStatus = '';
-            _tickets = [];
-            _error = null;
-          }),
+          onPressed: _resetSale,
         ),
         TextButton(onPressed: () => context.go('/home'), child: const Text('Voltar ao inicio')),
       ]),

@@ -5,6 +5,7 @@ import logging
 import re
 import secrets
 import socket
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -186,10 +187,28 @@ def _serialize_amount(amount: Decimal):
 
 
 def _compact_reference(prefix: str, ref: str) -> str:
-    timestamp = timezone.now().strftime("%d%H%M%S")
-    suffix = secrets.token_hex(3).upper()
-    raw = f"{prefix}{timestamp}{suffix}"
-    return re.sub(r"[^A-Za-z0-9]", "", raw).upper()[:20]
+    """Referencia que vai para a operadora, DERIVADA da nossa.
+
+    Antes era `prefixo + timestamp + aleatorio` e ignorava `ref` por completo.
+    Isso custava duas coisas:
+
+    * **Nao se podia repetir um pedido.** Duas chamadas para o mesmo pagamento
+      geravam referencias diferentes, portanto a operadora via duas transacoes
+      distintas — repetir um pedido que falhou com erro de servidor podia
+      cobrar duas vezes. Sendo derivada, a operadora deduplica sozinha e a
+      repeticao e segura.
+    * **Nao se podia reconciliar.** Uma linha do extracto do M-Pesa nao tinha
+      como ser ligada ao pagamento que a originou.
+
+    Ficam os ultimos 18 caracteres alfanumericos da nossa referencia, que sao a
+    parte unica (hex de uuid4); o limite da operadora e 20 com o prefixo.
+    """
+    limpo = re.sub(r"[^A-Za-z0-9]", "", str(ref or "")).upper()
+    if not limpo:
+        # Sem referencia nossa nao ha nada a derivar; volta ao aleatorio para
+        # nao gerar colisoes entre pagamentos diferentes.
+        limpo = f"{timezone.now().strftime('%d%H%M%S')}{secrets.token_hex(3).upper()}"
+    return f"{prefix}{limpo[-18:]}"[:20]
 
 
 def _wallet_request_reference() -> str:
@@ -235,6 +254,62 @@ def _http_json_request(*, url: str, method: str, headers: dict, timeout_seconds:
         return int(exc.code or 400), payload
     except urllib.error.URLError as exc:
         return 502, {"detail": str(getattr(exc, "reason", "Unable to reach payment gateway."))}
+
+
+# Quantas vezes se repete um pedido que morreu do lado da operadora, e quanto
+# se espera entre tentativas. Tres tentativas no total: a operadora devolveu
+# "Server Error" em 4 de 5 pedidos identicos numa mesma tarde, e o 5º passou.
+PAYMENT_MAX_ATTEMPTS = 3
+PAYMENT_RETRY_BACKOFF_SECONDS = (1.0, 2.5)
+
+
+def _is_transient_gateway_failure(status_code: int, payload: dict) -> bool:
+    """A operadora morreu antes de decidir alguma coisa sobre o pagamento?
+
+    So conta como transitorio o que vem do LADO DELA sem juizo sobre a
+    transacao: 5xx, timeout, ou um corpo generico de erro de servidor. Um
+    "saldo insuficiente" ou um "PIN nao introduzido" sao respostas — repeti-las
+    seria chatear o passageiro com um segundo pedido de PIN.
+    """
+    if status_code in (408, 429) or status_code >= 500:
+        return True
+    texto = json.dumps(payload, ensure_ascii=False).lower() if payload else ""
+    return any(m in texto for m in ("server error", "bad gateway",
+                                    "service unavailable", "gateway timeout"))
+
+
+def _post_with_retry(*, url: str, headers: dict, timeout_seconds: int,
+                     body: dict, provider: str) -> tuple[int, dict, int]:
+    """Envia o pedido, repetindo-o quando a operadora falha do lado dela.
+
+    **Porque e seguro repetir.** O corpo vai EXACTAMENTE igual em cada
+    tentativa, e a `thirdPartyReference` e derivada da nossa referencia (ver
+    `_compact_reference`) — portanto a operadora reconhece o repetido como o
+    mesmo pagamento e nao cria um segundo. Era isto que faltava: com a
+    referencia aleatoria de antes, repetir podia cobrar duas vezes.
+
+    So se repete o que nao teve resposta ou morreu em 5xx. Uma recusa (saldo,
+    PIN, cliente cancelou) e uma resposta e fica-se por ela.
+    """
+    status_code, payload = 502, {}
+    for tentativa in range(1, PAYMENT_MAX_ATTEMPTS + 1):
+        status_code, payload = _http_json_request(
+            url=url, method="POST", headers=headers,
+            timeout_seconds=timeout_seconds, body=body,
+        )
+        if not _is_transient_gateway_failure(status_code, payload):
+            return status_code, payload, tentativa
+        if tentativa < PAYMENT_MAX_ATTEMPTS:
+            logger.warning(
+                "[PAY][retry] provider=%s tentativa=%s status=%s — a repetir",
+                provider, tentativa, status_code,
+            )
+            time.sleep(PAYMENT_RETRY_BACKOFF_SECONDS[tentativa - 1])
+    logger.error(
+        "[PAY][retry] provider=%s desistiu apos %s tentativas status=%s",
+        provider, PAYMENT_MAX_ATTEMPTS, status_code,
+    )
+    return status_code, payload, PAYMENT_MAX_ATTEMPTS
 
 
 def _extract_value(payload: dict, keys: tuple[str, ...]) -> str:
@@ -307,6 +382,13 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
     if any(k in payload_text for k in ("cancelled", "canceled", "rejected by customer")):
         result = "FAILED"
         detail = detail or "Transacao cancelada pelo cliente."
+    # Duplicado NAO e falha: significa que o pedido original foi aceite. So
+    # aparece quando repetimos, e repetir so acontece com a mesma referencia —
+    # portanto o que ha do outro lado e o nosso proprio pagamento, a espera do
+    # PIN. Tratar isto como falha era recusar um pagamento que esta a decorrer.
+    elif "duplicate" in payload_text or response_code in ("INS-10", "2005"):
+        result = "PENDING"
+        detail = detail or "Pedido ja submetido. Confirme o PIN no telemovel."
     elif provider == "MPESA" and response_code == "INS-9":
         result = "TIMEOUT"
     elif provider == "EMOLA" and response_code == "2007":
@@ -405,13 +487,15 @@ class MobileWalletGateway:
                 str(self.config["api_key"]),
             )
 
-        status_code, response_payload = _http_json_request(
+        status_code, response_payload, tentativas = _post_with_retry(
             url=str(self.config["url"]),
-            method="POST",
             headers=headers,
             timeout_seconds=self.timeout,
             body=request_payload,
+            provider=self.provider,
         )
+        if tentativas > 1:
+            response_payload = {**response_payload, "_buzup_tentativas": tentativas}
 
         result, detail, ext_ref = _interpret_response(self.provider, status_code, response_payload)
 

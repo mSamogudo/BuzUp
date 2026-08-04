@@ -116,8 +116,10 @@ class CompraBase(TestCase):
             "passengers": passageiros,
             **extra,
         }
+        # secure=True: em staging/producao o Django redirecciona HTTP para
+        # HTTPS (301) e o cliente de teste nunca chegava a vista.
         return self.client.post(
-            reverse("guest-checkout-create"), payload, format="json")
+            reverse("guest-checkout-create"), payload, format="json", secure=True)
 
 
 class DocumentoExigidoTests(CompraBase):
@@ -169,7 +171,7 @@ class DocumentoExigidoTests(CompraBase):
 
 class PontoPublicoTests(TestCase):
     def test_portal_le_as_regras_sem_autenticacao(self):
-        r = APIClient().get(reverse("public-document-types"))
+        r = APIClient().get(reverse("public-document-types"), secure=True)
         self.assertEqual(r.status_code, 200)
         tipos = {t["value"]: t for t in r.data["document_types"]}
         self.assertEqual(set(tipos), set(DOCUMENT_RULES))

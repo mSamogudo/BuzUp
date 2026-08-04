@@ -19,6 +19,16 @@ import '../../core/seat_map_screen.dart';
 import '../../core/stop_picker.dart';
 import '../../core/theme.dart';
 
+/// Os passos da venda ao balcao.
+///
+/// `seats` so existe nas rotas que marcam lugar (interprovincial e
+/// internacional). Numa carreira urbana a venda tem tres passos — viagem,
+/// trajecto e pagamento — porque nao ha lugar a escolher.
+///
+/// `processing` e `done` nao sao escolhas do agente: sao o que acontece depois
+/// de cobrar. Por isso nao contam na barra de progresso.
+enum _Step { trip, route, seats, payment, processing, done }
+
 class SaleFlowScreen extends ConsumerStatefulWidget {
   const SaleFlowScreen({super.key});
 
@@ -27,7 +37,7 @@ class SaleFlowScreen extends ConsumerStatefulWidget {
 }
 
 class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
-  int _step = 0;
+  _Step _step = _Step.trip;
   List<dynamic> _trips = [];
   bool _loadingTrips = true;
   String? _error;
@@ -131,7 +141,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _stops = (detail['stops'] as List?) ?? [];
         _seatMap = (detail['seat_map'] as Map?)?.cast<String, dynamic>();
         _pickedSeats.clear();
-        _step = 1;
+        _step = _Step.route;
       });
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
@@ -160,7 +170,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       );
       setState(() {
         _fare = fare;
-        _step = 2;
+        // Numa rota com lugar marcado o passo seguinte e a planta; numa
+        // carreira urbana passa-se directo ao pagamento.
+        _step = _seatsRequired ? _Step.seats : _Step.payment;
       });
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
@@ -183,7 +195,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     }
     setState(() {
       _error = null;
-      _step = 3;
+      _step = _Step.processing;
       _paymentStatus = 'pending';
     });
     try {
@@ -238,7 +250,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       if (!isAmbiguousFailure(e)) _idem.rotate();
       setState(() {
         _error = ApiClient.extractError(e);
-        _step = 2;
+        _step = _Step.payment;
       });
       // Se o lugar entretanto foi vendido por outro agente, a planta que esta
       // no ecra ja mente. Recarrega-la evita o agente insistir no mesmo lugar.
@@ -316,7 +328,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       final st = await ref.read(agentApiProvider).paymentStatus(_paymentRef!);
       setState(() {
         _tickets = (st['tickets'] as List?) ?? [];
-        _step = 4;
+        _step = _Step.done;
       });
     } on DioException catch (e) {
       if (mounted) setState(() => _error = ApiClient.extractError(e));
@@ -325,40 +337,279 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     }
   }
 
+  // --- estrutura do ecra ----------------------------------------------------
+
+  /// Os passos de escolha desta venda, por ordem. Sem `processing`/`done`:
+  /// esses acontecem, nao se escolhem.
+  List<String> get _stepLabels => _seatsRequired
+      ? const ['Viagem', 'Trajecto', 'Lugares', 'Pagamento']
+      : const ['Viagem', 'Trajecto', 'Pagamento'];
+
+  int get _stepIndex => switch (_step) {
+        _Step.trip => 0,
+        _Step.route => 1,
+        _Step.seats => 2,
+        _Step.payment => _seatsRequired ? 3 : 2,
+        _ => _stepLabels.length - 1,
+      };
+
+  bool get _showsProgress => _step != _Step.processing && _step != _Step.done;
+
+  void _goTo(_Step s) {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _step = s;
+      _error = null;
+    });
+  }
+
+  /// Recuar um passo. Devolve false no primeiro — ai quem chama sai da venda.
+  bool _back() {
+    switch (_step) {
+      case _Step.trip:
+        return false;
+      case _Step.route:
+        _goTo(_Step.trip);
+        return true;
+      case _Step.seats:
+        _goTo(_Step.route);
+        return true;
+      case _Step.payment:
+        _goTo(_seatsRequired ? _Step.seats : _Step.route);
+        return true;
+      case _Step.processing:
+      case _Step.done:
+        // A meio de um pagamento nao se recua: o dinheiro ja esta a caminho.
+        return true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Venda · passo ${_step + 1} de 5'),
-        backgroundColor: const Color(0xFF071E49),
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: _buildStep(),
+    return PopScope(
+      canPop: _step == _Step.trip,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_appBarTitle()),
+          backgroundColor: const Color(0xFF071E49),
+          foregroundColor: Colors.white,
+          leading: _step == _Step.processing || _step == _Step.done
+              ? const SizedBox.shrink()
+              : IconButton(
+                  icon: Icon(_step == _Step.trip ? Icons.close : Icons.arrow_back),
+                  onPressed: () {
+                    if (_back()) return;
+                    context.canPop() ? context.pop() : context.go('/home');
+                  },
+                ),
+        ),
+        // O passo dos lugares nao tem campos de texto e precisa da altura toda
+        // para calcular o tamanho do banco. Deixar o teclado (aberto no passo
+        // anterior) encolher o ecra fazia a planta aparecer pequena.
+        resizeToAvoidBottomInset: _step != _Step.seats,
+        body: SafeArea(
+          child: Column(children: [
+            if (_showsProgress) _stepHeader(),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16, 12, 16, _step == _Step.seats ? 0 : 12),
+                child: _buildStep(),
+              ),
+            ),
+            _bottomBar(),
+          ]),
         ),
       ),
     );
   }
 
+  String _appBarTitle() => switch (_step) {
+        _Step.trip => 'Nova venda',
+        _Step.route => 'Trajecto',
+        _Step.seats => 'Escolha dos lugares',
+        _Step.payment => 'Pagamento',
+        _Step.processing => 'A processar',
+        _Step.done => 'Venda concluida',
+      };
+
+  /// Barra de progresso segmentada. Igual a da app do passageiro: diz onde se
+  /// esta e quanto falta, sem legendas que estouram num ecra estreito.
+  Widget _stepHeader() {
+    final labels = _stepLabels;
+    final current = _stepIndex;
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text('PASSO ${current + 1} DE ${labels.length}',
+              style: const TextStyle(
+                  fontSize: 10.5, letterSpacing: 1.4,
+                  fontWeight: FontWeight.w800, color: Color(0xFF6B7A8F))),
+          const Spacer(),
+          Text(labels[current],
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF071E49))),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                height: 4,
+                decoration: BoxDecoration(
+                  color: i <= current ? const Color(0xFF1D5FA7) : const Color(0xFFDDE5EF),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ],
+        ]),
+      ]),
+    );
+  }
+
   Widget _buildStep() {
-    if (_error != null) {
-      // Error banner is shown inline at the top of each step
-    }
     switch (_step) {
-      case 0:
+      case _Step.trip:
         return _stepSelectTrip();
-      case 1:
+      case _Step.route:
         return _stepSelectStops();
-      case 2:
+      case _Step.seats:
+        return _stepSeats();
+      case _Step.payment:
         return _stepPhoneAndConfirm();
-      case 3:
+      case _Step.processing:
         return _stepWaitPayment();
-      case 4:
+      case _Step.done:
         return _stepDone();
     }
-    return const SizedBox.shrink();
+  }
+
+  /// O que falta para avancar deste passo, em palavras. Vazio = pode avancar.
+  ///
+  /// Um botao cinzento sem explicacao deixa o agente parado com o passageiro
+  /// a frente, sem saber o que fazer.
+  String _missingForStep() {
+    switch (_step) {
+      case _Step.route:
+        if (_originId == null) return 'Escolha a origem.';
+        if (_destinationId == null) return 'Escolha o destino.';
+        if (_originId == _destinationId) return 'Origem e destino devem ser diferentes.';
+        if (_seatsRequired && _emergPhoneCtrl.text.trim().length != 9) {
+          return 'Indique o contacto de emergencia (9 digitos).';
+        }
+        return '';
+      case _Step.seats:
+        final f = _quantity - _pickedSeats.length;
+        if (f > 0) return 'Escolha mais $f lugar${f == 1 ? '' : 'es'}.';
+        if (f < 0) return 'Escolheu lugares a mais.';
+        return '';
+      case _Step.payment:
+        // Rede de seguranca: chegado aqui os lugares e o contacto ja estao
+        // completos, mas se um dia deixarem de estar e melhor o botao dizer
+        // do que a venda ser recusada pelo servidor com o passageiro a frente.
+        final falta = _missingForSale();
+        if (falta.isNotEmpty) return falta;
+        if (_paymentMethod == 'mobile_money' &&
+            !RegExp(r'^[0-9]{9}$').hasMatch(_phone)) {
+          return 'Indique o telefone do passageiro (9 digitos).';
+        }
+        if (_paymentMethod == 'card' &&
+            (_cardUid ?? '').isEmpty &&
+            (_qrToken ?? '').isEmpty) {
+          return 'Aproxime o cartao ou leia o QR.';
+        }
+        return '';
+      default:
+        return '';
+    }
+  }
+
+  String _actionLabel() {
+    switch (_step) {
+      case _Step.route:
+        return _seatsRequired ? 'ESCOLHER LUGARES' : 'CONTINUAR';
+      case _Step.seats:
+        return _pickedSeats.length == _quantity
+            ? 'AVANCAR COM ${_pickedSeats.join(", ")}'
+            : 'ESCOLHA OS LUGARES';
+      case _Step.payment:
+        return _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO';
+      default:
+        return '';
+    }
+  }
+
+  void _onAction() {
+    switch (_step) {
+      case _Step.route:
+        _calculateFare();
+      case _Step.seats:
+        _goTo(_Step.payment);
+      case _Step.payment:
+        _requestPayment();
+      default:
+        break;
+    }
+  }
+
+  /// Barra fixa no fundo: a accao do passo esta SEMPRE visivel, sem rolar.
+  ///
+  /// Nos passos que nao tem accao (escolher a viagem, aguardar o pagamento,
+  /// venda feita) nao aparece de todo — uma barra vazia so rouba ecra.
+  Widget _bottomBar() {
+    const semAccao = {_Step.trip, _Step.processing, _Step.done};
+    if (semAccao.contains(_step)) return const SizedBox.shrink();
+    final missing = _missingForStep();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE4EBF3))),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (missing.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              const Icon(Icons.info_outline, size: 16, color: Color(0xFFB07B24)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(missing,
+                    style: const TextStyle(
+                        fontSize: 12.5, color: Color(0xFFB07B24),
+                        fontWeight: FontWeight.w600)),
+              ),
+            ]),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF1D5FA7),
+              minimumSize: const Size.fromHeight(52),
+            ),
+            icon: Icon(switch (_step) {
+              _Step.route => Icons.arrow_forward,
+              _Step.seats => Icons.event_seat,
+              _ => _paymentMethod == 'card' ? Icons.credit_card : Icons.payment,
+            }),
+            label: Text(_actionLabel(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            onPressed: missing.isEmpty ? _onAction : null,
+          ),
+        ),
+      ]),
+    );
   }
 
   Widget _errorBanner() {
@@ -412,11 +663,19 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     ]);
   }
 
+  /// Passo 2: de onde para onde, quantos bilhetes e — nas rotas longas — o
+  /// contacto de emergencia.
+  ///
+  /// A quantidade vive aqui, e nao no pagamento como antes, porque e ela que
+  /// diz quantos lugares ha para escolher no passo seguinte. Pedi-la depois
+  /// obrigava a voltar atras a meio da escolha da planta.
   Widget _stepSelectStops() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _errorBanner(),
-        Text(_selectedTrip != null ? '2. ${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}' : '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        if (_selectedTrip != null)
+          Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         StopPickerField(
           label: 'Origem',
@@ -435,23 +694,99 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           excludeId: _originId,
           onChanged: (v) => setState(() => _destinationId = v),
         ),
-        const SizedBox(height: 24),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(50)),
-          onPressed: _calculateFare,
-          child: const Text('CALCULAR TARIFA', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-        TextButton(onPressed: () => setState(() => _step = 0), child: const Text('Voltar')),
+        const SizedBox(height: 12),
+        _quantityCard(),
+        if (_seatsRequired) ...[
+          const SizedBox(height: 12),
+          _emergencyFields(),
+        ],
       ]),
     );
+  }
+
+  Widget _quantityCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4EBF3)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.confirmation_number_outlined, size: 20, color: Color(0xFF6B7A8F)),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text('Quantos bilhetes',
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+        ),
+        IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: _quantity > 1
+              ? () => setState(() {
+                    _quantity--;
+                    // Baixar a quantidade tem de largar os lugares a mais,
+                    // senao ficavam escolhidos mais lugares do que bilhetes.
+                    while (_pickedSeats.length > _quantity) {
+                      _pickedSeats.removeLast();
+                    }
+                  })
+              : null,
+        ),
+        Text('$_quantity',
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+        IconButton(
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: _quantity < 10 ? () => setState(() => _quantity++) : null,
+        ),
+      ]),
+    );
+  }
+
+  /// Passo 3: a planta do autocarro sozinha no ecra.
+  ///
+  /// Antes abria-se num ecra empurrado por cima do formulario; agora e um
+  /// passo do fluxo, com a mesma barra de progresso e o mesmo botao de
+  /// avancar dos outros passos.
+  Widget _stepSeats() {
+    final map = _seatMap;
+    if (map == null) {
+      return const Center(child: Text('Sem planta de lugares para esta viagem.'));
+    }
+    return Column(children: [
+      if (_error != null) _errorBanner(),
+      Expanded(
+        child: SeatMapView(
+          seatMap: map,
+          picked: _pickedSeats,
+          onToggle: _toggleSeat,
+        ),
+      ),
+      const SizedBox(height: 4),
+      const SeatLegend(),
+      const SizedBox(height: 8),
+    ]);
+  }
+
+  void _toggleSeat(String label) {
+    setState(() {
+      if (_pickedSeats.contains(label)) {
+        _pickedSeats.remove(label);
+      } else if (_pickedSeats.length < _quantity) {
+        _pickedSeats.add(label);
+      } else if (_quantity == 1) {
+        // Com um so lugar a vender, tocar noutro troca em vez de exigir
+        // desmarcar primeiro.
+        _pickedSeats
+          ..clear()
+          ..add(label);
+      }
+      HapticFeedback.selectionClick();
+    });
   }
 
   Widget _stepPhoneAndConfirm() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _errorBanner(),
-        const Text('3. Telefone do passageiro', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
         Card(
           color: const Color(0xFFFFF8E1),
           child: Padding(
@@ -488,21 +823,18 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   Text(_inDisplay(_unitFare()),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 ]),
+              // A quantidade e os lugares foram escolhidos nos passos
+              // anteriores: aqui so se confirmam.
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('Quantidade'),
-                Row(children: [
-                  IconButton(icon: const Icon(Icons.remove), onPressed: _quantity > 1 ? () => setState(() {
-                    _quantity--;
-                    // Baixar a quantidade tem de largar os lugares a mais,
-                    // senao ficavam escolhidos mais lugares do que bilhetes.
-                    while (_pickedSeats.length > _quantity) {
-                      _pickedSeats.removeLast();
-                    }
-                  }) : null),
-                  Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  IconButton(icon: const Icon(Icons.add), onPressed: _quantity < 10 ? () => setState(() => _quantity++) : null),
-                ]),
+                Text('x$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ]),
+              if (_seatsRequired && _pickedSeats.isNotEmpty)
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Text('Lugares'),
+                  Text(_pickedSeats.join(', '),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                ]),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold)),
                 // A moeda ESCOLHIDA aparece em grande; a outra na linha
@@ -525,14 +857,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             ]),
           ),
         ),
-        if (_seatsRequired) ...[
-          const SizedBox(height: 12),
-          // A planta abre num ecrã próprio (um passo): embutida aqui obrigava
-          // a rolar o formulário todo para chegar ao botão de pagar.
-          _seatSummaryCard(),
-          const SizedBox(height: 10),
-          _emergencyFields(),
-        ],
         const SizedBox(height: 12),
         _methodPicker(),
         const SizedBox(height: 10),
@@ -545,36 +869,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               prefixIcon: Icon(Icons.phone),
               hintText: '84/85/86/87...',
             ),
-            onChanged: (v) => _phone = v,
+            // setState para a linha "indique o telefone..." por cima do botao
+            // acompanhar o que esta a ser escrito.
+            onChanged: (v) => setState(() => _phone = v),
           )
         else
           _cardCapturePanel(),
-        const SizedBox(height: 18),
-        if (_missingForSale().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(children: [
-              const Icon(Icons.info_outline, size: 16, color: Color(0xFFB07B24)),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(_missingForSale(),
-                    style: const TextStyle(fontSize: 12.5, color: Color(0xFFB07B24),
-                        fontWeight: FontWeight.w600)),
-              ),
-            ]),
-          ),
-        FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1D5FA7), minimumSize: const Size.fromHeight(54)),
-          icon: Icon(_paymentMethod == 'card' ? Icons.credit_card : Icons.payment),
-          label: Text(
-            _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          // Sem lugares ou sem contacto de emergencia, o servidor recusa a
-          // venda — mais vale o botao dizer porque do que falhar depois.
-          onPressed: _missingForSale().isEmpty ? _requestPayment : null,
-        ),
-        TextButton(onPressed: () => setState(() => _step = 1), child: const Text('Voltar')),
+        // O botao de cobrar vive na barra fixa do fundo, sempre a vista.
       ]),
     );
   }
@@ -592,7 +893,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           _errorBanner(),
           const SizedBox(height: 12),
           FilledButton(
-            onPressed: () { _pollTimer?.cancel(); setState(() { _error = null; _step = 2; }); },
+            onPressed: () { _pollTimer?.cancel(); setState(() { _error = null; _step = _Step.payment; }); },
             child: const Text('Voltar'),
           ),
         ]),
@@ -803,67 +1104,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       return 'Indique o contacto de emergencia (9 digitos).';
     }
     return '';
-  }
-
-  /// Card-resumo dos lugares: mostra o estado e abre o ecrã da planta.
-  Widget _seatSummaryCard() {
-    final complete = _pickedSeats.length == _quantity;
-    return Material(
-      color: complete ? const Color(0xFFEFF7F1) : const Color(0xFFFFF6E8),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _openSeatMap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: complete ? const Color(0xFFBFE3C8) : const Color(0xFFF2DDBB),
-            ),
-          ),
-          child: Row(children: [
-            Icon(Icons.event_seat,
-                size: 20, color: complete ? const Color(0xFF2A9D8F) : const Color(0xFFB07B24)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(
-                  complete
-                      ? 'Lugares: ${_pickedSeats.join(", ")}'
-                      : 'Escolher ${_quantity == 1 ? 'o lugar' : '$_quantity lugares'}',
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  complete ? 'Toque para alterar' : 'Obrigatorio nesta rota',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7A8F)),
-                ),
-              ]),
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFF9AA9BC)),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openSeatMap() async {
-    if (_seatMap == null) return;
-    final picked = await SeatMapScreen.pick(
-      context,
-      seatMap: _seatMap!,
-      maxPick: _quantity,
-      initialPicked: _pickedSeats,
-      subtitle:
-          '${_selectedTrip?['route_code'] ?? ''} · ${_fare?['origin'] ?? ''} → ${_fare?['destination'] ?? ''}',
-    );
-    if (picked != null && mounted) {
-      setState(() {
-        _pickedSeats
-          ..clear()
-          ..addAll(picked);
-      });
-    }
   }
 
   Widget _methodPicker() {
@@ -1134,7 +1374,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           icon: const Icon(Icons.add),
           label: const Text('NOVA VENDA'),
           onPressed: () => setState(() {
-            _step = 0;
+            _step = _Step.trip;
             _selectedTrip = null;
             _stops = [];
             _originId = null;

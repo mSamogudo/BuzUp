@@ -10,18 +10,31 @@ from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_cod
 from apps.sms.services.sender import send_sms
 
 
-def _validity_window(gc: GuestCheckout) -> tuple:
-    """Janela de validade do passe.
+def validity_window(trip) -> tuple:
+    """Janela de validade do passe, a partir da partida a que ele pertence.
 
-    Sem partida marcada (compra a bordo), vale 24h como antes. Com partida
-    marcada — o caso interurbano, comprado dias antes — vale desde 3h antes
-    da partida ate 12h depois: um bilhete para dia 5 nao pode nascer expirado.
+    Sem partida marcada (compra a bordo, carreira urbana), vale 24h: o bilhete
+    e para o autocarro que esta ali.
+
+    Com partida marcada — o interprovincial comprado dias antes — vale desde
+    3h antes da partida ate 12h depois. As 3h cobrem quem chega cedo ao
+    terminal; as 12h cobrem um atraso na estrada, para o bilhete nao expirar
+    com o passageiro ainda a viajar.
+
+    **Vive aqui, e nao em cada caminho de compra.** Estava duplicada, e a
+    compra pela carteira usava "agora + 24h" a seco: um bilhete comprado na app
+    para daqui a seis dias nascia com validade de um, e o passageiro era
+    recusado no embarque com o bilhete pago.
     """
     now = timezone.now()
-    departure = getattr(gc.trip, "planned_departure_at", None) if gc.trip_id else None
+    departure = getattr(trip, "planned_departure_at", None) if trip else None
     if not departure:
         return now, now + timedelta(hours=24)
     return min(now, departure - timedelta(hours=3)), departure + timedelta(hours=12)
+
+
+def _validity_window(gc: GuestCheckout) -> tuple:
+    return validity_window(gc.trip if gc.trip_id else None)
 
 
 def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:

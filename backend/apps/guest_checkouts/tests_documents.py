@@ -174,6 +174,24 @@ class DocumentoExigidoTests(CompraBase):
         self.assertEqual(gc.passengers[0]["document_number"], "")
         self.assertEqual(gc.passengers[0]["document_type"], "")
 
+    def test_urbana_com_tipo_de_documento_mas_sem_numero(self):
+        """O que o portal envia mesmo numa carreira urbana.
+
+        O select do tipo de documento tem "bi" por omissao e vai sempre no
+        pedido; o campo do NUMERO nem aparece nessas rotas. Recusar um tipo sem
+        numero partia a compra publica inteira nas carreiras urbanas — e foi
+        exactamente o que aconteceu.
+        """
+        r = self._comprar(self.urbana, [
+            {"name": "Ana Cossa", "document_type": "bi", "document_number": "", "seat": ""},
+        ])
+        self.assertNotIn(r.status_code, (400, 422), msg=r.data)
+
+        from apps.guest_checkouts.models import GuestCheckout
+        gc = GuestCheckout.objects.get(reference=r.data["checkout_reference"])
+        self.assertEqual(gc.passengers[0]["document_type"], "")
+        self.assertEqual(gc.passengers[0]["document_number"], "")
+
     def test_interprovincial_sem_documento_e_recusada(self):
         r = self._comprar(
             self.longa, [{"name": "Ana Cossa"}],
@@ -285,6 +303,39 @@ class CompraPelaCarteiraTests(TestCase):
         with self.assertRaises(PurchaseError) as ctx:
             self._comprar()
         self.assertIn("documento", str(ctx.exception).lower())
+
+    def test_bilhete_nao_expira_antes_da_partida(self):
+        """O defeito mais caro que esta suite apanha.
+
+        A compra pela carteira punha "agora + 24h" a seco. Um bilhete comprado
+        na app para daqui a tres dias nascia com validade de um: no dia da
+        viagem o validador via EXPIRADO e o passageiro ficava em terra com o
+        bilhete pago. O checkout de convidado ja fazia bem — eram duas regras
+        para a mesma coisa, e uma delas estava errada.
+        """
+        tp = self._comprar(document_type="bi", document_number="110100123456A")
+
+        self.assertGreater(tp.valid_until, self.partida,
+                           "o bilhete expira antes da partida a que pertence")
+        self.assertLessEqual(tp.valid_from, self.partida,
+                             "o bilhete so passa a valer depois de a viagem sair")
+
+    def test_janela_cobre_chegar_cedo_e_atraso_na_estrada(self):
+        from apps.guest_checkouts.services import validity_window
+        from datetime import timedelta
+
+        inicio, fim = validity_window(self.trip)
+        self.assertEqual(fim, self.partida + timedelta(hours=12))
+        self.assertLessEqual(inicio, self.partida - timedelta(hours=3))
+
+    def test_sem_partida_marcada_continua_a_valer_24h(self):
+        from datetime import timedelta
+
+        from apps.guest_checkouts.services import validity_window
+
+        inicio, fim = validity_window(None)
+        self.assertAlmostEqual((fim - inicio).total_seconds(),
+                               timedelta(hours=24).total_seconds(), delta=5)
 
     def test_documento_mal_formado_e_recusado(self):
         from apps.guest_checkouts.purchase import PurchaseError

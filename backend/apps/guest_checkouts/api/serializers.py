@@ -40,14 +40,21 @@ class PassengerInputSerializer(serializers.Serializer):
         o mesmo documento nao aparecer de duas maneiras no manifesto.
         """
         numero = attrs.get("document_number") or ""
-        if attrs.get("document_type") and not numero.strip():
-            raise serializers.ValidationError({"document_number": "Indique o numero do documento."})
-        if numero.strip():
-            try:
-                attrs["document_number"] = validate_document(
-                    attrs.get("document_type") or "other", numero)
-            except DocumentError as e:
-                raise serializers.ValidationError({"document_number": str(e)})
+        if not numero.strip():
+            # Tipo sem numero NAO e erro aqui: quem decide se o documento e
+            # sequer preciso e a vista, que conhece a rota. O portal manda
+            # sempre o tipo (o select tem "bi" por omissao) e, numa carreira
+            # urbana, o campo do numero nem aparece — recusar ai partia a
+            # compra publica inteira nas rotas que nao pedem documento.
+            attrs["document_type"] = ""
+            attrs["document_number"] = ""
+            return attrs
+
+        try:
+            attrs["document_number"] = validate_document(
+                attrs.get("document_type") or "other", numero)
+        except DocumentError as e:
+            raise serializers.ValidationError({"document_number": str(e)})
         return attrs
 
 

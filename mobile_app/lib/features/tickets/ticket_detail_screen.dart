@@ -359,14 +359,11 @@ class _TicketCanvas extends StatelessWidget {
             ),
           ),
 
-          // Nome do passageiro no topo, dentro da faixa azul por baixo do
-          // logo — mesmas coordenadas do PDF (`_draw_passenger_name`). E o
-          // primeiro dado que o fiscal procura, e ali le-se de relance sem ter
-          // de descer ate ao QR.
-          //
-          // A ESQUERDA e limitado a 470: a metade direita da faixa tem o
-          // desenho do autocarro e da ponte, e um nome comprido entrava por
-          // cima deles.
+          // Nome e lugar no topo, na faixa azul por baixo do logo — mesmas
+          // coordenadas do PDF (`_draw_passenger_name`). Sao os dois dados que
+          // se procuram primeiro num bilhete nominal (quem e e para que banco
+          // vai) e ali leem-se de relance, sem descer ate ao QR. Ficam nos
+          // extremos: nome a esquerda, lugar a direita.
           if (nominal && passengerName.isNotEmpty) ...[
             const Positioned(
               left: 130, top: 298,
@@ -377,7 +374,9 @@ class _TicketCanvas extends StatelessWidget {
                       fontWeight: FontWeight.w800, height: 1.0)),
             ),
             Positioned(
-              left: 130, top: 326, width: 470,
+              // 380 de largura: o lugar ocupa a direita, e tem de sobrar folga
+              // para um nome comprido nao encostar ao numero do banco.
+              left: 130, top: 326, width: 380,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
@@ -389,24 +388,36 @@ class _TicketCanvas extends StatelessWidget {
               ),
             ),
           ],
+          if (nominal && seat.isNotEmpty) ...[
+            const Positioned(
+              left: 744, top: 298, width: 150,
+              child: Text('LUGAR',
+                  maxLines: 1, textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: 19, color: Colors.white,
+                      fontWeight: FontWeight.w800, height: 1.0)),
+            ),
+            Positioned(
+              left: 744, top: 326, width: 150,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(seat,
+                    maxLines: 1, softWrap: false,
+                    style: const TextStyle(
+                        fontSize: 44, color: Colors.white,
+                        fontWeight: FontWeight.w900, height: 1.0)),
+              ),
+            ),
+          ],
 
-          // Lugar e documento dentro do cartao, ladeando o QR — mesmas
-          // coordenadas do PDF. O lugar ocupa o sitio que era do nome: a quem
-          // embarca, o que interessa aqui e saber para que banco vai.
+          // Documento dentro do cartao, ao lado do QR. O nome e o lugar
+          // subiram para o topo; aqui fica so o que se confere com o
+          // passageiro a frente.
           if (nominal)
             Positioned(
               left: 130, top: 1102, width: 214,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (seat.isNotEmpty) ...[
-                  const Text('LUGAR', style: _labelStyle),
-                  const SizedBox(height: 6),
-                  Text(seat,
-                      maxLines: 1, softWrap: false,
-                      style: const TextStyle(
-                          fontSize: 44, color: _navy,
-                          fontWeight: FontWeight.w900, height: 1.0)),
-                  const SizedBox(height: 16),
-                ],
                 if (documentNumber.isNotEmpty) ...[
                   FittedBox(
                     fit: BoxFit.scaleDown,
@@ -437,33 +448,29 @@ class _TicketCanvas extends StatelessWidget {
               top: nominal ? 1218 : 1258,
               width: nominal ? 228 : 226,
               height: 86,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('EMERGENCIA / APOIO',
-                        maxLines: 1,
-                        style: TextStyle(
-                            fontSize: 15, color: _labelOrange,
-                            fontWeight: FontWeight.w800, height: 1.0)),
-                    const SizedBox(height: 10),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(supportPhone,
-                          maxLines: 1, softWrap: false,
-                          style: const TextStyle(
-                              fontSize: 30, color: _navy,
-                              fontWeight: FontWeight.w900, height: 1.0)),
-                    ),
-                  ],
-                ),
+              // Sem caixa branca por baixo: o rectangulo destacava-se do resto
+              // do bilhete como um remendo colado. O texto assenta
+              // directamente no cartao, como todos os outros campos.
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('EMERGENCIA',
+                      maxLines: 1,
+                      style: TextStyle(
+                          fontSize: 15, color: _labelOrange,
+                          fontWeight: FontWeight.w800, height: 1.0)),
+                  const SizedBox(height: 10),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(supportPhone,
+                        maxLines: 1, softWrap: false,
+                        style: const TextStyle(
+                            fontSize: 30, color: _navy,
+                            fontWeight: FontWeight.w900, height: 1.0)),
+                  ),
+                ],
               ),
             ),
 

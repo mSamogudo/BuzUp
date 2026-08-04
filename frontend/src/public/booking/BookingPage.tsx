@@ -246,9 +246,13 @@ export default function BookingPage() {
 
   const startPax = useCallback((seats: string[]) => {
     setPax(Array.from({ length: qty }, (_, i) => ({
-      name: "", document_type: "bi", document_number: "", seat: seats[i] || "",
+      // O tipo só se preenche onde o documento é pedido. Numa carreira urbana
+      // o campo do número nem aparece, e mandar o tipo sozinho era mandar meia
+      // resposta a uma pergunta que não foi feita.
+      name: "", document_type: needsIdentity ? "bi" : "",
+      document_number: "", seat: seats[i] || "",
     })));
-  }, [qty]);
+  }, [qty, needsIdentity]);
 
   const goToPax = () => { startPax(picked); setStep("pax"); };
 

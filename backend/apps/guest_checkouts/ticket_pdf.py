@@ -195,31 +195,40 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
 
 
 def _draw_passenger_name(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
-    """Nome do passageiro no topo, dentro da faixa azul por baixo do logo.
+    """Nome e lugar no topo, na faixa azul por baixo do logo.
 
-    E o primeiro dado que o fiscal procura num bilhete nominal, e ali le-se de
-    relance sem ter de descer ate ao QR.
+    Sao os dois dados que se procuram primeiro num bilhete nominal — quem e e
+    para que banco vai — e ali leem-se de relance, sem descer ate ao QR. Ficam
+    nos extremos: o nome encostado a esquerda, o lugar a direita.
 
-    Fica a ESQUERDA e limitado a 470: a metade direita da faixa tem o desenho
-    do autocarro e da ponte, e um nome comprido entrava por cima deles.
+    O nome e limitado a 380: o lugar ocupa a direita, e entre os dois tem de
+    sobrar folga para um nome comprido nao encostar ao numero do banco.
     """
-    if not _is_nominal(tp) or not tp.passenger_name:
+    if not _is_nominal(tp):
         return
 
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 19)
-    c.drawString(130, _baseline(298, 19), "PASSAGEIRO")
+    if tp.passenger_name:
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 19)
+        c.drawString(130, _baseline(298, 19), "PASSAGEIRO")
+        _text_fit(c, 130, 326, tp.passenger_name,
+                  max_width=380, max_size=44, min_size=22, color=colors.white)
 
-    _text_fit(c, 130, 326, tp.passenger_name,
-              max_width=470, max_size=44, min_size=24, color=colors.white)
+    if tp.seat_number:
+        # Alinhado a direita a partir de 894: o lugar cresce para dentro e
+        # nunca sai do cartao, seja "1A" ou "12C".
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 19)
+        c.drawRightString(894, _baseline(298, 19), "LUGAR")
+        _right_text_fit(c, 894, 326, tp.seat_number,
+                        max_width=150, max_size=44, min_size=26, color=colors.white)
 
 
 def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
-    """Lugar e documento DENTRO do cartao, ladeando o QR.
+    """Documento DENTRO do cartao, ao lado do QR.
 
-    Coluna esquerda (x 130..344): lugar e documento. O lugar ocupa o lugar que
-    era do nome — o nome subiu para o topo, por baixo do logo, e aqui o que
-    interessa a quem embarca e saber para que banco vai.
+    O nome e o lugar subiram para a faixa azul do topo; aqui fica so o
+    documento, que e o que se confere com o passageiro a frente.
 
     So aparece em bilhetes nominais; o urbano ao portador continua limpo e
     mantem o texto de ajuda.
@@ -229,9 +238,6 @@ def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
 
     left_x, left_width = 130, 214
     y = 1102
-    if tp.seat_number:
-        y = _labeled_value(c, left_x, y, "LUGAR", tp.seat_number,
-                           max_width=left_width, max_size=44)
     if tp.document_number:
         doc_label = dict(DigitalTravelPass.DocumentType.choices).get(tp.document_type, "DOCUMENTO")
         _labeled_value(c, left_x, y, doc_label.upper(), tp.document_number, max_width=left_width)
@@ -331,20 +337,21 @@ def _draw_emergency_contact(c: canvas.Canvas, *, nominal: bool = False) -> None:
     # bilhete ao portador e o contrario (a direita tem "Apresente este QR
     # code"). Escrever sempre no mesmo sitio tapava um dos dois.
     if nominal:
-        box_x, box_y, box_w, box_h = 682, 1218, 228, 86
+        box_x, box_y, box_w = 682, 1218, 228
     else:
-        box_x, box_y, box_w, box_h = 122, 1258, 226, 86
-    c.setFillColor(colors.white)
-    c.roundRect(box_x, _pdf_y(box_y + box_h), box_w, box_h, 10, fill=1, stroke=0)
+        box_x, box_y, box_w = 122, 1258, 226
 
+    # Sem caixa branca por baixo: o retangulo destacava-se do resto do bilhete
+    # como um remendo colado. O texto assenta directamente no cartao, como
+    # todos os outros campos.
     c.setFillColor(ORANGE)
     c.setFont("Helvetica-Bold", 15)
-    c.drawString(box_x + 14, _baseline(box_y + 12, 15), "EMERGENCIA / APOIO")
+    c.drawString(box_x, _baseline(box_y + 12, 15), "EMERGENCIA")
 
-    size = _fit_size(c, phone, "Helvetica-Bold", box_w - 28, 30, 17)
+    size = _fit_size(c, phone, "Helvetica-Bold", box_w, 30, 17)
     c.setFillColor(NAVY)
     c.setFont("Helvetica-Bold", size)
-    c.drawString(box_x + 14, _baseline(box_y + 40, size), phone)
+    c.drawString(box_x, _baseline(box_y + 40, size), phone)
 
 
 def _text(c: canvas.Canvas, x: float, y_top: float, value: str, *, size: int, font: str, color) -> None:

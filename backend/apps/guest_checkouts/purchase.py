@@ -280,6 +280,9 @@ def purchase_travel_pass(
             else:
                 display_amount, frozen_rate = converted
 
+        from apps.guest_checkouts.services import validity_window
+
+        valid_from, valid_until = validity_window(trip)
         travel_pass = DigitalTravelPass.objects.create(
             passenger_account=passenger,
             wallet=wallet,
@@ -314,8 +317,12 @@ def purchase_travel_pass(
             token=raw_token,
             token_hash=token_hash,
             delivery_channel=DigitalTravelPass.DeliveryChannel.APP,
-            valid_from=timezone.now(),
-            valid_until=timezone.now() + timedelta(hours=24),
+            # Mesma janela do checkout de convidado: com partida marcada vale
+            # de 3h antes ate 12h depois dela. Aqui era "agora + 24h" a seco, e
+            # um bilhete comprado para daqui a seis dias nascia com validade de
+            # um — o passageiro era recusado no embarque com o bilhete pago.
+            valid_from=valid_from,
+            valid_until=valid_until,
         )
         # Codigo curto para leitura manual (mesma regra do PDF).
         travel_pass.short_code = ticket_short_code(ticket_reference(travel_pass))

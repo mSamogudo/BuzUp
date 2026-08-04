@@ -218,6 +218,8 @@ class PassengerApi {
     String displayCurrency = 'MZN',
     String? emergencyName,
     String? emergencyPhone,
+    String documentType = '',
+    String documentNumber = '',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/travel-passes/purchase/',
@@ -232,6 +234,10 @@ class PassengerApi {
           'emergency_contact_name': emergencyName,
         if (emergencyPhone != null && emergencyPhone.isNotEmpty)
           'emergency_contact_phone': emergencyPhone,
+        // O bilhete das rotas com lugar marcado e nominal: sem o documento
+        // sai com o campo vazio e nao serve na fronteira.
+        if (documentType.isNotEmpty) 'document_type': documentType,
+        if (documentNumber.isNotEmpty) 'document_number': documentNumber,
         'use_package': usePackage,
         'display_currency': displayCurrency,
       },

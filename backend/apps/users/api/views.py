@@ -637,6 +637,19 @@ def _travel_pass_payload(tp) -> dict:
     from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_code
 
     reference = ticket_reference(tp)
+
+    # Linha de emergencia/apoio da operadora, configurada no portal. O bilhete
+    # em PDF ja a imprimia; a app mostrava um bilhete sem ela — e e o numero
+    # para o qual se liga quando algo corre mal a meio da estrada.
+    support_phone = ""
+    try:
+        from apps.branding.models import BrandingSettings
+
+        settings_row = BrandingSettings.load()
+        support_phone = (settings_row.emergency_phone or settings_row.support_phone or "").strip()
+    except Exception:
+        support_phone = ""
+
     return {
         "id": tp.id,
         "uuid": str(tp.uuid),
@@ -652,7 +665,18 @@ def _travel_pass_payload(tp) -> dict:
         "document_type": tp.document_type,
         "document_number": tp.document_number,
         "seat_number": tp.seat_number,
+        # Contacto de emergencia do PASSAGEIRO (quem avisar), recolhido nas
+        # rotas interprovinciais/internacionais. Vai no manifesto de bordo e
+        # tem de estar visivel no bilhete para se poder conferir.
+        "emergency_contact_name": tp.emergency_contact_name,
+        "emergency_contact_phone": tp.emergency_contact_phone,
+        # Linha de emergencia/apoio da OPERADORA (para quem se liga).
+        "support_phone": support_phone,
         "trip_id": tp.trip_id,
+        # A hora que interessa num bilhete de partida marcada e a da VIAGEM,
+        # nao a da compra. Sem este campo a app mostrava a data de emissao no
+        # topo — num bilhete comprado com dias de antecedencia, a data errada.
+        "departure_at": tp.departure_at.isoformat() if tp.departure_at else None,
         "valid_from": tp.valid_from.isoformat() if tp.valid_from else None,
         "valid_until": tp.valid_until.isoformat() if tp.valid_until else None,
         "used_at": tp.used_at.isoformat() if tp.used_at else None,

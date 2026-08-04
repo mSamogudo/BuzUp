@@ -68,6 +68,11 @@ class PurchaseTravelPassSerializer(serializers.Serializer):
     # sabe a rota.
     emergency_contact_name = serializers.CharField(max_length=120, required=False, allow_blank=True, default="")
     emergency_contact_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
+    # Documento do passageiro. A app envia-o quando a conta ainda nao tem um
+    # guardado; sem isto, o bilhete interprovincial comprado com a carteira
+    # saia sem documento nenhum — e e nominal, conferido na fronteira.
+    document_type = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
+    document_number = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
     passenger_package_id = serializers.IntegerField(required=False, allow_null=True)
     use_package = serializers.BooleanField(required=False, default=True)
     # Moeda em que a app mostrou o preco (ex.: ZAR). So exibicao; o debito da

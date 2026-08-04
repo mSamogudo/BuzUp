@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from apps.fares.services import NoFareFoundError, quote_fare
 from apps.guest_checkouts.capacity import SeatsUnavailable, lock_trip_for_sale
+from apps.guest_checkouts.documents import DocumentError, validate_document
 from apps.guest_checkouts.ticket_codes import ticket_reference, ticket_short_code
 from apps.guest_checkouts.models import DigitalTravelPass
 from apps.packages.models import PackageRoute, PassengerPackage
@@ -84,6 +85,8 @@ def purchase_travel_pass(
     display_currency: str = "MZN",
     emergency_contact_name: str = "",
     emergency_contact_phone: str = "",
+    document_type: str = "",
+    document_number: str = "",
 ) -> DigitalTravelPass:
     if passenger.status != PassengerAccount.Status.ACTIVE:
         raise PurchaseError("Conta bloqueada ou inactiva.")
@@ -130,6 +133,23 @@ def purchase_travel_pass(
     # nao serve de nada pedi-lo depois do acidente.
     emergency_contact_name = (emergency_contact_name or "").strip()
     emergency_contact_phone = (emergency_contact_phone or "").strip()
+    # Documento de identificacao: obrigatorio nas mesmas rotas, porque o
+    # bilhete e nominal e pode ser conferido na fronteira. O que a app enviar
+    # manda; sem isso vale o que a conta tiver guardado. Ate aqui so se lia da
+    # conta — e como quase nenhuma tem documento registado, os bilhetes
+    # interprovinciais sairam todos com o campo vazio.
+    doc_type = (document_type or getattr(passenger, "document_type", "") or "").strip()
+    doc_number = (document_number or getattr(passenger, "document_number", "") or "").strip()
+    if route.requires_seat_selection:
+        try:
+            doc_number = validate_document(doc_type or "other", doc_number)
+        except DocumentError as e:
+            raise PurchaseError(str(e))
+    else:
+        # Carreira urbana nao pede documento: nao guardar dados pessoais que
+        # nao foram pedidos nem vao ser usados.
+        doc_type, doc_number = "", ""
+
     if route.requires_emergency_contact:
         if not emergency_contact_phone:
             raise PurchaseError("Indique o contacto de emergencia para esta viagem.")
@@ -277,8 +297,13 @@ def purchase_travel_pass(
             passenger_name=(passenger.full_name or "")[:255],
             emergency_contact_name=(emergency_contact_name or "")[:120],
             emergency_contact_phone=(emergency_contact_phone or "")[:20],
-            document_type=getattr(passenger, "document_type", "") or "",
-            document_number=(getattr(passenger, "document_number", "") or "")[:64],
+            document_type=doc_type,
+            document_number=doc_number[:64],
+            # Copia da partida: e a data que o bilhete mostra no topo e a que
+            # o passageiro procura. Sem isto o bilhete caia para a data da
+            # COMPRA — num bilhete comprado com dias de antecedencia, a data
+            # errada no sitio mais visivel.
+            departure_at=getattr(trip, "planned_departure_at", None) if trip else None,
             # Show what the passenger actually paid (after any package
             # discount), not the gross fare — the ticket, tickets list,
             # history and PDF all read this field.

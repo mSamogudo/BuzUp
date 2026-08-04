@@ -204,6 +204,95 @@ class DocumentoExigidoTests(CompraBase):
         self.assertEqual(gc.passengers[0]["document_number"], "110100123456A")
 
 
+class CompraPelaCarteiraTests(TestCase):
+    """A compra pela carteira e um caminho SEPARADO do checkout de convidado.
+
+    Era por aqui que o bilhete saia incompleto: o documento so era lido da
+    conta (que quase nunca o tem) e a hora da partida nunca era copiada. O
+    bilhete no telemovel mostrava entao a data da COMPRA no lugar da data da
+    viagem, e o campo do documento vazio numa rota internacional.
+    """
+
+    def setUp(self):
+        from apps.passengers.models import PassengerAccount
+        from apps.trips.models import Trip, Vehicle
+        from apps.wallets.models import Wallet
+        from django.utils import timezone
+        from datetime import timedelta
+
+        self.rota = Route.objects.create(
+            code="R-CART", name="Maputo - Xai-Xai",
+            service_type=Route.ServiceType.INTERPROVINCIAL, status=Route.Status.ACTIVE,
+        )
+        self.origem = Stop.objects.create(code="ST-CA", name="Paragem A", status="active")
+        self.destino = Stop.objects.create(code="ST-CB", name="Paragem B", status="active")
+        RouteStop.objects.create(route=self.rota, stop=self.origem, sequence=1, direction="outbound")
+        RouteStop.objects.create(route=self.rota, stop=self.destino, sequence=2, direction="outbound")
+
+        produto = FareProduct.objects.create(
+            name="Avulso carteira",
+            product_type=FareProduct.ProductType.SINGLE_TRIP,
+            status=FareProduct.Status.ACTIVE,
+        )
+        FareRule.objects.create(
+            fare_product=produto, route=self.rota,
+            calculation_method=FareRule.CalculationMethod.FIXED,
+            fixed_amount=Decimal("100.00"),
+        )
+
+        viatura = Vehicle.objects.create(
+            registration="AAA-11-MC", seated_capacity=20, status="active")
+        self.partida = timezone.now() + timedelta(days=3)
+        self.trip = Trip.objects.create(
+            route=self.rota, vehicle=viatura,
+            planned_departure_at=self.partida,
+            status=Trip.Status.SCHEDULED,
+        )
+
+        # Conta SEM documento guardado — o caso real que produzia bilhetes
+        # interprovinciais com o campo do documento vazio.
+        self.passageiro = PassengerAccount.objects.create(
+            full_name="Ana Cossa", phone_number="849777111",
+            status=PassengerAccount.Status.ACTIVE,
+        )
+        Wallet.objects.create(passenger_account=self.passageiro,
+                              balance_cached=Decimal("5000.00"), status="active")
+
+    def _comprar(self, **extra):
+        from apps.guest_checkouts.purchase import purchase_travel_pass
+
+        return purchase_travel_pass(
+            passenger=self.passageiro, route_id=self.rota.id,
+            origin_stop_id=self.origem.id, destination_stop_id=self.destino.id,
+            trip_id=self.trip.id, seat="1A", use_package=False,
+            emergency_contact_name="Maria", emergency_contact_phone="849999999",
+            **extra,
+        )
+
+    def test_bilhete_guarda_a_hora_da_partida(self):
+        tp = self._comprar(document_type="bi", document_number="110100123456A")
+        self.assertEqual(tp.departure_at, self.partida)
+
+    def test_documento_enviado_pela_app_fica_no_bilhete(self):
+        tp = self._comprar(document_type="bi", document_number="1101 0012 3456 a")
+        self.assertEqual(tp.document_number, "110100123456A")
+        self.assertEqual(tp.document_type, "bi")
+        self.assertEqual(tp.passenger_name, "Ana Cossa")
+
+    def test_conta_sem_documento_e_sem_envio_e_recusada(self):
+        from apps.guest_checkouts.purchase import PurchaseError
+
+        with self.assertRaises(PurchaseError) as ctx:
+            self._comprar()
+        self.assertIn("documento", str(ctx.exception).lower())
+
+    def test_documento_mal_formado_e_recusado(self):
+        from apps.guest_checkouts.purchase import PurchaseError
+
+        with self.assertRaises(PurchaseError):
+            self._comprar(document_type="bi", document_number="123")
+
+
 class PontoPublicoTests(TestCase):
     def test_portal_le_as_regras_sem_autenticacao(self):
         r = APIClient().get(reverse("public-document-types"), secure=True)

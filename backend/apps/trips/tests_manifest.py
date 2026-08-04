@@ -427,6 +427,7 @@ class CompraExigeContactoTests(TripCycleBase):
                 self._passageiro(), route_id=self.route.id,
                 origin_stop_id=self.origem.id, destination_stop_id=self.destino.id,
                 trip_id=self.trip.id, seat="1A",
+                document_type="bi", document_number="110100123456A",
             )
         self.assertIn("emergencia", str(ctx.exception).lower())
 

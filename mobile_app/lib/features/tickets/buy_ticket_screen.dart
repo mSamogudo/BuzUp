@@ -411,6 +411,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             displayCurrency: _currency,
             emergencyName: _emergencyNameCtrl.text.trim(),
             emergencyPhone: _emergencyPhoneCtrl.text.trim(),
+            documentType: _effectiveDocType,
+            documentNumber: _effectiveDocNumber,
           );
       Log.info('ticket.purchase ok', data: 'id=${res['id']}');
       ref.invalidate(meProvider);

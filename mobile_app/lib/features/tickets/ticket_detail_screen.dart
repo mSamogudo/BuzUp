@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart' show launchUrl;
 
 import '../../core/bus_loader.dart';
 import '../../core/logger.dart';
@@ -72,12 +73,20 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
             // exceeds the screen, the SingleChildScrollView lets the user
             // pan to see the rest (rare on tall phones; common on
             // landscape).
+            // O bilhete ocupa a largura toda; o que sobra em altura (num
+            // telemovel alto sao uns 200px) deixava de ser fundo vazio e passa
+            // a levar o que nao cabe na face do bilhete. Aumentar o bilhete
+            // alem da largura so seria possivel a cortar ou a distorcer o
+            // desenho — e ai deixava de bater certo com o PDF.
             Positioned.fill(
               child: SingleChildScrollView(
-                child: AspectRatio(
-                  aspectRatio: _designWidth / _designHeight,
-                  child: _TicketCanvas(data: snap.data ?? const {}),
-                ),
+                child: Column(children: [
+                  AspectRatio(
+                    aspectRatio: _designWidth / _designHeight,
+                    child: _TicketCanvas(data: snap.data ?? const {}),
+                  ),
+                  _TicketExtras(data: snap.data ?? const {}),
+                ]),
               ),
             ),
             // Floating back button (top-left).
@@ -135,6 +144,100 @@ class _FloatingIconButton extends StatelessWidget {
   }
 }
 
+/// O que não cabe na face do bilhete, na altura que sobrava por baixo dele.
+///
+/// A face é um desenho de tamanho fixo que espelha o PDF — enchê-la de mais
+/// linhas obrigaria a encolher tudo. Estes dados existem, importam, e o ecrã
+/// tinha espaço vazio: partida, validade, quem avisar em caso de emergência e
+/// a linha de apoio da operadora, ambas a marcar com um toque.
+class _TicketExtras extends StatelessWidget {
+  const _TicketExtras({required this.data});
+
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final departure = _parse((data['departure_at'] ?? '').toString());
+    final validUntil = _parse((data['valid_until'] ?? '').toString());
+    final emergName = (data['emergency_contact_name'] ?? '').toString();
+    final emergPhone = (data['emergency_contact_phone'] ?? '').toString();
+    final supportPhone = (data['support_phone'] ?? '').toString();
+    final seat = (data['seat_number'] ?? '').toString();
+
+    final linhas = <Widget>[
+      if (departure != null)
+        _row(Icons.directions_bus_filled, 'Partida',
+            DateFormat("dd/MM/yyyy 'às' HH:mm").format(departure)),
+      if (seat.isNotEmpty) _row(Icons.event_seat, 'Lugar', seat),
+      if (validUntil != null)
+        _row(Icons.schedule, 'Válido até',
+            DateFormat('dd/MM/yyyy HH:mm').format(validUntil)),
+      if (emergPhone.isNotEmpty)
+        _row(Icons.emergency_share_outlined, 'Contacto de emergência',
+            emergName.isEmpty ? emergPhone : '$emergName · $emergPhone',
+            phone: emergPhone),
+      if (supportPhone.isNotEmpty)
+        _row(Icons.support_agent, 'Emergência / apoio', supportPhone,
+            phone: supportPhone),
+    ];
+    if (linhas.isEmpty) return const SizedBox(height: 12);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: Column(children: linhas),
+      ),
+    );
+  }
+
+  /// `phone` não vazio torna a linha marcável: num acidente, ninguém quer
+  /// copiar um número à mão.
+  Widget _row(IconData icon, String label, String value, {String phone = ''}) {
+    final conteudo = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(children: [
+        Icon(icon, size: 18, color: Colors.white70),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label.toUpperCase(),
+                style: const TextStyle(
+                    fontSize: 10, letterSpacing: 1.1,
+                    fontWeight: FontWeight.w800, color: Colors.white54)),
+            const SizedBox(height: 3),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+          ]),
+        ),
+        if (phone.isNotEmpty)
+          const Icon(Icons.call, size: 18, color: Color(0xFF6FE38B)),
+      ]),
+    );
+    if (phone.isEmpty) return conteudo;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+      child: conteudo,
+    );
+  }
+
+  DateTime? _parse(String iso) {
+    if (iso.isEmpty) return null;
+    try {
+      return DateTime.parse(iso).toLocal();
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
 class _TicketCanvas extends StatelessWidget {
   const _TicketCanvas({required this.data});
 
@@ -154,6 +257,12 @@ class _TicketCanvas extends StatelessWidget {
     final issuedAtIso = (data['valid_from'] ?? data['created_at'])?.toString();
     final issuedAt = _parseLocal(issuedAtIso ?? '');
     final validUntil = _parseLocal(validUntilIso ?? '');
+    // A data no topo e a da VIAGEM, nao a da compra — igual ao PDF
+    // (`header_dt` em ticket_pdf.py). Num bilhete interprovincial comprado com
+    // dias de antecedencia, mostrar a data de emissao era mostrar a data
+    // errada no sitio onde o passageiro (e o fiscal) a procura.
+    final departureAt = _parseLocal((data['departure_at'] ?? '').toString());
+    final headerAt = departureAt ?? issuedAt;
 
     // Preco na moeda escolhida na compra (rand nas rotas p/ Africa do Sul);
     // sem escolha, meticais — igual ao PDF (`_fare_label`).
@@ -169,6 +278,7 @@ class _TicketCanvas extends StatelessWidget {
     final documentType = (data['document_type'] ?? '').toString();
     final seat = (data['seat_number'] ?? '').toString();
     final nominal = passengerName.isNotEmpty || documentNumber.isNotEmpty || seat.isNotEmpty;
+    final supportPhone = (data['support_phone'] ?? '').toString();
 
     return FittedBox(
       fit: BoxFit.fill,
@@ -193,11 +303,12 @@ class _TicketCanvas extends StatelessWidget {
           _PdfText(left: 199, top: 467, size: 25, color: _navy,
               value: reference.isEmpty ? '-' : reference),
 
-          // Issued date (x=674, y_top=437) and time (x=674, y_top=467).
+          // Data/hora no topo (x=674, y_top=437/467): a da PARTIDA quando ha
+          // partida marcada, senao a da emissao.
           _PdfText(left: 674, top: 437, size: 28, color: _navy,
-              value: issuedAt != null ? DateFormat('dd/MM/yyyy').format(issuedAt) : '-'),
+              value: headerAt != null ? DateFormat('dd/MM/yyyy').format(headerAt) : '-'),
           _PdfText(left: 674, top: 467, size: 28, color: _navy,
-              value: issuedAt != null ? DateFormat('HH:mm').format(issuedAt) : '--:--'),
+              value: headerAt != null ? DateFormat('HH:mm').format(headerAt) : '--:--'),
 
           // Route label centered (center_x=526, top_y=555, max_size=68, NAVY).
           _PdfCenteredText(centerX: 526, top: 555, maxSize: 68, minSize: 36,
@@ -297,6 +408,47 @@ class _TicketCanvas extends StatelessWidget {
                 ]),
               ),
           ],
+
+          // Linha de emergencia/apoio da operadora — mesmas coordenadas do PDF
+          // (`_draw_emergency_contact`). O lado livre depende da variante: no
+          // bilhete nominal a coluna esquerda esta ocupada pelo nome e pelo
+          // documento; no bilhete ao portador e a direita que tem o texto de
+          // ajuda. Escrever sempre no mesmo sitio tapava um dos dois.
+          if (supportPhone.isNotEmpty)
+            Positioned(
+              left: nominal ? 682 : 122,
+              top: nominal ? 1218 : 1258,
+              width: nominal ? 228 : 226,
+              height: 86,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('EMERGENCIA / APOIO',
+                        maxLines: 1,
+                        style: TextStyle(
+                            fontSize: 15, color: _labelOrange,
+                            fontWeight: FontWeight.w800, height: 1.0)),
+                    const SizedBox(height: 10),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(supportPhone,
+                          maxLines: 1, softWrap: false,
+                          style: const TextStyle(
+                              fontSize: 30, color: _navy,
+                              fontWeight: FontWeight.w900, height: 1.0)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           // Short code centered below QR (center_x=512, top_y=1365).
           _PdfCenteredText(centerX: 512, top: 1365, maxSize: 35, minSize: 28,

@@ -203,6 +203,8 @@ class PurchaseTravelPassView(APIView):
                 seat=data.get("seat") or "",
                 emergency_contact_name=data.get("emergency_contact_name") or "",
                 emergency_contact_phone=data.get("emergency_contact_phone") or "",
+                document_type=data.get("document_type") or "",
+                document_number=data.get("document_number") or "",
                 passenger_package_id=data.get("passenger_package_id"),
                 use_package=data.get("use_package", True),
                 display_currency=data.get("display_currency") or "MZN",

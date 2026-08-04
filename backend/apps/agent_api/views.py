@@ -1399,10 +1399,29 @@ class AgentCardValidationView(APIView):
             event.save(update_fields=["validated_by", "updated_at"])
 
         approved = event.status == "approved"
+
+        # Cartao sem bilhete numa viagem que o exige: o agente tem de saber o
+        # que FAZER, nao so o que correu mal. "Sem Bilhete Para Esta Rota" e um
+        # diagnostico; o passageiro esta ali a espera de embarcar.
+        from apps.validations.models import ValidationEvent as _VE
+
+        needs_ticket = event.failure_reason == _VE.FailureReason.NO_TICKET_FOR_ROUTE
+        if approved:
+            reason = ""
+        elif needs_ticket:
+            reason = ("Sem bilhete para esta viagem. Nesta rota o bilhete e nominal "
+                      "(documento, lugar e contacto de emergencia) — venda o bilhete "
+                      "ao passageiro.")
+        else:
+            reason = event.get_failure_reason_display()
+
         return Response({
             "valid": approved,
             "consumed": approved,
-            "reason": event.get_failure_reason_display() if not approved else "",
+            "reason": reason,
+            # O POS usa isto para oferecer a venda ali mesmo, em vez de deixar
+            # o agente adivinhar o passo seguinte.
+            "needs_ticket_purchase": needs_ticket,
             "validation_id": event.id,
             "amount_debited": str(event.amount_debited),
             "validation_type": event.validation_type,

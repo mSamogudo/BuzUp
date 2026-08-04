@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/api_client.dart';
@@ -576,6 +577,21 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
         Text('${ticket['fare_amount']} MZN · ${ticket['payer_phone_masked'] ?? ''}'),
         if (ticket['used_at'] != null)
           Text('Usado em: ${ticket['used_at']}', style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      ],
+      // Cartao sem bilhete numa viagem que o exige. O agente tem o passageiro
+      // a frente: em vez de o deixar a ler um erro, leva-o a venda.
+      if (_last!['needs_ticket_purchase'] == true) ...[
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: BuzUpColors.orange,
+            minimumSize: const Size.fromHeight(52),
+          ),
+          icon: const Icon(Icons.confirmation_number),
+          label: const Text('VENDER BILHETE AO PASSAGEIRO',
+              style: TextStyle(fontWeight: FontWeight.w900)),
+          onPressed: () => context.go('/sale'),
+        ),
       ],
       const SizedBox(height: 12),
       FilledButton.icon(

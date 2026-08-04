@@ -50,13 +50,19 @@ class PublicTripSearchQueryBudgetTests(TestCase):
                 status=Trip.Status.BOARDING,
                 planned_departure_at=base + timezone.timedelta(minutes=17 * (existing + i)),
             )
+        # A pesquisa tem de ser feita no dia EM QUE AS PARTIDAS CAEM, e nao
+        # "hoje": as partidas sao criadas a agora+3h, portanto a partir das 21h
+        # locais caem no dia seguinte e a pesquisa de hoje vinha vazia. O teste
+        # falhava todas as noites, sempre pela mesma razao e sem relacao com o
+        # que estava a medir (o numero de queries).
+        self._search_date = timezone.localtime(base).date()
 
     def _search_queries(self) -> int:
         client = APIClient()
         params = {
             "origin": self.origin.id,
             "destination": self.destination.id,
-            "date": timezone.localdate().isoformat(),
+            "date": getattr(self, "_search_date", timezone.localdate()).isoformat(),
         }
         with CaptureQueriesContext(connection) as ctx:
             res = client.get("/api/public/trips/", params)

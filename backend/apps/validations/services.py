@@ -86,6 +86,72 @@ def _charge_with_package_fallback(
     raise InsufficientBalanceError("Sem saldo disponivel.")
 
 
+def _active_pass_for(passenger_account, route: Route, trip) -> DigitalTravelPass | None:
+    """Bilhete activo deste passageiro para esta rota, se existir.
+
+    Havendo partida concreta, o bilhete tem de ser dessa partida OU nao estar
+    preso a nenhuma — um bilhete comprado para o autocarro das 6h30 nao serve
+    para embarcar no das 14h.
+
+    O mais antigo primeiro: quem comprou dois bilhetes gasta o que expira
+    primeiro, e nao fica com um por usar que caduca.
+    """
+    if passenger_account is None:
+        return None
+
+    qs = DigitalTravelPass.objects.filter(
+        passenger_account=passenger_account,
+        status=DigitalTravelPass.Status.ACTIVE,
+        route_code=route.code,
+    )
+    agora = timezone.now()
+    qs = qs.filter(Q(valid_until__isnull=True) | Q(valid_until__gt=agora))
+    if trip is not None:
+        qs = qs.filter(Q(trip_id=trip.id) | Q(trip__isnull=True))
+    return qs.order_by("valid_until", "created_at").first()
+
+
+def _burn_pass_for_card(
+    *, travel_pass: DigitalTravelPass, card, route: Route, trip,
+    origin, destination, device, idempotency_key: str,
+) -> ValidationEvent:
+    """Queima o bilhete encontrado a partir do cartao, sem debitar a carteira.
+
+    Mesma disciplina do embarque por QR: queimar e registar no MESMO atomic,
+    para nao ficar um bilhete USED sem evento — ai o POS repetia, via USED e
+    negava para sempre, com o bilhete pago e o passageiro em terra.
+    """
+    vtype = ValidationEvent.ValidationType.DIGITAL_TRAVEL_PASS
+    try:
+        with transaction.atomic():
+            tp = DigitalTravelPass.objects.select_for_update().get(pk=travel_pass.pk)
+            if tp.status != DigitalTravelPass.Status.ACTIVE:
+                return _denied(vtype, ValidationEvent.FailureReason.PASS_ALREADY_USED,
+                               idempotency_key, digital_travel_pass=tp,
+                               physical_card=card, route=route, device=device)
+            tp.status = DigitalTravelPass.Status.USED
+            tp.used_at = timezone.now()
+            tp.save(update_fields=["status", "used_at", "updated_at"])
+
+            return ValidationEvent.objects.create(
+                validation_type=vtype,
+                passenger_account=card.passenger_account, wallet=card.wallet,
+                physical_card=card, digital_travel_pass=tp,
+                route=route, trip=trip, origin_stop=origin, destination_stop=destination,
+                device=device,
+                # O valor ja foi cobrado na compra: aqui regista-se o que o
+                # bilhete valeu, nao um novo debito.
+                amount_debited=tp.fare_amount,
+                status=ValidationEvent.Status.APPROVED,
+                idempotency_key=idempotency_key,
+            )
+    except IntegrityError:
+        existing = ValidationEvent.objects.filter(idempotency_key=idempotency_key).first()
+        if existing:
+            return existing
+        raise
+
+
 def validate_card(
     card_uid: str,
     route_id: int,
@@ -130,6 +196,34 @@ def validate_card(
     except RouteSegmentError:
         return _denied(ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO, ValidationEvent.FailureReason.ROUTE_NOT_ALLOWED, idempotency_key, physical_card=card, wallet=card.wallet, route=route, origin_stop=origin, destination_stop=destination, device=device)
 
+    # 1) O passageiro deste cartao ja tem bilhete para esta rota?
+    #
+    # Se tem, e o bilhete que vale — cobrar outra vez ao toque era faze-lo
+    # pagar a mesma viagem duas vezes.
+    pass_para_esta_rota = _active_pass_for(card.passenger_account, route, trip)
+    if pass_para_esta_rota is not None:
+        return _burn_pass_for_card(
+            travel_pass=pass_para_esta_rota, card=card, route=route, trip=trip,
+            origin=origin, destination=destination, device=device,
+            idempotency_key=idempotency_key,
+        )
+
+    # 2) Sem bilhete: nas viagens longas nao se cobra ao toque.
+    #
+    # O bilhete interprovincial ou internacional e nominal e leva documento,
+    # lugar marcado e contacto de emergencia — nada disso se recolhe num toque
+    # de cartao, e sem esses dados o passageiro nao entra no manifesto de
+    # bordo. Descontar da carteira ali daria um passageiro a bordo sem lugar e
+    # sem ninguem a quem telefonar num acidente.
+    if not route.allows_package_discounts:
+        return _denied(
+            ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO,
+            ValidationEvent.FailureReason.NO_TICKET_FOR_ROUTE,
+            idempotency_key, physical_card=card, wallet=card.wallet, route=route,
+            origin_stop=origin, destination_stop=destination, device=device,
+        )
+
+    # 3) Carreira urbana/interurbana: desconta na hora, como sempre.
     try:
         quote = quote_fare(route=route, origin_stop=origin, destination_stop=destination)
     except NoFareFoundError:

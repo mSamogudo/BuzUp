@@ -28,6 +28,11 @@ class ValidationEvent(BaseModel):
         ROUTE_NOT_ALLOWED = "route_not_allowed", "Rota Nao Permitida"
         DEVICE_BLOCKED = "device_blocked", "Dispositivo Bloqueado"
         NO_FARE_FOUND = "no_fare_found", "Tarifa Nao Encontrada"
+        # Cartao sem bilhete numa rota que o exige (interprovincial ou
+        # internacional). Nessas viagens o bilhete e nominal e leva documento,
+        # lugar e contacto de emergencia — dados que nao se recolhem num toque
+        # de cartao. O agente tem de vender o bilhete.
+        NO_TICKET_FOR_ROUTE = "no_ticket_for_route", "Sem Bilhete Para Esta Rota"
 
     validation_type = models.CharField(max_length=32, choices=ValidationType.choices)
     passenger_account = models.ForeignKey(

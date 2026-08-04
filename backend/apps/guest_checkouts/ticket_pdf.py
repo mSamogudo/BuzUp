@@ -23,6 +23,16 @@ PAGE_HEIGHT = DESIGN_HEIGHT * TICKET_SCALE
 
 NAVY = colors.HexColor("#071E49")
 ORANGE = colors.HexColor("#E47B11")
+
+# Rotulo curto do documento, para a faixa do topo. O nome por extenso
+# ("BILHETE DE IDENTIDADE") empurrava o numero ate deixar de se ler.
+_DOC_SHORT = {
+    "bi": "BI",
+    "passport": "PASSAPORTE",
+    "dire": "DIRE",
+    "cedula": "CEDULA",
+    "other": "DOC",
+}
 RED = colors.HexColor("#D32F2F")
 
 # Caixa do cartao DENTRO do JPG do template (medida ao pixel; o resto do JPG
@@ -191,7 +201,6 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
     _text_fit(c, 446, 1013, valid_value, max_width=295, max_size=34, min_size=25, color=NAVY)
 
     _draw_passenger_name(c, tp)
-    _draw_passenger_block(c, tp)
 
 
 def _draw_passenger_name(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
@@ -209,69 +218,26 @@ def _draw_passenger_name(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
 
     if tp.passenger_name:
         c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 19)
-        c.drawString(130, _baseline(298, 19), "PASSAGEIRO")
-        _text_fit(c, 130, 326, tp.passenger_name,
-                  max_width=380, max_size=44, min_size=22, color=colors.white)
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(130, _baseline(276, 18), "PASSAGEIRO")
+        _text_fit(c, 130, 300, tp.passenger_name,
+                  max_width=380, max_size=38, min_size=22, color=colors.white)
+
+    if tp.document_number:
+        # Rotulo curto: "BILHETE DE IDENTIDADE 110100123456A" nao cabe na
+        # faixa sem encolher o numero ao ponto de nao se ler a um metro.
+        curto = _DOC_SHORT.get(tp.document_type, "DOC")
+        _text_fit(c, 130, 348, f"{curto} {tp.document_number}",
+                  max_width=380, max_size=24, min_size=15, color=colors.white)
 
     if tp.seat_number:
         # Alinhado a direita a partir de 894: o lugar cresce para dentro e
         # nunca sai do cartao, seja "1A" ou "12C".
         c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 19)
-        c.drawRightString(894, _baseline(298, 19), "LUGAR")
-        _right_text_fit(c, 894, 326, tp.seat_number,
+        c.setFont("Helvetica-Bold", 18)
+        c.drawRightString(894, _baseline(276, 18), "LUGAR")
+        _right_text_fit(c, 894, 300, tp.seat_number,
                         max_width=150, max_size=44, min_size=26, color=colors.white)
-
-
-def _draw_passenger_block(c: canvas.Canvas, tp: DigitalTravelPass) -> None:
-    """Documento DENTRO do cartao, ao lado do QR.
-
-    O nome e o lugar subiram para a faixa azul do topo; aqui fica so o
-    documento, que e o que se confere com o passageiro a frente.
-
-    So aparece em bilhetes nominais; o urbano ao portador continua limpo e
-    mantem o texto de ajuda.
-    """
-    if not _is_nominal(tp):
-        return
-
-    left_x, left_width = 130, 214
-    y = 1102
-    if tp.document_number:
-        doc_label = dict(DigitalTravelPass.DocumentType.choices).get(tp.document_type, "DOCUMENTO")
-        _labeled_value(c, left_x, y, doc_label.upper(), tp.document_number, max_width=left_width)
-
-
-def _labeled_value(
-    c: canvas.Canvas,
-    x: float,
-    y_top: float,
-    label: str,
-    value: str,
-    *,
-    max_width: float,
-    max_size: int = 34,
-    min_size: int = 21,
-    wrap: bool = False,
-) -> float:
-    """Etiqueta laranja + valor navy; devolve o y_top da linha seguinte."""
-    label_size = _fit_size(c, label, "Helvetica-Bold", max_width, 20, 13)
-    c.setFillColor(ORANGE)
-    c.setFont("Helvetica-Bold", label_size)
-    c.drawString(x, _baseline(y_top, label_size), label)
-
-    y = y_top + label_size + 8
-    lines = [value]
-    if wrap and c.stringWidth(value, "Helvetica-Bold", min_size) > max_width:
-        lines = _split_two_lines(value)
-    size = min(
-        _fit_size(c, line, "Helvetica-Bold", max_width, max_size, min_size) for line in lines
-    )
-    for line in lines:
-        _text(c, x, y, line, size=size, font="Helvetica-Bold", color=NAVY)
-        y += size + 6
-    return y + 18
 
 
 def _split_two_lines(value: str) -> list[str]:

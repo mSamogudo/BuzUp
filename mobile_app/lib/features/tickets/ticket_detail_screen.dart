@@ -35,8 +35,6 @@ const Color _orange = Color(0xFF1D5FA7);
 const Color _red = Color(0xFFD32F2F);
 // Laranja das etiquetas do PDF (`ORANGE` em ticket_pdf.py).
 const Color _labelOrange = Color(0xFFE47B11);
-const TextStyle _labelStyle = TextStyle(
-    fontSize: 20, color: _labelOrange, fontWeight: FontWeight.w800, height: 1.0);
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   late Future<Map<String, dynamic>> _future;
@@ -359,46 +357,61 @@ class _TicketCanvas extends StatelessWidget {
             ),
           ),
 
-          // Nome e lugar no topo, na faixa azul por baixo do logo — mesmas
-          // coordenadas do PDF (`_draw_passenger_name`). Sao os dois dados que
-          // se procuram primeiro num bilhete nominal (quem e e para que banco
-          // vai) e ali leem-se de relance, sem descer ate ao QR. Ficam nos
-          // extremos: nome a esquerda, lugar a direita.
+          // Nome, documento e lugar no topo, na faixa azul por baixo do logo
+          // — mesmas coordenadas do PDF (`_draw_passenger_name`). Sao os dados
+          // que se procuram primeiro num bilhete nominal, e ali leem-se de
+          // relance sem descer ate ao QR. Nome e documento a esquerda, lugar a
+          // direita.
           if (nominal && passengerName.isNotEmpty) ...[
             const Positioned(
-              left: 130, top: 298,
+              left: 130, top: 276,
               child: Text('PASSAGEIRO',
                   maxLines: 1,
                   style: TextStyle(
-                      fontSize: 19, color: Colors.white,
+                      fontSize: 18, color: Colors.white,
                       fontWeight: FontWeight.w800, height: 1.0)),
             ),
             Positioned(
               // 380 de largura: o lugar ocupa a direita, e tem de sobrar folga
               // para um nome comprido nao encostar ao numero do banco.
-              left: 130, top: 326, width: 380,
+              left: 130, top: 300, width: 380,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(passengerName,
                     maxLines: 1, softWrap: false,
                     style: const TextStyle(
-                        fontSize: 44, color: Colors.white,
+                        fontSize: 38, color: Colors.white,
                         fontWeight: FontWeight.w900, height: 1.0)),
               ),
             ),
           ],
+          if (nominal && documentNumber.isNotEmpty)
+            Positioned(
+              left: 130, top: 348, width: 380,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                // Rotulo curto: o nome por extenso empurrava o numero ate
+                // deixar de se ler a um metro.
+                child: Text('${_docShort(documentType)} $documentNumber',
+                    maxLines: 1, softWrap: false,
+                    style: const TextStyle(
+                        fontSize: 24, color: Colors.white,
+                        fontWeight: FontWeight.w800, height: 1.0)),
+              ),
+            ),
           if (nominal && seat.isNotEmpty) ...[
             const Positioned(
-              left: 744, top: 298, width: 150,
+              left: 744, top: 276, width: 150,
               child: Text('LUGAR',
                   maxLines: 1, textAlign: TextAlign.right,
                   style: TextStyle(
-                      fontSize: 19, color: Colors.white,
+                      fontSize: 18, color: Colors.white,
                       fontWeight: FontWeight.w800, height: 1.0)),
             ),
             Positioned(
-              left: 744, top: 326, width: 150,
+              left: 744, top: 300, width: 150,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
@@ -411,37 +424,11 @@ class _TicketCanvas extends StatelessWidget {
             ),
           ],
 
-          // Documento dentro do cartao, ao lado do QR. O nome e o lugar
-          // subiram para o topo; aqui fica so o que se confere com o
-          // passageiro a frente.
-          if (nominal)
-            Positioned(
-              left: 130, top: 1102, width: 214,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (documentNumber.isNotEmpty) ...[
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(_docLabel(documentType), style: _labelStyle),
-                  ),
-                  const SizedBox(height: 6),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(documentNumber,
-                        maxLines: 1, softWrap: false,
-                        style: const TextStyle(
-                            fontSize: 30, color: _navy,
-                            fontWeight: FontWeight.w900, height: 1.0)),
-                  ),
-                ],
-              ]),
-            ),
-
           // Linha de emergencia/apoio da operadora — mesmas coordenadas do PDF
           // (`_draw_emergency_contact`). O lado livre depende da variante: no
-          // bilhete nominal a coluna esquerda esta ocupada pelo nome e pelo
-          // documento; no bilhete ao portador e a direita que tem o texto de
-          // ajuda. Escrever sempre no mesmo sitio tapava um dos dois.
+          // bilhete nominal a direita esta livre; no bilhete ao portador e a
+          // direita que tem o texto de ajuda, por isso vai para a esquerda.
+          // Escrever sempre no mesmo sitio tapava um dos dois.
           if (supportPhone.isNotEmpty)
             Positioned(
               left: nominal ? 682 : 122,
@@ -520,12 +507,14 @@ class _TicketCanvas extends StatelessWidget {
     return n.toStringAsFixed(2).replaceAll('.', ',');
   }
 
-  String _docLabel(String t) => switch (t) {
-        'bi' => 'BILHETE DE IDENTIDADE',
+  /// Rotulo curto do documento, para a faixa do topo. O nome por extenso
+  /// ("BILHETE DE IDENTIDADE") empurrava o numero ate deixar de se ler.
+  String _docShort(String t) => switch (t) {
+        'bi' => 'BI',
         'passport' => 'PASSAPORTE',
         'dire' => 'DIRE',
         'cedula' => 'CEDULA',
-        _ => 'DOCUMENTO',
+        _ => 'DOC',
       };
 
   String _statusLabel(String s) => switch (s) {

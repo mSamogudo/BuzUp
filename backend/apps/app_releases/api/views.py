@@ -1,7 +1,7 @@
 import hashlib
 
 from django.db import models
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -16,6 +16,7 @@ from apps.app_releases.api.serializers import (
     DeviceAppUpdateSerializer,
 )
 from apps.app_releases.models import AppRelease, DeviceAppUpdate
+from apps.core.file_serving import serve_file_field
 from apps.core.permissions import HasCapabilities
 from apps.core.viewsets import BaseModelViewSet
 
@@ -75,14 +76,11 @@ class AppReleaseDownloadView(APIView):
         ).first()
         if not release or not release.apk_file:
             raise Http404("APK nao encontrado.")
-        filename = f"buzup-{release.app_type}-{release.version_name}.apk"
-        response = FileResponse(
-            release.apk_file.open("rb"),
+        return serve_file_field(
+            release.apk_file,
+            filename=f"buzup-{release.app_type}-{release.version_name}.apk",
             content_type="application/vnd.android.package-archive",
         )
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-        response["Cache-Control"] = "no-store"
-        return response
 
 
 APP_SLUGS = {
@@ -115,14 +113,11 @@ class AppLatestDownloadView(APIView):
         release = _latest_published(app_type)
         if not release or not release.apk_file:
             raise Http404("Sem versao publicada.")
-        filename = f"buzup-{release.app_type}-{release.version_name}.apk"
-        response = FileResponse(
-            release.apk_file.open("rb"),
+        return serve_file_field(
+            release.apk_file,
+            filename=f"buzup-{release.app_type}-{release.version_name}.apk",
             content_type="application/vnd.android.package-archive",
         )
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-        response["Cache-Control"] = "no-store"
-        return response
 
 
 class AppLatestInfoView(APIView):

@@ -39,3 +39,7 @@ CACHES = {
         "LOCATION": REDIS_URL,
     }
 }
+
+# O gateway nginx monta o volume de media e tem a location `/protected-media/`:
+# os APKs sao entregues por ele, nao pelo gunicorn (ver apps/core/file_serving.py).
+USE_X_ACCEL_REDIRECT = config("USE_X_ACCEL_REDIRECT", default=True, cast=bool)

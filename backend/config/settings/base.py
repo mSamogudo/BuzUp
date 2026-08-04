@@ -129,6 +129,12 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# Ficheiros grandes (APKs) entregues pelo nginx em vez do gunicorn — ver
+# `apps/core/file_serving.py`. Fica FALSE por omissao para o runserver e os
+# testes continuarem a servir o ficheiro directamente; staging e producao
+# ligam-no, porque so aí existe o nginx que honra o cabecalho.
+USE_X_ACCEL_REDIRECT = config("USE_X_ACCEL_REDIRECT", default=False, cast=bool)
 PUBLIC_BASE_URL = config("PUBLIC_BASE_URL", default="https://buzup.updigital.co.mz").rstrip("/")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

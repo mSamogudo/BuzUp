@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Sum, Count
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse as DjangoHttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -36,6 +36,23 @@ class AdminAgentDayCloseListView(APIView):
         agent_user_id = request.query_params.get("agent_user_id")
         if agent_user_id:
             qs = qs.filter(agent_user_id=agent_user_id)
+
+        # Procura por texto: ninguem sabe de cor o id do motorista. Aceita
+        # nome, telefone, utilizador ou codigo de rota — que e como a operacao
+        # fala destes fechos ("o fecho do Joao na MZ-NEL").
+        procura = (request.query_params.get("q") or "").strip()
+        if procura:
+            qs = qs.filter(
+                Q(agent_profile__full_name__icontains=procura)
+                | Q(agent_profile__phone__icontains=procura)
+                | Q(agent_user__first_name__icontains=procura)
+                | Q(agent_user__last_name__icontains=procura)
+                | Q(agent_user__username__icontains=procura)
+                | Q(agent_user__phone__icontains=procura)
+                # A rota nao e coluna do fecho: vive dentro do payload das
+                # validacoes. `icontains` no JSON encontra-a na mesma.
+                | Q(payload__icontains=procura)
+            )
 
         date_from = request.query_params.get("date_from")
         if date_from:

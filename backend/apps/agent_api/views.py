@@ -74,6 +74,13 @@ from apps.trips.models import Trip
 # Helpers
 # ----------------------------------------------------------------------------
 
+def _to_decimal_safe(v) -> Decimal:
+    try:
+        return Decimal(str(v))
+    except Exception:
+        return Decimal("0.00")
+
+
 def _mask_phone(phone: str) -> str:
     p = "".join(ch for ch in (phone or "") if ch.isdigit())
     if len(p) < 4:
@@ -947,7 +954,21 @@ class AgentDayCloseView(APIView):
 
         sales_total = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
         topup_total = topup_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
-        valid_total = validations_qs.filter(status="approved").aggregate(s=Sum("amount_debited"))["s"] or Decimal("0.00")
+        # As validacoes aprovadas sao DUAS coisas diferentes, e somar tudo numa
+        # linha so dava dinheiro a dobrar:
+        #
+        #   cobrado agora  — pay-as-you-go: a carteira do passageiro foi
+        #                    debitada nesta validacao. E movimento de hoje.
+        #   ja pago        — embarque com bilhete: o valor entrou na receita no
+        #                    dia da COMPRA. Aparece aqui so para se saber quanto
+        #                    valeu o que embarcou, e nao pode voltar a contar.
+        aprovadas = validations_qs.filter(status="approved")
+        valid_total = aprovadas.filter(
+            validation_type=ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO,
+        ).aggregate(s=Sum("amount_debited"))["s"] or Decimal("0.00")
+        valid_prepago = aprovadas.filter(
+            digital_travel_pass__isnull=False,
+        ).aggregate(s=Sum("amount_debited"))["s"] or Decimal("0.00")
 
         tickets_issued = sales_qs.filter(
             status=PaymentIntent.Status.CONFIRMED, guest_checkout__status="issued",
@@ -964,9 +985,13 @@ class AgentDayCloseView(APIView):
                 "revenue": str(sales_total + topup_total),
                 "sales": str(sales_total),
                 "topups": str(topup_total),
+                # Movimento de hoje: so o que foi debitado na validacao.
                 "validations_revenue": str(valid_total),
+                # Valor dos bilhetes que embarcaram e ja tinham sido pagos
+                # noutro dia. NAO entra na receita — existe para conferir.
+                "validations_prepaid": str(valid_prepago),
                 "tickets": tickets_issued,
-                "validations": validations_qs.filter(status="approved").count(),
+                "validations": aprovadas.count(),
             },
             "sales": [{
                 "reference": pi.reference,
@@ -991,6 +1016,21 @@ class AgentDayCloseView(APIView):
                 "status": v.status,
                 "route": v.route.code if v.route_id else "",
                 "device_serial": v.device.serial_number if v.device_id else "",
+                # Qual o cartao que embarcou. Sem isto, uma linha de validacao
+                # nao se liga a ninguem — nem para conferir com o passageiro,
+                # nem para responder a uma reclamacao de cobranca.
+                "card_uid": v.physical_card.card_uid if v.physical_card_id else "",
+                # Uma validacao por cartao pode ser DUAS coisas: um debito na
+                # hora (pay-as-you-go) ou o embarque com um bilhete ja pago. A
+                # diferenca decide se o valor entra na receita do dia ou se ja
+                # entrou no dia da compra. Sem isto, somar a coluna dava
+                # dinheiro a dobrar.
+                "cobrou_agora": bool(
+                    v.validation_type == ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO
+                    and v.status == ValidationEvent.Status.APPROVED
+                    and _to_decimal_safe(v.amount_debited) > 0
+                ),
+                "bilhete_id": v.digital_travel_pass_id,
                 "created_at": v.created_at.isoformat(),
             } for v in validations_qs[:200]],
         }

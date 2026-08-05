@@ -131,4 +131,23 @@ def _deliver_pass_sms(gc: GuestCheckout, travel_pass: DigitalTravelPass):
         f"Ref: {gc.reference}. "
         f"Link: {ticket_url}"
     )
+    # O numero de emergencia saiu do bilhete e passou para aqui: no bilhete
+    # ocupava espaco a competir com os dados da viagem, e quem precisa dele
+    # esta a meio da estrada com o telemovel na mao — nao a olhar para o PDF.
+    # O SMS fica na caixa de mensagens e liga-se com um toque.
+    emergencia = _linha_de_emergencia()
+    if emergencia:
+        message = f"{message} {emergencia}"
     send_sms(gc.payer_phone, message, purpose="GUEST_PASS_DELIVERY")
+
+
+def _linha_de_emergencia() -> str:
+    """Linha de emergencia da operadora para juntar ao SMS do bilhete."""
+    try:
+        from apps.branding.models import BrandingSettings
+
+        linha = BrandingSettings.load()
+        numero = (linha.emergency_phone or linha.support_phone or "").strip()
+    except Exception:
+        return ""
+    return f"Emergencia: {numero}." if numero else ""

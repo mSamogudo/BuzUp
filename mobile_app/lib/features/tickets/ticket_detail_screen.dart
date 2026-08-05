@@ -33,8 +33,6 @@ const double _designHeight = 1535;
 const Color _navy = Color(0xFF071E49);
 const Color _orange = Color(0xFF1D5FA7);
 const Color _red = Color(0xFFD32F2F);
-// Laranja das etiquetas do PDF (`ORANGE` em ticket_pdf.py).
-const Color _labelOrange = Color(0xFFE47B11);
 
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   late Future<Map<String, dynamic>> _future;
@@ -175,7 +173,7 @@ class _TicketExtras extends StatelessWidget {
             emergName.isEmpty ? emergPhone : '$emergName · $emergPhone',
             phone: emergPhone),
       if (supportPhone.isNotEmpty)
-        _row(Icons.support_agent, 'Emergência / apoio', supportPhone,
+        _row(Icons.support_agent, 'Emergência', supportPhone,
             phone: supportPhone),
     ];
     if (linhas.isEmpty) return const SizedBox(height: 12);
@@ -276,7 +274,6 @@ class _TicketCanvas extends StatelessWidget {
     final documentType = (data['document_type'] ?? '').toString();
     final seat = (data['seat_number'] ?? '').toString();
     final nominal = passengerName.isNotEmpty || documentNumber.isNotEmpty || seat.isNotEmpty;
-    final supportPhone = (data['support_phone'] ?? '').toString();
 
     return FittedBox(
       fit: BoxFit.fill,
@@ -424,42 +421,11 @@ class _TicketCanvas extends StatelessWidget {
             ),
           ],
 
-          // Linha de emergencia/apoio da operadora — mesmas coordenadas do PDF
-          // (`_draw_emergency_contact`). O lado livre depende da variante: no
-          // bilhete nominal a direita esta livre; no bilhete ao portador e a
-          // direita que tem o texto de ajuda, por isso vai para a esquerda.
-          // Escrever sempre no mesmo sitio tapava um dos dois.
-          if (supportPhone.isNotEmpty)
-            Positioned(
-              left: nominal ? 682 : 122,
-              top: nominal ? 1218 : 1258,
-              width: nominal ? 228 : 226,
-              height: 86,
-              // Sem caixa branca por baixo: o rectangulo destacava-se do resto
-              // do bilhete como um remendo colado. O texto assenta
-              // directamente no cartao, como todos os outros campos.
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('EMERGENCIA',
-                      maxLines: 1,
-                      style: TextStyle(
-                          fontSize: 15, color: _labelOrange,
-                          fontWeight: FontWeight.w800, height: 1.0)),
-                  const SizedBox(height: 10),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(supportPhone,
-                        maxLines: 1, softWrap: false,
-                        style: const TextStyle(
-                            fontSize: 30, color: _navy,
-                            fontWeight: FontWeight.w900, height: 1.0)),
-                  ),
-                ],
-              ),
-            ),
+          // O numero de emergencia deixou de ser impresso no bilhete: passou
+          // para o SMS que o acompanha. No bilhete competia com os dados da
+          // viagem, e quem precisa dele esta a meio da estrada com o telemovel
+          // na mao. Continua a aparecer no painel por baixo do bilhete, onde
+          // se marca com um toque.
 
           // Short code centered below QR (center_x=512, top_y=1365).
           _PdfCenteredText(centerX: 512, top: 1365, maxSize: 35, minSize: 28,

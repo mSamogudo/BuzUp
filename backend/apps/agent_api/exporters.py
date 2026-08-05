@@ -78,6 +78,36 @@ def _fmt_money(v) -> str:
     return f"{_to_decimal(v):,.2f} MZN"
 
 
+# Como o embarque aconteceu, em palavras que o operador reconhece. Os nomes
+# tecnicos ("card_pay_as_you_go") nao dizem nada a quem faz a contabilidade.
+_TIPOS_EMBARQUE = {
+    "card_pay_as_you_go": "Cartao",
+    "qr_pay_as_you_go": "QR da conta",
+    "digital_travel_pass": "Bilhete",
+    "guest_digital_travel_pass": "Bilhete",
+}
+
+
+def _tipo_embarque(valor) -> str:
+    return _TIPOS_EMBARQUE.get(str(valor or ""), str(valor or "-"))
+
+
+def _origem_do_dinheiro(r: dict) -> str:
+    """De onde veio o valor daquela linha.
+
+    E a coluna que impede a dupla contagem: sem ela, somar os valores dos
+    embarques juntava o que foi debitado hoje com o que ja tinha sido pago no
+    dia da compra.
+    """
+    if str(r.get("status") or "").lower() != "approved":
+        return "-"
+    if r.get("cobrou_agora"):
+        return "Debitado agora"
+    if r.get("bilhete_id"):
+        return "Bilhete ja pago"
+    return "Sem custo"
+
+
 # ---------------------------------------------------------------------------
 # PDF: single day-close session
 # ---------------------------------------------------------------------------
@@ -120,26 +150,22 @@ def session_pdf(record) -> bytes:
     # KPI boxes (4 across)
     box_w = (width - 30 * mm - 9) / 4
     box_h = 22 * mm
+    # "Debitado na validacao" e nao "receita das validacoes": o que embarcou
+    # com bilhete ja pago nao volta a contar. Ver `validations_prepaid`.
+    prepago = _to_decimal(totals.get("validations_prepaid", "0.00"))
     kpis = [
         ("VENDAS", _fmt_money(record.sales_total), f"{record.tickets_count} bilhetes", ORANGE),
         ("RECARGAS", _fmt_money(record.topups_total), f"{len(topups)} operacoes", colors.HexColor("#0B6FE0")),
-        ("VALIDACOES", str(record.validations_count), _fmt_money(record.validations_revenue), colors.HexColor("#8B5CF6")),
-        ("RECEITA EM CAIXA", _fmt_money(_to_decimal(record.sales_total) + _to_decimal(record.topups_total)), "Vendas + Recargas", colors.HexColor("#1FB04A")),
+        ("EMBARQUES", str(record.validations_count),
+         f"{_fmt_money(record.validations_revenue)} debitados", colors.HexColor("#8B5CF6")),
+        ("RECEITA EM CAIXA",
+         _fmt_money(_to_decimal(record.sales_total) + _to_decimal(record.topups_total)),
+         "Vendas + Recargas", colors.HexColor("#1FB04A")),
     ]
     x = 15 * mm
     for label, value, foot, accent in kpis:
-        c.setStrokeColor(LIGHT_GREY)
-        c.setFillColor(colors.white)
-        c.roundRect(x, y - box_h, box_w, box_h, 4, fill=1, stroke=1)
-        c.setFillColor(accent)
-        c.setFont("Helvetica-Bold", 8)
-        c.drawString(x + 4, y - 6, label)
-        c.setFillColor(NAVY)
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(x + 4, y - 14, value)
-        c.setFillColor(GREY)
-        c.setFont("Helvetica", 8)
-        c.drawString(x + 4, y - box_h + 4, foot)
+        _draw_kpi_box(c, x=x, y_top=y, w=box_w, h=box_h,
+                      label=label, value=value, foot=foot, accent=accent)
         x += box_w + 3
 
     y -= box_h + 8 * mm
@@ -176,20 +202,35 @@ def session_pdf(record) -> bytes:
     )
 
     # ---- Validations table ----
+    # Uma linha por embarque, com o CARTAO e a origem do dinheiro. Sem a
+    # coluna "Cobranca", somar a coluna do valor dava dinheiro a dobrar: um
+    # bilhete comprado ontem e embarcado hoje aparece aqui com o seu valor,
+    # mas ja entrou na receita no dia da compra.
     y = _draw_table(
         c, x_left=15 * mm, y=y, width=width - 30 * mm,
-        title=f"Validacoes ({len(validations)})",
-        headers=["Tipo", "Rota", "Debito", "Dispositivo", "Estado"],
-        col_widths=[35, 25, 28, 42, 30],
+        title=f"Embarques ({len(validations)})",
+        headers=["Cartao", "Tipo", "Rota", "Valor", "Cobranca", "Estado"],
+        col_widths=[34, 30, 20, 26, 30, 22],
         rows=[[
-            str(r.get("validation_type") or "-")[:20],
-            str(r.get("route") or "-")[:14],
+            str(r.get("card_uid") or "-")[:22],
+            _tipo_embarque(r.get("validation_type")),
+            str(r.get("route") or "-")[:12],
             _fmt_money(r.get("amount_debited", 0)),
-            str(r.get("device_serial") or "-")[:24],
+            _origem_do_dinheiro(r),
             str(r.get("status") or "-").upper(),
         ] for r in validations[:30]],
-        empty_text="Sem validacoes neste fecho.",
+        empty_text="Sem embarques neste fecho.",
     )
+
+    if prepago > 0:
+        c.setFillColor(GREY)
+        c.setFont("Helvetica-Oblique", 8)
+        c.drawString(
+            15 * mm, y,
+            f"Dos embarques acima, {_fmt_money(prepago)} correspondem a bilhetes "
+            "ja pagos noutro dia — nao entram na receita de hoje.",
+        )
+        y -= 6 * mm
 
     _draw_footer(c, width)
     c.save()
@@ -427,18 +468,74 @@ def _draw_footer(c: canvas.Canvas, width: float) -> None:
         or _safe_image(_asset("up-digital-logo", "up_digital_dark.png"))
         or _safe_image(_asset("up-digital-logo", "up_digital_light.png"))
     )
+    logo_w = 0.0
     if up:
         try:
             iw, ih = up.getSize()
             target_h = 7 * mm
-            target_w = iw * target_h / ih
-            c.drawImage(up, width - 8 * mm - target_w, (band_h - target_h) / 2, width=target_w, height=target_h, mask="auto")
+            logo_w = iw * target_h / ih
+            c.drawImage(up, width - 8 * mm - logo_w, (band_h - target_h) / 2,
+                        width=logo_w, height=target_h, mask="auto")
         except Exception:
-            pass
+            logo_w = 0.0
     c.setFillColor(GREY)
     c.setFont("Helvetica", 8)
     c.drawString(10 * mm, band_h / 2 - 2, "BuzUp | TPM-TUR S.A. | Documento gerado automaticamente.")
-    c.drawString(10 * mm, band_h / 2 - 9, "powered by")
+    # "powered by" pertence ao logotipo da UpDigital, nao a linha da esquerda:
+    # solto a 10mm ficava a boiar por baixo do texto da operadora, como se
+    # fosse outra frase.
+    if logo_w:
+        c.drawRightString(width - 8 * mm - logo_w - 5, band_h / 2 - 2, "powered by")
+
+
+# Folga entre o fim de uma coluna e o inicio da seguinte. Com 2 pontos,
+# "100.00 MZN" ficava colado a "CONFIRMED" e a tabela lia-se mal.
+_COL_GAP = 7
+
+_KPI_PAD = 7
+_KPI_LABEL_SIZE = 7.5
+_KPI_VALUE_MAX = 14
+_KPI_VALUE_MIN = 9
+_KPI_FOOT_SIZE = 7.5
+
+
+def _draw_kpi_box(c, *, x, y_top, w, h, label, value, foot, accent) -> None:
+    """Um cartao de indicador, com o texto DENTRO da caixa.
+
+    `drawString` posiciona pela LINHA DE BASE, nao pelo topo do texto. O codigo
+    anterior punha a etiqueta com a base a 6 pontos do topo da caixa — com
+    fonte 8, o texto subia 2 pontos ACIMA da moldura e saia cortado ao meio
+    pela propria borda. O valor encostava a linha de cima pelo mesmo motivo.
+    Aqui as bases sao calculadas a partir do topo, ja com a altura da fonte
+    descontada.
+
+    O valor tambem encolhe para caber: numa receita de sete digitos
+    ("1,250,000.00 MZN") o texto passava por cima do cartao seguinte.
+    """
+    c.setStrokeColor(LIGHT_GREY)
+    c.setFillColor(colors.white)
+    c.roundRect(x, y_top - h, w, h, 4, fill=1, stroke=1)
+
+    util = w - 2 * _KPI_PAD
+
+    c.setFillColor(accent)
+    c.setFont("Helvetica-Bold", _KPI_LABEL_SIZE)
+    c.drawString(x + _KPI_PAD, y_top - _KPI_PAD - _KPI_LABEL_SIZE,
+                 _fit_text(c, label, "Helvetica-Bold", _KPI_LABEL_SIZE, util))
+
+    tamanho = _KPI_VALUE_MAX
+    while tamanho > _KPI_VALUE_MIN and c.stringWidth(value, "Helvetica-Bold", tamanho) > util:
+        tamanho -= 0.5
+    c.setFillColor(NAVY)
+    c.setFont("Helvetica-Bold", tamanho)
+    c.drawString(x + _KPI_PAD,
+                 y_top - _KPI_PAD - _KPI_LABEL_SIZE - 6 - tamanho,
+                 _fit_text(c, value, "Helvetica-Bold", tamanho, util))
+
+    c.setFillColor(GREY)
+    c.setFont("Helvetica", _KPI_FOOT_SIZE)
+    c.drawString(x + _KPI_PAD, y_top - h + _KPI_PAD,
+                 _fit_text(c, foot, "Helvetica", _KPI_FOOT_SIZE, util))
 
 
 def _draw_table(c, *, x_left, y, width, title, headers, col_widths, rows, empty_text):
@@ -458,14 +555,30 @@ def _draw_table(c, *, x_left, y, width, title, headers, col_widths, rows, empty_
     # Header row
     cw_sum = sum(col_widths)
     scale = width / cw_sum
+
+    # Uma coluna de numeros alinha a DIREITA, e o cabecalho tem de a acompanhar
+    # — "Valor" encostado a esquerda por cima de valores encostados a direita
+    # e o que fazia a tabela parecer desalinhada. Decide-se pelo conteudo: e
+    # coluna de numeros quando ha numeros e nao ha texto que nao seja "-".
+    def _coluna_numerica(indice: int) -> bool:
+        vistos = [str(r[indice]) for r in rows if indice < len(r)]
+        uteis = [v for v in vistos if v.strip() not in ("", "-")]
+        return bool(uteis) and all(_is_numeric_cell(v) for v in uteis)
+
+    a_direita = {i for i in range(len(headers)) if _coluna_numerica(i)}
+
     x = x_left
     c.setFillColor(NAVY)
     c.rect(x_left, y - line_h, width, line_h, fill=1, stroke=0)
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 8)
-    for h, w in zip(headers, col_widths):
-        c.drawString(x + 2, y - line_h + 1.5 * mm, h)
-        x += w * scale
+    for i, (h, w) in enumerate(zip(headers, col_widths)):
+        cw = w * scale
+        if i in a_direita:
+            c.drawRightString(x + cw - _COL_GAP, y - line_h + 1.5 * mm, h)
+        else:
+            c.drawString(x + 2, y - line_h + 1.5 * mm, h)
+        x += cw
     y -= line_h
 
     if not rows:
@@ -481,12 +594,14 @@ def _draw_table(c, *, x_left, y, width, title, headers, col_widths, rows, empty_
             c.rect(x_left, y - line_h, width, line_h, fill=1, stroke=0)
         x = x_left
         c.setFillColor(NAVY)
-        for cell, w in zip(row, col_widths):
+        for i, (cell, w) in enumerate(zip(row, col_widths)):
             cw = w * scale
             txt = str(cell)
-            fitted = _fit_text(c, txt, "Helvetica", 8, cw - 4)
-            if _is_numeric_cell(txt):
-                c.drawRightString(x + cw - 2, y - line_h + 1.5 * mm, fitted)
+            fitted = _fit_text(c, txt, "Helvetica", 8, cw - _COL_GAP - 2)
+            # Alinha pela COLUNA e nao pela celula: um "-" no meio de numeros
+            # ficava encostado a esquerda enquanto os vizinhos iam a direita.
+            if i in a_direita:
+                c.drawRightString(x + cw - _COL_GAP, y - line_h + 1.5 * mm, fitted)
             else:
                 c.drawString(x + 2, y - line_h + 1.5 * mm, fitted)
             x += cw

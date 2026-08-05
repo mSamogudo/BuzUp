@@ -280,45 +280,18 @@ def _draw_qr(c: canvas.Canvas, data: str, ref: str) -> None:
 
 
 def _draw_emergency_contact(c: canvas.Canvas, *, nominal: bool = False) -> None:
-    """Contacto de emergencia, na faixa inferior do bilhete.
+    """O numero de emergencia deixou de ser impresso no bilhete.
 
-    Um passageiro com um problema a bordo — autocarro avariado, acidente,
-    bilhete recusado — tem o bilhete na mao. E ai que o numero tem de estar, e
-    nao num site que ninguem vai procurar nesse momento. Configurado no portal
-    (Tarifas > Contactos); sem numero definido, nao se desenha nada.
+    Passou para o SMS que acompanha o bilhete (ver
+    `apps.guest_checkouts.services._deliver_pass_sms`): no bilhete ocupava
+    espaco a competir com os dados da viagem, e quem precisa dele esta a meio
+    da estrada com o telemovel na mao — nao a olhar para o PDF. No SMS fica na
+    caixa de mensagens e liga-se com um toque.
+
+    A funcao fica como marco: o desenho do bilhete chama-a e assim quem
+    procurar "emergencia" aqui percebe para onde o numero foi.
     """
-    try:
-        from apps.branding.models import BrandingSettings
-
-        settings_row = BrandingSettings.load()
-    except Exception:
-        return
-
-    phone = (settings_row.emergency_phone or settings_row.support_phone or "").strip()
-    if not phone:
-        return
-
-    # O lado livre depende da variante: no bilhete nominal a coluna esquerda
-    # esta ocupada pelo nome e pelo documento, e a direita so tem o LUGAR; no
-    # bilhete ao portador e o contrario (a direita tem "Apresente este QR
-    # code"). Escrever sempre no mesmo sitio tapava um dos dois.
-    if nominal:
-        box_x, box_y, box_w = 682, 1218, 228
-    else:
-        box_x, box_y, box_w = 122, 1258, 226
-
-    # Sem caixa branca por baixo: o retangulo destacava-se do resto do bilhete
-    # como um remendo colado. O texto assenta directamente no cartao, como
-    # todos os outros campos.
-    c.setFillColor(ORANGE)
-    c.setFont("Helvetica-Bold", 15)
-    c.drawString(box_x, _baseline(box_y + 12, 15), "EMERGENCIA")
-
-    size = _fit_size(c, phone, "Helvetica-Bold", box_w, 30, 17)
-    c.setFillColor(NAVY)
-    c.setFont("Helvetica-Bold", size)
-    c.drawString(box_x, _baseline(box_y + 40, size), phone)
-
+    return
 
 def _text(c: canvas.Canvas, x: float, y_top: float, value: str, *, size: int, font: str, color) -> None:
     c.setFillColor(color)

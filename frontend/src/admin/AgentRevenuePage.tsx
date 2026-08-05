@@ -97,7 +97,7 @@ export default function AgentRevenuePage() {
     const qs = new URLSearchParams();
     if (dateFrom) qs.set("date_from", dateFrom);
     if (dateTo) qs.set("date_to", dateTo);
-    if (agentFilter) qs.set("agent_id", agentFilter);
+    if (agentFilter) qs.set("q", agentFilter);
     const r = await apiFetch(`/api/agent/admin/day-closes/?${qs.toString()}`, token!);
     return (r?.results || []) as DayCloseRow[];
   }, [token, dateFrom, dateTo, agentFilter]);
@@ -242,8 +242,12 @@ export default function AgentRevenuePage() {
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </label>
           <label className="field">
-            <span>ID do agente (opcional)</span>
-            <input type="text" value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} placeholder="Ex.: 12" />
+            <span>Procurar</span>
+            {/* Era "ID do agente". Ninguem sabe de cor o id do motorista — a
+                operacao fala destes fechos por nome e por rota. */}
+            <input type="text" value={agentFilter} style={{ minWidth: 220 }}
+              onChange={(e) => setAgentFilter(e.target.value)}
+              placeholder="Nome, telefone ou rota (ex.: Joao, MZ-NEL)" />
           </label>
           <div style={{ display: "flex", gap: 8, paddingBottom: 6 }}>
             <button className="icon-text-button" onClick={reloadBoth} type="button">

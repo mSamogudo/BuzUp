@@ -1,7 +1,7 @@
 name: buzup_mobile
 description: "BuzUp Passageiro - app movel para passageiros do transporte cashless."
 publish_to: 'none'
-version: 0.6.3+26
+version: 0.6.4+27
 
 environment:
   sdk: ^3.11.3

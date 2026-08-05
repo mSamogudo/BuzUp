@@ -66,7 +66,15 @@
   .bzbk-field-wide{grid-column:1/-1}
 }
 @media(max-width:400px){.bzbk-grid{grid-template-columns:1fr}}
-.bzbk-field{display:flex;flex-direction:column;gap:6px}
+/* `min-width:0` porque um item de grelha tem `min-width:auto` por omissão e
+   recusa-se a encolher abaixo do conteúdo. No Safari do iPad o
+   `input[type=date]` tem uma largura intrínseca grande e transbordava para
+   cima do campo ao lado — "Data da viagem" por cima de "Passageiros". */
+.bzbk-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+/* O mesmo motivo, do lado do próprio campo: sem isto o Safari desenha o
+   selector de data no tamanho que lhe apetece e ignora a coluna. */
+.bzbk-input[type="date"],.bzbk-input[type="time"]{
+  -webkit-appearance:none;appearance:none;min-width:0;max-width:100%}
 .bzbk-label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em}
 .bzbk-input,.bzbk-select{width:100%;font-size:16px;font-family:inherit;color:var(--ink);
   background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:12px 13px;min-height:48px;

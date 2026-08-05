@@ -19,16 +19,17 @@ ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=csv_config)
 # POS. Set to True only in staging/test envs (or for staff users).
 ALLOW_AGENT_CARD_CAPTURE = config("ALLOW_AGENT_CARD_CAPTURE", default=False, cast=bool)
 
-# Compatibilidade: os downloads antigos levavam o JWT de acesso em `?token=`.
-# Um URL fica gravado no log do nginx e no historico do browser, e o JWT de
-# acesso da acesso a toda a conta — por isso o caminho novo usa bilhetes de
-# curta duracao e de ambito unico (apps/core/download_tokens.py).
+# Aceitar o token de acesso no URL (`?token=<JWT>`) era a forma antiga de
+# descarregar um ficheiro protegido, porque um link nao envia o cabecalho
+# `Authorization`. So que o URL fica gravado no log do servidor e no historico
+# do browser — e o que la ficava era o token COMPLETO, que da acesso a tudo o
+# que o utilizador pode fazer.
 #
-# Isto fica True enquanto houver apps instaladas que so sabem construir o link
-# antigo; desliga-lo hoje tirava-lhes o extracto em PDF. PASSAR A FALSE assim
-# que as versoes novas estiverem distribuidas — enquanto for True, o problema
-# que os bilhetes resolvem continua de pe.
-ALLOW_JWT_IN_QUERY_STRING = config("ALLOW_JWT_IN_QUERY_STRING", default=True, cast=bool)
+# Desligado por omissao a 2026-08-05, depois de confirmar que ja ninguem o usa:
+# o portal descarrega com `fetch` + blob (`apiDownload`) e a app do passageiro
+# pede um bilhete de curta duracao (`/api/auth/download-ticket/`). Fica a
+# variavel de ambiente para se voltar a ligar se aparecer um cliente antigo.
+ALLOW_JWT_IN_QUERY_STRING = config("ALLOW_JWT_IN_QUERY_STRING", default=False, cast=bool)
 
 # Default issuance fee charged to a passenger when they receive a new card
 # on the POS. Configurable so commercial can change without code release.
@@ -198,6 +199,14 @@ BLUTEKI_USE_GET = config("BLUTEKI_USE_GET", default=False, cast=bool)
 BLUTEKI_VERIFY_SSL = config("BLUTEKI_VERIFY_SSL", default=True, cast=bool)
 
 SMS_PROVIDER = config("SMS_PROVIDER", default="BLUTEKI")
+
+# Numeros que recebem alertas de infraestrutura (separados por virgula), usados
+# pelo vigia do servidor (`/usr/local/bin/buzup-vigia`). Um monitor externo
+# exigiria uma conta noutro servico; isto usa o gateway de SMS que a operacao
+# ja tem. Nao substitui um monitor de fora — se a maquina inteira cair ninguem
+# manda o SMS — mas apanha o caso comum: um contentor morto, um certificado a
+# expirar, um dominio a servir outra coisa.
+ALERT_SMS_NUMBERS = config("ALERT_SMS_NUMBERS", default="")
 
 OTP_TTL_MINUTES = config("OTP_TTL_MINUTES", default=5, cast=int)
 OTP_MAX_ATTEMPTS = config("OTP_MAX_ATTEMPTS", default=5, cast=int)

@@ -86,6 +86,20 @@ def _charge_with_package_fallback(
     raise InsufficientBalanceError("Sem saldo disponivel.")
 
 
+def _card_of(passenger_account) -> Card | None:
+    """Cartao activo desta conta, para o embarque nao ficar sem identificacao.
+
+    Um embarque sem cartao nem nome e uma linha que nao se liga a ninguem — no
+    fecho de caixa nao se sabe quem viajou, e uma reclamacao de cobranca fica
+    sem resposta.
+    """
+    if passenger_account is None:
+        return None
+    return Card.objects.filter(
+        passenger_account=passenger_account, status=Card.Status.ACTIVE,
+    ).order_by("-created_at").first()
+
+
 def _active_pass_for(passenger_account, route: Route, trip) -> DigitalTravelPass | None:
     """Bilhete activo deste passageiro para esta rota, se existir.
 
@@ -471,6 +485,11 @@ def validate_qr_account(
                 validation_type=ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO,
                 passenger_account=passenger, wallet=wallet, route=route, trip=trip,
                 origin_stop=origin, destination_stop=destination, device=device,
+                # O QR da conta e a mesma pessoa que o cartao: guardar o cartao
+                # aqui faz o embarque aparecer no fecho com um numero em vez de
+                # um traco. Sem isto, 147 embarques por QR nao se ligavam a
+                # cartao nenhum e a coluna do fecho vinha vazia.
+                physical_card=_card_of(passenger),
                 amount_debited=amount_charged, status=ValidationEvent.Status.APPROVED,
                 idempotency_key=idempotency_key, wallet_transaction_ref=tx_ref or charge_source,
             )

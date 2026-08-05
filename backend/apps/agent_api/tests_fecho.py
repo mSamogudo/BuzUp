@@ -128,6 +128,26 @@ class LinhaDoEmbarqueTests(FechoBase):
         self.assertFalse(linha["cobrou_agora"])
         self.assertEqual(linha["bilhete_id"], tp.id)
 
+    def test_embarque_por_qr_da_conta_guarda_o_cartao(self):
+        """O QR da conta e a mesma pessoa que o cartao.
+
+        Sem isto, um embarque por QR aparecia no fecho sem cartao nenhum e a
+        linha nao se ligava a ninguem.
+        """
+        from apps.validations.services import _card_of
+
+        self.assertEqual(_card_of(self.passageiro), self.cartao)
+
+    def test_linha_sem_cartao_mostra_quem_embarcou(self):
+        from apps.agent_api.exporters import _quem_embarcou
+
+        self.assertEqual(_quem_embarcou({"card_uid": "CARD-1"}), "CARD-1")
+        self.assertEqual(
+            _quem_embarcou({"card_uid": "", "passageiro": "Ana Cossa"}), "Ana Cossa")
+        self.assertEqual(
+            _quem_embarcou({"card_uid": "", "passageiro": "", "telefone": "***3256"}),
+            "***3256")
+
     def test_a_coluna_do_pdf_diz_de_onde_veio_o_dinheiro(self):
         from apps.agent_api.exporters import _origem_do_dinheiro
 

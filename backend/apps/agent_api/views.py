@@ -947,7 +947,9 @@ class AgentDayCloseView(APIView):
         # Por device OU por autor: um agente a validar de um telemovel nao
         # registado nao tinha device atribuido e as validacoes dele sumiam
         # do fecho (e do ecra de historico do POS, que le este payload).
-        validations_qs = ValidationEvent.objects.filter(
+        validations_qs = ValidationEvent.objects.select_related(
+            "physical_card", "passenger_account", "route",
+        ).filter(
             Q(device_id__in=device_ids) | Q(validated_by=user),
             created_at__gte=since, created_at__lt=day_end,
         ).order_by("-created_at")
@@ -1020,6 +1022,12 @@ class AgentDayCloseView(APIView):
                 # nao se liga a ninguem — nem para conferir com o passageiro,
                 # nem para responder a uma reclamacao de cobranca.
                 "card_uid": v.physical_card.card_uid if v.physical_card_id else "",
+                # Quem embarcou. O cartao nem sempre existe (bilhete de
+                # convidado nao tem), e uma linha sem cartao NEM nome nao se
+                # liga a ninguem — no fecho nao se sabe quem viajou e uma
+                # reclamacao de cobranca fica sem resposta.
+                "passageiro": v.passenger_account.full_name if v.passenger_account_id else "",
+                "telefone": _mask_phone(v.passenger_account.phone_number) if v.passenger_account_id else "",
                 # Uma validacao por cartao pode ser DUAS coisas: um debito na
                 # hora (pay-as-you-go) ou o embarque com um bilhete ja pago. A
                 # diferenca decide se o valor entra na receita do dia ou se ja

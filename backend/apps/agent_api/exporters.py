@@ -92,6 +92,22 @@ def _tipo_embarque(valor) -> str:
     return _TIPOS_EMBARQUE.get(str(valor or ""), str(valor or "-"))
 
 
+def _quem_embarcou(r: dict) -> str:
+    """O cartao, ou o nome de quem embarcou quando nao ha cartao.
+
+    Um bilhete de convidado nao tem cartao nenhum. Deixar a coluna com um
+    traco fazia a linha nao se ligar a ninguem — e o fecho perde o sentido se
+    nao se souber quem viajou.
+    """
+    cartao = str(r.get("card_uid") or "").strip()
+    if cartao:
+        return cartao[:22]
+    nome = str(r.get("passageiro") or "").strip()
+    if nome:
+        return nome[:22]
+    return str(r.get("telefone") or "-")[:22]
+
+
 def _origem_do_dinheiro(r: dict) -> str:
     """De onde veio o valor daquela linha.
 
@@ -209,10 +225,10 @@ def session_pdf(record) -> bytes:
     y = _draw_table(
         c, x_left=15 * mm, y=y, width=width - 30 * mm,
         title=f"Embarques ({len(validations)})",
-        headers=["Cartao", "Tipo", "Rota", "Valor", "Cobranca", "Estado"],
+        headers=["Cartao / passageiro", "Tipo", "Rota", "Valor", "Cobranca", "Estado"],
         col_widths=[34, 30, 20, 26, 30, 22],
         rows=[[
-            str(r.get("card_uid") or "-")[:22],
+            _quem_embarcou(r),
             _tipo_embarque(r.get("validation_type")),
             str(r.get("route") or "-")[:12],
             _fmt_money(r.get("amount_debited", 0)),

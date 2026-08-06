@@ -8,7 +8,6 @@ nunca escreve sem passar pela pre-visualizacao.
 import io
 
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from openpyxl import load_workbook
 from rest_framework.test import APITestCase
 
@@ -116,6 +115,23 @@ class SentidoDeVoltaTests(MatrizApiBase):
         self.assertEqual(r.data["return_created"]["created"], 3)
         self.assertTrue(r.data["has_return"])
         self.assertEqual(r.data["unsellable"], 6, "agora sao 6 trajectos, todos sem preco")
+
+    def test_o_regresso_passa_a_resolver_logo_a_seguir(self):
+        """A cache de segmentos guarda tambem os pares que NAO existem.
+
+        Sem a limpar, o regresso continuava recusado depois de criado o
+        sentido de volta — e o botao parecia nao ter feito nada.
+        """
+        from apps.routes.services import resolve_route_segment
+
+        self.client.force_authenticate(self.gestor)
+        # Aquece a cache com o "nao existe" de antes da volta existir.
+        with self.assertRaises(Exception):
+            resolve_route_segment(self.rota, self.nelspruit.id, self.maputo.id)
+
+        self.client.post(self.url("return-direction/"), {}, format="json")
+
+        self.assertIsNotNone(resolve_route_segment(self.rota, self.nelspruit.id, self.maputo.id))
 
     def test_repetir_nao_duplica_paragens(self):
         self.client.force_authenticate(self.gestor)

@@ -96,6 +96,13 @@ def ensure_return_direction(route: Route) -> dict:
             distance_from_start_km=(total_km - (rs.distance_from_start_km or Decimal("0.00"))),
         )
         criadas += 1
+
+    # Sem isto a volta continua a ser recusada: o resolvedor guarda em cache o
+    # "este par nao forma segmento" de quando o sentido ainda nao existia, e o
+    # botao no portal parecia nao ter feito nada.
+    from apps.routes.services import invalidate_route_segments
+
+    invalidate_route_segments(route.id)
     return {"created": criadas, "already": False}
 
 

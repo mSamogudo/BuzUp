@@ -8,6 +8,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, TabBar, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import FareMatrixTab from "./FareMatrixTab";
 import { useConfirm } from "../ui/ConfirmDialog";
 
 interface FareProduct { id: number; uuid: string; name: string; product_type: string; status: string; }
@@ -33,7 +34,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   const { data: fees, loading: lF, reload: rF } = useAsyncData<AdminFee[]>(feesLoader, [token]);
   const { data: fxRates, loading: lX, reload: rX } = useAsyncData<ExchangeRate[]>(fxLoader, [token]);
   const reload = () => { rP(); rR(); rF(); rX(); };
-  const [tab, setTab] = useState<"rules" | "products" | "fees" | "fx" | "contacts">("rules");
+  const [tab, setTab] = useState<"matrix" | "rules" | "products" | "fees" | "fx" | "contacts">("matrix");
   // Contactos vivem no branding (singleton), nao numa lista — por isso o
   // formulario e carregado uma vez e gravado com PATCH, sem modal.
   const [contacts, setContacts] = useState({ emergency_phone: "", support_phone: "", support_email: "" });
@@ -144,12 +145,15 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "fares")}>
       <TabBar items={[
+        { key: "matrix", label: "Tabela de preços" },
         { key: "rules", label: t(lc, "fareRules"), count: (rules || []).length },
         { key: "products", label: t(lc, "fareProducts"), count: (products || []).length },
         { key: "fees", label: "Taxas administrativas", count: (fees || []).length },
         { key: "fx", label: "Câmbio", count: (fxRates || []).length },
         { key: "contacts", label: "Contactos" },
       ]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
+
+      {tab === "matrix" && <FareMatrixTab routes={routeOpts || []} />}
 
       {tab === "rules" && (
         <SectionCard title={t(lc, "fareRules")}>

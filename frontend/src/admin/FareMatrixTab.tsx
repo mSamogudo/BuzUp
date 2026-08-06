@@ -4,6 +4,7 @@ import { apiFetch, apiPost } from "../lib/api";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { AdminModal, SectionCard } from "../ui/common";
+import { useConfirm } from "../ui/ConfirmDialog";
 
 /** Tabela de preços de uma rota: uma grelha origem × destino.
  *
@@ -33,6 +34,7 @@ const METODOS = [
 
 export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
   const { token } = useAuth();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [routeId, setRouteId] = useState("");
   const [data, setData] = useState<MatrixData | null>(null);
   const [prices, setPrices] = useState<Record<string, string>>({});
@@ -173,6 +175,21 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
     } finally { setBusy(false); }
   };
 
+  // Trocar de rota com a grelha por gravar deitava fora 132 precos escritos a
+  // mao sem uma palavra.
+  const trocarRota = async (novo: string) => {
+    if (dirty && data) {
+      const ok = await confirm({
+        title: "Alteracoes por gravar",
+        message: "A tabela desta rota tem alteracoes que ainda nao foram gravadas. Se mudar de rota, perde-as.",
+        confirmLabel: "Mudar de rota",
+        tone: "danger",
+      });
+      if (!ok) return;
+    }
+    setRouteId(novo);
+  };
+
   const comPreco = useMemo(
     () => Object.values(prices).filter((v) => String(v).trim() !== "").length,
     [prices],
@@ -185,7 +202,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
     >
       <div className="admin-form-grid" style={{ marginBottom: 14 }}>
         <label className="field"><span>Rota</span>
-          <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+          <select value={routeId} onChange={(e) => trocarRota(e.target.value)}>
             <option value="">Escolha a rota…</option>
             {routes.map((r) => <option key={r.id} value={r.id}>{r.code} · {r.name}</option>)}
           </select>
@@ -341,6 +358,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
           </div>
         </div>
       </AdminModal>
+      {confirmDialog}
     </SectionCard>
   );
 }

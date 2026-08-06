@@ -89,6 +89,14 @@ def sale_state(trip, taken: int | None = None) -> tuple[bool, str]:
     if trip.status not in SELLABLE_TRIP_STATUSES:
         return False, "Esta partida ja nao esta disponivel."
 
+    # Desactivar ou apagar uma rota tem de tirar as partidas dela da venda.
+    # Nao tirava: o site publico continuava a oferecer partidas de uma rota ja
+    # apagada, com lugares disponiveis e botao de compra vivo. Como esta
+    # funcao e tambem a que autoriza o checkout, o passageiro chegava a pagar.
+    rota = getattr(trip, "route", None)
+    if rota is None or getattr(rota, "deleted_at", None) is not None or rota.status != "active":
+        return False, "Esta rota ja nao esta disponivel."
+
     departure = trip.planned_departure_at
     if trip.status == "scheduled" and departure:
         from datetime import timedelta

@@ -222,32 +222,27 @@ export default function LandingPage() {
               </div>
             </Reveal>
 
-            {[
-              { media: <ProductImg src="/landing/compra.webp" alt="" width={1400} height={900} />, flip: false },
-              { media: <img src="/landing/bordo-anim.webp" alt="" width={760} height={900} loading="lazy" decoding="async" />, flip: true },
-            ].map((row, i) => {
-              const s = t.how.steps[i];
-              return (
-                <Reveal key={s.h3}>
-                  <div className={`bzlp-row${row.flip ? " flip" : ""}`}>
-                    <div className="bzlp-row-media">{row.media}</div>
-                    <div>
-                      {"live" in s && s.live ? <div className="bzlp-live"><i aria-hidden />{s.live}</div> : null}
-                      <div className="bzlp-kicker left">{s.kicker}</div>
-                      <h3>{s.h3}</h3>
-                      <p>{s.text}</p>
-                      {s.facts.length > 0 && (
-                        <ul className="bzlp-facts">
-                          {s.facts.map((f) => (
-                            <li key={f}><CheckCircle2 size={17} aria-hidden /> {f}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+            {t.how.steps.map((s) => (
+              <Reveal key={s.h3}>
+                <div className="bzlp-row">
+                  <div className="bzlp-row-media">
+                    <ProductImg src="/landing/compra.webp" alt="" width={1400} height={900} />
                   </div>
-                </Reveal>
-              );
-            })}
+                  <div>
+                    <div className="bzlp-kicker left">{s.kicker}</div>
+                    <h3>{s.h3}</h3>
+                    <p>{s.text}</p>
+                    {s.facts.length > 0 && (
+                      <ul className="bzlp-facts">
+                        {s.facts.map((f) => (
+                          <li key={f}><CheckCircle2 size={17} aria-hidden /> {f}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </section>
 

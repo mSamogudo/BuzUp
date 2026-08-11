@@ -309,11 +309,9 @@
 /* Linhas alternadas imagem + texto (a página lê-se por imagem) */
 .bzlp-row{display:grid;grid-template-columns:1.06fr .94fr;gap:52px;align-items:center}
 .bzlp-row + .bzlp-row{margin-top:66px}
-.bzlp-row.flip .bzlp-row-media{order:2}
 @media(max-width:900px){
   .bzlp-row{grid-template-columns:1fr;gap:26px}
   .bzlp-row + .bzlp-row{margin-top:44px}
-  .bzlp-row.flip .bzlp-row-media{order:0}
 }
 .bzlp-row-media img{display:block;width:100%;height:auto;border-radius:18px;
   box-shadow:0 22px 50px rgba(6,20,38,.28)}
@@ -323,11 +321,6 @@
 .bzlp-facts{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
 .bzlp-facts li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--ink)}
 .bzlp-facts svg{flex:0 0 auto;color:var(--blue);margin-top:3px}
-.bzlp-live{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--ok);
-  background:rgba(42,157,143,.12);border-radius:30px;padding:5px 12px;margin-bottom:4px}
-.bzlp-live i{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:bzlp-pulse 1.8s ease-in-out infinite}
-@keyframes bzlp-pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* Formulário */
 .bzlp-form{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;

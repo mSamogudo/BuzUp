@@ -51,11 +51,6 @@ export const COPY = {
           text: "No site ou na app, pago com M-Pesa ou e-Mola, em menos de um minuto.",
           facts: [],
         },
-        {
-          kicker: "Embarcar", h3: "O embarque valida-se em segundos.",
-          text: "O agente confirma o bilhete a bordo e a receita fica registada na hora.",
-          facts: [], live: "App real",
-        },
       ],
     },
     platform: {
@@ -159,11 +154,6 @@ export const COPY = {
           kicker: "Buy", h3: "Tickets are bought on the phone.",
           text: "On the website or the app, paid with M-Pesa or e-Mola, in under a minute.",
           facts: [],
-        },
-        {
-          kicker: "Board", h3: "Boarding is validated in seconds.",
-          text: "The agent confirms the ticket on board and revenue is recorded on the spot.",
-          facts: [], live: "Real app",
         },
       ],
     },

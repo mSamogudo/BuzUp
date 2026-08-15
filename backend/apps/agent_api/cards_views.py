@@ -10,6 +10,7 @@ import hashlib
 from decimal import Decimal
 from uuid import uuid4
 
+from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -21,6 +22,7 @@ from apps.cards.models import Card
 from apps.packages.models import Package, PassengerPackage
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
+from apps.payments.services.idempotency import agent_scoped_key, get_or_create_payment_intent
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.wallets.models import Wallet, WalletTransaction
 from apps.wallets.services import credit_wallet, debit_wallet, InsufficientBalanceError, WalletBlockedError
@@ -224,20 +226,13 @@ class AgentWalletTopupView(APIView):
         if wallet.status != Wallet.Status.ACTIVE:
             return Response({"detail": "Carteira bloqueada."}, status=400)
 
-        idem = request.headers.get("Idempotency-Key", uuid4().hex)
-        existing = PaymentIntent.objects.filter(idempotency_key=idem).first()
-        if existing:
-            return Response({
-                "payment_intent": str(existing.uuid),
-                "reference": existing.reference,
-                "status": existing.status,
-                "duplicate": True,
-            })
+        idem = agent_scoped_key(
+            request.user.id, request.headers.get("Idempotency-Key", uuid4().hex))
 
         ref = f"TOP-{uuid4().hex[:18].upper()}"
-        pi = PaymentIntent.objects.create(
-            reference=ref,
+        pi, criada = get_or_create_payment_intent(
             idempotency_key=idem,
+            reference=ref,
             purpose=PaymentIntent.Purpose.POS_CARD_TOPUP,
             amount=amount,
             payer_phone=payer_phone or (card.passenger_account.phone_number if card.passenger_account else ""),
@@ -252,6 +247,17 @@ class AgentWalletTopupView(APIView):
                 "channel": "POS",
             },
         )
+
+        # Repetição do mesmo pedido: devolver o que a primeira tentativa fez.
+        # Continuar daqui creditaria a carteira uma segunda vez (dinheiro) ou
+        # abriria um segundo pedido M-Pesa ao mesmo passageiro.
+        if not criada:
+            return Response({
+                "payment_intent": str(pi.uuid),
+                "reference": pi.reference,
+                "status": pi.status,
+                "duplicate": True,
+            })
 
         if method == "cash":
             confirm_payment_immediately(pi, provider_reference=f"CASH-{ref}")
@@ -390,30 +396,13 @@ class AgentPackagePurchaseView(APIView):
                 # same package_id → recharge
                 is_recharge = True
 
-        idem = request.headers.get("Idempotency-Key", uuid4().hex)
-        existing = PaymentIntent.objects.filter(idempotency_key=idem).first()
-        if existing:
-            # If the previous attempt failed, allow a clean retry (caller
-            # should pass a fresh Idempotency-Key, but be defensive).
-            if existing.status == PaymentIntent.Status.FAILED:
-                return Response({
-                    "payment_intent": str(existing.uuid),
-                    "reference": existing.reference,
-                    "status": existing.status,
-                    "duplicate": True,
-                    "detail": "Tentativa anterior falhou. Use uma nova chave de idempotencia.",
-                }, status=409)
-            return Response({
-                "payment_intent": str(existing.uuid),
-                "reference": existing.reference,
-                "status": existing.status,
-                "duplicate": True,
-            })
+        idem = agent_scoped_key(
+            request.user.id, request.headers.get("Idempotency-Key", uuid4().hex))
 
         ref = f"PKG-{uuid4().hex[:18].upper()}"
-        pi = PaymentIntent.objects.create(
-            reference=ref,
+        pi, criada = get_or_create_payment_intent(
             idempotency_key=idem,
+            reference=ref,
             purpose=PaymentIntent.Purpose.POS_CARD_TOPUP,
             amount=amount,
             payer_phone=payer_phone or (card.passenger_account.phone_number or ""),
@@ -431,6 +420,25 @@ class AgentPackagePurchaseView(APIView):
                 "package_name": package.name,
             },
         )
+
+        if not criada:
+            # Uma tentativa falhada não pode ficar a bloquear o balcão: o
+            # agente tem de poder vender o pacote outra vez. Chave nova, venda
+            # nova — mas dizemos porquê, senão o 409 parece um erro do sistema.
+            if pi.status == PaymentIntent.Status.FAILED:
+                return Response({
+                    "payment_intent": str(pi.uuid),
+                    "reference": pi.reference,
+                    "status": pi.status,
+                    "duplicate": True,
+                    "detail": "Tentativa anterior falhou. Use uma nova chave de idempotencia.",
+                }, status=409)
+            return Response({
+                "payment_intent": str(pi.uuid),
+                "reference": pi.reference,
+                "status": pi.status,
+                "duplicate": True,
+            })
 
         def _activate_package():
             from datetime import timedelta as _td
@@ -566,9 +574,15 @@ class AgentWalletPaymentView(APIView):
         if not card.wallet:
             return Response({"detail": "Cartao sem carteira."}, status=400)
 
-        idem = request.headers.get("Idempotency-Key", uuid4().hex)
-        if WalletTransaction.objects.filter(reference=f"PAY-{idem[:16].upper()}").exists():
-            tx = WalletTransaction.objects.get(reference=f"PAY-{idem[:16].upper()}")
+        bruta = request.headers.get("Idempotency-Key", uuid4().hex)
+        # A referência sai de um resumo da chave inteira, não dos primeiros 16
+        # caracteres: com o prefixo do operador à frente, cortar pelo início
+        # dava a MESMA referência a todos os débitos do mesmo agente — e a
+        # unique constraint transformava a segunda venda dele num erro.
+        idem = agent_scoped_key(request.user.id, bruta)
+        ref = f"PAY-{hashlib.sha256(idem.encode()).hexdigest()[:20].upper()}"
+
+        def _repetida(tx):
             return Response({
                 "reference": tx.reference,
                 "status": tx.status,
@@ -576,13 +590,21 @@ class AgentWalletPaymentView(APIView):
                 "duplicate": True,
             })
 
+        # `ref` e a referência antiga: um POS que repita um pedido feito antes
+        # desta alteração continua a ser reconhecido em vez de pagar duas vezes.
+        anterior = WalletTransaction.objects.filter(
+            reference__in=[ref, f"PAY-{bruta[:16].upper()}"],
+        ).first()
+        if anterior:
+            return _repetida(anterior)
+
         try:
             tx = debit_wallet(
                 wallet=card.wallet,
                 amount=amount,
                 tx_type=WalletTransaction.Type.FARE_DEBIT,
                 source=f"agent:{request.user.id}",
-                reference=f"PAY-{idem[:16].upper()}",
+                reference=ref,
                 metadata={
                     "agent_user_id": request.user.id,
                     "card_uid": card.card_uid,
@@ -594,6 +616,14 @@ class AgentWalletPaymentView(APIView):
             return Response({"detail": "Saldo insuficiente."}, status=402)
         except WalletBlockedError:
             return Response({"detail": "Carteira bloqueada."}, status=403)
+        except IntegrityError:
+            # Dois pedidos iguais ao mesmo tempo: um ganhou a referência, o
+            # outro chega aqui. O débito foi feito uma vez — devolver esse,
+            # em vez de um 500 que leva o agente a cobrar de novo.
+            vencedor = WalletTransaction.objects.filter(reference=ref).first()
+            if not vencedor:
+                raise
+            return _repetida(vencedor)
 
         audit(
             "AGENT_WALLET_DEBIT",

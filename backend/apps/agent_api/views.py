@@ -30,7 +30,7 @@ import hashlib
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse as DjangoHttpResponse
 from django.conf import settings as django_settings
@@ -64,6 +64,7 @@ from apps.fares.services import NoFareFoundError, quote_fare
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.guest_checkouts.ticket_pdf import generate_tickets_pdf
 from apps.payments.models import PaymentIntent
+from apps.payments.services.idempotency import agent_scoped_key
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.pos.models import PosSession
 from apps.routes.models import Route, Stop
@@ -663,27 +664,39 @@ class AgentSaleCreateView(APIView):
         # processed for this agent, return the existing record instead of
         # double-charging the wallet / opening a second M-Pesa request.
         idem = request.headers.get("Idempotency-Key", "").strip()
-        if idem:
+        idem_full = agent_scoped_key(request.user.id, idem) if idem else ""
+
+        def _venda_repetida(pi_existente):
+            """A venda que a primeira tentativa já fez, na forma habitual."""
+            egc = pi_existente.guest_checkout
+            corpo = {
+                "sale_reference": egc.reference if egc else "",
+                "payment": {
+                    "status": pi_existente.status,
+                    "reference": pi_existente.reference,
+                    "provider": pi_existente.provider,
+                    "duplicate": True,
+                },
+                "amount": str(pi_existente.amount),
+                "quantity": egc.quantity if egc else 0,
+                "status": egc.status if egc else "",
+                "duplicate": True,
+            }
+            # Venda a cartao ja tem bilhetes emitidos: devolve-los deixa o POS
+            # imprimir a repeticao em vez de ficar sem nada para dar ao
+            # passageiro que ja pagou.
+            if egc:
+                emitidos = list(egc.travel_passes.all())
+                if emitidos:
+                    corpo["tickets"] = [_ticket_payload(tp) for tp in emitidos]
+            return Response(corpo, status=200)
+
+        if idem_full:
             existing_pi = PaymentIntent.objects.filter(
-                idempotency_key=f"agent-idem-{request.user.id}-{idem}",
+                idempotency_key=idem_full,
             ).select_related("guest_checkout").first()
             if existing_pi:
-                egc = existing_pi.guest_checkout
-                return Response({
-                    "sale_reference": egc.reference if egc else "",
-                    "payment": {
-                        "status": existing_pi.status,
-                        "reference": existing_pi.reference,
-                        "provider": existing_pi.provider,
-                        "duplicate": True,
-                    },
-                    "amount": str(existing_pi.amount),
-                    "quantity": egc.quantity if egc else 0,
-                    "status": egc.status if egc else "",
-                    "duplicate": True,
-                }, status=200)
-
-        idem_full = f"agent-idem-{request.user.id}-{idem}" if idem else ""
+                return _venda_repetida(existing_pi)
 
         try:
             if method == "card":
@@ -735,6 +748,18 @@ class AgentSaleCreateView(APIView):
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)
+        except IntegrityError:
+            # Entre a leitura acima e a escrita ha uma janela: o POS repete o
+            # pedido (rede fraca, dedo duas vezes) e as duas tentativas passam
+            # a leitura ao mesmo tempo. Uma cria a venda, a outra bate na
+            # unique constraint. Sem isto o agente via "erro: ja existe" numa
+            # venda que afinal tinha sido feita — e voltava a cobrar.
+            vencedora = PaymentIntent.objects.filter(
+                idempotency_key=idem_full,
+            ).select_related("guest_checkout").first() if idem_full else None
+            if vencedora is None:
+                raise
+            return _venda_repetida(vencedora)
 
         if data.get("auto_request_payment", True):
             payment_status = request_payment(gc, pi)

@@ -835,10 +835,14 @@
 }
 
 /* Botão de tema, ao lado do PT/EN. Mesma altura de alvo (44px) para o dedo. */
+/* Centrados sobre o cartao: ficam no eixo do logotipo e dos separadores,
+   em vez de encostados a uma margem por herdarem o alinhamento do pai. */
 .bzau-top-controls {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  margin: 0 0 14px;
 }
 .bzau-theme {
   display: inline-flex;
@@ -857,3 +861,12 @@
 .bzau-theme:hover { transform: translateY(-1px); }
 .bzau-theme:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .bzau-theme { transition: none; } }
+
+/* Aviso de para onde foi o código, no passo da verificação em dois passos. */
+.bzau-2fa-hint {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mu, #52697F);
+}
+.bzau-2fa-hint strong { color: var(--tx, inherit); white-space: nowrap; }

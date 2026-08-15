@@ -41,3 +41,15 @@ def get_or_create_payment_intent(*, idempotency_key: str, **fields) -> tuple[Pay
         if winner:
             return winner, False
         raise
+
+
+def agent_scoped_key(user_id, raw_key: str, *, prefix: str = "agent-idem") -> str:
+    """Prefixa a chave do cliente com quem a enviou.
+
+    A chave vem do POS e o POS não sabe o que os outros POS estão a enviar. Sem
+    o prefixo, dois operadores que por acaso repitam a mesma chave — um cliente
+    com contador em vez de aleatório, um device restaurado a partir de uma cópia
+    — passavam a partilhar a mesma operação: o segundo recebia a venda do
+    primeiro em vez da sua. Com o prefixo, a chave só colide com ela própria.
+    """
+    return f"{prefix}-{user_id}-{raw_key}"

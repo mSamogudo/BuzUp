@@ -341,25 +341,6 @@ export default function LoginPage() {
       </div>
 
       <div className="bzau-shell">
-        {/* ── Barra superior: logótipo + PT/EN ── */}
-        <header className="bzau-top">
-          <div className="bzau-top-controls">
-            <div className="bzau-lang" role="group" aria-label="PT / EN">
-              <button type="button" aria-pressed={locale === "pt"} onClick={() => setLocale("pt")}>PT</button>
-              <button type="button" aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
-            </div>
-            <button
-              type="button"
-              className="bzau-theme"
-              onClick={toggleTheme}
-              aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-              title={theme === "dark" ? "Tema claro" : "Tema escuro"}
-            >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          </div>
-        </header>
-
         <div className="bzau-main">
           <div className="bzau-col">
             {/* ── Cabeçalho centrado ── */}
@@ -374,6 +355,24 @@ export default function LoginPage() {
               )}
               <h1>{heading}</h1>
               <p className="bzau-sub">{subheading}</p>
+            </div>
+
+            {/* Idioma e tema por cima dos separadores: e onde a mao ja esta,
+                e liberta o topo da pagina para o logotipo respirar. */}
+            <div className="bzau-top-controls">
+              <div className="bzau-lang" role="group" aria-label="PT / EN">
+                <button type="button" aria-pressed={locale === "pt"} onClick={() => setLocale("pt")}>PT</button>
+                <button type="button" aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
+              </div>
+              <button
+                type="button"
+                className="bzau-theme"
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
+                title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
             </div>
 
             {/* ── Cartão do formulário ── */}
@@ -405,6 +404,43 @@ export default function LoginPage() {
                 <p className="bzau-eyebrow">{copy.eyebrow[mode]}</p>
 
                 {mode === "staff" ? (
+                  desafio ? (
+                  <form className="bzau-form" onSubmit={handleTwoFactor}>
+                    {errorBlock}
+                    <p className="bzau-2fa-hint">
+                      Enviámos um código de 6 dígitos para <strong>{desafio.pista}</strong>.
+                    </p>
+                    <div className="bzau-field">
+                      <label className="bzau-label" htmlFor="bzau-2fa">Código de verificação</label>
+                      <span className="bzau-input">
+                        <input
+                          id="bzau-2fa"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          maxLength={6}
+                          value={codigo2fa}
+                          onChange={(e) => setCodigo2fa(e.target.value.replace(/\D/g, ""))}
+                          autoFocus
+                          required
+                        />
+                        <Lock size={16} className="bzau-input-ico" aria-hidden="true" />
+                      </span>
+                    </div>
+                    <button type="submit" className="bzau-btn"
+                      disabled={loading || codigo2fa.length < 6} aria-busy={loading}>
+                      {loading && <span className="bzau-spin" aria-hidden="true" />}
+                      {loading ? t(locale, "entering") : t(locale, "enter")}
+                      {!loading && <ArrowRight size={16} aria-hidden="true" />}
+                    </button>
+                    <div className="bzau-actions">
+                      <button type="button" className="bzau-btn bzau-btn-ghost"
+                        onClick={() => { setDesafio(null); setCodigo2fa(""); setError(""); }}>
+                        Voltar
+                      </button>
+                    </div>
+                  </form>
+                  ) : (
                   <form className="bzau-form" onSubmit={handleStaffLogin}>
                     {errorBlock}
                     <div className="bzau-field">
@@ -459,6 +495,7 @@ export default function LoginPage() {
                       </button>
                     </div>
                   </form>
+                  )
                 ) : otpStep === "phone" ? (
                   <form className="bzau-form" onSubmit={handleOtpRequest}>
                     {errorBlock}

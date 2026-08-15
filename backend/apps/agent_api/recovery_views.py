@@ -28,6 +28,7 @@ from apps.fares.models import AdminFee
 from apps.passengers.models import PassengerAccount
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
+from apps.payments.services.idempotency import get_or_create_payment_intent
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.users.otp import generate_otp, normalize_otp_phone, send_otp_sms, verify_otp_hash
 
@@ -253,6 +254,21 @@ class AgentRecoverCardAssociateView(APIView):
         )
 
         with transaction.atomic():
+            # Trancar a sessao de recuperacao serializa dois pedidos iguais que
+            # cheguem ao mesmo tempo (POS a repetir por rede fraca). Sem isto,
+            # ambos passavam a verificacao acima, ambos cobravam a taxa e o
+            # segundo rebentava na chave de idempotencia com 500.
+            travada = (RecoverySession.objects
+                       .select_for_update()
+                       .filter(pk=session.pk, status=RecoverySession.Status.VERIFIED)
+                       .first())
+            if travada is None:
+                return Response(
+                    {"detail": "Esta recuperacao ja foi processada. Inicie nova solicitacao."},
+                    status=409,
+                )
+            session = travada
+
             try:
                 # notify_sms=False — we'll send the recovery SMS only once the
                 # payment is confirmed (sync below or via webhook later).
@@ -260,9 +276,13 @@ class AgentRecoverCardAssociateView(APIView):
             except CardError as e:
                 raise serializers.ValidationError(str(e))
 
-            pi = PaymentIntent.objects.create(
-                reference=f"PAY-{ref}",
+            # A chave sai do desafio + cartao, logo duas tentativas simultaneas
+            # do mesmo agente trazem a mesma. Deixar a base de dados decidir
+            # quem ganha; ao perdedor dizemos que ja foi processada, em vez de
+            # rebentar com 500 a meio de uma recuperacao ja cobrada.
+            pi, criada = get_or_create_payment_intent(
                 idempotency_key=idem_key,
+                reference=f"PAY-{ref}",
                 purpose=PaymentIntent.Purpose.POS_CARD_TOPUP,
                 amount=fee,
                 payer_phone=data["payer_phone"].strip(),

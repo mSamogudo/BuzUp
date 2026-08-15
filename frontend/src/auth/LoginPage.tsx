@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
-import { AlertCircle, ArrowRight, Bus, CreditCard, Eye, EyeOff, Lock, MapPin, Phone, QrCode, Route, Shield, Smartphone, Ticket, User, UserPlus, Wallet, X } from "lucide-react";
+import { AlertCircle, ArrowRight, Bus, CreditCard, Eye, EyeOff, Lock, MapPin, Moon, Phone, QrCode, Route, Shield, Smartphone, Sun, Ticket, User, UserPlus, Wallet, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { apiLogin, apiOtpRequest, apiOtpVerify, apiPublic, apiTwoFactorVerify, isTwoFactor } from "../lib/api";
 import { t, type Locale } from "../lib/i18n";
@@ -66,22 +66,14 @@ const BACKGROUND_ICONS: { Icon: typeof Bus; large: boolean; style: CSSProperties
 ];
 
 export default function LoginPage() {
-  const { locale, setLocale } = useUi();
+  const { locale, setLocale, theme, toggleTheme } = useUi();
   const { login } = useAuth();
   const { branding } = useBranding();
   const navigate = useNavigate();
   const copy = COPY[locale] ?? COPY.pt;
 
-  /* O tema explícito do portal manda; sem escolha guardada seguimos o sistema
-     (prefers-color-scheme), tal como a landing pública. */
-  const explicitTheme = useMemo(() => {
-    try {
-      const stored = localStorage.getItem("buzup_theme");
-      return stored === "dark" || stored === "light" ? stored : undefined;
-    } catch {
-      return undefined;
-    }
-  }, []);
+  /* O tema do portal manda, e em tempo real: este ecrã tem o seu próprio
+     botão, e ler o armazenamento uma só vez fazia o botão não mudar nada. */
 
   const [mode, setMode] = useState<Mode>("staff");
 
@@ -339,7 +331,7 @@ export default function LoginPage() {
   ) : null;
 
   return (
-    <main className="bzau" data-theme={explicitTheme}>
+    <main className="bzau" data-theme={theme}>
       {/* ── Fundo: brilho diagonal + ícones esbatidos ── */}
       <div className="bzau-bg" aria-hidden="true">
         <div className="bzau-sheen" />
@@ -351,17 +343,20 @@ export default function LoginPage() {
       <div className="bzau-shell">
         {/* ── Barra superior: logótipo + PT/EN ── */}
         <header className="bzau-top">
-          {customLogo ? (
-            <img alt="BusUp" className="bzau-top-logo" src={customLogo} />
-          ) : (
-            <>
-              <img alt="BusUp" className="bzau-top-logo bzau-on-light" src="/assets/busup/logo-light.png" />
-              <img alt="BusUp" className="bzau-top-logo bzau-on-dark" src="/assets/busup/logo-dark.png" />
-            </>
-          )}
-          <div className="bzau-lang" role="group" aria-label="PT / EN">
-            <button type="button" aria-pressed={locale === "pt"} onClick={() => setLocale("pt")}>PT</button>
-            <button type="button" aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
+          <div className="bzau-top-controls">
+            <div className="bzau-lang" role="group" aria-label="PT / EN">
+              <button type="button" aria-pressed={locale === "pt"} onClick={() => setLocale("pt")}>PT</button>
+              <button type="button" aria-pressed={locale === "en"} onClick={() => setLocale("en")}>EN</button>
+            </div>
+            <button
+              type="button"
+              className="bzau-theme"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
+              title={theme === "dark" ? "Tema claro" : "Tema escuro"}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
         </header>
 
@@ -369,10 +364,14 @@ export default function LoginPage() {
           <div className="bzau-col">
             {/* ── Cabeçalho centrado ── */}
             <div className="bzau-head">
-              <span className="bzau-tile" aria-hidden="true">
-                <Bus size={26} strokeWidth={2} />
-              </span>
-              <p className="bzau-wordmark">BUSUP</p>
+              {customLogo ? (
+                <img alt="" className="bzau-hero-logo" src={customLogo} />
+              ) : (
+                <>
+                  <img alt="" className="bzau-hero-logo bzau-on-light" src="/assets/busup/logo-light.png" />
+                  <img alt="" className="bzau-hero-logo bzau-on-dark" src="/assets/busup/logo-dark.png" />
+                </>
+              )}
               <h1>{heading}</h1>
               <p className="bzau-sub">{subheading}</p>
             </div>

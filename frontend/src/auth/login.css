@@ -268,26 +268,20 @@
 
 /* Tile de marca — o mesmo lugar/tamanho do `Logo variant="icon"` (h-14 w-14),
    com o gradiente `brand-tile` do design system (deep → accent). */
-.bzau-tile {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 53px;
-  height: 53px;
-  border-radius: 15px;
-  background: linear-gradient(135deg, #0D3B66 0%, #1D5FA7 100%);
-  color: #fff;
-  box-shadow: 0 8px 20px -10px rgba(13, 59, 102, .55);
+/* O logótipo é a marca do ecrã: entra grande, no lugar onde antes estava um
+   ícone genérico com a palavra por baixo. Uma marca só, e legível. */
+.bzau-hero-logo {
+  display: block;
+  height: 74px;
+  width: auto;
+  max-width: min(320px, 78vw);
+  object-fit: contain;
+  margin: 0 auto;
+}
+@media (min-width: 640px) {
+  .bzau-hero-logo { height: 88px; max-width: 360px; }
 }
 
-.bzau-wordmark {
-  margin: 15px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .28em;
-  text-indent: .28em;
-  color: var(--text2);
-}
 
 /* text-2xl → sm:text-3xl, no tipo de corpo (o h1 do CondVisit não usa a display
    font — fica em Inter, como aqui por herança). */
@@ -809,9 +803,8 @@
   .bzau-head { margin-bottom: 16px; }
   .bzau-head h1 { font-size: 22px; }
   .bzau-sub { font-size: 13.5px; line-height: 23px; }
-  .bzau-tile { width: 46px; height: 46px; border-radius: 13px; }
-  .bzau-wordmark { margin-top: 12px; font-size: 12px; }
-  .bzau-bg-ico { opacity: .7; }
+  .bzau-hero-logo { height: 62px; }
+    .bzau-bg-ico { opacity: .7; }
   .bzau-otp-grid { gap: 6px; }
   .bzau-otp-grid input { height: 50px; font-size: 19px; }
 }
@@ -840,3 +833,27 @@
     transition-duration: .01ms !important;
   }
 }
+
+/* Botão de tema, ao lado do PT/EN. Mesma altura de alvo (44px) para o dedo. */
+.bzau-top-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.bzau-theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--lang-line);
+  background: var(--lang-bg);
+  color: var(--tx, inherit);
+  cursor: pointer;
+  box-shadow: 0 10px 24px -16px rgba(15, 23, 42, .45);
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.bzau-theme:hover { transform: translateY(-1px); }
+.bzau-theme:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .bzau-theme { transition: none; } }

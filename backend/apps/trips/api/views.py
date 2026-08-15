@@ -1,8 +1,10 @@
 from datetime import timedelta
 
 from django.http import HttpResponse
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -155,6 +157,7 @@ class TripViewSet(BaseModelViewSet):
         "list": ("trips.read",), "retrieve": ("trips.read",),
         "create": ("trips.manage",), "update": ("trips.manage",),
         "partial_update": ("trips.manage",), "destroy": ("trips.manage",),
+        "summary": ("trips.read",),
     }
 
     def get_serializer_class(self):
@@ -170,7 +173,52 @@ class TripViewSet(BaseModelViewSet):
         trip_status = self.request.query_params.get("status")
         if trip_status:
             qs = qs.filter(status=trip_status)
-        return qs
+        return self._por_periodo(qs, self.request.query_params.get("when"))
+
+    @staticmethod
+    def _por_periodo(qs, periodo):
+        """Recorta por periodo E ordena de acordo.
+
+        Sem isto, a ordenacao do modelo (`-planned_departure_at`) punha a
+        partida MAIS DISTANTE em primeiro: com milhares de viagens geradas por
+        horario, a primeira pagina do portal era so futuro longinquo — todas
+        "agendadas" — e a operacao de hoje nao aparecia em lado nenhum.
+        """
+        agora = timezone.now()
+        if periodo == "hoje":
+            inicio = timezone.localtime(agora).replace(hour=0, minute=0, second=0, microsecond=0)
+            return qs.filter(
+                planned_departure_at__gte=inicio,
+                planned_departure_at__lt=inicio + timedelta(days=1),
+            ).order_by("planned_departure_at")
+        if periodo == "passadas":
+            return qs.filter(planned_departure_at__lt=agora).order_by("-planned_departure_at")
+        if periodo == "todas":
+            return qs.order_by("-planned_departure_at")
+        # Por omissao: o que ainda esta para acontecer, do mais proximo primeiro.
+        return qs.filter(
+            Q(planned_departure_at__gte=agora) | Q(planned_departure_at__isnull=True)
+        ).order_by("planned_departure_at")
+
+    @action(detail=False, methods=["get"], url_path="summary")
+    def summary(self, request):
+        """Contadores calculados na base de dados.
+
+        O portal contava em cima da pagina que recebia — com 200 de 7 500
+        linhas, os numeros do cabecalho estavam simplesmente errados.
+        """
+        agora = timezone.now()
+        inicio = timezone.localtime(agora).replace(hour=0, minute=0, second=0, microsecond=0)
+        base = Trip.objects.all()
+        return Response({
+            "hoje": base.filter(planned_departure_at__gte=inicio,
+                                planned_departure_at__lt=inicio + timedelta(days=1)).count(),
+            "circulacao": base.filter(status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED]).count(),
+            "agendadas": base.filter(status=Trip.Status.SCHEDULED,
+                                     planned_departure_at__gte=agora).count(),
+            "repouso": base.filter(status=Trip.Status.PAUSED).count(),
+            "total": base.count(),
+        })
 
 
 class TripSearchView(APIView):

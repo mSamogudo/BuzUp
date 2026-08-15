@@ -73,13 +73,25 @@ export default function OperationPage() {
     setParams(next, { replace: true });
   };
 
-  const tripLoader = useCallback(() => apiFetch("/api/trips/", token!).then((d) => d.results || d), [token]);
+  const [when, setWhen] = useState("upcoming");
+  // O período é decidido no servidor. Filtrar no browser só recortava a página
+  // que tinha vindo — e com milhares de viagens essa página era só futuro
+  // distante, o que fazia parecer que só existiam viagens agendadas.
+  const PERIODO: Record<string, string> = {
+    upcoming: "proximas", today: "hoje", past: "passadas", all: "todas",
+  };
+  const tripLoader = useCallback(
+    () => apiFetch(`/api/trips/?when=${PERIODO[when] || "proximas"}`, token!).then((d) => d.results || d),
+    [token, when],
+  );
+  const summaryLoader = useCallback(() => apiFetch("/api/trips/summary/", token!), [token]);
   const scheduleLoader = useCallback(() => apiFetch("/api/schedules/", token!).then((d) => d.results || d), [token]);
   const routeLoader = useCallback(() => apiFetch("/api/routes/", token!).then((d) => d.results || d), [token]);
   const vehicleLoader = useCallback(() => apiFetch("/api/vehicles/", token!).then((d) => d.results || d), [token]);
   const driverLoader = useCallback(() => apiFetch("/api/drivers/", token!).then((d) => d.results || d), [token]);
 
-  const { data: trips, loading, reload } = useAsyncData<Trip[]>(tripLoader, [token]);
+  const { data: trips, loading, reload } = useAsyncData<Trip[]>(tripLoader, [token, when]);
+  const { data: resumo, reload: reloadResumo } = useAsyncData<Record<string, number>>(summaryLoader, [token]);
   const { data: schedules, reload: reloadSchedules } = useAsyncData<ScheduleOption[]>(scheduleLoader, [token]);
   const { data: routeOpts } = useAsyncData<RouteOpt[]>(routeLoader, [token]);
   const { data: vehicleOpts } = useAsyncData<VehicleOpt[]>(vehicleLoader, [token]);
@@ -90,7 +102,6 @@ export default function OperationPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_TRIP });
-  const [when, setWhen] = useState("upcoming");
   const f = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
   const reset = () => { setEditId(null); setModalOpen(false); setForm({ ...EMPTY_TRIP }); };
 
@@ -101,33 +112,14 @@ export default function OperationPage() {
 
   const all = useMemo(() => trips || [], [trips]);
 
-  const visible = useMemo(() => {
-    const now = Date.now();
-    const [todayStart, todayEnd] = dayBounds();
-    return all.filter((r) => {
-      if (when === "all") return true;
-      if (!r.planned_departure_at) return when === "upcoming";
-      const at = new Date(r.planned_departure_at).getTime();
-      if (when === "upcoming") return at >= now;
-      if (when === "past") return at < now;
-      return at >= todayStart.getTime() && at < todayEnd.getTime();
-    });
-  }, [all, when]);
+  const visible = all;
 
-  const counts = useMemo(() => {
-    const [todayStart, todayEnd] = dayBounds();
-    const inToday = all.filter((r) => {
-      if (!r.planned_departure_at) return false;
-      const at = new Date(r.planned_departure_at).getTime();
-      return at >= todayStart.getTime() && at < todayEnd.getTime();
-    });
-    return {
-      hoje: inToday.length,
-      circulacao: all.filter((r) => r.status === "departed" || r.status === "boarding").length,
-      agendadas: all.filter((r) => r.status === "scheduled").length,
-      repouso: all.filter((r) => r.status === "paused").length,
-    };
-  }, [all]);
+  const counts = useMemo(() => ({
+    hoje: resumo?.hoje ?? 0,
+    circulacao: resumo?.circulacao ?? 0,
+    agendadas: resumo?.agendadas ?? 0,
+    repouso: resumo?.repouso ?? 0,
+  }), [resumo]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setBusy(true);
@@ -143,7 +135,7 @@ export default function OperationPage() {
       if (editId) await apiPatch(`/api/trips/${editId}/`, token!, payload);
       else await apiPost("/api/trips/", token!, payload);
       showToast("success", editId ? "Viagem actualizada." : "Viagem criada.");
-      reset(); reload();
+      reset(); reload(); reloadResumo();
     } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
     finally { setBusy(false); }
   };
@@ -155,7 +147,7 @@ export default function OperationPage() {
       tone: "danger",
     });
     if (!ok) return;
-    try { await apiDelete(`/api/trips/${r.id}/`, token!); showToast("success", "Viagem eliminada."); reload(); }
+    try { await apiDelete(`/api/trips/${r.id}/`, token!); showToast("success", "Viagem eliminada."); reload(); reloadResumo(); }
     catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
   };
 
@@ -267,7 +259,7 @@ export default function OperationPage() {
       ) : (
         <SchedulesPage
           embedded
-          onChanged={() => { reloadSchedules(); reload(); }}
+          onChanged={() => { reloadSchedules(); reload(); reloadResumo(); }}
           registerActions={registerScheduleActions}
         />
       )}
@@ -276,7 +268,7 @@ export default function OperationPage() {
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
         schedules={schedules || []}
-        onGenerated={() => { reload(); reloadSchedules(); }}
+        onGenerated={() => { reload(); reloadSchedules(); reloadResumo(); }}
       />
 
       <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar viagem" : "Nova viagem"}

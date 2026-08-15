@@ -232,7 +232,7 @@ export default function BookingPage() {
       setNeedsIdentity(Boolean(d.seat_selection));
       setRows(d.rows || []);
       setStep(d.has_seat_map ? "seats" : "pax");
-      if (!d.has_seat_map) startPax([]);
+      if (!d.has_seat_map) startPax([], Boolean(d.seat_selection));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar os lugares.");
     } finally { setBusy(false); }
@@ -244,14 +244,25 @@ export default function BookingPage() {
       : (prev.length >= qty ? prev : [...prev, label]));
   };
 
-  const startPax = useCallback((seats: string[]) => {
-    setPax(Array.from({ length: qty }, (_, i) => ({
-      // O tipo só se preenche onde o documento é pedido. Numa carreira urbana
-      // o campo do número nem aparece, e mandar o tipo sozinho era mandar meia
-      // resposta a uma pergunta que não foi feita.
-      name: "", document_type: needsIdentity ? "bi" : "",
-      document_number: "", seat: seats[i] || "",
-    })));
+  const startPax = useCallback((seats: string[], comDocumento?: boolean) => {
+    // `needsIdentity` acabou de ser definido no mesmo ciclo em `chooseTrip`;
+    // ler o estado aqui traria o valor da partida ANTERIOR.
+    const pedeDocumento = comDocumento ?? needsIdentity;
+    // Preserva o que já foi escrito. Antes, cada passagem por "Continuar"
+    // reconstruía a lista de raiz: quem voltasse atrás para trocar de lugar
+    // perdia os nomes e os documentos que já tinha preenchido, sem aviso.
+    setPax((prev) => Array.from({ length: qty }, (_, i) => {
+      const antes = prev[i];
+      return {
+        name: antes?.name || "",
+        // O tipo só se preenche onde o documento é pedido. Numa carreira
+        // urbana o campo do número nem aparece, e mandar o tipo sozinho era
+        // mandar meia resposta a uma pergunta que não foi feita.
+        document_type: pedeDocumento ? (antes?.document_type || "bi") : "",
+        document_number: pedeDocumento ? (antes?.document_number || "") : "",
+        seat: seats[i] || "",
+      };
+    }));
   }, [qty, needsIdentity]);
 
   const goToPax = () => { startPax(picked); setStep("pax"); };

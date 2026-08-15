@@ -34,11 +34,22 @@ DEFAULT_ROLES = {
         "passengers.read", "routes.read", "routes.manage", "stops.read", "stops.manage",
         "trips.read", "trips.manage", "fares.read", "fares.manage",
         "vehicles.read", "vehicles.manage", "drivers.read", "drivers.manage",
+        # Quem aloca viaturas e motoristas tambem regista quem vende ao balcao.
+        # As capacidades existiam mas nenhum papel as dava: para criar um agente
+        # POS era preciso o papel de Administrador, com acesso a tudo — incluindo
+        # utilizadores, tarifas e financas. A alternativa a uma permissao a mais
+        # acaba por ser sempre a permissao a mais perigosa.
+        "agents.read", "agents.manage",
         "devices.read", "devices.manage", "validations.read", "reports.read",
         "packages.read", "packages.manage",
     ]},
     "support": {"name": "Suporte", "permissions": [
-        "passengers.read", "wallets.read", "cards.read", "cards.manage",
+        # Quem atende o passageiro tem de poder corrigir-lhe a conta: um nome
+        # mal escrito ou um numero trocado resolvia-se em segundos, mas sem
+        # esta capacidade so o Administrador o fazia — e o balcao ficava a
+        # espera dele.
+        "passengers.read", "passengers.manage",
+        "wallets.read", "cards.read", "cards.manage",
         "payments.read", "validations.read", "devices.read",
     ]},
     "pos_agent": {"name": "Agente POS", "permissions": ["pos.operate"]},

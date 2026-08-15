@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
 import { AlertCircle, ArrowRight, Bus, CreditCard, Eye, EyeOff, Lock, MapPin, Phone, QrCode, Route, Shield, Smartphone, Ticket, User, UserPlus, Wallet, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { apiLogin, apiOtpRequest, apiOtpVerify, apiPublic } from "../lib/api";
+import { apiLogin, apiOtpRequest, apiOtpVerify, apiPublic, apiTwoFactorVerify, isTwoFactor } from "../lib/api";
 import { t, type Locale } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "./AuthContext";
@@ -90,6 +90,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  // Desafio do segundo factor. Enquanto existir, o formulário mostra o campo
+  // do código em vez do da senha.
+  const [desafio, setDesafio] = useState<{ id: string; pista: string } | null>(null);
+  const [codigo2fa, setCodigo2fa] = useState("");
   const [loading, setLoading] = useState(false);
 
   // OTP state
@@ -130,19 +134,47 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, [countdown]);
 
+  /** Depois de autenticado, encaminha para o painel certo. */
+  async function entrar(access: string, refresh: string) {
+    login(access, refresh);
+    const driverRes = await fetch("/api/driver/trips/", {
+      headers: { Authorization: `Bearer ${access}` },
+    }).catch(() => null);
+    navigate(driverRes?.ok ? "/driver" : "/app", { replace: true });
+  }
+
   async function handleStaffLogin(e: FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const tokens = await apiLogin(username, password);
-      login(tokens.access, tokens.refresh);
-      const driverRes = await fetch("/api/driver/trips/", {
-        headers: { Authorization: `Bearer ${tokens.access}` },
-      }).catch(() => null);
-      navigate(driverRes?.ok ? "/driver" : "/app", { replace: true });
-    } catch {
-      setError(t(locale, "invalidCredentials"));
+      const r = await apiLogin(username, password);
+      if (isTwoFactor(r)) {
+        // Com verificação em dois passos, a senha certa só abre o passo do
+        // código — quem só tem a senha não entra.
+        setDesafio({ id: r.challenge_id, pista: r.phone_hint });
+        setCodigo2fa("");
+        return;
+      }
+      await entrar(r.access, r.refresh);
+    } catch (err) {
+      setError(err instanceof Error && err.message && !/credenciais/i.test(err.message)
+        ? err.message : t(locale, "invalidCredentials"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTwoFactor(e: FormEvent) {
+    e.preventDefault();
+    if (!desafio) return;
+    setError("");
+    setLoading(true);
+    try {
+      const tokens = await apiTwoFactorVerify(desafio.id, codigo2fa.trim());
+      await entrar(tokens.access, tokens.refresh);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Codigo invalido.");
     } finally {
       setLoading(false);
     }

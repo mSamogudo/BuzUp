@@ -248,6 +248,8 @@ REST_FRAMEWORK = {
         "password-reset": "5/hour",
         # Login: travar força bruta de senha e de OTP.
         "agent-login": "10/min",
+        # Portal: a senha é o 1.º passo e o código o 2.º — ambos por este balde.
+        "auth": "12/min",
         "guest-checkout": "10/hour",
     },
     # O IP vem do proxy; sem isto o `X-Forwarded-For` do cliente é aceite como

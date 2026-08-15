@@ -40,6 +40,14 @@ class Role(BaseModel):
 class User(AbstractUser, BaseModel):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20, blank=True)
+    # Segundo factor no portal. Nasce LIGADO: uma conta de gestao entra em
+    # tarifas, cartoes e receita, e uma senha sozinha nao chega. Quem o pode
+    # desligar e apenas um superadministrador, no painel de administracao.
+    is_2fa_enabled = models.BooleanField(
+        default=True,
+        verbose_name="Verificacao em dois passos",
+        help_text="Ao entrar no portal, pede um codigo enviado por SMS. So um superadministrador pode desligar.",
+    )
     user_roles = models.ManyToManyField(Role, through="UserRole", blank=True, related_name="users")
 
     objects = UserManager()
@@ -105,3 +113,35 @@ class UserRole(BaseModel):
 
     def __str__(self):
         return f"{self.user} -> {self.role}"
+
+
+class PortalLoginChallenge(BaseModel):
+    """Segundo passo do login do portal: o codigo enviado por SMS.
+
+    A senha sozinha protege mal uma conta que mexe em tarifas e receita. Aqui
+    a senha e apenas o primeiro passo — so depois do codigo e que se emitem
+    tokens. O codigo nunca fica em claro: guarda-se o HMAC (ver `otp.py`).
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pendente"
+        CONSUMED = "consumed", "Usado"
+        EXPIRED = "expired", "Expirado"
+
+    user = models.ForeignKey(
+        "users.User", on_delete=models.CASCADE, related_name="portal_login_challenges",
+    )
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    code_hash = models.CharField(max_length=128)
+    phone = models.CharField(max_length=20)
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    failed_attempts = models.PositiveSmallIntegerField(default=0)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=["user", "status"])]
+
+    def __str__(self):
+        return f"2FA {self.user} [{self.status}]"

@@ -19,17 +19,44 @@ function handleUnauthorized() {
   }
 }
 
-export async function apiLogin(username: string, password: string): Promise<TokenPair> {
+export interface TwoFactorChallenge {
+  two_factor: true;
+  challenge_id: string;
+  phone_hint: string;
+  expires_in: number;
+}
+
+/** Primeiro passo do login. Com verificação em dois passos activa, devolve um
+ *  desafio em vez de tokens — a senha sozinha não abre o portal. */
+export async function apiLogin(
+  username: string, password: string,
+): Promise<TokenPair | TwoFactorChallenge> {
   const res = await fetch(`${API_BASE}/api/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || "Credenciais invalidas.");
-  }
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || "Credenciais invalidas.");
+  return data;
+}
+
+export function isTwoFactor(r: TokenPair | TwoFactorChallenge): r is TwoFactorChallenge {
+  return (r as TwoFactorChallenge).two_factor === true;
+}
+
+/** Segundo passo: o código do SMS troca-se pelos tokens. */
+export async function apiTwoFactorVerify(
+  challenge_id: string, code: string,
+): Promise<TokenPair> {
+  const res = await fetch(`${API_BASE}/api/auth/2fa/verify/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ challenge_id, code }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || "Codigo invalido.");
+  return data;
 }
 
 export async function apiRefreshToken(refresh: string): Promise<TokenPair> {

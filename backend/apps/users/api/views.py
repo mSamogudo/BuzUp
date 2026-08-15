@@ -4,20 +4,32 @@ from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
 
+from django.contrib.auth import authenticate
 from django.http import HttpResponse
 from django.utils import timezone
 from apps.core.download_auth import DownloadTicketAuthentication
 from apps.core.download_scopes import DOWNLOAD_SCOPES, PASSENGER_EXTRACT
 from apps.core.download_tokens import DEFAULT_MAX_AGE, make_download_ticket
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.core.permissions import ALL_CAPABILITIES, HasCapabilities
+from apps.users.models import PortalLoginChallenge
+from apps.users.otp import (
+    OTP_MAX_ATTEMPTS,
+    OTP_TTL_MINUTES,
+    generate_otp,
+    is_valid_otp_phone,
+    normalize_otp_phone,
+    verify_otp_hash,
+)
+from apps.users.two_factor import criar_desafio_portal, mascarar_telefone
 from apps.core.viewsets import BaseModelViewSet
 from apps.users.api.serializers import (
     AssignRoleSerializer,
@@ -44,29 +56,120 @@ from apps.wallets.services import InsufficientBalanceError, WalletBlockedError
 
 
 class BuzUpTokenObtainPairView(TokenObtainPairView):
+    """Primeiro passo do login do portal.
+
+    Com o segundo factor ligado, a senha certa ja nao devolve tokens: devolve
+    um desafio e um codigo por SMS. Uma conta de gestao entra em tarifas,
+    cartoes e receita — uma senha apanhada por cima do ombro nao pode chegar
+    para isso.
+    """
+
     permission_classes = [AllowAny]
     serializer_class = BuzUpTokenObtainPairSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request, *args, **kwargs):
         username = (request.data.get("username") or "").strip()
-        response = super().post(request, *args, **kwargs)
-        try:
-            from apps.audit.models import AuditLog
-            from apps.audit.services import client_ip
-            ok = response.status_code == 200
-            user = User.objects.filter(username=username, deleted_at__isnull=True).first() if ok else None
-            AuditLog.objects.create(
-                actor=user,
-                action="login" if ok else "login_failed",
-                entity_type="users.User",
-                entity_id=str(user.pk) if user else "",
-                after={"username": username},
-                ip_address=client_ip(request) or None,
-                device=request.META.get("HTTP_USER_AGENT", "")[:255],
+        senha = request.data.get("password") or ""
+        utilizador = authenticate(request, username=username, password=senha)
+
+        if utilizador is not None and utilizador.is_active and utilizador.is_2fa_enabled:
+            telefone = normalize_otp_phone(utilizador.phone)
+            if not is_valid_otp_phone(telefone):
+                # Nunca deixar passar em silencio: se deixasse, bastava apagar
+                # o telemovel de uma conta para contornar o segundo factor.
+                return Response(
+                    {"detail": "Esta conta tem verificacao em dois passos mas nao tem telemovel valido. "
+                               "Peca a um superadministrador para registar o numero ou desligar a verificacao."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            desafio = criar_desafio_portal(utilizador, telefone, request)
+            _registar_auth(request, "login_2fa_enviado", utilizador, username)
+            return Response(
+                {
+                    "two_factor": True,
+                    "challenge_id": str(desafio.uuid),
+                    "phone_hint": mascarar_telefone(telefone),
+                    "expires_in": OTP_TTL_MINUTES * 60,
+                },
+                status=status.HTTP_202_ACCEPTED,
             )
-        except Exception:
-            pass
+
+        response = super().post(request, *args, **kwargs)
+        _registar_auth(request, "login" if response.status_code == 200 else "login_failed",
+                       utilizador if response.status_code == 200 else None, username)
         return response
+
+
+def _registar_auth(request, accao, utilizador, username):
+    try:
+        from apps.audit.models import AuditLog
+        from apps.audit.services import client_ip
+        AuditLog.objects.create(
+            actor=utilizador,
+            action=accao,
+            entity_type="users.User",
+            entity_id=str(utilizador.pk) if utilizador else "",
+            after={"username": username},
+            ip_address=client_ip(request) or None,
+            device=request.META.get("HTTP_USER_AGENT", "")[:255],
+        )
+    except Exception:
+        pass
+
+
+class PortalTwoFactorVerifyView(APIView):
+    """Segundo passo: o codigo do SMS troca-se pelos tokens."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
+
+    def post(self, request):
+        challenge_id = str(request.data.get("challenge_id") or "").strip()
+        codigo = str(request.data.get("code") or "").strip()
+        if not challenge_id or not codigo:
+            return Response({"detail": "Indique o desafio e o codigo."}, status=400)
+
+        desafio = PortalLoginChallenge.objects.filter(
+            uuid=challenge_id, status=PortalLoginChallenge.Status.PENDING,
+        ).select_related("user").first()
+        if not desafio or timezone.now() > desafio.expires_at:
+            if desafio:
+                desafio.status = PortalLoginChallenge.Status.EXPIRED
+                desafio.save(update_fields=["status", "updated_at"])
+            return Response({"detail": "Codigo invalido ou expirado."}, status=400)
+
+        if desafio.failed_attempts >= OTP_MAX_ATTEMPTS:
+            desafio.status = PortalLoginChallenge.Status.EXPIRED
+            desafio.save(update_fields=["status", "updated_at"])
+            return Response({"detail": "Tentativas excedidas. Volte a entrar."}, status=400)
+
+        if not verify_otp_hash(codigo, desafio.code_hash):
+            desafio.failed_attempts += 1
+            campos = ["failed_attempts", "updated_at"]
+            detalhe = "Codigo incorreto."
+            if desafio.failed_attempts >= OTP_MAX_ATTEMPTS:
+                desafio.status = PortalLoginChallenge.Status.EXPIRED
+                campos.append("status")
+                detalhe = "Tentativas excedidas. Volte a entrar."
+            desafio.save(update_fields=campos)
+            _registar_auth(request, "login_2fa_falhou", desafio.user, desafio.user.username)
+            return Response({"detail": detalhe}, status=400)
+
+        utilizador = desafio.user
+        if not utilizador.is_active:
+            return Response({"detail": "Conta desactivada."}, status=403)
+
+        desafio.status = PortalLoginChallenge.Status.CONSUMED
+        desafio.consumed_at = timezone.now()
+        desafio.save(update_fields=["status", "consumed_at", "updated_at"])
+
+        refresh = RefreshToken.for_user(utilizador)
+        _registar_auth(request, "login", utilizador, utilizador.username)
+        return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
 
 
 class BuzUpTokenRefreshView(TokenRefreshView):

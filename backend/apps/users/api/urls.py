@@ -4,6 +4,7 @@ from apps.users.api.otp_views import OtpRequestView, OtpVerifyView, PhoneCheckVi
 from apps.users.api.views import (
     DownloadTicketView,
     BuzUpTokenObtainPairView,
+    PortalTwoFactorVerifyView,
     BuzUpTokenRefreshView,
     ChangePasswordView,
     MeProfileUpdateView,
@@ -23,6 +24,7 @@ from apps.users.api.views import (
 
 urlpatterns = [
     path("token/", BuzUpTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("2fa/verify/", PortalTwoFactorVerifyView.as_view(), name="portal_2fa_verify"),
     path("token/refresh/", BuzUpTokenRefreshView.as_view(), name="token_refresh"),
     path("me/", MeView.as_view(), name="auth_me"),
     path("me/profile/", MeProfileUpdateView.as_view(), name="auth_me_profile"),

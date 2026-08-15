@@ -46,6 +46,10 @@ android {
         // applicationId vem do perfil de build (BUZUP_POS_APPLICATION_ID,
         // exportado pelos scripts): dev=.dev, staging=.staging, prod=base.
         applicationId = System.getenv("BUZUP_POS_APPLICATION_ID") ?: "mz.coupdigital.pos_app"
+        // Nome sob o icone. Vem do perfil de build porque a mesma app
+        // serve varios operadores: um terminal da TPM-TUR com "BuzUp POS"
+        // escrito por baixo do icone e a primeira coisa que o cliente ve.
+        manifestPlaceholders["appLabel"] = System.getenv("BUZUP_POS_APP_LABEL") ?: "BuzUp POS"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

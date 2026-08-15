@@ -3,6 +3,26 @@
 # passageiro BuzUp. Espelha pos-common.sh mas usa o diretorio mobile_app/.
 set -eu
 
+# Perfis que produzem uma APK assinada para entregar a alguem. Manter a lista
+# num sitio so: quando se acrescenta um cliente, o perfil dele passava a
+# compilar em DEBUG por omissao e ninguem dava por isso ate a app estar lenta
+# e sem assinatura no terminal.
+is_release_profile() {
+  case "$1" in
+    prod|staging|tpmtur) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Perfis que exigem assinatura de release a serio (uma APK de debug nunca pode
+# chegar as maos de um cliente).
+requires_signing_profile() {
+  case "$1" in
+    prod|tpmtur) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 MOBILE_DIR="$ROOT_DIR/mobile_app"
 MOBILE_CONFIG_DIR="$MOBILE_DIR/config"
@@ -207,6 +227,7 @@ load_profile_config() {
 
   # Exportar para o subprocesso gradle (build.gradle.kts le esta env var).
   export BUZUP_MOBILE_APPLICATION_ID
+  export BUZUP_MOBILE_APP_LABEL="${BUZUP_MOBILE_APP_LABEL:-}"
 
   # Fail-safe de ambiente: cada perfil de build TEM de apontar para o seu
   # proprio ambiente. Impede que um build prod saia a apontar para o dominio
@@ -226,6 +247,16 @@ load_profile_config() {
         exit 1
         ;;
     esac
+  elif [ "$profile" = "tpmtur" ]; then
+    # Mesma razao do POS: a app do passageiro da TPM-TUR nao pode ir buscar
+    # bilhetes ao servidor da BuzUp.
+    case "$api_host" in
+      tpm-tur.updigital.co.mz) ;;
+      *)
+        echo "[mobile] build TPM-TUR tem de apontar para tpm-tur.updigital.co.mz (recebeu: $api_host)" >&2
+        exit 1
+        ;;
+    esac
   fi
 }
 
@@ -240,7 +271,7 @@ ensure_flutter_dependencies() {
 flutter_build_apk_internal() {
   profile="$1"
 
-  if [ "$profile" = "prod" ] || [ "$profile" = "staging" ]; then
+  if is_release_profile "$profile"; then
     build_mode_flag="--release"
     split_per_abi_flag=""
     if [ "${MOBILE_SPLIT_PER_ABI:-true}" = "true" ]; then
@@ -265,7 +296,7 @@ copy_named_apk() {
   profile="$1"
   mkdir -p "$MOBILE_OUTPUT_DIR"
 
-  if [ "$profile" = "prod" ] || [ "$profile" = "staging" ]; then
+  if is_release_profile "$profile"; then
     if [ "${MOBILE_SPLIT_PER_ABI:-true}" = "true" ]; then
       selected_abi="${MOBILE_RELEASE_ABI:-armeabi-v7a}"
       source_apk="$MOBILE_OUTPUT_DIR/app-$selected_abi-release.apk"

@@ -35,6 +35,10 @@ android {
         // exportado pelos scripts) -> staging usa sufixo .staging para poder
         // coexistir com a prod no mesmo aparelho. Default = prod.
         applicationId = System.getenv("BUZUP_MOBILE_APPLICATION_ID") ?: "mz.coupdigital.buzup_mobile"
+        // Nome sob o icone. Vem do perfil de build porque a mesma app
+        // serve varios operadores: um terminal da TPM-TUR com "BuzUp Passageiro"
+        // escrito por baixo do icone e a primeira coisa que o cliente ve.
+        manifestPlaceholders["appLabel"] = System.getenv("BUZUP_MOBILE_APP_LABEL") ?: "BuzUp Passageiro"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

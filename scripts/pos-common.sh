@@ -3,6 +3,26 @@
 # Padrao adaptado do projecto ETICKETING.
 set -eu
 
+# Perfis que produzem uma APK assinada para entregar a alguem. Manter a lista
+# num sitio so: quando se acrescenta um cliente, o perfil dele passava a
+# compilar em DEBUG por omissao e ninguem dava por isso ate a app estar lenta
+# e sem assinatura no terminal.
+is_release_profile() {
+  case "$1" in
+    prod|staging|tpmtur) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Perfis que exigem assinatura de release a serio (uma APK de debug nunca pode
+# chegar as maos de um cliente).
+requires_signing_profile() {
+  case "$1" in
+    prod|tpmtur) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 POS_DIR="$ROOT_DIR/pos_app"
 POS_CONFIG_DIR="$POS_DIR/config"
@@ -241,6 +261,7 @@ load_profile_config() {
 
   # Exportar para o subprocesso gradle (build.gradle.kts le esta env var).
   export BUZUP_POS_APPLICATION_ID
+  export BUZUP_POS_APP_LABEL="${BUZUP_POS_APP_LABEL:-}"
 
   if [ "$profile" = "prod" ] && [ "$BUZUP_API_BASE_URL" = "https://api.example.com" ]; then
     echo "[pos] BUZUP_API_BASE_URL ainda esta no placeholder de producao" >&2
@@ -262,6 +283,17 @@ load_profile_config() {
     case "$api_host" in
       buzup.updigital.co.mz)
         echo "[pos] build STAGING nao pode apontar para o dominio de PRODUCAO $api_host (esperado: buzup-test.updigital.co.mz)" >&2
+        exit 1
+        ;;
+    esac
+  elif [ "$profile" = "tpmtur" ]; then
+    # A APK que vai para as maos dos agentes da TPM-TUR nao pode sair a
+    # apontar para um servidor da BuzUp: as vendas deles iriam parar a base
+    # de dados errada e so se descobria ao fechar a caixa.
+    case "$api_host" in
+      tpm-tur.updigital.co.mz) ;;
+      *)
+        echo "[pos] build TPM-TUR tem de apontar para tpm-tur.updigital.co.mz (recebeu: $api_host)" >&2
         exit 1
         ;;
     esac
@@ -302,7 +334,7 @@ assert_release_signing_configured() {
 flutter_build_apk_internal() {
   profile="$1"
 
-  if [ "$profile" = "prod" ] || [ "$profile" = "staging" ]; then
+  if is_release_profile "$profile"; then
     build_mode_flag="--release"
     split_per_abi_flag=""
     if [ "${POS_SPLIT_PER_ABI:-true}" = "true" ]; then
@@ -327,7 +359,7 @@ copy_named_apk() {
   profile="$1"
   mkdir -p "$POS_OUTPUT_DIR"
 
-  if [ "$profile" = "prod" ] || [ "$profile" = "staging" ]; then
+  if is_release_profile "$profile"; then
     if [ "${POS_SPLIT_PER_ABI:-true}" = "true" ]; then
       selected_abi="${POS_RELEASE_ABI:-armeabi-v7a}"
       source_apk="$POS_OUTPUT_DIR/app-$selected_abi-release.apk"
@@ -416,7 +448,7 @@ adb_install_and_launch() {
     exit 1
   fi
 
-  if [ "$profile" = "prod" ]; then
+  if requires_signing_profile "$profile"; then
     assert_release_signing_configured
   fi
 
@@ -506,7 +538,7 @@ build_pos_apk() {
   load_profile_config "$profile"
   ensure_flutter_dependencies
 
-  if [ "$profile" = "prod" ]; then
+  if requires_signing_profile "$profile"; then
     assert_release_signing_configured
   fi
 

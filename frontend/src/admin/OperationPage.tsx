@@ -13,7 +13,6 @@ import {
 } from "../ui/common";
 import { useConfirm } from "../ui/ConfirmDialog";
 import SchedulesPage from "./SchedulesPage";
-import ScheduleTripsWizard, { type ScheduleOption } from "./ScheduleTripsWizard";
 
 interface Trip {
   id: number; uuid: string;
@@ -92,12 +91,11 @@ export default function OperationPage() {
 
   const { data: trips, loading, reload } = useAsyncData<Trip[]>(tripLoader, [token, when]);
   const { data: resumo, reload: reloadResumo } = useAsyncData<Record<string, number>>(summaryLoader, [token]);
-  const { data: schedules, reload: reloadSchedules } = useAsyncData<ScheduleOption[]>(scheduleLoader, [token]);
+  const { data: schedules, reload: reloadSchedules } = useAsyncData<{ id: number; status: string }[]>(scheduleLoader, [token]);
   const { data: routeOpts } = useAsyncData<RouteOpt[]>(routeLoader, [token]);
   const { data: vehicleOpts } = useAsyncData<VehicleOpt[]>(vehicleLoader, [token]);
   const { data: driverOpts } = useAsyncData<DriverOpt[]>(driverLoader, [token]);
 
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -156,7 +154,7 @@ export default function OperationPage() {
       <button className="icon-text-button" onClick={reload} type="button">
         <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
       </button>
-      <button className="icon-text-button" onClick={() => setWizardOpen(true)} type="button">
+      <button className="icon-text-button" onClick={() => navigate("/app/trips/schedule")} type="button">
         <CalendarClock size={16} /><span>Programar viagens</span>
       </button>
       <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button">
@@ -168,7 +166,7 @@ export default function OperationPage() {
       <button className="icon-text-button" onClick={() => scheduleActions?.reload()} type="button">
         <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
       </button>
-      <button className="icon-text-button" onClick={() => setWizardOpen(true)} type="button">
+      <button className="icon-text-button" onClick={() => navigate("/app/trips/schedule")} type="button">
         <CalendarClock size={16} /><span>Programar viagens</span>
       </button>
       <button className="primary-button" onClick={() => scheduleActions?.create()} type="button">
@@ -263,16 +261,6 @@ export default function OperationPage() {
           registerActions={registerScheduleActions}
         />
       )}
-
-      <ScheduleTripsWizard
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        schedules={schedules || []}
-        routes={routeOpts || []}
-        vehicles={vehicleOpts || []}
-        drivers={driverOpts || []}
-        onGenerated={() => { reload(); reloadSchedules(); reloadResumo(); }}
-      />
 
       <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar viagem" : "Nova viagem"}
         description="Uma partida avulsa. Para uma série regular, crie um horário e use «Programar viagens».">

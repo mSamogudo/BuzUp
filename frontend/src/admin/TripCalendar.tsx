@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const WEEKDAYS = ["S", "T", "Q", "Q", "S", "S", "D"];
+const WEEKDAY_TITLES = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
@@ -16,20 +17,33 @@ function mondayIndex(d: Date): number {
   return (d.getDay() + 6) % 7;
 }
 
+function daysOfMonth(year: number, month: number): (Date | null)[] {
+  const first = new Date(year, month, 1);
+  const count = new Date(year, month + 1, 0).getDate();
+  const cells: (Date | null)[] = Array(mondayIndex(first)).fill(null);
+  for (let d = 1; d <= count; d += 1) cells.push(new Date(year, month, d));
+  return cells;
+}
+
 /**
  * Calendário de marcação de dias.
  *
- * Clicar num dia marca-o; arrastar sobre vários marca a fila toda, que é como
- * se marca uma semana de partidas sem sete cliques. Os dias já passados ficam
- * inertes: uma partida no passado não é uma partida, é um engano.
+ * Dois meses lado a lado: programar uma carreira atravessa quase sempre a
+ * fronteira do mês, e paginar para trás e para a frente fazia perder de vista o
+ * que já estava marcado.
+ *
+ * As células são pequenas de propósito. Uma grelha de sete colunas com
+ * `aspect-ratio: 1` num contentor largo dá quadrados de cem pixéis — meia
+ * página de espaço para mostrar trinta números.
  */
 export default function TripCalendar({
-  selected, onChange, alreadyScheduled,
+  selected, onChange, alreadyScheduled, months = 2,
 }: {
   selected: string[];
   onChange: (dates: string[]) => void;
-  /** Dias que já têm partida — mostrados com um ponto, para não se repetir sem saber. */
+  /** Dias que já têm partida — marcados com um ponto, para não se repetir sem saber. */
   alreadyScheduled?: Set<string>;
+  months?: number;
 }) {
   const hoje = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const [cursor, setCursor] = useState(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
@@ -37,16 +51,10 @@ export default function TripCalendar({
 
   const marcados = useMemo(() => new Set(selected), [selected]);
 
-  const celulas = useMemo(() => {
-    const primeiro = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-    const dias = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
-    const vazias = mondayIndex(primeiro);
-    const saida: (Date | null)[] = Array(vazias).fill(null);
-    for (let d = 1; d <= dias; d += 1) {
-      saida.push(new Date(cursor.getFullYear(), cursor.getMonth(), d));
-    }
-    return saida;
-  }, [cursor]);
+  const paineis = useMemo(() => Array.from({ length: months }, (_, i) => {
+    const m = new Date(cursor.getFullYear(), cursor.getMonth() + i, 1);
+    return { data: m, celulas: daysOfMonth(m.getFullYear(), m.getMonth()) };
+  }), [cursor, months]);
 
   const alternar = (dia: Date, forcar?: "marcar" | "desmarcar") => {
     if (dia < hoje) return;
@@ -59,82 +67,101 @@ export default function TripCalendar({
       : selected.filter((x) => x !== chave));
   };
 
-  /** Marca todas as ocorrências deste dia da semana no mês visível. */
-  const marcarColuna = (coluna: number) => {
-    const dias = celulas
-      .filter((d): d is Date => d !== null && d >= hoje && mondayIndex(d) === coluna)
+  /** Todos os dias visíveis que satisfazem `criterio`, de hoje para a frente. */
+  const diasVisiveis = (criterio: (d: Date) => boolean) =>
+    paineis.flatMap((p) => p.celulas)
+      .filter((d): d is Date => d !== null && d >= hoje && criterio(d))
       .map(iso);
+
+  /** Alterna em bloco: se já estavam todos marcados, desmarca-os. */
+  const alternarBloco = (criterio: (d: Date) => boolean) => {
+    const dias = diasVisiveis(criterio);
     if (dias.length === 0) return;
-    const todosMarcados = dias.every((d) => marcados.has(d));
-    onChange(todosMarcados
+    const todos = dias.every((d) => marcados.has(d));
+    onChange(todos
       ? selected.filter((d) => !dias.includes(d))
       : [...new Set([...selected, ...dias])].sort());
   };
 
-  const mesVisivel = `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
+  const atalhos = [
+    { rotulo: "Dias úteis", criterio: (d: Date) => mondayIndex(d) < 5 },
+    { rotulo: "Fins-de-semana", criterio: (d: Date) => mondayIndex(d) >= 5 },
+    { rotulo: "Tudo", criterio: () => true },
+  ];
+
   const podeRecuar = cursor > new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
   return (
     <div className="bzcal" onMouseLeave={() => setArrastando(null)} onMouseUp={() => setArrastando(null)}>
-      <div className="bzcal-head">
-        <button type="button" className="bzcal-nav" disabled={!podeRecuar}
-          aria-label="Mês anterior"
-          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
-          <ChevronLeft size={16} />
-        </button>
-        <strong>{mesVisivel}</strong>
-        <button type="button" className="bzcal-nav" aria-label="Mês seguinte"
-          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>
-          <ChevronRight size={16} />
-        </button>
+      <div className="bzcal-bar">
+        <div className="bzcal-nav-group">
+          <button type="button" className="bzcal-nav" disabled={!podeRecuar} aria-label="Mês anterior"
+            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
+            <ChevronLeft size={15} />
+          </button>
+          <button type="button" className="bzcal-nav" aria-label="Mês seguinte"
+            onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>
+            <ChevronRight size={15} />
+          </button>
+        </div>
+        <div className="bzcal-shortcuts">
+          {atalhos.map((a) => (
+            <button key={a.rotulo} type="button" className="bzcal-shortcut"
+              onClick={() => alternarBloco(a.criterio)}>{a.rotulo}</button>
+          ))}
+          <button type="button" className="bzcal-shortcut is-quiet"
+            disabled={selected.length === 0} onClick={() => onChange([])}>Limpar</button>
+        </div>
       </div>
 
-      <div className="bzcal-grid">
-        {WEEKDAYS.map((rotulo, i) => (
-          <button key={rotulo} type="button" className="bzcal-weekday"
-            title={`Marcar todas as ${rotulo.toLowerCase()}s deste mês`}
-            onClick={() => marcarColuna(i)}>
-            {rotulo}
-          </button>
+      <div className="bzcal-months">
+        {paineis.map(({ data, celulas }) => (
+          <div className="bzcal-month" key={`${data.getFullYear()}-${data.getMonth()}`}>
+            <div className="bzcal-month-name">
+              {MONTHS[data.getMonth()]} <span>{data.getFullYear()}</span>
+            </div>
+            <div className="bzcal-grid">
+              {WEEKDAYS.map((rotulo, i) => (
+                <button key={`${rotulo}${i}`} type="button" className="bzcal-weekday"
+                  title={`Marcar todas as ${WEEKDAY_TITLES[i].toLowerCase()}s visíveis`}
+                  onClick={() => alternarBloco((d) => mondayIndex(d) === i)}>
+                  {rotulo}
+                </button>
+              ))}
+              {celulas.map((dia, i) => {
+                if (!dia) return <span key={`v${i}`} className="bzcal-empty" />;
+                const chave = iso(dia);
+                const passado = dia < hoje;
+                const on = marcados.has(chave);
+                const jaTem = alreadyScheduled?.has(chave);
+                return (
+                  <button
+                    key={chave}
+                    type="button"
+                    disabled={passado}
+                    aria-pressed={on}
+                    title={jaTem ? "Já tem partida programada" : undefined}
+                    className={`bzcal-day${on ? " is-on" : ""}${passado ? " is-past" : ""}${jaTem ? " has-trip" : ""}`}
+                    onMouseDown={() => {
+                      if (passado) return;
+                      const accao = on ? "desmarcar" : "marcar";
+                      setArrastando(accao);
+                      alternar(dia, accao);
+                    }}
+                    onMouseEnter={() => { if (arrastando) alternar(dia, arrastando); }}
+                  >
+                    {dia.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         ))}
-
-        {celulas.map((dia, i) => {
-          if (!dia) return <span key={`v${i}`} className="bzcal-empty" />;
-          const chave = iso(dia);
-          const passado = dia < hoje;
-          const on = marcados.has(chave);
-          const jaTem = alreadyScheduled?.has(chave);
-          return (
-            <button
-              key={chave}
-              type="button"
-              disabled={passado}
-              aria-pressed={on}
-              className={`bzcal-day${on ? " is-on" : ""}${passado ? " is-past" : ""}${jaTem ? " has-trip" : ""}`}
-              onMouseDown={() => {
-                if (passado) return;
-                const accao = on ? "desmarcar" : "marcar";
-                setArrastando(accao);
-                alternar(dia, accao);
-              }}
-              onMouseEnter={() => { if (arrastando) alternar(dia, arrastando); }}
-            >
-              {dia.getDate()}
-            </button>
-          );
-        })}
       </div>
 
-      <div className="bzcal-foot">
-        <span>{selected.length} dia(s) marcado(s)</span>
-        {selected.length > 0 ? (
-          <button type="button" className="bzcal-clear" onClick={() => onChange([])}>
-            Limpar
-          </button>
-        ) : (
-          <span className="bzcal-hint">Clique nos dias, ou no nome do dia da semana.</span>
-        )}
-      </div>
+      <p className="bzcal-hint">
+        Clique num dia, arraste para marcar vários, ou use a inicial do dia da semana.
+      </p>
     </div>
   );
 }

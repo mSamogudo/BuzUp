@@ -5472,80 +5472,198 @@ html[data-theme="dark"] .otp-digit:focus {
    A geração era um botão que dizia o resultado depois de o fazer; aqui o
    operador vê a distribuição por dia antes de confirmar.
 --------------------------------------------------------------------------- */
-/* --- Assistente de programação: modos e calendário ---------------------- */
-.bztw-modes { display: flex; gap: 6px; margin: 0 0 16px; }
-.bztw-mode {
-  flex: 1; min-height: 38px; padding: 0 12px; cursor: pointer;
+/* === Programar viagens ================================================== */
+/* Duas colunas: o QUE se cria à esquerda, o QUANDO à direita. Nada muda de
+   sítio enquanto se trabalha, e por isso não há rolagem a meio da tarefa. */
+
+.bzsched-modes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px; margin: 0 0 18px;
+}
+.bzsched-mode {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  padding: 13px 16px; cursor: pointer; font: inherit;
+  border: 1px solid var(--app-border); border-radius: 14px;
+  background: var(--app-surface); color: var(--app-text);
+  transition: border-color .16s, background .16s, box-shadow .16s;
+}
+.bzsched-mode:hover { border-color: var(--app-accent); }
+.bzsched-mode.is-on {
+  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
+  box-shadow: inset 0 0 0 1px var(--app-accent);
+}
+.bzsched-mode svg { flex: none; color: var(--app-accent); }
+.bzsched-mode span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bzsched-mode b { font-size: 13.5px; font-weight: 700; }
+.bzsched-mode small { font-size: 11.5px; color: var(--app-text-muted); }
+
+.bzsched {
+  display: grid; grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 18px; align-items: start;
+}
+@media (max-width: 1080px) { .bzsched { grid-template-columns: 1fr; } }
+
+.bzsched-side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 12px; }
+@media (max-width: 1080px) { .bzsched-side { position: static; } }
+
+.bzsched-card {
+  padding: 16px; border-radius: 16px;
   border: 1px solid var(--app-border); background: var(--app-surface);
-  color: var(--app-text-muted); font: inherit; font-size: 13px; font-weight: 700;
-  border-radius: 10px; transition: background .15s, color .15s, border-color .15s;
 }
-.bztw-mode:hover { border-color: var(--app-accent); }
-.bztw-mode.is-on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+.bzsched-card-flush { padding: 16px 16px 10px; }
+.bzsched-card .field { margin-bottom: 12px; }
+.bzsched-card .field:last-child { margin-bottom: 0; }
 
-.bztw-times { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
-.bztw-time { position: relative; display: inline-flex; align-items: center; }
-.bztw-time input { width: 128px; }
-.bztw-time-x {
-  margin-left: 4px; width: 22px; height: 22px; line-height: 1; cursor: pointer;
+.bzsched-h3 {
+  display: flex; align-items: center; gap: 7px; margin: 0 0 14px;
+  font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--app-text-muted);
+}
+.bzsched-h3 svg { color: var(--app-accent); }
+
+.bzsched-main-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 4px;
+}
+.bzsched-main-head .bzsched-h3 { margin-bottom: 0; }
+.bzsched-count-pill {
+  padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: color-mix(in srgb, var(--app-accent) 12%, transparent);
+  color: var(--app-accent);
+}
+
+.bzsched-times { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.bzsched-time { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+.bzsched-time input { width: 112px; }
+.bzsched-time-x {
+  display: grid; place-items: center; width: 24px; height: 24px; cursor: pointer;
   border-radius: 999px; border: 1px solid var(--app-border);
-  background: var(--app-surface); color: var(--app-text-muted); font-size: 15px;
+  background: var(--app-surface); color: var(--app-text-muted);
 }
-.bztw-time-x:hover { border-color: var(--app-danger, #ef4444); color: var(--app-danger, #ef4444); }
+.bzsched-time-x:hover { border-color: var(--app-danger, #ef4444); color: var(--app-danger, #ef4444); }
+.bzsched-add {
+  display: inline-flex; align-items: center; gap: 5px; height: 38px; padding: 0 13px;
+  cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 700;
+  border: 1px dashed var(--app-border); border-radius: 10px;
+  background: none; color: var(--app-text-muted);
+}
+.bzsched-add:hover { border-color: var(--app-accent); color: var(--app-accent); }
 
-.bzcal {
-  margin-top: 6px; padding: 12px; border-radius: 14px;
-  border: 1px solid var(--app-border); background: var(--app-surface-soft);
-  user-select: none;
+.bzsched-note { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: var(--app-text-muted); }
+
+.bzsched-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.bzsched-chip {
+  min-height: 32px; padding: 0 13px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--app-border); background: var(--app-surface);
+  color: var(--app-text); font: inherit; font-size: 12.5px; font-weight: 600;
 }
-.bzcal-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; margin-bottom: 10px; font-size: 14px;
+.bzsched-chip:hover { border-color: var(--app-accent); }
+.bzsched-chip.is-on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+
+.bzsched-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.bzsched-list li {
+  display: flex; justify-content: space-between; gap: 10px;
+  padding: 7px 0; font-size: 12.5px; border-top: 1px solid var(--app-border);
 }
+
+.bzsched-bars {
+  display: flex; align-items: flex-end; gap: 5px; height: 150px;
+  overflow-x: auto; padding-top: 10px;
+}
+.bzsched-bar-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 26px; flex: 1; }
+.bzsched-bar-track { display: flex; align-items: flex-end; height: 100%; width: 100%; }
+.bzsched-bar { width: 100%; border-radius: 5px 5px 2px 2px; background: var(--app-accent); }
+.bzsched-bar.is-empty { background: var(--app-border); }
+.bzsched-bar-n { font-size: 11.5px; font-weight: 700; }
+.bzsched-bar-d { font-size: 10px; color: var(--app-text-muted); }
+
+/* --- Rodapé de confirmação: sempre à vista, nunca a rolar -------------- */
+.bzsched-footer {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 14px; margin-top: 18px; padding: 14px 18px;
+  border: 1px solid var(--app-border); border-radius: 16px;
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -2px 18px rgba(0, 0, 0, 0.06);
+}
+.bzsched-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; min-width: 0; }
+.bzsched-total { display: inline-flex; align-items: baseline; gap: 8px; color: var(--app-accent); }
+.bzsched-total svg { align-self: center; }
+.bzsched-total strong { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+.bzsched-total span { font-size: 13px; }
+.bzsched-total.is-zero { color: var(--app-text-muted); }
+.bzsched-meta { font-size: 12px; color: var(--app-text-muted); }
+.bzsched-calc, .bzsched-err { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.bzsched-err { color: var(--app-danger, #ef4444); }
+
+/* --- Calendário compacto ----------------------------------------------- */
+.bzcal { user-select: none; }
+.bzcal-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 12px;
+}
+.bzcal-nav-group { display: inline-flex; gap: 4px; }
 .bzcal-nav {
-  width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer;
+  width: 28px; height: 28px; display: grid; place-items: center; cursor: pointer;
   border-radius: 8px; border: 1px solid var(--app-border);
   background: var(--app-surface); color: var(--app-text);
 }
-.bzcal-nav:hover:not(:disabled) { border-color: var(--app-accent); }
-.bzcal-nav:disabled { opacity: .35; cursor: default; }
+.bzcal-nav:hover:not(:disabled) { border-color: var(--app-accent); color: var(--app-accent); }
+.bzcal-nav:disabled { opacity: .3; cursor: default; }
 
-.bzcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.bzcal-weekday {
-  padding: 4px 0; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700;
-  letter-spacing: .4px; text-transform: uppercase;
-  color: var(--app-text-muted); background: none; border: 0; border-radius: 6px;
+.bzcal-shortcuts { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+.bzcal-shortcut {
+  height: 28px; padding: 0 11px; cursor: pointer; font: inherit;
+  font-size: 12px; font-weight: 600; border-radius: 999px;
+  border: 1px solid var(--app-border); background: var(--app-surface); color: var(--app-text);
 }
-.bzcal-weekday:hover { color: var(--app-accent); background: var(--app-surface); }
-.bzcal-empty { aspect-ratio: 1; }
+.bzcal-shortcut:hover:not(:disabled) { border-color: var(--app-accent); color: var(--app-accent); }
+.bzcal-shortcut.is-quiet { color: var(--app-text-muted); }
+.bzcal-shortcut:disabled { opacity: .35; cursor: default; }
+
+.bzcal-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; }
+.bzcal-month-name {
+  margin-bottom: 8px; font-size: 12.5px; font-weight: 700; letter-spacing: .2px;
+}
+.bzcal-month-name span { color: var(--app-text-muted); font-weight: 500; }
+
+/* Células fixas em vez de `aspect-ratio: 1`: numa grelha de sete colunas
+   dentro de um painel largo, o quadrado perfeito dava ~100px de lado — meia
+   página de espaço para mostrar trinta números. */
+.bzcal-grid {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px; max-width: 268px;
+}
+.bzcal-weekday {
+  height: 22px; cursor: pointer; font: inherit; font-size: 10.5px; font-weight: 800;
+  letter-spacing: .3px; color: var(--app-text-muted);
+  background: none; border: 0; border-radius: 6px;
+}
+.bzcal-weekday:hover { color: var(--app-accent); background: color-mix(in srgb, var(--app-accent) 10%, transparent); }
+.bzcal-empty { height: 32px; }
 .bzcal-day {
-  aspect-ratio: 1; display: grid; place-items: center; cursor: pointer;
-  border-radius: 9px; border: 1px solid transparent;
-  background: var(--app-surface); color: var(--app-text);
-  font: inherit; font-size: 13px; font-weight: 600;
+  height: 32px; display: grid; place-items: center; cursor: pointer; position: relative;
+  border-radius: 8px; border: 1px solid transparent;
+  background: color-mix(in srgb, var(--app-text) 4%, transparent);
+  color: var(--app-text); font: inherit; font-size: 12.5px; font-weight: 600;
   transition: background .12s, color .12s, border-color .12s;
 }
 .bzcal-day:hover:not(:disabled) { border-color: var(--app-accent); }
-.bzcal-day.is-on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
-.bzcal-day.is-past { opacity: .3; cursor: default; background: none; }
-/* Ponto no canto: este dia já tem partida — repetir a marcação não duplica,
+.bzcal-day.is-on {
+  background: var(--app-accent); border-color: var(--app-accent); color: #fff; font-weight: 700;
+}
+.bzcal-day.is-past { opacity: .28; cursor: default; background: none; }
+/* Ponto no canto: este dia já tem partida. Repetir a marcação não duplica,
    mas o operador merece saber antes de carregar. */
-.bzcal-day.has-trip { position: relative; }
 .bzcal-day.has-trip::after {
-  content: ""; position: absolute; right: 5px; top: 5px;
-  width: 5px; height: 5px; border-radius: 999px; background: var(--app-accent);
+  content: ""; position: absolute; right: 4px; top: 4px;
+  width: 4px; height: 4px; border-radius: 999px; background: var(--app-accent);
 }
 .bzcal-day.is-on.has-trip::after { background: #fff; }
 
-.bzcal-foot {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; margin-top: 10px; font-size: 12px; color: var(--app-text-muted);
-}
-.bzcal-hint { opacity: .8; }
-.bzcal-clear {
-  cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
-  background: none; border: 0; color: var(--app-accent); padding: 0;
-}
+.bzcal-hint { margin: 12px 0 0; font-size: 11.5px; color: var(--app-text-muted); }
 
 .bztw-horizons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
 .bztw-chip {

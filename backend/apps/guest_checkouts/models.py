@@ -68,6 +68,19 @@ class GuestCheckout(BaseModel):
         "trips.Trip", on_delete=models.SET_NULL,
         null=True, blank=True, related_name="guest_checkouts",
     )
+    # Ida e volta. A volta e a MESMA compra — um pagamento, um comprovativo —
+    # mas duas viagens: dois lugares reservados, dois bilhetes, dois manifestos.
+    # Por isso e uma partida propria e nao um campo de data: o autocarro da
+    # volta tem a sua lotacao, o seu motorista e a sua lista de quem vai a bordo.
+    return_trip = models.ForeignKey(
+        "trips.Trip", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="guest_checkouts_return",
+    )
+    # A tarifa da volta e cotada para o percurso invertido, nao copiada da ida:
+    # nada obriga uma rota a custar o mesmo nos dois sentidos.
+    return_unit_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+    )
 
     class Meta:
         ordering = ("-created_at",)
@@ -83,6 +96,10 @@ class GuestCheckout(BaseModel):
     def __str__(self):
         return f"{self.reference} | {self.payer_phone} | {self.status}"
 
+    @property
+    def is_round_trip(self) -> bool:
+        return self.return_trip_id is not None
+
 
 class DigitalTravelPass(BaseModel):
     class Status(models.TextChoices):
@@ -96,6 +113,10 @@ class DigitalTravelPass(BaseModel):
         SMS = "sms", "SMS"
         APP = "app", "App"
         LINK = "link", "Link"
+
+    class Leg(models.TextChoices):
+        OUTBOUND = "outbound", "Ida"
+        RETURN = "return", "Volta"
 
     class DocumentType(models.TextChoices):
         BI = "bi", "Bilhete de Identidade"
@@ -168,6 +189,10 @@ class DigitalTravelPass(BaseModel):
     delivery_channel = models.CharField(
         max_length=8, choices=DeliveryChannel.choices, default=DeliveryChannel.SMS,
     )
+    # Ida ou volta. Sem isto, os dois bilhetes de uma ida e volta eram
+    # indistinguiveis um do outro — no ecra do passageiro, no manifesto de bordo
+    # e para o agente que valida a entrada.
+    leg = models.CharField(max_length=8, choices=Leg.choices, default=Leg.OUTBOUND)
     valid_from = models.DateTimeField(default=timezone.now)
     valid_until = models.DateTimeField(null=True, blank=True)
     used_at = models.DateTimeField(null=True, blank=True)

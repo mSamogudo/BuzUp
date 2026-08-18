@@ -8,7 +8,9 @@ import SeatMap, { type SeatRow } from "./SeatMap";
 import StopCombo from "./StopCombo";
 import "./booking.css";
 
-type Step = "search" | "trips" | "seats" | "pax" | "pay" | "done";
+// `rtrips`/`rseats` são a ida e volta: o regresso é outro autocarro, com a
+// sua lotação e o seu lugar, por isso escolhe-se à parte.
+type Step = "search" | "trips" | "seats" | "rtrips" | "rseats" | "pax" | "pay" | "done";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "search", label: "Viagem" },
@@ -25,7 +27,7 @@ interface TripOpt {
   vehicle: string | null; departure: string | null; fare_amount: string | null;
   seats_available: number | null; on_sale: boolean; sale_unavailable_reason: string;
 }
-interface Passenger { name: string; document_type: string; document_number: string; seat: string }
+interface Passenger { name: string; document_type: string; document_number: string; seat: string; return_seat: string }
 
 /// Forma de cada tipo de documento. Vem de `/api/public/document-types/`, o
 /// mesmo sítio que o servidor usa para validar — escrever as regras outra vez
@@ -99,10 +101,18 @@ export default function BookingPage() {
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState("");
   const [qty, setQty] = useState(1);
+  // Ida e volta. Vazio = só ida — que continua a ser o caminho por omissão.
+  const [returnDate, setReturnDate] = useState("");
 
   const [trips, setTrips] = useState<TripOpt[]>([]);
   const [trip, setTrip] = useState<TripOpt | null>(null);
   const [rows, setRows] = useState<SeatRow[]>([]);
+  // Regresso: partidas, escolha, planta e lugares — tudo próprio, porque é
+  // outro autocarro noutro dia.
+  const [rtrips, setRtrips] = useState<TripOpt[]>([]);
+  const [rtrip, setRtrip] = useState<TripOpt | null>(null);
+  const [rrows, setRrows] = useState<SeatRow[]>([]);
+  const [rpicked, setRpicked] = useState<string[]>([]);
   // `hasSeatMap` diz se HÁ PLANTA a desenhar; `needsIdentity` diz se a ROTA é
   // interprovincial/internacional. Não são a mesma coisa: uma rota longa cuja
   // viatura ainda não tem lotação registada vende sem planta, mas continua a
@@ -257,10 +267,39 @@ export default function BookingPage() {
       setHasSeatMap(Boolean(d.has_seat_map));
       setNeedsIdentity(Boolean(d.seat_selection));
       setRows(d.rows || []);
-      setStep(d.has_seat_map ? "seats" : "pax");
-      if (!d.has_seat_map) startPax([], Boolean(d.seat_selection));
+      if (d.has_seat_map) { setStep("seats"); return; }
+      // Sem planta na ida: segue para o regresso, se houver.
+      if (returnDate) { await procurarVolta(); return; }
+      setStep("pax");
+      startPax([], Boolean(d.seat_selection));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar os lugares.");
+    } finally { setBusy(false); }
+  };
+
+  /** Partidas do regresso: o mesmo percurso ao contrário, na data de volta. */
+  const procurarVolta = useCallback(async () => {
+    setBusy(true); setError("");
+    try {
+      const q = new URLSearchParams({ origin: destination, destination: origin, date: returnDate });
+      const data = await getJson(`/api/public/trips/?${q}`);
+      setRtrips(data.trips || []);
+      setStep("rtrips");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível procurar o regresso.");
+    } finally { setBusy(false); }
+  }, [destination, origin, returnDate]);
+
+  const chooseReturnTrip = async (t: TripOpt) => {
+    setBusy(true); setError(""); setRtrip(t); setRpicked([]);
+    try {
+      const d = await getJson(`/api/public/trips/${t.trip_id}/seats/`);
+      setRrows(d.rows || []);
+      if (d.has_seat_map) { setStep("rseats"); return; }
+      setStep("pax");
+      startPax(picked, needsIdentity, []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível carregar os lugares do regresso.");
     } finally { setBusy(false); }
   };
 
@@ -270,7 +309,13 @@ export default function BookingPage() {
       : (prev.length >= qty ? prev : [...prev, label]));
   };
 
-  const startPax = useCallback((seats: string[], comDocumento?: boolean) => {
+  const toggleReturnSeat = (label: string) => {
+    setRpicked((prev) => prev.includes(label)
+      ? prev.filter((s) => s !== label)
+      : (prev.length >= qty ? prev : [...prev, label]));
+  };
+
+  const startPax = useCallback((seats: string[], comDocumento?: boolean, returnSeats?: string[]) => {
     // `needsIdentity` acabou de ser definido no mesmo ciclo em `chooseTrip`;
     // ler o estado aqui traria o valor da partida ANTERIOR.
     const pedeDocumento = comDocumento ?? needsIdentity;
@@ -287,11 +332,19 @@ export default function BookingPage() {
         document_type: pedeDocumento ? (antes?.document_type || "bi") : "",
         document_number: pedeDocumento ? (antes?.document_number || "") : "",
         seat: seats[i] || "",
+        return_seat: (returnSeats ?? rpicked)[i] || "",
       };
     }));
-  }, [qty, needsIdentity]);
+  }, [qty, needsIdentity, rpicked]);
 
-  const goToPax = () => { startPax(picked); setStep("pax"); };
+  /** Fim da escolha de lugares da ida: ou vai ao regresso, ou aos passageiros. */
+  const goToPax = () => {
+    if (returnDate && !rtrip) { void procurarVolta(); return; }
+    startPax(picked);
+    setStep("pax");
+  };
+
+  const goToPaxFromReturn = () => { startPax(picked, needsIdentity, rpicked); setStep("pax"); };
 
   const setPaxField = (i: number, key: keyof Passenger, value: string) => {
     setPax((prev) => prev.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
@@ -337,7 +390,10 @@ export default function BookingPage() {
   const paxValid = paxMissing === "";
   const phoneValid = /^\d{9}$/.test(phone.replace(/\D/g, ""));
   const unit = Number(trip?.fare_amount || 0);
-  const total = unit * qty;
+  // A volta é cotada para o percurso invertido; o servidor cota-a outra vez e
+  // é o valor dele que manda. Aqui só se mostra o que se vai pagar.
+  const unitVolta = rtrip ? Number(rtrip.fare_amount || 0) : 0;
+  const total = (unit + unitVolta) * qty;
 
   const pay = async (e: FormEvent) => {
     e.preventDefault();
@@ -360,6 +416,7 @@ export default function BookingPage() {
           origin_stop_id: Number(origin),
           destination_stop_id: Number(destination),
           trip_id: trip.trip_id,
+          ...(rtrip ? { return_trip_id: rtrip.trip_id } : {}),
           quantity: qty,
           passengers: pax,
           emergency_contact_name: emergName,
@@ -427,9 +484,21 @@ export default function BookingPage() {
                       placeholder="Escreva para procurar" stops={stops} value={destination} />
                   </div>
                   <div className="bzbk-field">
-                    <label className="bzbk-label" htmlFor="dt"><Calendar size={12} style={{ verticalAlign: -2 }} /> Data da viagem</label>
+                    <label className="bzbk-label" htmlFor="dt"><Calendar size={12} style={{ verticalAlign: -2 }} /> Data de ida</label>
                     <input id="dt" className="bzbk-input" type="date" value={date} min={today} required
                       onChange={(e) => setDate(e.target.value)} />
+                  </div>
+                  <div className="bzbk-field">
+                    <label className="bzbk-label" htmlFor="dtv">
+                      <Calendar size={12} style={{ verticalAlign: -2 }} /> Data de volta
+                      <span style={{ opacity: 0.6, fontWeight: 400 }}> · opcional</span>
+                    </label>
+                    {/* Vazio = só ida. Deixar o campo à vista, em vez de o
+                        esconder atrás de um botão, é o que faz o passageiro
+                        reparar que pode comprar o regresso de uma vez. */}
+                    <input id="dtv" className="bzbk-input" type="date" value={returnDate}
+                      min={date || today}
+                      onChange={(e) => setReturnDate(e.target.value)} />
                   </div>
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="q"><Users size={12} style={{ verticalAlign: -2 }} /> Passageiros</label>
@@ -524,6 +593,84 @@ export default function BookingPage() {
                     {picked.length === qty
                       ? <>Continuar <ArrowRight size={16} /></>
                       : `Falta escolher ${qty - picked.length}`}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "rtrips" && (
+              <div>
+                <div className="bzbk-h2-row">
+                  <h2 className="bzbk-h2">Partidas de regresso</h2>
+                  {currencyToggle}
+                </div>
+                <p className="bzbk-lead">
+                  {returnDate && longDate(returnDate)} · o mesmo percurso ao contrário
+                </p>
+                {rtrips.length === 0 && (
+                  <div className="bzbk-notice warn">
+                    Não há regresso nesta data. Escolha outro dia, ou compre só a ida.
+                  </div>
+                )}
+                {rtrips.map((t) => {
+                  const left = t.seats_available;
+                  return (
+                    <button key={t.trip_id} className="bzbk-trip" type="button"
+                      disabled={!t.on_sale || (left !== null && left < qty)}
+                      onClick={() => chooseReturnTrip(t)}>
+                      <span className="bzbk-trip-time">{timeOf(t.departure)}</span>
+                      <span className="bzbk-trip-main">
+                        <span className="bzbk-trip-route">{percurso(t)}</span>
+                        <span className="bzbk-trip-meta">
+                          {t.vehicle ? `Viatura ${t.vehicle} · ` : ""}
+                          {!t.on_sale
+                            ? <span className="bzbk-seats-none">{t.sale_unavailable_reason}</span>
+                            : left === null
+                              ? "Lugares disponíveis"
+                              : left === 0
+                                ? <span className="bzbk-seats-none">Esgotado</span>
+                                : left <= 5
+                                  ? <span className="bzbk-seats-few">Só {left} lugares</span>
+                                  : <span className="bzbk-seats-left">{left} lugares livres</span>}
+                        </span>
+                      </span>
+                      <span className="bzbk-trip-price">
+                        {priceLabel(Number(t.fare_amount || 0))}
+                        <small>{rate ? `${money(t.fare_amount)} MZN · por pessoa` : "por pessoa"}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+                <div className="bzbk-actions">
+                  <button className="bzbk-btn ghost" type="button"
+                    onClick={() => setStep(hasSeatMap ? "seats" : "trips")}>
+                    <ArrowLeft size={16} /> Voltar
+                  </button>
+                  {/* Desistir do regresso não pode obrigar a recomeçar tudo. */}
+                  <button className="bzbk-btn ghost" type="button"
+                    onClick={() => { setReturnDate(""); setRtrip(null); setRpicked([]); startPax(picked, needsIdentity, []); setStep("pax"); }}>
+                    Comprar só a ida
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "rseats" && rtrip && (
+              <div>
+                <h2 className="bzbk-h2">Lugares do regresso</h2>
+                <p className="bzbk-lead">
+                  {percurso(rtrip)} · {returnDate && longDate(returnDate)} · partida às {timeOf(rtrip.departure)}
+                </p>
+                <SeatMap rows={rrows} picked={rpicked} maxPick={qty} onToggle={toggleReturnSeat} />
+                <div className="bzbk-actions">
+                  <button className="bzbk-btn ghost" type="button" onClick={() => setStep("rtrips")}>
+                    <ArrowLeft size={16} /> Outro regresso
+                  </button>
+                  <button className="bzbk-btn" type="button"
+                    disabled={rpicked.length !== qty} onClick={goToPaxFromReturn}>
+                    {rpicked.length === qty
+                      ? <>Continuar <ArrowRight size={16} /></>
+                      : `Falta escolher ${qty - rpicked.length}`}
                   </button>
                 </div>
               </div>
@@ -663,16 +810,32 @@ export default function BookingPage() {
                 <p className="bzbk-lead">Confirme os dados e pague com a sua carteira móvel.</p>
 
                 <div className="bzbk-summary">
-                  <div className="bzbk-sum-row"><span>Percurso</span><b>{percurso(trip)}</b></div>
+                  <div className="bzbk-sum-row"><span>{rtrip ? "Ida" : "Percurso"}</span><b>{percurso(trip)}</b></div>
                   <div className="bzbk-sum-row"><span>Partida</span><b>{date && longDate(date)} · {timeOf(trip.departure)}</b></div>
+                  {rtrip ? (
+                    <>
+                      <div className="bzbk-sum-row"><span>Volta</span><b>{percurso(rtrip)}</b></div>
+                      <div className="bzbk-sum-row">
+                        <span>Partida da volta</span>
+                        <b>{returnDate && longDate(returnDate)} · {timeOf(rtrip.departure)}</b>
+                      </div>
+                    </>
+                  ) : null}
                   <div className="bzbk-sum-row">
                     <span>Passageiros</span>
-                    <b>{pax.map((p) => p.name + (p.seat ? ` (${p.seat})` : "")).join(", ")}</b>
+                    <b>{pax.map((p) => p.name
+                      + (p.seat ? ` (${p.seat}${p.return_seat ? ` / ${p.return_seat}` : ""})` : "")).join(", ")}</b>
                   </div>
                   <div className="bzbk-sum-row">
-                    <span>{qty} × {rate ? priceLabel(unit) : `${money(unit)} MZN`}</span>
-                    <b>{rate ? priceLabel(total) : `${money(total)} MZN`}</b>
+                    <span>{qty} × {rate ? priceLabel(unit) : `${money(unit)} MZN`}{rtrip ? " · ida" : ""}</span>
+                    <b>{rate ? priceLabel(unit * qty) : `${money(unit * qty)} MZN`}</b>
                   </div>
+                  {rtrip ? (
+                    <div className="bzbk-sum-row">
+                      <span>{qty} × {rate ? priceLabel(unitVolta) : `${money(unitVolta)} MZN`} · volta</span>
+                      <b>{rate ? priceLabel(unitVolta * qty) : `${money(unitVolta * qty)} MZN`}</b>
+                    </div>
+                  ) : null}
                   <div className="bzbk-sum-total"><span>TOTAL A PAGAR</span><b>{money(total)} MZN</b></div>
                   {rate && (
                     <div className="bzbk-sum-row bzbk-sum-fx">

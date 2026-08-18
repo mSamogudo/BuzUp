@@ -73,6 +73,19 @@ class GuestCheckoutCreateView(APIView):
             if data.get("route_code") and trip.route.code != data["route_code"]:
                 return Response({"detail": "A viagem nao pertence a rota seleccionada."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Ida e volta: a partida da volta e uma partida propria, na mesma rota
+        # e no sentido contrario. Resolve-se aqui para a tarifa e a lotacao
+        # serem validadas antes de se cobrar seja o que for.
+        return_trip = None
+        if data.get("return_trip_id"):
+            return_trip = Trip.objects.select_related("route", "vehicle").filter(
+                pk=data["return_trip_id"],
+                status__in=[Trip.Status.SCHEDULED, Trip.Status.BOARDING, Trip.Status.DEPARTED],
+            ).first()
+            if return_trip is None:
+                return Response({"detail": "Partida de volta nao disponivel para compra."},
+                                status=status.HTTP_404_NOT_FOUND)
+
         route = trip.route if trip else None
         if route is None and data.get("route_code"):
             route = Route.objects.filter(code=data["route_code"], status=Route.Status.ACTIVE).first()
@@ -123,6 +136,33 @@ class GuestCheckoutCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # A volta e cotada para o percurso INVERTIDO: nada obriga uma rota a
+        # custar o mesmo nos dois sentidos, e copiar o preco da ida seria
+        # inventar um numero.
+        return_unit_amount = None
+        if return_trip is not None:
+            if return_trip.route_id != route.id:
+                return Response({"detail": "A volta tem de ser na mesma rota."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not (origin and destination):
+                return Response({"detail": "Indique origem e destino para comprar ida e volta."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            try:
+                return_unit_amount = quote_fare(
+                    route=route, origin_stop=destination, destination_stop=origin).amount
+            except NoFareFoundError as e:
+                return Response({"detail": f"Volta: {e}"}, status=status.HTTP_400_BAD_REQUEST)
+            if return_unit_amount <= 0:
+                return Response({"detail": "O percurso de volta nao esta a venda."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if (trip is not None and return_trip.planned_departure_at
+                    and trip.planned_departure_at
+                    and return_trip.planned_departure_at <= trip.planned_departure_at):
+                return Response(
+                    {"detail": "A volta tem de partir depois da ida."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         passengers = data.get("passengers") or []
         quantity = data["quantity"]
         if passengers and len(passengers) != quantity:
@@ -147,14 +187,27 @@ class GuestCheckoutCreateView(APIView):
                                    "E obrigatorio nesta viagem."},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+            # Numa carreira com lugar marcado, a volta tambem tem lugar. Sem
+            # esta guarda, comprava-se ida e volta com lugar so na ida e o
+            # passageiro descobria-o a porta do autocarro no regresso.
+            if return_trip is not None:
+                for i, p in enumerate(passengers, start=1):
+                    if not (p.get("return_seat") or "").strip():
+                        return Response(
+                            {"detail": f"Escolha o lugar de volta do passageiro {i}."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
         else:
             # Nao guardar o que nao foi pedido: se o cliente enviar documento
             # numa carreira urbana, ele nao entra na base.
             for p in passengers:
                 p["document_type"] = ""
                 p["document_number"] = ""
+                p["return_seat"] = ""
 
-        total = unit_amount * quantity
+        # Um pagamento cobre os dois trocos: o passageiro compra a viagem, nao
+        # dois bilhetes que tem de pagar em separado.
+        total = (unit_amount + (return_unit_amount or 0)) * quantity
         ref = f"GC-{uuid4().hex[:18].upper()}"
 
         # Reserva do lugar: bloqueia a linha da viagem para que dois
@@ -184,6 +237,34 @@ class GuestCheckoutCreateView(APIView):
                     if clash:
                         return Response(
                             {"detail": f"Lugar(es) ja ocupado(s): {', '.join(clash)}. Escolha outro."},
+                            status=status.HTTP_409_CONFLICT,
+                        )
+
+            # A volta tem a sua propria lotacao e os seus proprios lugares. Sem
+            # a bloquear aqui, dois compradores levavam o mesmo lugar de volta
+            # enquanto disputavam lugares diferentes na ida.
+            if return_trip is not None:
+                return_trip = (Trip.objects.select_related("route", "vehicle")
+                               .select_for_update(of=("self",)).get(pk=return_trip.pk))
+                pode, motivo = sale_state(return_trip)
+                if not pode:
+                    return Response({"detail": f"Volta: {motivo}"}, status=status.HTTP_409_CONFLICT)
+                livres = seats_available(return_trip)
+                if livres is not None and quantity > livres:
+                    return Response(
+                        {"detail": f"Restam apenas {livres} lugares na partida de volta."},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                escolhidos_volta = [p.get("return_seat") for p in passengers if p.get("return_seat")]
+                if escolhidos_volta:
+                    if len(set(escolhidos_volta)) != len(escolhidos_volta):
+                        return Response({"detail": "Lugar de volta repetido na mesma compra."},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    ocupados = occupied_seats(return_trip)
+                    choque = sorted(set(escolhidos_volta) & ocupados)
+                    if choque:
+                        return Response(
+                            {"detail": f"Lugar(es) de volta ja ocupado(s): {', '.join(choque)}. Escolha outro."},
                             status=status.HTTP_409_CONFLICT,
                         )
             # Moeda de exibicao (ex.: ZAR nas rotas p/ Africa do Sul). A taxa e
@@ -221,6 +302,8 @@ class GuestCheckoutCreateView(APIView):
                 status=GuestCheckout.Status.PAYMENT_PENDING,
                 expires_at=timezone.now() + timedelta(minutes=30),
                 trip=trip,
+                return_trip=return_trip,
+                return_unit_amount=return_unit_amount,
                 linked_passenger=linked_passenger,
                 emergency_contact_name=emerg_name,
                 emergency_contact_phone=emerg_phone,

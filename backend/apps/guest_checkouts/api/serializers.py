@@ -31,6 +31,8 @@ class PassengerInputSerializer(serializers.Serializer):
     )
     document_number = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
     seat = serializers.CharField(max_length=8, required=False, allow_blank=True, default="")
+    # O lugar da volta e outro lugar, noutro autocarro: nao se deduz do da ida.
+    return_seat = serializers.CharField(max_length=8, required=False, allow_blank=True, default="")
 
     def validate(self, attrs):
         """Valida a FORMA do documento; se ele e sequer preciso decide-se na
@@ -77,6 +79,9 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
     origin_stop_id = serializers.IntegerField(required=False)
     destination_stop_id = serializers.IntegerField(required=False)
     trip_id = serializers.IntegerField(required=False)
+    # Ida e volta: a partida da volta e uma partida propria, com a sua lotacao
+    # e o seu lugar. O lugar de cada passageiro vem em `passengers[].return_seat`.
+    return_trip_id = serializers.IntegerField(required=False, allow_null=True)
     quantity = serializers.IntegerField(min_value=1, max_value=10, default=1)
     unit_amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, default=0)
     # Moeda em que o comprador viu o preco (ex.: ZAR). So exibicao — a
@@ -95,6 +100,10 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
         destination_name = str(attrs.get("destination_stop") or "").strip().lower()
         if origin_name and destination_name and origin_name == destination_name:
             raise serializers.ValidationError({"destination_stop": "Destino deve ser diferente da origem."})
+
+        if attrs.get("return_trip_id") and attrs.get("return_trip_id") == attrs.get("trip_id"):
+            raise serializers.ValidationError(
+                {"return_trip_id": "A volta nao pode ser a mesma partida da ida."})
         return attrs
 
 

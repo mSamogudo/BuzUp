@@ -47,65 +47,21 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
         gc.status = GuestCheckout.Status.ISSUED
         gc.save(update_fields=["status", "updated_at"])
 
-        valid_from, valid_until = _validity_window(gc)
-        departure = getattr(gc.trip, "planned_departure_at", None) if gc.trip_id else None
         # Compra feita por um passageiro autenticado (app): o bilhete e nominal
         # e entra directamente na conta dele.
         linked = gc.linked_passenger
-        # Moeda de exibicao escolhida na compra, congelada a taxa da altura.
-        unit_display = None
-        if gc.display_currency != "MZN" and gc.exchange_rate:
-            unit_display = (gc.unit_amount / gc.exchange_rate).quantize(Decimal("0.01"))
         # Um passe por passageiro quando ha dados nominais; senao, por unidade.
         people = list(gc.passengers or [])
-        for i in range(gc.quantity):
-            person = people[i] if i < len(people) else {}
-            raw_token, token_hash = DigitalTravelPass.generate_token()
-            travel_pass = DigitalTravelPass.objects.create(
-                guest_checkout=gc,
-                passenger_account=linked,
-                payer_phone=gc.payer_phone,
-                route_code=gc.route_code,
-                route_name=gc.route_name,
-                origin_stop=gc.origin_stop,
-                destination_stop=gc.destination_stop,
-                origin_stop_ref=gc.origin_stop_ref,
-                destination_stop_ref=gc.destination_stop_ref,
-                trip=gc.trip,
-                passenger_name=(person.get("name") or (linked.full_name if linked else "") or gc.buyer_name or "")[:255],
-                document_type=person.get("document_type") or (linked.document_type if linked else "") or "",
-                document_number=(person.get("document_number") or (linked.document_number if linked else "") or "")[:64],
-                seat_number=(person.get("seat") or "")[:8],
-                # Contacto de emergencia: por passageiro quando vem, senao o
-                # da compra — numa familia que viaja junta, e o mesmo.
-                emergency_contact_name=(
-                    person.get("emergency_contact_name")
-                    or gc.emergency_contact_name or ""
-                )[:120],
-                emergency_contact_phone=(
-                    person.get("emergency_contact_phone")
-                    or gc.emergency_contact_phone or ""
-                )[:20],
-                departure_at=departure,
-                fare_amount=gc.unit_amount,
-                display_currency=gc.display_currency or "MZN",
-                display_fare_amount=unit_display,
-                exchange_rate=gc.exchange_rate,
-                token=raw_token,
-                token_hash=token_hash,
-                delivery_channel=(
-                    DigitalTravelPass.DeliveryChannel.APP if linked
-                    else DigitalTravelPass.DeliveryChannel.SMS
-                ),
-                valid_from=valid_from,
-                valid_until=valid_until,
-            )
-            # Codigo curto do proprio bilhete (inclui a sequencia -01, -02...)
-            travel_pass.short_code = ticket_short_code(
-                ticket_reference(travel_pass, sequence=i + 1, total=gc.quantity))
-            travel_pass.save(update_fields=["short_code", "updated_at"])
-            travel_pass._raw_token = raw_token
-            passes.append(travel_pass)
+
+        # Ida e volta: a mesma compra, duas viagens. Cada troco tem a sua
+        # partida, o seu lugar, a sua validade e o seu manifesto — por isso sao
+        # dois bilhetes e nao um bilhete com duas datas.
+        trocos = [_troco_de_ida(gc)]
+        if gc.is_round_trip:
+            trocos.append(_troco_de_volta(gc))
+
+        for troco in trocos:
+            _emitir_troco(gc, troco, people, linked, passes)
 
     # SMS só depois do commit. Esta função é chamada de dentro de transacções
     # que detêm locks de dinheiro (venda POS por cartão bloqueia a carteira);
@@ -117,6 +73,102 @@ def issue_guest_pass(guest_checkout: GuestCheckout) -> list[DigitalTravelPass]:
         transaction.on_commit(lambda pass_=p: _deliver_pass_sms(gc, pass_))
 
     return passes
+
+
+def _troco_de_ida(gc: GuestCheckout) -> dict:
+    return {
+        "leg": DigitalTravelPass.Leg.OUTBOUND,
+        "trip": gc.trip,
+        "origin_stop": gc.origin_stop,
+        "destination_stop": gc.destination_stop,
+        "origin_stop_ref": gc.origin_stop_ref,
+        "destination_stop_ref": gc.destination_stop_ref,
+        "fare": gc.unit_amount,
+        "seat_field": "seat",
+    }
+
+
+def _troco_de_volta(gc: GuestCheckout) -> dict:
+    """O mesmo percurso ao contrario, na partida da volta."""
+    return {
+        "leg": DigitalTravelPass.Leg.RETURN,
+        "trip": gc.return_trip,
+        "origin_stop": gc.destination_stop,
+        "destination_stop": gc.origin_stop,
+        "origin_stop_ref": gc.destination_stop_ref,
+        "destination_stop_ref": gc.origin_stop_ref,
+        # Cotada para o percurso invertido no acto da compra: nada obriga uma
+        # rota a custar o mesmo nos dois sentidos.
+        "fare": gc.return_unit_amount if gc.return_unit_amount is not None else gc.unit_amount,
+        "seat_field": "return_seat",
+    }
+
+
+def _emitir_troco(gc: GuestCheckout, troco: dict, people: list, linked, passes: list) -> None:
+    """Emite os bilhetes de UM troco (ida ou volta) da compra."""
+    valid_from, valid_until = validity_window(troco["trip"])
+    departure = getattr(troco["trip"], "planned_departure_at", None) if troco["trip"] else None
+    # Moeda de exibicao escolhida na compra, congelada a taxa da altura.
+    unit_display = None
+    if gc.display_currency != "MZN" and gc.exchange_rate:
+        unit_display = (troco["fare"] / gc.exchange_rate).quantize(Decimal("0.01"))
+
+    # A numeracao continua atraves dos trocos: numa ida e volta para duas
+    # pessoas os bilhetes sao -01 a -04, e nao dois pares de -01 e -02 que se
+    # repetiam no mesmo comprovativo.
+    total_bilhetes = gc.quantity * (2 if gc.is_round_trip else 1)
+    ja_emitidos = len(passes)
+
+    for i in range(gc.quantity):
+        person = people[i] if i < len(people) else {}
+        raw_token, token_hash = DigitalTravelPass.generate_token()
+        travel_pass = DigitalTravelPass.objects.create(
+            guest_checkout=gc,
+            passenger_account=linked,
+            payer_phone=gc.payer_phone,
+            route_code=gc.route_code,
+            route_name=gc.route_name,
+            leg=troco["leg"],
+            origin_stop=troco["origin_stop"],
+            destination_stop=troco["destination_stop"],
+            origin_stop_ref=troco["origin_stop_ref"],
+            destination_stop_ref=troco["destination_stop_ref"],
+            trip=troco["trip"],
+            passenger_name=(person.get("name") or (linked.full_name if linked else "") or gc.buyer_name or "")[:255],
+            document_type=person.get("document_type") or (linked.document_type if linked else "") or "",
+            document_number=(person.get("document_number") or (linked.document_number if linked else "") or "")[:64],
+            # O lugar da volta e outro lugar, noutro autocarro.
+            seat_number=(person.get(troco["seat_field"]) or "")[:8],
+            # Contacto de emergencia: por passageiro quando vem, senao o
+            # da compra — numa familia que viaja junta, e o mesmo.
+            emergency_contact_name=(
+                person.get("emergency_contact_name")
+                or gc.emergency_contact_name or ""
+            )[:120],
+            emergency_contact_phone=(
+                person.get("emergency_contact_phone")
+                or gc.emergency_contact_phone or ""
+            )[:20],
+            departure_at=departure,
+            fare_amount=troco["fare"],
+            display_currency=gc.display_currency or "MZN",
+            display_fare_amount=unit_display,
+            exchange_rate=gc.exchange_rate,
+            token=raw_token,
+            token_hash=token_hash,
+            delivery_channel=(
+                DigitalTravelPass.DeliveryChannel.APP if linked
+                else DigitalTravelPass.DeliveryChannel.SMS
+            ),
+            valid_from=valid_from,
+            valid_until=valid_until,
+        )
+        # Codigo curto do proprio bilhete (inclui a sequencia -01, -02...)
+        travel_pass.short_code = ticket_short_code(
+            ticket_reference(travel_pass, sequence=ja_emitidos + i + 1, total=total_bilhetes))
+        travel_pass.save(update_fields=["short_code", "updated_at"])
+        travel_pass._raw_token = raw_token
+        passes.append(travel_pass)
 
 
 def _deliver_pass_sms(gc: GuestCheckout, travel_pass: DigitalTravelPass):

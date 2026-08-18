@@ -56,6 +56,40 @@ class SeatLayoutTests(TestCase):
         self.assertEqual(len(labels), 7)
         self.assertEqual(labels[-1], "2C")
 
+    def test_minibus_de_quinze_lugares(self):
+        """O caso que expos o defeito no desenho da planta.
+
+        Num autocarro grande a fila incompleta e uma em vinte e quase nao se
+        nota. Num minibus de 15 lugares e um quarto da planta: o lado direito
+        da ultima fila tem UM banco onde as outras tem dois, e quem desenha tem
+        de deixar a coluna vazia em vez de encolher a fila.
+        """
+        rows = seat_rows(15, "2+2")
+        self.assertEqual(len(rows), 4)
+        self.assertEqual([len(r["left"]) for r in rows], [2, 2, 2, 2])
+        self.assertEqual([len(r["right"]) for r in rows], [2, 2, 2, 1])
+
+    def test_minibus_com_lado_direito_vazio(self):
+        """7 lugares num 1+2: a ultima fila nao tem lado direito nenhum."""
+        rows = seat_rows(7, "1+2")
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[-1]["left"], ["3A"])
+        self.assertEqual(rows[-1]["right"], [])
+
+    def test_minibus_de_doze_fecha_certo(self):
+        rows = seat_rows(12, "2+2")
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(len(r["left"]) == 2 and len(r["right"]) == 2 for r in rows))
+
+    def test_lotacao_pequena_nunca_perde_lugares(self):
+        """Seja qual for o layout, a planta tem exactamente os lugares que ha."""
+        for capacidade in range(1, 21):
+            for layout in ("1+1", "1+2", "2+1", "2+2", "2+3", "3+2"):
+                with self.subTest(capacidade=capacidade, layout=layout):
+                    self.assertEqual(len(seat_labels(capacidade, layout)), capacidade)
+                    self.assertEqual(len(set(seat_labels(capacidade, layout))), capacidade,
+                                     "duas etiquetas iguais na mesma planta")
+
     def test_garbage_layout_falls_back(self):
         self.assertEqual(parse_layout("nao-e-layout"), (2, 2))
         self.assertEqual(parse_layout(""), (2, 2))

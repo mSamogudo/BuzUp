@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, Bus, Calendar, CheckCircle2, Download, MapPin, Search, Users,
+  ArrowLeft, ArrowRight, Bus, Calendar, CheckCircle2, Download, MapPin, Repeat, Search, Users,
 } from "lucide-react";
 import { useBranding, pickLogo } from "../../lib/branding";
 import SeatMap, { type SeatRow } from "./SeatMap";
@@ -12,10 +12,23 @@ import "./booking.css";
 // sua lotação e o seu lugar, por isso escolhe-se à parte.
 type Step = "search" | "trips" | "seats" | "rtrips" | "rseats" | "pax" | "pay" | "done";
 
-const STEPS: { key: Step; label: string }[] = [
+const STEPS_IDA: { key: Step; label: string }[] = [
   { key: "search", label: "Viagem" },
   { key: "trips", label: "Partida" },
   { key: "seats", label: "Lugares" },
+  { key: "pax", label: "Passageiros" },
+  { key: "pay", label: "Pagamento" },
+];
+
+/** Com regresso, as etapas do caminho de volta entram na barra de progresso.
+ *  Escondê-las fazia o passageiro pensar que estava a um passo do fim quando
+ *  ainda lhe faltavam dois. */
+const STEPS_IDA_E_VOLTA: { key: Step; label: string }[] = [
+  { key: "search", label: "Viagem" },
+  { key: "trips", label: "Ida" },
+  { key: "seats", label: "Lugares" },
+  { key: "rtrips", label: "Volta" },
+  { key: "rseats", label: "Lugares" },
   { key: "pax", label: "Passageiros" },
   { key: "pay", label: "Pagamento" },
 ];
@@ -101,8 +114,21 @@ export default function BookingPage() {
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState("");
   const [qty, setQty] = useState(1);
-  // Ida e volta. Vazio = só ida — que continua a ser o caminho por omissão.
+  // Só ida ou ida e volta. É uma escolha do passageiro e não um campo que se
+  // deixa em branco: mostrar sempre a data de regresso pedia uma resposta a
+  // quem só quer ir, e obrigava a adivinhar o que "vazio" queria dizer.
+  const [tipo, setTipo] = useState<"ida" | "idaevolta">("ida");
   const [returnDate, setReturnDate] = useState("");
+  const idaEVolta = tipo === "idaevolta";
+
+  /** Trocar de tipo limpa o regresso: deixar restos era vender o que ninguém pediu. */
+  const escolherTipo = (novo: "ida" | "idaevolta") => {
+    setTipo(novo);
+    if (novo === "ida") {
+      setReturnDate(""); setRtrip(null); setRtrips([]); setRpicked([]);
+      setPax((prev) => prev.map((p) => ({ ...p, return_seat: "" })));
+    }
+  };
 
   const [trips, setTrips] = useState<TripOpt[]>([]);
   const [trip, setTrip] = useState<TripOpt | null>(null);
@@ -269,7 +295,7 @@ export default function BookingPage() {
       setRows(d.rows || []);
       if (d.has_seat_map) { setStep("seats"); return; }
       // Sem planta na ida: segue para o regresso, se houver.
-      if (returnDate) { await procurarVolta(); return; }
+      if (idaEVolta) { await procurarVolta(); return; }
       setStep("pax");
       startPax([], Boolean(d.seat_selection));
     } catch (err) {
@@ -339,7 +365,7 @@ export default function BookingPage() {
 
   /** Fim da escolha de lugares da ida: ou vai ao regresso, ou aos passageiros. */
   const goToPax = () => {
-    if (returnDate && !rtrip) { void procurarVolta(); return; }
+    if (idaEVolta && !rtrip) { void procurarVolta(); return; }
     startPax(picked);
     setStep("pax");
   };
@@ -433,7 +459,8 @@ export default function BookingPage() {
     } finally { setBusy(false); }
   };
 
-  const stepIndex = STEPS.findIndex((s) => s.key === step);
+  const passos = idaEVolta ? STEPS_IDA_E_VOLTA : STEPS_IDA;
+  const stepIndex = passos.findIndex((s) => s.key === step);
 
   return (
     <div className="bzbk">
@@ -453,7 +480,7 @@ export default function BookingPage() {
             <p className="bzbk-sub">Escolha a data, o lugar e receba o bilhete no telemóvel.</p>
           </div>
           <nav className="bzbk-steps" aria-label="Etapas da compra">
-            {STEPS.map((s, i) => (
+            {passos.map((s, i) => (
               <span key={s.key}
                 className={`bzbk-step${s.key === step ? " is-active" : ""}${i < stepIndex ? " is-done" : ""}`}>
                 <b>{i < stepIndex ? "✓" : i + 1}</b>{s.label}
@@ -472,6 +499,22 @@ export default function BookingPage() {
               <form onSubmit={search}>
                 <h2 className="bzbk-h2">Para onde vai?</h2>
                 <p className="bzbk-lead">Indique o percurso, a data da viagem e quantos bilhetes precisa.</p>
+
+                <div className="bzbk-triptype" role="radiogroup" aria-label="Tipo de bilhete">
+                  <button type="button" role="radio" aria-checked={!idaEVolta}
+                    className={`bzbk-triptype-opt${!idaEVolta ? " is-on" : ""}`}
+                    onClick={() => escolherTipo("ida")}>
+                    <ArrowRight size={15} />
+                    <span>Só ida</span>
+                  </button>
+                  <button type="button" role="radio" aria-checked={idaEVolta}
+                    className={`bzbk-triptype-opt${idaEVolta ? " is-on" : ""}`}
+                    onClick={() => escolherTipo("idaevolta")}>
+                    <Repeat size={15} />
+                    <span>Ida e volta</span>
+                  </button>
+                </div>
+
                 <div className="bzbk-grid">
                   <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="o"><MapPin size={12} style={{ verticalAlign: -2 }} /> Origem</label>
@@ -488,18 +531,18 @@ export default function BookingPage() {
                     <input id="dt" className="bzbk-input" type="date" value={date} min={today} required
                       onChange={(e) => setDate(e.target.value)} />
                   </div>
-                  <div className="bzbk-field">
-                    <label className="bzbk-label" htmlFor="dtv">
-                      <Calendar size={12} style={{ verticalAlign: -2 }} /> Data de volta
-                      <span style={{ opacity: 0.6, fontWeight: 400 }}> · opcional</span>
-                    </label>
-                    {/* Vazio = só ida. Deixar o campo à vista, em vez de o
-                        esconder atrás de um botão, é o que faz o passageiro
-                        reparar que pode comprar o regresso de uma vez. */}
-                    <input id="dtv" className="bzbk-input" type="date" value={returnDate}
-                      min={date || today}
-                      onChange={(e) => setReturnDate(e.target.value)} />
-                  </div>
+                  {/* Só aparece depois de o passageiro pedir ida e volta:
+                      um campo de data a quem só quer ir é uma pergunta a mais. */}
+                  {idaEVolta ? (
+                    <div className="bzbk-field">
+                      <label className="bzbk-label" htmlFor="dtv">
+                        <Calendar size={12} style={{ verticalAlign: -2 }} /> Data de volta
+                      </label>
+                      <input id="dtv" className="bzbk-input" type="date" value={returnDate}
+                        min={date || today} required
+                        onChange={(e) => setReturnDate(e.target.value)} />
+                    </div>
+                  ) : null}
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="q"><Users size={12} style={{ verticalAlign: -2 }} /> Passageiros</label>
                     <select id="q" className="bzbk-select" value={qty}
@@ -512,7 +555,8 @@ export default function BookingPage() {
                 </div>
                 <div className="bzbk-actions">
                   <span />
-                  <button className="bzbk-btn" type="submit" disabled={busy || !origin || !destination || !date}>
+                  <button className="bzbk-btn" type="submit"
+                    disabled={busy || !origin || !destination || !date || (idaEVolta && !returnDate)}>
                     {busy ? <span className="bzbk-spin" /> : <Search size={17} />} Procurar partidas
                   </button>
                 </div>
@@ -648,7 +692,7 @@ export default function BookingPage() {
                   </button>
                   {/* Desistir do regresso não pode obrigar a recomeçar tudo. */}
                   <button className="bzbk-btn ghost" type="button"
-                    onClick={() => { setReturnDate(""); setRtrip(null); setRpicked([]); startPax(picked, needsIdentity, []); setStep("pax"); }}>
+                    onClick={() => { escolherTipo("ida"); startPax(picked, needsIdentity, []); setStep("pax"); }}>
                     Comprar só a ida
                   </button>
                 </div>

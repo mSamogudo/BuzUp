@@ -15,8 +15,17 @@ export interface SeatRow {
  * O corredor não está numa posição fixa: há autocarros 2+2, 1+2 (banco
  * individual de um lado, comum nos interprovinciais) e 3+2. Quem sabe a
  * disposição é o servidor — manda cada fila já dividida em `left` e `right`, e
- * aqui só se põe o corredor entre as duas. Desenhar sempre 2+2 mostrava
- * lugares que não existem no autocarro.
+ * aqui só se põe o corredor entre as duas.
+ *
+ * **Todas as filas partilham a mesma grelha.** Antes cada uma calculava as
+ * suas colunas a partir dos bancos que tinha, e como estão centradas, uma fila
+ * incompleta ficava mais estreita e empurrava os seus bancos para o meio: as
+ * colunas deixavam de se alinhar e o corredor fazia um degrau. Num autocarro
+ * grande a última fila é uma em vinte e quase não se nota; num minibus de 12
+ * ou 15 lugares é metade da planta.
+ *
+ * Os lugares em falta ficam como espaço vazio — que é exactamente o que se vê
+ * dentro do autocarro quando a última fila é mais curta.
  */
 export default function SeatMap({
   rows, picked, maxPick, onToggle,
@@ -26,12 +35,22 @@ export default function SeatMap({
   maxPick: number;
   onToggle: (label: string) => void;
 }) {
-  // Colunas suficientes para a fila mais larga, para as filas incompletas não
-  // desalinharem as outras.
-  const widest = rows.reduce((max, r) => {
-    const n = (r.left?.length ?? 0) + (r.right?.length ?? 0) || (r.seats?.length ?? 0);
-    return Math.max(max, n);
-  }, 0);
+  const ladosDe = (r: SeatRow) => ({
+    left: r.left ?? r.seats?.slice(0, 2) ?? [],
+    right: r.right ?? r.seats?.slice(2) ?? [],
+  });
+
+  // A grelha do autocarro é a da fila mais completa de cada lado.
+  const esqMax = rows.reduce((m, r) => Math.max(m, ladosDe(r).left.length), 0);
+  const dirMax = rows.reduce((m, r) => Math.max(m, ladosDe(r).right.length), 0);
+  const colunas = Math.max(1, esqMax + dirMax);
+
+  const grelha = dirMax > 0
+    ? `repeat(${esqMax}, var(--seat)) var(--aisle) repeat(${dirMax}, var(--seat))`
+    : `repeat(${esqMax}, var(--seat)) var(--aisle)`;
+
+  const vazios = (n: number, chave: string) =>
+    Array.from({ length: n }, (_, i) => <span className="bzbk-seat-void" key={`${chave}${i}`} aria-hidden />);
 
   return (
     <div>
@@ -45,34 +64,28 @@ export default function SeatMap({
         </div>
         <div className="bzbk-bus-scroll">
           {rows.map((r) => {
-            const left = r.left ?? r.seats?.slice(0, 2) ?? [];
-            const right = r.right ?? r.seats?.slice(2) ?? [];
+            const { left, right } = ladosDe(r);
             const seatProps = { picked, maxPick, onToggle };
 
+            // Fila corrida do fundo: ocupa a largura toda da MESMA grelha, para
+            // a planta não mudar de largura na última linha.
             if (r.full_width) {
               return (
-                <div
-                  className="bzbk-row bzbk-row-full"
-                  key={r.row}
-                  style={{ gridTemplateColumns: `repeat(${widest}, var(--seat))` }}
-                >
+                <div className="bzbk-row bzbk-row-full" key={r.row}
+                  style={{ gridTemplateColumns: `repeat(${colunas}, var(--seat))` }}>
                   {left.map((s) => <SeatButton key={s.label} seat={s} {...seatProps} />)}
+                  {vazios(colunas - left.length, `f${r.row}`)}
                 </div>
               );
             }
 
             return (
-              <div
-                className="bzbk-row"
-                key={r.row}
-                style={{
-                  gridTemplateColumns:
-                    `repeat(${left.length}, var(--seat)) 22px repeat(${right.length}, var(--seat))`,
-                }}
-              >
+              <div className="bzbk-row" key={r.row} style={{ gridTemplateColumns: grelha }}>
                 {left.map((s) => <SeatButton key={s.label} seat={s} {...seatProps} />)}
+                {vazios(esqMax - left.length, `e${r.row}`)}
                 <span className="bzbk-aisle">{r.row}</span>
                 {right.map((s) => <SeatButton key={s.label} seat={s} {...seatProps} />)}
+                {vazios(dirMax - right.length, `d${r.row}`)}
               </div>
             );
           })}

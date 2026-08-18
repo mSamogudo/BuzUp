@@ -64,6 +64,17 @@ def quote_fare(
             )
         rule = rules[0]
         amount = _calculate_amount(rule, origin_stop, destination_stop, distance_km)
+        if amount <= 0:
+            # Custo zero nao e um preco: e como o operador marca um percurso
+            # que nao esta a venda. Numa carreira internacional ha troços curtos
+            # dentro da mesma cidade que existem na rota para o autocarro parar,
+            # mas que nao se vendem — e a alternativa a esta guarda era o site
+            # mostrar "0 MZN" e alguem levar um bilhete de graca.
+            raise NoFareFoundError(
+                f"O percurso"
+                + (f" {origin_stop.code} → {destination_stop.code}" if origin_stop and destination_stop else "")
+                + f" na rota {route.code} nao esta a venda."
+            )
         return FareQuoteResult(
             amount=amount,
             fare_rule=rule,

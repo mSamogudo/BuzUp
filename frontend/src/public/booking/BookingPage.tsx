@@ -21,6 +21,7 @@ const STEPS: { key: Step; label: string }[] = [
 interface StopOpt { id: number; code: string; name: string }
 interface TripOpt {
   trip_id: number; route_id: number; route_code: string; route_name: string;
+  origin_stop: string; destination_stop: string;
   vehicle: string | null; departure: string | null; fare_amount: string | null;
   seats_available: number | null; on_sale: boolean; sale_unavailable_reason: string;
 }
@@ -132,6 +133,12 @@ export default function BookingPage() {
   const [currency, setCurrency] = useState("MZN");
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  /** O troço que o passageiro escolheu — é a ele que o preço diz respeito. */
+  const percurso = (t: TripOpt) =>
+    (t.origin_stop && t.destination_stop)
+      ? `${t.origin_stop} → ${t.destination_stop}`
+      : (t.route_name || t.route_code);
 
   useEffect(() => {
     document.title = "Comprar bilhete · BusUp";
@@ -444,8 +451,16 @@ export default function BookingPage() {
                       onClick={() => chooseTrip(t)}>
                       <span className="bzbk-trip-time">{timeOf(t.departure)}</span>
                       <span className="bzbk-trip-main">
-                        <span className="bzbk-trip-route">{t.route_name || t.route_code}</span>
+                        {/* O percurso escolhido, e não o nome da rota: o preço
+                            ao lado é DESTE troço. "Maputo x Nelspruit · 1500 MZN"
+                            dizia ao passageiro que ia pagar a rota inteira. */}
+                        <span className="bzbk-trip-route">
+                          {t.origin_stop && t.destination_stop
+                            ? `${t.origin_stop} → ${t.destination_stop}`
+                            : (t.route_name || t.route_code)}
+                        </span>
                         <span className="bzbk-trip-meta">
+                          {t.route_name ? `${t.route_name} · ` : ""}
                           {t.vehicle ? `Viatura ${t.vehicle} · ` : ""}
                           {!t.on_sale
                             ? <span className="bzbk-seats-none">{t.sale_unavailable_reason}</span>
@@ -477,7 +492,7 @@ export default function BookingPage() {
               <div>
                 <h2 className="bzbk-h2">Escolha {qty === 1 ? "o seu lugar" : `os ${qty} lugares`}</h2>
                 <p className="bzbk-lead">
-                  {trip.route_name} · {date && longDate(date)} · partida às {timeOf(trip.departure)}
+                  {percurso(trip)} · {date && longDate(date)} · partida às {timeOf(trip.departure)}
                 </p>
                 {hasSeatMap
                   ? <SeatMap rows={rows} picked={picked} maxPick={qty} onToggle={toggleSeat} />
@@ -629,7 +644,7 @@ export default function BookingPage() {
                 <p className="bzbk-lead">Confirme os dados e pague com a sua carteira móvel.</p>
 
                 <div className="bzbk-summary">
-                  <div className="bzbk-sum-row"><span>Percurso</span><b>{trip.route_name}</b></div>
+                  <div className="bzbk-sum-row"><span>Percurso</span><b>{percurso(trip)}</b></div>
                   <div className="bzbk-sum-row"><span>Partida</span><b>{date && longDate(date)} · {timeOf(trip.departure)}</b></div>
                   <div className="bzbk-sum-row">
                     <span>Passageiros</span>

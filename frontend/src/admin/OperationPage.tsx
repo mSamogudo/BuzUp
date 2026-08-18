@@ -268,6 +268,9 @@ export default function OperationPage() {
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
         schedules={schedules || []}
+        routes={routeOpts || []}
+        vehicles={vehicleOpts || []}
+        drivers={driverOpts || []}
         onGenerated={() => { reload(); reloadSchedules(); reloadResumo(); }}
       />
 

@@ -8,6 +8,7 @@ from apps.trips.api.views import (
     DriverTripsView,
     DriverViewSet,
     GenerateTripsView,
+    ProgramarPartidasView,
     RouteScheduleViewSet,
     TripManifestPdfView,
     TripManifestView,
@@ -37,5 +38,6 @@ urlpatterns = [
     path("trips/<int:pk>/manifest.pdf", TripManifestPdfView.as_view(), name="trip-manifest-pdf"),
     path("trips/search/", TripSearchView.as_view(), name="trip-search"),
     path("trips/generate/", GenerateTripsView.as_view(), name="trip-generate"),
+    path("trips/schedule-days/", ProgramarPartidasView.as_view(), name="trip-schedule-days"),
     path("", include(router.urls)),
 ]

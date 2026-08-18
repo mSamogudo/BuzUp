@@ -80,6 +80,62 @@ def generate_daily_trips(schedule: RouteSchedule, target_date: datetime | None =
     return created
 
 
+def programar_partidas(
+    *, route, dates, times, vehicle=None, driver=None, agent=None,
+    duration_minutes: int | None = None, preview: bool = False,
+) -> dict:
+    """Cria uma partida por cada (dia x hora) escolhidos no calendario.
+
+    O horario recorrente (`RouteSchedule`) descreve uma carreira urbana: de 30
+    em 30 minutos, das 06h as 20h, nestes dias da semana. Numa carreira
+    interprovincial ou internacional isso nao se aplica — ha uma partida por
+    dia, em dias que nao seguem regra nenhuma (feriados, epoca alta, o dia em
+    que o autocarro esta na oficina). Exprimir isso como frequencia obrigava a
+    inventar uma hora de fim e uma cadencia para uma unica saida, e ainda assim
+    nao deixava saltar um dia a meio.
+
+    Aqui o operador marca os dias no calendario e diz a hora. Repetir a mesma
+    marcacao nao duplica nada: uma partida ja existente na mesma rota, a mesma
+    hora e com a mesma viatura e contada como ja programada.
+    """
+    tz = timezone.get_current_timezone()
+    por_dia: dict[str, dict] = {}
+    criadas: list[Trip] = []
+
+    for date in sorted(set(dates)):
+        nascem = 0
+        repetidas = 0
+        for hora in sorted(set(times)):
+            partida = timezone.make_aware(datetime.combine(date, hora), tz)
+            ja_existe = Trip.objects.filter(
+                route=route, planned_departure_at=partida, vehicle=vehicle,
+            ).exists()
+            if ja_existe:
+                repetidas += 1
+                continue
+            nascem += 1
+            if preview:
+                continue
+            criadas.append(Trip.objects.create(
+                route=route, vehicle=vehicle, driver=driver, agent=agent,
+                planned_departure_at=partida,
+                planned_arrival_at=(
+                    partida + timedelta(minutes=duration_minutes)
+                    if duration_minutes else None
+                ),
+                status=Trip.Status.SCHEDULED,
+            ))
+        por_dia[date.isoformat()] = {"date": date.isoformat(), "count": nascem, "existing": repetidas}
+
+    return {
+        "created": 0 if preview else len(criadas),
+        "would_generate": sum(d["count"] for d in por_dia.values()),
+        "already_scheduled": sum(d["existing"] for d in por_dia.values()),
+        "by_day": list(por_dia.values()),
+        "trips": criadas,
+    }
+
+
 def generate_all_daily_trips(target_date=None) -> int:
     schedules = RouteSchedule.objects.filter(
         status=RouteSchedule.Status.ACTIVE,

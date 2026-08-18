@@ -29,6 +29,7 @@ from apps.trips.api.serializers import (
     AgentSerializer,
     DriverSerializer,
     GenerateTripsSerializer,
+    ProgramarPartidasSerializer,
     RouteScheduleSerializer,
     TripSearchSerializer,
     TripDetailSerializer,
@@ -147,6 +148,57 @@ class GenerateTripsView(APIView):
                 "by_schedule": sorted(per_schedule.values(), key=lambda e: -e["count"]),
             },
             status=status.HTTP_200_OK if preview else status.HTTP_201_CREATED,
+        )
+
+
+class ProgramarPartidasView(APIView):
+    """Partidas marcadas no calendario, sem passar por um horario recorrente.
+
+    O assistente antigo exigia um `RouteSchedule` — e criar um obrigava a
+    inventar hora de fim e cadencia para uma carreira que sai uma vez por dia.
+    Sem nenhum horario criado, o assistente abria com a lista vazia e nao havia
+    caminho nenhum a partir dali.
+    """
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("trips.manage",)
+
+    def post(self, request):
+        from apps.routes.models import Route
+        from apps.trips.services import programar_partidas
+
+        serializer = ProgramarPartidasSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        route = Route.objects.filter(pk=data["route_id"], status=Route.Status.ACTIVE).first()
+        if not route:
+            return Response({"detail": "Rota nao encontrada ou inactiva."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        def _opcional(modelo, chave):
+            pk = data.get(chave)
+            return modelo.objects.filter(pk=pk).first() if pk else None
+
+        resultado = programar_partidas(
+            route=route,
+            dates=data["dates"],
+            times=data["times"],
+            vehicle=_opcional(Vehicle, "vehicle_id"),
+            driver=_opcional(Driver, "driver_id"),
+            agent=_opcional(Agent, "agent_id"),
+            duration_minutes=data.get("duration_minutes"),
+            preview=data["preview"],
+        )
+        criadas = resultado.pop("trips")
+        resultado["route_code"] = route.code
+        resultado["route_name"] = route.name
+        if not data["preview"]:
+            resultado["trip_ids"] = [t.id for t in criadas]
+
+        return Response(
+            resultado,
+            status=status.HTTP_200_OK if data["preview"] else status.HTTP_201_CREATED,
         )
 
 

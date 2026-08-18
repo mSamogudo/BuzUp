@@ -5472,6 +5472,81 @@ html[data-theme="dark"] .otp-digit:focus {
    A geração era um botão que dizia o resultado depois de o fazer; aqui o
    operador vê a distribuição por dia antes de confirmar.
 --------------------------------------------------------------------------- */
+/* --- Assistente de programação: modos e calendário ---------------------- */
+.bztw-modes { display: flex; gap: 6px; margin: 0 0 16px; }
+.bztw-mode {
+  flex: 1; min-height: 38px; padding: 0 12px; cursor: pointer;
+  border: 1px solid var(--app-border); background: var(--app-surface);
+  color: var(--app-text-muted); font: inherit; font-size: 13px; font-weight: 700;
+  border-radius: 10px; transition: background .15s, color .15s, border-color .15s;
+}
+.bztw-mode:hover { border-color: var(--app-accent); }
+.bztw-mode.is-on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+
+.bztw-times { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.bztw-time { position: relative; display: inline-flex; align-items: center; }
+.bztw-time input { width: 128px; }
+.bztw-time-x {
+  margin-left: 4px; width: 22px; height: 22px; line-height: 1; cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--app-border);
+  background: var(--app-surface); color: var(--app-text-muted); font-size: 15px;
+}
+.bztw-time-x:hover { border-color: var(--app-danger, #ef4444); color: var(--app-danger, #ef4444); }
+
+.bzcal {
+  margin-top: 6px; padding: 12px; border-radius: 14px;
+  border: 1px solid var(--app-border); background: var(--app-surface-soft);
+  user-select: none;
+}
+.bzcal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 10px; font-size: 14px;
+}
+.bzcal-nav {
+  width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer;
+  border-radius: 8px; border: 1px solid var(--app-border);
+  background: var(--app-surface); color: var(--app-text);
+}
+.bzcal-nav:hover:not(:disabled) { border-color: var(--app-accent); }
+.bzcal-nav:disabled { opacity: .35; cursor: default; }
+
+.bzcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.bzcal-weekday {
+  padding: 4px 0; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700;
+  letter-spacing: .4px; text-transform: uppercase;
+  color: var(--app-text-muted); background: none; border: 0; border-radius: 6px;
+}
+.bzcal-weekday:hover { color: var(--app-accent); background: var(--app-surface); }
+.bzcal-empty { aspect-ratio: 1; }
+.bzcal-day {
+  aspect-ratio: 1; display: grid; place-items: center; cursor: pointer;
+  border-radius: 9px; border: 1px solid transparent;
+  background: var(--app-surface); color: var(--app-text);
+  font: inherit; font-size: 13px; font-weight: 600;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.bzcal-day:hover:not(:disabled) { border-color: var(--app-accent); }
+.bzcal-day.is-on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+.bzcal-day.is-past { opacity: .3; cursor: default; background: none; }
+/* Ponto no canto: este dia já tem partida — repetir a marcação não duplica,
+   mas o operador merece saber antes de carregar. */
+.bzcal-day.has-trip { position: relative; }
+.bzcal-day.has-trip::after {
+  content: ""; position: absolute; right: 5px; top: 5px;
+  width: 5px; height: 5px; border-radius: 999px; background: var(--app-accent);
+}
+.bzcal-day.is-on.has-trip::after { background: #fff; }
+
+.bzcal-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 10px; font-size: 12px; color: var(--app-text-muted);
+}
+.bzcal-hint { opacity: .8; }
+.bzcal-clear {
+  cursor: pointer; font: inherit; font-size: 12px; font-weight: 700;
+  background: none; border: 0; color: var(--app-accent); padding: 0;
+}
+
 .bztw-horizons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
 .bztw-chip {
   min-height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;

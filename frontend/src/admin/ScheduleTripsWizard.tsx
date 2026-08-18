@@ -4,6 +4,17 @@ import { apiPost } from "../lib/api";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { AdminModal } from "../ui/common";
+import TripCalendar from "./TripCalendar";
+
+export interface RouteOption { id: number; code: string; name: string; }
+export interface VehicleOption { id: number; registration: string; }
+export interface PersonOption { id: number; full_name: string; }
+
+interface CalendarPreview {
+  would_generate: number;
+  already_scheduled: number;
+  by_day: { date: string; count: number; existing: number }[];
+}
 
 export interface ScheduleOption {
   id: number;
@@ -59,14 +70,28 @@ const HORIZONS = [
  * pré-visualização, com as mesmas regras da geração real.
  */
 export default function ScheduleTripsWizard({
-  open, onClose, schedules, onGenerated,
+  open, onClose, schedules, onGenerated, routes = [], vehicles = [], drivers = [],
 }: {
   open: boolean;
   onClose: () => void;
   schedules: ScheduleOption[];
   onGenerated: () => void;
+  routes?: RouteOption[];
+  vehicles?: VehicleOption[];
+  drivers?: PersonOption[];
 }) {
   const { token } = useAuth();
+  // Por omissão o calendário: é o único caminho que funciona sem haver
+  // horários criados, e é como se programa uma carreira que sai uma vez por
+  // dia. O horário recorrente continua ali para as carreiras urbanas.
+  const [mode, setMode] = useState<"calendario" | "horario">("calendario");
+  const [calRoute, setCalRoute] = useState("");
+  const [calVehicle, setCalVehicle] = useState("");
+  const [calDriver, setCalDriver] = useState("");
+  const [calTimes, setCalTimes] = useState<string[]>(["05:00"]);
+  const [calDates, setCalDates] = useState<string[]>([]);
+  const [calDuration, setCalDuration] = useState("");
+  const [calPreview, setCalPreview] = useState<CalendarPreview | null>(null);
   const [scheduleId, setScheduleId] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<string>(todayISO());
   const [days, setDays] = useState<number>(7);
@@ -103,8 +128,64 @@ export default function ScheduleTripsWizard({
   }, [open, loadPreview]);
 
   useEffect(() => {
-    if (open) { setScheduleId("all"); setDays(7); setDateFrom(todayISO()); setPreview(null); }
+    if (!open) return;
+    setScheduleId("all"); setDays(7); setDateFrom(todayISO()); setPreview(null);
+    setMode(schedules.some((s) => s.status === "active") ? "calendario" : "calendario");
+    setCalRoute(routes.length === 1 ? String(routes[0].id) : "");
+    setCalVehicle(""); setCalDriver(""); setCalTimes(["05:00"]);
+    setCalDates([]); setCalDuration(""); setCalPreview(null); setError("");
+    // Só quando o modal abre: reabrir limpo é o comportamento esperado, mas
+    // seguir `routes`/`schedules` faria o formulário saltar a meio da escolha.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // --- Modo calendário ------------------------------------------------
+  const calBody = useCallback((preview: boolean) => ({
+    route_id: Number(calRoute),
+    vehicle_id: calVehicle ? Number(calVehicle) : null,
+    driver_id: calDriver ? Number(calDriver) : null,
+    dates: calDates,
+    times: calTimes.filter(Boolean),
+    duration_minutes: calDuration ? Number(calDuration) : null,
+    preview,
+  }), [calRoute, calVehicle, calDriver, calDates, calTimes, calDuration]);
+
+  const calReady = calRoute !== "" && calDates.length > 0 && calTimes.filter(Boolean).length > 0;
+
+  useEffect(() => {
+    if (!open || mode !== "calendario" || !calReady || !token) { setCalPreview(null); return; }
+    let cancelado = false;
+    const id = window.setTimeout(() => {
+      setLoading(true);
+      apiPost("/api/trips/schedule-days/", token, calBody(true))
+        .then((r) => { if (!cancelado) { setCalPreview(r as CalendarPreview); setError(""); } })
+        .catch((e) => { if (!cancelado) { setCalPreview(null); setError(e instanceof Error ? e.message : "Erro"); } })
+        .finally(() => { if (!cancelado) setLoading(false); });
+    }, 220);
+    return () => { cancelado = true; window.clearTimeout(id); };
+  }, [open, mode, calReady, calBody, token]);
+
+  const criarPorCalendario = async () => {
+    setBusy(true);
+    try {
+      const res = await apiPost("/api/trips/schedule-days/", token!, calBody(false));
+      const n = Number(res?.created ?? 0);
+      showToast("success", n > 0
+        ? `${n} partida(s) programada(s).`
+        : "Nada a criar: estas partidas já existem.");
+      onGenerated();
+      onClose();
+    } catch (err) {
+      showToast("danger", err instanceof Error ? err.message : "Erro ao programar partidas.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Dias que já têm partida programada — o calendário marca-os com um ponto. */
+  const jaProgramados = new Set(
+    (calPreview?.by_day || []).filter((d) => d.existing > 0).map((d) => d.date),
+  );
 
   const confirm = async (e: FormEvent) => {
     e.preventDefault();
@@ -133,8 +214,132 @@ export default function ScheduleTripsWizard({
       open={open}
       onClose={onClose}
       title="Programar viagens"
-      description="Escolha o horário e o horizonte. Verá quantas viagens nascem em cada dia antes de confirmar."
+      description="Marque os dias no calendário, ou gere a partir de um horário recorrente. Vê quantas partidas nascem antes de confirmar."
     >
+      <div className="bztw-modes" role="tablist" aria-label="Modo de programação">
+        <button type="button" role="tab" aria-selected={mode === "calendario"}
+          className={`bztw-mode${mode === "calendario" ? " is-on" : ""}`}
+          onClick={() => { setMode("calendario"); setError(""); }}>
+          Calendário
+        </button>
+        <button type="button" role="tab" aria-selected={mode === "horario"}
+          className={`bztw-mode${mode === "horario" ? " is-on" : ""}`}
+          onClick={() => { setMode("horario"); setError(""); }}>
+          Horário recorrente {activeCount > 0 ? `(${activeCount})` : ""}
+        </button>
+      </div>
+
+      {mode === "calendario" ? (
+        <form className="admin-form" onSubmit={(e) => { e.preventDefault(); void criarPorCalendario(); }}>
+          <div className="admin-form-grid">
+            <label className="field">
+              <span>Rota</span>
+              <select required value={calRoute} onChange={(e) => setCalRoute(e.target.value)}>
+                <option value="">Escolher…</option>
+                {routes.map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Autocarro</span>
+              <select value={calVehicle} onChange={(e) => setCalVehicle(e.target.value)}>
+                <option value="">Sem autocarro atribuído</option>
+                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.registration}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Motorista</span>
+              <select value={calDriver} onChange={(e) => setCalDriver(e.target.value)}>
+                <option value="">Sem motorista atribuído</option>
+                {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Duração da viagem (min)</span>
+              <input type="number" min={1} max={2880} placeholder="ex.: 270"
+                value={calDuration} onChange={(e) => setCalDuration(e.target.value)} />
+            </label>
+          </div>
+
+          <div className="field">
+            <span>Hora(s) de partida</span>
+            <div className="bztw-times">
+              {calTimes.map((t, i) => (
+                <div className="bztw-time" key={i}>
+                  <input type="time" value={t} required
+                    onChange={(e) => setCalTimes(calTimes.map((x, j) => (j === i ? e.target.value : x)))} />
+                  {calTimes.length > 1 ? (
+                    <button type="button" className="bztw-time-x" aria-label="Remover hora"
+                      onClick={() => setCalTimes(calTimes.filter((_, j) => j !== i))}>×</button>
+                  ) : null}
+                </div>
+              ))}
+              {calTimes.length < 6 ? (
+                <button type="button" className="bztw-chip"
+                  onClick={() => setCalTimes([...calTimes, "15:00"])}>
+                  + hora
+                </button>
+              ) : null}
+            </div>
+            <small style={{ opacity: 0.7 }}>
+              Cada hora cria uma partida em cada dia marcado — é assim que se programa a ida e a volta.
+            </small>
+          </div>
+
+          <div className="field">
+            <span>Dias</span>
+            <TripCalendar selected={calDates} onChange={setCalDates}
+              alreadyScheduled={jaProgramados} />
+          </div>
+
+          <div className="bztw-preview">
+            {!calReady ? (
+              <div className="bztw-preview-empty">
+                Escolha a rota, a hora e os dias.
+              </div>
+            ) : loading ? (
+              <div className="bztw-preview-empty"><Loader2 className="bztw-spin" size={16} /> A calcular…</div>
+            ) : error ? (
+              <div className="bztw-preview-empty bztw-error"><TriangleAlert size={16} /> {error}</div>
+            ) : calPreview ? (
+              <div className="bztw-headline">
+                <div className={`bztw-count${calPreview.would_generate === 0 ? " is-zero" : ""}`}>
+                  {calPreview.would_generate === 0 ? <TriangleAlert size={20} /> : <Sparkles size={20} />}
+                  <strong>{calPreview.would_generate}</strong>
+                  <span>partida(s) a criar</span>
+                </div>
+                {calPreview.already_scheduled > 0 ? (
+                  <div className="bztw-range">
+                    <CalendarRange size={14} />
+                    {calPreview.already_scheduled} já programada(s)
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="admin-form-actions">
+            <button className="primary-button" type="submit"
+              disabled={busy || loading || !calReady || (calPreview?.would_generate ?? 0) === 0}>
+              {busy ? "A programar…" : (
+                <><CheckCircle2 size={16} />
+                  {calPreview && calPreview.would_generate > 0
+                    ? ` Criar ${calPreview.would_generate} partidas` : " Criar partidas"}</>
+              )}
+            </button>
+            <button className="secondary-button" onClick={onClose} type="button">Cancelar</button>
+          </div>
+          <small style={{ opacity: 0.7 }}>
+            Partidas que já existam não são duplicadas — pode marcar as vezes que quiser.
+          </small>
+        </form>
+      ) : activeCount === 0 ? (
+        <div className="bztw-preview">
+          <div className="bztw-preview-empty">
+            Ainda não há horários recorrentes. Crie um no separador «Programações»,
+            ou use o calendário — é mais directo para uma carreira que sai uma vez por dia.
+          </div>
+        </div>
+      ) : (
       <form className="admin-form" onSubmit={confirm}>
         <div className="admin-form-grid">
           <label className="field">
@@ -266,6 +471,7 @@ export default function ScheduleTripsWizard({
           Viagens que já existam não são duplicadas — pode correr isto as vezes que quiser.
         </small>
       </form>
+      )}
     </AdminModal>
   );
 }

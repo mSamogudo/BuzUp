@@ -361,6 +361,14 @@ class PublicTripSearchView(APIView):
                     pass
                 fare_by_route[trip.route_id] = fare_amount
 
+            # Sem preco nao ha nada para vender: ou a rota nao tem tarifa
+            # configurada para este percurso, ou o percurso esta marcado a
+            # custo zero — que e como o operador diz "este troco nao se vende".
+            # Mostra-lo dava ao passageiro um resultado onde ele so podia
+            # tropecar.
+            if fare_amount is None:
+                continue
+
             segment = segments_by_route.get(trip.route_id)
             taken = taken_by_trip.get(trip.id, 0)
             can_sell, reason = sale_state(trip, taken=taken)
@@ -369,6 +377,12 @@ class PublicTripSearchView(APIView):
                 "route_id": trip.route_id,
                 "route_code": trip.route.code,
                 "route_name": trip.route.name,
+                # O percurso que o passageiro escolheu. O preco e DESTE percurso
+                # e nao da rota inteira: mostra-lo ao lado do nome da rota
+                # ("Maputo x Nelspruit · 1500 MZN") dizia ao passageiro que ia
+                # pagar aquilo pela viagem toda, quando so pediu um troco dela.
+                "origin_stop": origin.name if origin else "",
+                "destination_stop": dest.name if dest else "",
                 "vehicle": trip.vehicle.registration if trip.vehicle else None,
                 "driver": trip.driver.full_name if trip.driver else None,
                 "departure": trip.planned_departure_at.isoformat() if trip.planned_departure_at else None,

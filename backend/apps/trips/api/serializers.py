@@ -406,3 +406,29 @@ class GenerateTripsSerializer(serializers.Serializer):
     # um engano num campo crie meio ano de viagens.
     days = serializers.IntegerField(required=False, min_value=1, max_value=30, default=1)
     preview = serializers.BooleanField(required=False, default=False)
+
+
+class ProgramarPartidasSerializer(serializers.Serializer):
+    """Partidas marcadas dia a dia no calendario, sem horario recorrente.
+
+    E a forma de programar uma carreira que sai uma vez por dia em dias que
+    nao seguem regra: o operador marca os dias e diz a hora.
+    """
+
+    route_id = serializers.IntegerField()
+    vehicle_id = serializers.IntegerField(required=False, allow_null=True)
+    driver_id = serializers.IntegerField(required=False, allow_null=True)
+    agent_id = serializers.IntegerField(required=False, allow_null=True)
+    # 92 dias: um trimestre chega para planear epoca alta, e um engano num
+    # campo nao cria um ano de viagens.
+    dates = serializers.ListField(
+        child=serializers.DateField(), min_length=1, max_length=92,
+    )
+    # Varias horas no mesmo dia servem a carreira com ida e volta (05:00 e 15:00).
+    times = serializers.ListField(
+        child=serializers.TimeField(), min_length=1, max_length=24,
+    )
+    duration_minutes = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1, max_value=60 * 48,
+    )
+    preview = serializers.BooleanField(required=False, default=False)

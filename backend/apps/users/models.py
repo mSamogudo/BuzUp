@@ -65,8 +65,13 @@ class User(AbstractUser, BaseModel):
         if self.is_superuser:
             return ["*"]
         caps = set()
-        for role in self.user_roles.all():
-            for perm in (role.permissions or []):
+        # Pelas ATRIBUICOES, nao pelo M2M `user_roles`: uma relacao
+        # many-to-many com tabela intermedia junta-a directamente, sem passar
+        # pelo gestor que esconde as linhas apagadas. Resultado pratico —
+        # retirar um papel a alguem nao lhe retirava as permissoes: o vinculo
+        # ficava com `deleted_at` preenchido e continuava a contar.
+        for atribuicao in self.role_assignments.select_related("role").all():
+            for perm in (atribuicao.role.permissions or []):
                 caps.add(perm)
         return list(caps)
 

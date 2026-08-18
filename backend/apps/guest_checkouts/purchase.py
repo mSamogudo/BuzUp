@@ -102,14 +102,8 @@ def purchase_travel_pass(
 
     origin = Stop.objects.filter(pk=origin_stop_id).first() if origin_stop_id else None
     destination = Stop.objects.filter(pk=destination_stop_id).first() if destination_stop_id else None
-    # Nas carreiras com lugar marcado o bilhete vende-se com antecedencia, por
-    # isso uma partida ainda agendada tambem serve. Nas urbanas continua a ser
-    # so o autocarro que esta ali a embarcar.
-    sellable = [Trip.Status.BOARDING, Trip.Status.DEPARTED]
-    if route.requires_seat_selection:
-        sellable = [Trip.Status.SCHEDULED, *sellable]
     trip = Trip.objects.filter(
-        pk=trip_id, route=route, status__in=sellable,
+        pk=trip_id, route=route, status__in=Trip.sellable_statuses_for(route),
     ).first() if trip_id else None
     if trip_id and not trip:
         raise PurchaseError("Autocarro nao esta disponivel para compra.")

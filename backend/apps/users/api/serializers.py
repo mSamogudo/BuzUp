@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.users.models import Role, User, UserRole
+from apps.users.role_profiles import sincronizar_perfis_operacionais
 
 
 class BuzUpTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -99,6 +100,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(password=password, **validated_data)
         for rid in role_ids:
             UserRole.objects.create(user=user, role_id=rid)
+        sincronizar_perfis_operacionais(user)
         return user
 
 
@@ -126,11 +128,28 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         instance.save()
 
         if role_ids is not None:
-            UserRole.objects.filter(user=instance).delete()
-            for rid in role_ids:
-                UserRole.objects.get_or_create(user=instance, role_id=rid)
+            self._sincronizar_papeis(instance, set(role_ids))
+            sincronizar_perfis_operacionais(instance)
 
         return instance
+
+    @staticmethod
+    def _sincronizar_papeis(user, role_ids: set[int]) -> None:
+        """Deixa o utilizador exactamente com estes papeis.
+
+        Apaga MESMO os vinculos retirados em vez de os marcar como apagados: um
+        vinculo apagado continua a ocupar o par (utilizador, papel), por isso o
+        `get_or_create` seguinte nao o encontrava e criava outro por cima. Cada
+        gravacao do mesmo utilizador deixava mais uma linha, e o papel retirado
+        continuava la — nao ha historico nenhum a preservar num vinculo destes.
+        """
+        UserRole.all_objects.filter(user=user).exclude(role_id__in=role_ids).hard_delete()
+        for rid in role_ids:
+            vinculo = UserRole.all_objects.filter(user=user, role_id=rid).first()
+            if vinculo is None:
+                UserRole.objects.create(user=user, role_id=rid)
+            elif vinculo.deleted_at is not None:
+                vinculo.restore()
 
 
 class AssignRoleSerializer(serializers.Serializer):

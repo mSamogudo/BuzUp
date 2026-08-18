@@ -105,11 +105,8 @@ def create_pos_sale(
 
     trip = None
     if trip_id:
-        trip = Trip.objects.select_related("route").filter(
-            pk=trip_id,
-            status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
-        ).first()
-        if not trip:
+        trip = Trip.objects.select_related("route").filter(pk=trip_id).first()
+        if not trip or trip.status not in Trip.sellable_statuses_for(trip.route):
             raise SaleError("Viagem nao encontrada ou ja encerrada.")
         route = trip.route
     elif route_id:
@@ -307,11 +304,8 @@ def create_card_sale(
     # Resolve trip / route + fare
     trip = None
     if trip_id:
-        trip = Trip.objects.select_related("route").filter(
-            pk=trip_id,
-            status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
-        ).first()
-        if not trip:
+        trip = Trip.objects.select_related("route").filter(pk=trip_id).first()
+        if not trip or trip.status not in Trip.sellable_statuses_for(trip.route):
             raise SaleError("Viagem nao encontrada ou ja encerrada.")
         route = trip.route
     elif route_id:

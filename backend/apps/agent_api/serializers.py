@@ -16,6 +16,15 @@ class AgentLoginSerializer(serializers.Serializer):
         return attrs
 
 
+#: Serials que o Android devolve quando NAO tem numero de serie para dar.
+#:
+#: Nao sao identificadores: sao a maneira da plataforma dizer "nao sei". Aceitar
+#: um destes fazia com que todos os aparelhos partilhassem o MESMO dispositivo —
+#: o primeiro criava-o e os seguintes entravam por cima. Bloquear um bloqueava
+#: todos, e nenhuma venda ficava atribuivel ao terminal onde foi feita.
+SERIAIS_SEM_VALOR = {"unknown", "android", "null", "none", "0", "unavailable", "-"}
+
+
 class AgentDeviceRegisterSerializer(serializers.Serializer):
     serial_number = serializers.CharField(max_length=128)
     device_type = serializers.CharField(max_length=64, required=False, allow_blank=True)
@@ -26,6 +35,15 @@ class AgentDeviceRegisterSerializer(serializers.Serializer):
     capabilities = serializers.ListField(child=serializers.CharField(), required=False, default=list)
     app_version = serializers.CharField(max_length=32, required=False, allow_blank=True)
     app_version_code = serializers.IntegerField(required=False, default=0)
+
+    def validate_serial_number(self, value: str) -> str:
+        serial = (value or "").strip()
+        if not serial or serial.lower() in SERIAIS_SEM_VALOR:
+            raise serializers.ValidationError(
+                "Este aparelho nao devolveu um numero de serie proprio. "
+                "Actualize a aplicacao para a versao mais recente."
+            )
+        return serial
 
 
 class AgentDeviceHeartbeatSerializer(serializers.Serializer):

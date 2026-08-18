@@ -51,6 +51,7 @@ from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.users.models import Role, User, UserRole
+from apps.users.role_profiles import sincronizar_perfis_operacionais
 from apps.wallets.models import Wallet, WalletTransaction
 from apps.wallets.services import InsufficientBalanceError, WalletBlockedError
 
@@ -247,16 +248,24 @@ class AssignRoleView(APIView):
         except (User.DoesNotExist, Role.DoesNotExist):
             return Response({"detail": "Utilizador ou role nao encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
-        UserRole.objects.get_or_create(user=user, role=role)
+        vinculo = UserRole.all_objects.filter(user=user, role=role).first()
+        if vinculo is None:
+            UserRole.objects.create(user=user, role=role)
+        elif vinculo.deleted_at is not None:
+            vinculo.restore()
+        sincronizar_perfis_operacionais(user)
         return Response({"detail": f"Role {role.name} atribuida a {user.username}."})
 
     def delete(self, request):
         serializer = AssignRoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        UserRole.objects.filter(
+        UserRole.all_objects.filter(
             user_id=serializer.validated_data["user_id"],
             role_id=serializer.validated_data["role_id"],
-        ).delete()
+        ).hard_delete()
+        user = User.objects.filter(pk=serializer.validated_data["user_id"]).first()
+        if user is not None:
+            sincronizar_perfis_operacionais(user)
         return Response({"detail": "Role removida."})
 
 

@@ -557,9 +557,31 @@ class AgentDeviceHeartbeatView(APIView):
 class AgentTripListView(APIView):
     permission_classes = [IsAuthenticated, IsActiveAgent]
 
+    #: Ate quando o balcao mostra partidas por vender.
+    #:
+    #: Uma semana chega para a venda antecipada do interurbano sem encher a
+    #: lista com o mes inteiro gerado pelos horarios.
+    HORIZONTE = timedelta(days=7)
+    #: Quanto tempo uma partida agendada continua a aparecer depois da hora.
+    #:
+    #: O autocarro atrasa-se e o agente continua a vender ate ele sair. Sem
+    #: esta folga, a partida desaparecia do POS exactamente no minuto em que
+    #: mais gente aparece a comprar.
+    TOLERANCIA = timedelta(hours=6)
+
     def get(self, request):
+        agora = timezone.now()
+        # Ja a circular: aparece sempre, a hora prevista nao interessa. Agendada:
+        # so nas rotas com lugar marcado (ver `Trip.sellable_statuses_for`) e
+        # dentro da janela de venda.
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
-            status__in=[Trip.Status.BOARDING, Trip.Status.DEPARTED],
+            Q(status__in=Trip.RUNNING_STATUSES)
+            | Q(
+                status=Trip.Status.SCHEDULED,
+                route__service_type__in=Route.SEATED_SERVICE_TYPES,
+                planned_departure_at__gte=agora - self.TOLERANCIA,
+                planned_departure_at__lte=agora + self.HORIZONTE,
+            )
         )
         # Motorista ve apenas as viagens que conduz; o agente escolhe qualquer.
         driver = driver_only_scope(request.user)
@@ -612,8 +634,8 @@ class AgentFareQuoteView(APIView):
             return Response({"detail": "Viagem nao encontrada."}, status=404)
         if not _trip_in_scope(request.user, trip):
             return Response({"detail": "Esta viagem nao lhe esta alocada."}, status=403)
-        if trip.status not in [Trip.Status.BOARDING, Trip.Status.DEPARTED]:
-            return Response({"detail": "Viagem nao esta em circulacao."}, status=400)
+        if trip.status not in Trip.sellable_statuses_for(trip.route):
+            return Response({"detail": "Esta partida ja nao esta a venda."}, status=400)
 
         origin = Stop.objects.filter(pk=data["origin_stop_id"]).first()
         destination = Stop.objects.filter(pk=data["destination_stop_id"]).first()

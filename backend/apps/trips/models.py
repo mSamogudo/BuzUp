@@ -153,6 +153,11 @@ class Trip(BaseModel):
     closure_summary = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.SCHEDULED)
 
+    #: A circular: vende-se em qualquer rota, seja qual for a hora prevista.
+    RUNNING_STATUSES = (Status.BOARDING, Status.DEPARTED)
+    #: Tudo o que ainda se pode vender numa rota com lugar marcado.
+    SELLABLE_STATUSES = (Status.SCHEDULED, *RUNNING_STATUSES)
+
     class Meta:
         ordering = ("-planned_departure_at",)
         indexes = [
@@ -166,6 +171,23 @@ class Trip(BaseModel):
 
     def __str__(self):
         return f"{self.route.code} | {self.planned_departure_at} [{self.status}]"
+
+    @staticmethod
+    def sellable_statuses_for(route) -> tuple:
+        """Estados em que uma partida DESTA rota ainda se vende.
+
+        Numa carreira com lugar marcado (interprovincial, internacional) o
+        bilhete compra-se com dias de antecedencia: uma partida ainda `agendada`
+        tem de estar a venda, senao a viagem criada no portal nao aparece no
+        balcao nem no site e o agente ve a lista vazia sem nada que o explique.
+
+        Numa carreira urbana e o contrario: vende-se o autocarro que esta ali a
+        embarcar. Deixar vender uma partida agendada seria prometer lugar num
+        autocarro que ninguem reservou.
+        """
+        if route is not None and route.requires_seat_selection:
+            return Trip.SELLABLE_STATUSES
+        return Trip.RUNNING_STATUSES
 
 
 class TripActivityEvent(BaseModel):

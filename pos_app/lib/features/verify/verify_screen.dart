@@ -167,8 +167,10 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
 
   Future<void> _verifyShortcode() async {
     final code = _shortcodeCtrl.text.trim().toUpperCase();
-    if (code.length != 4) {
-      setState(() => _error = 'O codigo deve ter exactamente 4 caracteres.');
+    // O bilhete imprime 6 caracteres. Os 4 continuam aceites porque os
+    // bilhetes emitidos antes da mudanca andam por ai com 4 impressos.
+    if (code.length < 4 || code.length > 6) {
+      setState(() => _error = 'O codigo tem 6 caracteres (4 nos bilhetes antigos).');
       return;
     }
     setState(() {
@@ -421,7 +423,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Para passageiros sem smartphone: pergunte os ultimos 4 caracteres da referencia do bilhete.',
+                  'Para passageiros sem smartphone: pergunte o codigo de 6 caracteres impresso no bilhete.',
                   style: TextStyle(fontSize: 12, height: 1.35),
                 ),
               ),
@@ -443,8 +445,8 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
             autofocus: true,
             textAlign: TextAlign.center,
             textCapitalization: TextCapitalization.characters,
-            maxLength: 4,
-            style: const TextStyle(fontSize: 36, letterSpacing: 12, fontWeight: FontWeight.w800),
+            maxLength: 6,
+            style: const TextStyle(fontSize: 30, letterSpacing: 8, fontWeight: FontWeight.w800),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
               TextInputFormatter.withFunction((old, fresh) =>
@@ -452,8 +454,8 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
             ],
             decoration: InputDecoration(
               counterText: '',
-              hintText: 'A1B2',
-              hintStyle: TextStyle(letterSpacing: 12, color: isDark ? Colors.white24 : Colors.black26),
+              hintText: 'A1B2C3',
+              hintStyle: TextStyle(letterSpacing: 8, color: isDark ? Colors.white24 : Colors.black26),
               filled: true,
               fillColor: isDark ? const Color(0xFF1A1F26) : Colors.white,
               border: OutlineInputBorder(
@@ -520,13 +522,15 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
             child: ListTile(
               dense: true,
               title: Text('${c['route_code']} · ${c['origin_stop']} -> ${c['destination_stop']}'),
-              subtitle: Text('Ref ${c['sale_reference'] ?? ''} · ${c['fare_amount']} MZN'),
+              subtitle: Text('${c['passenger_name'] ?? ''} · Ref ${c['reference'] ?? ''}'),
               trailing: const Icon(Icons.touch_app, color: BuzUpColors.orange),
               onTap: () async {
-                // Disambiguate by re-querying the shortcode derived from the
-                // candidate's full sale reference. Backend re-checks status.
-                final saleRef = c['sale_reference']?.toString() ?? '';
-                if (saleRef.length < 4) return;
+                // Escolhe o bilhete pelo seu identificador proprio. Antes
+                // reenviava-se o codigo curto derivado da referencia — ou seja,
+                // exactamente o codigo que ja tinha dado ambiguo: tocar num
+                // candidato so podia devolver a mesma lista outra vez.
+                final passUuid = c['uuid']?.toString() ?? '';
+                if (passUuid.isEmpty) return;
                 setState(() {
                   _checking = true;
                   _last = null;
@@ -535,7 +539,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> with SingleTickerPr
                 try {
                   final res = await ref
                       .read(agentApiProvider)
-                      .verifyTicketByShortcode(saleRef.substring(saleRef.length - 4).toUpperCase());
+                      .verifyTicketByUuid(passUuid);
                   await _handleResult(res);
                 } on DioException catch (e) {
                   await _handleError(e);

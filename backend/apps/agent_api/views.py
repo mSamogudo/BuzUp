@@ -62,6 +62,7 @@ from apps.agent_api.serializers import (
 from apps.devices.models import Device
 from apps.fares.services import NoFareFoundError, quote_fare
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
+from apps.guest_checkouts.ticket_codes import ticket_reference
 from apps.guest_checkouts.ticket_pdf import generate_tickets_pdf
 from apps.payments.models import PaymentIntent
 from apps.payments.services.idempotency import agent_scoped_key
@@ -1240,7 +1241,10 @@ class AgentTicketVerifyView(APIView):
     Body:
       - token: full QR token string, OR
       - shortcode: codigo curto impresso no bilhete (case-insensitive). Sao 6
-        caracteres nos bilhetes actuais e 4 nos emitidos antes da mudanca.
+        caracteres nos bilhetes actuais e 4 nos emitidos antes da mudanca, OR
+      - pass_uuid: bilhete exacto, para desempatar um codigo ambiguo. E o que a
+        resposta 409 devolve em cada candidato; sem isto, o agente via a lista
+        de bilhetes possiveis e nao tinha maneira nenhuma de escolher um.
 
     Pass `consume=false` to only check status without marking used.
     """
@@ -1249,11 +1253,18 @@ class AgentTicketVerifyView(APIView):
     def post(self, request):
         token = (request.data.get("token") or "").strip()
         shortcode = (request.data.get("shortcode") or "").strip().upper()
+        pass_uuid = (request.data.get("pass_uuid") or "").strip()
         consume = bool(request.data.get("consume", True))
 
         tp = None
         lookup_kind = ""
-        if token:
+        if pass_uuid:
+            tp = (DigitalTravelPass.objects
+                  .select_related("guest_checkout")
+                  .filter(uuid=pass_uuid)
+                  .first())
+            lookup_kind = "pass_uuid"
+        elif token:
             token_hash = hashlib.sha256(token.encode()).hexdigest()
             tp = (DigitalTravelPass.objects
                   .select_related("guest_checkout")
@@ -1300,11 +1311,16 @@ class AgentTicketVerifyView(APIView):
                     # agente perguntar a referência certa ao passageiro.
                     "candidates": [
                         {
-                            "reference": t.guest_checkout.reference if t.guest_checkout else str(t.uuid)[:12].upper(),
+                            # `uuid` e o que o POS devolve para escolher um
+                            # destes; nao abre nada que o agente ja nao possa
+                            # fazer, ao contrario do token do QR.
+                            "uuid": str(t.uuid),
+                            "reference": ticket_reference(t),
                             "route_code": t.route_code,
                             "origin_stop": t.origin_stop,
                             "destination_stop": t.destination_stop,
                             "passenger_name": t.passenger_name,
+                            "fare_amount": str(t.fare_amount),
                         }
                         for t in matches
                     ],
@@ -1312,7 +1328,7 @@ class AgentTicketVerifyView(APIView):
             tp = matches[0]
             lookup_kind = "shortcode"
         else:
-            return Response({"valid": False, "reason": "Indique token (QR) ou shortcode."}, status=400)
+            return Response({"valid": False, "reason": "Indique token (QR), shortcode ou pass_uuid."}, status=400)
 
         if not tp:
             audit("TICKET_VERIFIED", actor=request.user, entity_type="travel_pass",

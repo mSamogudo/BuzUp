@@ -340,6 +340,15 @@ class AgentApi {
     return res.data ?? const {};
   }
 
+  /// Valida o bilhete exacto, quando o codigo curto deu ambiguo.
+  Future<Map<String, dynamic>> verifyTicketByUuid(String passUuid, {bool consume = true}) async {
+    final res = await _http.post<Map<String, dynamic>>(
+      '/api/agent/tickets/verify/',
+      data: {'pass_uuid': passUuid, 'consume': consume},
+    );
+    return res.data ?? const {};
+  }
+
   Future<Map<String, dynamic>> markTicketUsed(String ref) async {
     final res = await _http.post<Map<String, dynamic>>('/api/agent/tickets/$ref/mark-used/');
     return res.data ?? const {};

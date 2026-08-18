@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -340,3 +341,21 @@ DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 # memória do worker e mata o processo — e com ele a operação de todos.
 DATA_UPLOAD_MAX_MEMORY_SIZE = config("DATA_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)
 FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)
+
+
+# A correr a suite de testes?
+#
+# Nao havia forma nenhuma de saber. `send_sms` ja perguntava por
+# `settings.TESTING` para nao contactar o provedor — mas a flag nunca existiu,
+# logo `getattr(..., False)` respondia sempre False e CADA execucao da suite
+# enviava SMS a serio, pagos, para os numeros das fixtures. O mesmo valia para o
+# gateway de pagamentos.
+#
+# Fica em `base.py` de proposito: assim vale para qualquer modulo de definicoes
+# com que a suite seja corrida, e nao apenas para `config.settings.test`.
+TESTING = "test" in sys.argv or "pytest" in os.path.basename(sys.argv[0] if sys.argv else "")
+
+if TESTING:
+    # Nada de dinheiro nem de mensagens reais a partir de um teste.
+    PAYMENT_GATEWAY_PROVIDER = "MOCK"
+    SMS_PROVIDER = "MOCK"

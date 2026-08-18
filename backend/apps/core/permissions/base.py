@@ -22,6 +22,7 @@ ALL_CAPABILITIES = [
     "packages.read", "packages.manage",
     "imports.manage",
     "settings.read", "settings.manage",
+    "broadcasts.send",
 ]
 
 DEFAULT_ROLES = {
@@ -42,6 +43,9 @@ DEFAULT_ROLES = {
         "agents.read", "agents.manage",
         "devices.read", "devices.manage", "validations.read", "reports.read",
         "packages.read", "packages.manage",
+        # Avisar por SMS quem vai a bordo quando o autocarro avaria ou a
+        # fronteira fecha. E quem gere a operacao que sabe disso primeiro.
+        "broadcasts.send",
     ]},
     "support": {"name": "Suporte", "permissions": [
         # Quem atende o passageiro tem de poder corrigir-lhe a conta: um nome
@@ -51,6 +55,8 @@ DEFAULT_ROLES = {
         "passengers.read", "passengers.manage",
         "wallets.read", "cards.read", "cards.manage",
         "payments.read", "validations.read", "devices.read",
+        # O balcao e quem atende o telefone quando algo corre mal na estrada.
+        "broadcasts.send",
     ]},
     "pos_agent": {"name": "Agente POS", "permissions": ["pos.operate"]},
     "auditor": {"name": "Auditor", "permissions": ["audit.read", "reports.read", "reconciliation.read"]},

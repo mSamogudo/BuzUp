@@ -162,8 +162,8 @@ class FareQuoteRequestSerializer(serializers.Serializer):
 class ExchangeRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExchangeRate
-        fields = ("id", "uuid", "currency", "rate_to_mzn", "is_active", "notes",
-                  "created_at", "updated_at")
+        fields = ("id", "uuid", "currency", "rate_to_mzn", "rounding_step",
+                  "is_active", "notes", "created_at", "updated_at")
         read_only_fields = ("uuid", "created_at", "updated_at")
 
     def validate_currency(self, value):

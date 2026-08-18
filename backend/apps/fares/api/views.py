@@ -143,8 +143,12 @@ class PublicExchangeRateView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        rows = ExchangeRate.objects.filter(is_active=True)
+        rows = list(ExchangeRate.objects.filter(is_active=True))
         return Response({
             "base": "MZN",
             "rates": {r.currency: str(r.rate_to_mzn) for r in rows},
+            # O site tem de arredondar EXACTAMENTE como o servidor: o valor que
+            # o passageiro ve na pesquisa e o que fica impresso no bilhete, e
+            # dois arredondamentos diferentes davam dois numeros.
+            "rounding": {r.currency: str(r.rounding_step) for r in rows},
         })

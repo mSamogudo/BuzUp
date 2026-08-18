@@ -14,7 +14,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 interface FareProduct { id: number; uuid: string; name: string; product_type: string; status: string; }
 interface FareRule { id: number; uuid: string; fare_product_id: number; fare_product_name: string; route_id: number | null; route_code: string; origin_stop_name: string; destination_stop_name: string; calculation_method: string; fixed_amount: string; amount_per_km: string; min_amount: string; max_amount: string; distance_min_km: string | null; distance_max_km: string | null; passenger_class: string; priority: number; origin_stop_id: number | null; destination_stop_id: number | null; }
 interface AdminFee { id: number; uuid: string; code: string; name: string; kind: string; amount: string; currency: string; description: string; is_active: boolean; created_at: string; }
-interface ExchangeRate { id: number; uuid: string; currency: string; rate_to_mzn: string; is_active: boolean; notes: string; updated_at: string; }
+interface ExchangeRate { id: number; uuid: string; currency: string; rate_to_mzn: string; rounding_step: string; is_active: boolean; notes: string; updated_at: string; }
 interface RouteOption { id: number; code: string; name: string; }
 interface StopOption { id: number; code: string; name: string; }
 interface RouteStopOption { stop_id: number; stop_code: string; stop_name: string; sequence: number; direction: string; }
@@ -44,7 +44,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   const [feeForm, setFeeForm] = useState({ code: "", name: "", kind: "card_issuance", amount: "0.00", currency: "MZN", description: "", is_active: true });
   const [fxModal, setFxModal] = useState(false);
   const [editFx, setEditFx] = useState<number | null>(null);
-  const [fxForm, setFxForm] = useState({ currency: "ZAR", rate_to_mzn: "", is_active: true, notes: "" });
+  const [fxForm, setFxForm] = useState({ currency: "ZAR", rate_to_mzn: "", rounding_step: "1", is_active: true, notes: "" });
 
   const [ruleModal, setRuleModal] = useState(false);
   const [prodModal, setProdModal] = useState(false);
@@ -233,20 +233,24 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
             <button className="primary-button" type="button" onClick={() => {
               setEditFx(null);
-              setFxForm({ currency: "ZAR", rate_to_mzn: "", is_active: true, notes: "" });
+              setFxForm({ currency: "ZAR", rate_to_mzn: "", rounding_step: "1", is_active: true, notes: "" });
               setFxModal(true);
             }}><Plus size={15} /> Nova taxa de câmbio</button>
           </div>
           <DataTable columns={[
             { header: "Moeda", render: (r: ExchangeRate) => <TablePrimaryCell title={r.currency} subtitle={r.notes || ""} /> },
             { header: "Taxa", render: (r: ExchangeRate) => `1 ${r.currency} = ${formatCurrency(r.rate_to_mzn)} MZN` },
+            { header: "Arredondamento", render: (r: ExchangeRate) => (
+                Number(r.rounding_step) > 0.01
+                  ? `Múltiplos de ${Number(r.rounding_step)}`
+                  : "Ao cêntimo") },
             { header: "Estado", render: (r: ExchangeRate) => <StatusBadge value={r.is_active ? "active" : "inactive"} /> },
             { header: "Actualizada", render: (r: ExchangeRate) => new Date(r.updated_at).toLocaleString("pt-PT") },
             { header: t(lc, "actions"), className: "table-actions-cell", render: (r: ExchangeRate) => (
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => {
                   setEditFx(r.id);
-                  setFxForm({ currency: r.currency, rate_to_mzn: r.rate_to_mzn, is_active: r.is_active, notes: r.notes || "" });
+                  setFxForm({ currency: r.currency, rate_to_mzn: r.rate_to_mzn, rounding_step: r.rounding_step || "1", is_active: r.is_active, notes: r.notes || "" });
                   setFxModal(true);
                 }} />
                 <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => {
@@ -308,6 +312,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             const payload = {
               currency: fxForm.currency.trim().toUpperCase(),
               rate_to_mzn: fxForm.rate_to_mzn,
+              rounding_step: fxForm.rounding_step || "1",
               is_active: fxForm.is_active,
               notes: fxForm.notes,
             };
@@ -328,6 +333,15 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <input required type="number" min="0.0001" step="0.0001" value={fxForm.rate_to_mzn} placeholder="ex: 4.1000"
                      onChange={(e) => setFxForm((f) => ({ ...f, rate_to_mzn: e.target.value }))} />
             </label>
+            <label className="field"><span>Arredondar a</span>
+              <select value={fxForm.rounding_step}
+                      onChange={(e) => setFxForm((f) => ({ ...f, rounding_step: e.target.value }))}>
+                <option value="1">Unidade inteira (sem cêntimos)</option>
+                <option value="5">Múltiplos de 5</option>
+                <option value="10">Múltiplos de 10</option>
+                <option value="0.01">Ao cêntimo (não arredondar)</option>
+              </select>
+            </label>
             <label className="field"><span>Estado</span>
               <select value={fxForm.is_active ? "1" : "0"} onChange={(e) => setFxForm((f) => ({ ...f, is_active: e.target.value === "1" }))}>
                 <option value="1">Activa</option>
@@ -339,11 +353,18 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <input value={fxForm.notes} placeholder="ex: taxa de balcão + margem" onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
             </label>
           </div>
-          {fxForm.rate_to_mzn && Number(fxForm.rate_to_mzn) > 0 && (
-            <p className="dash-kpi-note" style={{ marginTop: 8 }}>
-              Exemplo: um bilhete de 1.000,00 MZN aparece como {(1000 / Number(fxForm.rate_to_mzn)).toFixed(2)} {fxForm.currency || "ZAR"}.
-            </p>
-          )}
+          {fxForm.rate_to_mzn && Number(fxForm.rate_to_mzn) > 0 && (() => {
+            const bruto = 1000 / Number(fxForm.rate_to_mzn);
+            const passo = Number(fxForm.rounding_step) || 1;
+            const mostrado = Math.ceil(bruto / passo) * passo;
+            return (
+              <p className="dash-kpi-note" style={{ marginTop: 8 }}>
+                Exemplo: um bilhete de 1.000,00 MZN aparece como <b>{mostrado.toFixed(2)} {fxForm.currency || "ZAR"}</b>
+                {passo > 0.01 ? ` (${bruto.toFixed(2)} arredondado para cima)` : ""}.
+                Arredonda-se sempre para cima — o valor mostrado nunca pode ser menor do que o que sai da conta do passageiro.
+              </p>
+            );
+          })()}
           <div className="admin-form-actions">
             <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editFx ? t(lc, "update") : t(lc, "create")}</button>
             <button className="secondary-button" onClick={() => setFxModal(false)} type="button">{t(lc, "cancel")}</button>

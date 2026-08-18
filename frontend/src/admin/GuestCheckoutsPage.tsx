@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
-import { Eye, RefreshCw } from "lucide-react";
+import { Download, Eye, RefreshCw, Upload } from "lucide-react";
 import { apiFetch, apiPublic } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { useAuth } from "../auth/AuthContext";
-import { DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
+import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
+import { showToast } from "../lib/toast";
 import { DetailDrawer } from "../ui/DetailDrawer";
 
 interface GuestCheckout {
@@ -67,6 +68,116 @@ export default function GuestCheckoutsPage() {
   const loader = useCallback(() => apiFetch("/api/admin/guest-checkouts/", token!).then((d) => d.results || d), [token]);
   const { data: rows, loading, reload } = useAsyncData<GuestCheckout[]>(loader, [token]);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // --- Carregar vendas antigas ----------------------------------------
+  const [importar, setImportar] = useState(false);
+  const [ficheiro, setFicheiro] = useState<File | null>(null);
+  const [aCarregar, setACarregar] = useState(false);
+  const [resultado, setResultado] = useState<null | {
+    imported: number; duplicates: number; total_amount: string;
+    errors: { row: number; detail: string }[];
+  }>(null);
+
+  const descarregarModelo = async () => {
+    try {
+      const res = await fetch("/api/import/sales/template/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Não foi possível obter o modelo.");
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = url; a.download = "modelo_vendas_historicas.xlsx"; a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showToast("danger", err instanceof Error ? err.message : "Erro");
+    }
+  };
+
+  const carregarFicheiro = async () => {
+    if (!ficheiro) return;
+    setACarregar(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", ficheiro);
+      const res = await fetch("/api/import/sales/", {
+        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Erro ao carregar o ficheiro.");
+      setResultado(data);
+      if (data.imported > 0) reload();
+    } catch (err) {
+      showToast("danger", err instanceof Error ? err.message : "Erro");
+    } finally {
+      setACarregar(false);
+    }
+  };
+
+  const modalImportacao = (
+    <AdminModal open={importar} onClose={() => setImportar(false)}
+      title="Carregar vendas já realizadas"
+      description="Bilhetes vendidos noutro sistema. Entram no histórico e nos relatórios com a data em que aconteceram.">
+      {resultado ? (
+        <div className="admin-form">
+          <div className="admin-metric-grid">
+            <div className="dash-kpi"><span className="dash-kpi-label">Carregadas</span>
+              <strong className="dash-kpi-value">{resultado.imported}</strong></div>
+            <div className="dash-kpi"><span className="dash-kpi-label">Já existiam</span>
+              <strong className="dash-kpi-value">{resultado.duplicates}</strong></div>
+            <div className="dash-kpi"><span className="dash-kpi-label">Total</span>
+              <strong className="dash-kpi-value">{formatCurrency(resultado.total_amount)} MZN</strong></div>
+          </div>
+          {resultado.errors.length > 0 ? (
+            <>
+              <p className="dash-kpi-note" style={{ marginTop: 12 }}>
+                <b>{resultado.errors.length} linha(s) não entraram.</b> As restantes foram
+                carregadas — corrija estas no ficheiro e volte a carregá-lo; o que já entrou
+                não se repete.
+              </p>
+              <div style={{ maxHeight: 240, overflow: "auto", marginTop: 8 }}>
+                <table className="admin-table"><tbody>
+                  {resultado.errors.map((e, i) => (
+                    <tr key={i}><td style={{ width: 70 }}>Linha {e.row}</td><td>{e.detail}</td></tr>
+                  ))}
+                </tbody></table>
+              </div>
+            </>
+          ) : (
+            <p className="dash-kpi-note" style={{ marginTop: 12 }}>
+              Nenhum erro. Os bilhetes entraram como <b>já usados</b> — são viagens que
+              aconteceram, não servem para viajar e ninguém recebeu SMS.
+            </p>
+          )}
+          <div className="admin-form-actions">
+            <button className="primary-button" type="button"
+              onClick={() => { setResultado(null); setFicheiro(null); }}>Carregar outro</button>
+            <button className="secondary-button" type="button"
+              onClick={() => setImportar(false)}>Fechar</button>
+          </div>
+        </div>
+      ) : (
+        <div className="admin-form">
+          <label className="field">
+            <span>Ficheiro Excel (.xlsx)</span>
+            <input type="file" accept=".xlsx"
+              onChange={(e) => setFicheiro(e.target.files?.[0] || null)} />
+          </label>
+          <p className="dash-kpi-note">
+            Use o <b>Modelo</b> para saber que colunas preencher. A referência do vosso
+            sistema antigo é a chave: carregar o mesmo ficheiro duas vezes não duplica nada.
+          </p>
+          <div className="admin-form-actions">
+            <button className="primary-button" type="button"
+              disabled={!ficheiro || aCarregar} onClick={carregarFicheiro}>
+              {aCarregar ? "A carregar…" : "Carregar"}
+            </button>
+            <button className="secondary-button" type="button"
+              onClick={() => setImportar(false)}>Cancelar</button>
+          </div>
+        </div>
+      )}
+    </AdminModal>
+  );
   const [currencyFilter, setCurrencyFilter] = useState("all");
   const [viewing, setViewing] = useState<CheckoutDetail | null>(null);
 
@@ -98,7 +209,19 @@ export default function GuestCheckoutsPage() {
   return (
     <PageFrame kicker="Financeiro" title="Bilhetes ocasionais"
       description="Compras de bilhetes por passageiros sem conta (guest checkout)."
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>Actualizar</span></button>}>
+      action={<>
+        <button className="icon-text-button" onClick={descarregarModelo} type="button">
+          <Download size={15} /><span>Modelo</span>
+        </button>
+        <button className="icon-text-button" type="button"
+          onClick={() => { setFicheiro(null); setResultado(null); setImportar(true); }}>
+          <Upload size={15} /><span>Carregar histórico</span>
+        </button>
+        <button className="icon-text-button" onClick={reload} type="button">
+          <RefreshCw size={16} /><span>Actualizar</span>
+        </button>
+      </>}>
+      {modalImportacao}
       <SectionCard title="Compras" description="Bilhetes ocasionais pagos por telemovel.">
         <div className="admin-toolbar" style={{ marginBottom: 12 }}>
           <label className="field" style={{ maxWidth: 260 }}>

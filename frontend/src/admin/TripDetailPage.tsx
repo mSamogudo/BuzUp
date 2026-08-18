@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Clock, Download, RefreshCw, Wallet, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Download, MessageSquareWarning, RefreshCw, Wallet, XCircle } from "lucide-react";
 import { apiDownload, apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
@@ -8,6 +8,7 @@ import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell } from "../ui/common";
+import BroadcastModal from "./BroadcastModal";
 
 interface RevenueSummary {
   guest_checkout: { revenue: string; count: number; tickets: number };
@@ -80,6 +81,7 @@ const LIVE_STATUSES = new Set(["boarding", "departed", "paused"]);
 export default function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const { token } = useAuth();
+  const [avisoAberto, setAvisoAberto] = useState(false);
   const { locale: lc } = useUi();
   const navigate = useNavigate();
   const [trip, setTrip] = useState<TripDetail | null>(null);
@@ -185,9 +187,18 @@ export default function TripDetailPage() {
               <Download size={16} /><span>{downloading ? "A preparar..." : "Manifesto PDF"}</span>
             </button>
           ) : null}
+          <button className="icon-text-button" onClick={() => setAvisoAberto(true)} type="button">
+            <MessageSquareWarning size={16} /><span>Avisar passageiros</span>
+          </button>
         </>
       }
     >
+      <BroadcastModal
+        open={avisoAberto}
+        onClose={() => setAvisoAberto(false)}
+        tripId={trip.id}
+        contexto={`${trip.route_code} · ${formatDateTime(trip.planned_departure_at)}`}
+      />
       <SectionCard title="Resumo">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

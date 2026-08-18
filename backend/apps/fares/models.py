@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_CEILING, Decimal
 
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -160,6 +160,18 @@ class ExchangeRate(BaseModel):
         max_digits=12, decimal_places=4,
         validators=[MinValueValidator(Decimal("0.0001"))],
     )
+    # A que multiplo se arredonda o valor exibido. 1 = rands inteiros; 5 = de
+    # cinco em cinco; 0.01 = ao centavo (sem arredondar, na pratica).
+    #
+    # Uma divisao por uma taxa quase nunca da um numero redondo: 1000 MZN a
+    # 3,87 sao 258,398... e o passageiro ficava a olhar para centavos que
+    # ninguem no balcao consegue dar em troco. Arredonda-se sempre PARA CIMA,
+    # pela mesma razao que a taxa e posta abaixo do mercado — o valor mostrado
+    # nunca pode ser menor do que aquilo que lhe sai da conta.
+    rounding_step = models.DecimalField(
+        max_digits=8, decimal_places=2, default=Decimal("1.00"),
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
     is_active = models.BooleanField(default=True)
     notes = models.CharField(max_length=255, blank=True)
 
@@ -171,6 +183,14 @@ class ExchangeRate(BaseModel):
 
     def __str__(self):
         return f"1 {self.currency} = {self.rate_to_mzn} MZN"
+
+    def arredondar(self, valor: Decimal) -> Decimal:
+        """Sobe `valor` ao proximo multiplo de `rounding_step`."""
+        passo = self.rounding_step or Decimal("0.01")
+        if passo <= 0:
+            passo = Decimal("0.01")
+        multiplos = (Decimal(valor) / passo).to_integral_value(rounding=ROUND_CEILING)
+        return (multiplos * passo).quantize(Decimal("0.01"))
 
     @classmethod
     def current(cls, currency: str) -> "ExchangeRate | None":
@@ -185,5 +205,5 @@ class ExchangeRate(BaseModel):
         row = cls.current(currency)
         if not row:
             return None
-        converted = (Decimal(amount_mzn) / row.rate_to_mzn).quantize(Decimal("0.01"))
+        converted = row.arredondar(Decimal(amount_mzn) / row.rate_to_mzn)
         return converted, row.rate_to_mzn

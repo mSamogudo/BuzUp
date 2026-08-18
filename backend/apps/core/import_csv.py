@@ -154,8 +154,90 @@ def generate_card_template_excel() -> bytes:
     return buf.getvalue()
 
 
+def _importar_vendas(file_content: bytes) -> dict:
+    from apps.core.import_vendas import import_vendas_historicas
+
+    return import_vendas_historicas(file_content)
+
+
 IMPORTERS = {
     "cards": import_cards,
     "stops": import_stops,
     "routes": import_routes,
+    "sales": _importar_vendas,
 }
+
+
+def generate_sales_template_excel() -> bytes:
+    """Modelo para o operador preencher com as vendas ja realizadas.
+
+    O ficheiro leva as colunas certas, um exemplo preenchido e uma folha a
+    explicar o que cada coluna quer dizer — porque um modelo sem instrucoes
+    volta preenchido a maneira de quem o recebeu, e cada linha mal preenchida
+    e uma venda que nao entra nos relatorios.
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Vendas"
+
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="0D3B66", end_color="0D3B66", fill_type="solid")
+    header_align = Alignment(horizontal="center", vertical="center")
+    lado = Side(style="thin", color="D4D4D8")
+    thin_border = Border(left=lado, right=lado, top=lado, bottom=lado)
+
+    colunas = [
+        ("Referencia", 22), ("Data", 14), ("Rota", 26), ("Origem", 22),
+        ("Destino", 22), ("Passageiro", 26), ("Documento", 18),
+        ("Telefone", 16), ("Valor", 12), ("Metodo", 14), ("Lugar", 8),
+    ]
+    for i, (titulo, largura) in enumerate(colunas, start=1):
+        celula = ws.cell(row=1, column=i, value=titulo)
+        celula.font = header_font
+        celula.fill = header_fill
+        celula.alignment = header_align
+        celula.border = thin_border
+        ws.column_dimensions[celula.column_letter].width = largura
+
+    exemplo = ["TPM-2025-000123", "2025-11-14", "RT-MAPUTO-X-NELSPRUIT",
+               "Polana Shopping", "Ilanga Mall", "Antonio Joaquim",
+               "110100234567B", "841234567", "1650.00", "Dinheiro", "12A"]
+    for i, valor in enumerate(exemplo, start=1):
+        ws.cell(row=2, column=i, value=valor).border = thin_border
+    ws.freeze_panes = "A2"
+
+    guia = wb.create_sheet("Como preencher")
+    guia.column_dimensions["A"].width = 18
+    guia.column_dimensions["B"].width = 92
+    linhas = [
+        ("Coluna", "O que escrever"),
+        ("Referencia", "OBRIGATORIO. O numero do bilhete no vosso sistema antigo. "
+                       "E por ele que se sabe que uma linha ja foi carregada — carregar "
+                       "o mesmo ficheiro duas vezes nao duplica nada."),
+        ("Data", "OBRIGATORIO. O dia da viagem. Aceita 2025-11-14 ou 14/11/2025."),
+        ("Rota", "O codigo ou o nome da rota, tal como esta na plataforma. Se nao "
+                 "existir, a linha e recusada com o motivo — nao se inventa a rota."),
+        ("Origem / Destino", "Nomes das paragens. Ficam escritos no bilhete historico."),
+        ("Passageiro", "Nome de quem viajou."),
+        ("Documento", "BI, passaporte ou DIRE. Opcional."),
+        ("Telefone", "Numero de quem comprou. Opcional, mas e por ele que se "
+                     "encontra o passageiro depois."),
+        ("Valor", "OBRIGATORIO. Em meticais. Aceita 1650.00 ou 1.650,00."),
+        ("Metodo", "Dinheiro, M-Pesa, e-Mola, Cartao ou Transferencia."),
+        ("Lugar", "Numero do assento. Opcional."),
+        ("", ""),
+        ("Importante", "Os bilhetes carregados nascem JA USADOS: sao viagens que ja "
+                       "aconteceram. Nao servem para viajar e nao e enviado nenhum SMS "
+                       "a ninguem."),
+    ]
+    for i, (a, b) in enumerate(linhas, start=1):
+        ca = guia.cell(row=i, column=1, value=a)
+        cb = guia.cell(row=i, column=2, value=b)
+        cb.alignment = Alignment(wrap_text=True, vertical="top")
+        if i == 1 or a == "Importante":
+            ca.font = Font(bold=True)
+            cb.font = Font(bold=True)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

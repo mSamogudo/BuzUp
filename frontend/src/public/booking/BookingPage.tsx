@@ -130,6 +130,8 @@ export default function BookingPage() {
   // Moeda de EXIBIÇÃO (rand nas rotas p/ África do Sul). A cobrança é sempre
   // em meticais; a taxa vem do portal e o bilhete congela a moeda escolhida.
   const [rates, setRates] = useState<Record<string, number>>({});
+  // Passo de arredondamento por moeda, tal como o servidor o aplica.
+  const [roundings, setRoundings] = useState<Record<string, number>>({});
   const [currency, setCurrency] = useState("MZN");
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -156,15 +158,32 @@ export default function BookingPage() {
           const n = Number(v);
           if (n > 0) parsed[k] = n;
         });
+        const passos: Record<string, number> = {};
+        Object.entries(d.rounding || {}).forEach(([k, v]) => {
+          const n = Number(v);
+          if (n > 0) passos[k] = n;
+        });
         setRates(parsed);
+        setRoundings(passos);
       })
-      .catch(() => setRates({}));
+      .catch(() => { setRates({}); setRoundings({}); });
   }, []);
 
   const otherCurrencies = Object.keys(rates).sort();
   const rate = currency !== "MZN" ? rates[currency] : undefined;
   // Preço na moeda escolhida (só visual — o valor cobrado continua em MZN).
-  const inDisplay = (mzn: number) => (rate ? mzn / rate : mzn);
+  //
+  // Arredonda-se PARA CIMA ao passo definido no portal, exactamente como o
+  // servidor faz ao congelar o valor no bilhete: uma divisão por uma taxa quase
+  // nunca dá um número redondo, e o passageiro ficava a olhar para cêntimos que
+  // ninguém no balcão dá em troco. Para cima, e não para baixo, para o valor
+  // mostrado nunca ser menor do que aquilo que lhe sai da conta.
+  const inDisplay = (mzn: number) => {
+    if (!rate) return mzn;
+    const bruto = mzn / rate;
+    const passo = roundings[currency] || 1;
+    return Math.ceil(bruto / passo) * passo;
+  };
   const priceLabel = (mzn: number) => (rate
     ? `${money(inDisplay(mzn))} ${currency}`
     : `${money(mzn)} MZN`);

@@ -5,7 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.import_csv import IMPORTERS, generate_card_template_excel
+from apps.core.import_csv import (
+    IMPORTERS,
+    generate_card_template_excel,
+    generate_sales_template_excel,
+)
 from apps.core.permissions import HasCapabilities
 
 
@@ -44,4 +48,19 @@ class CardTemplateView(APIView):
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         response["Content-Disposition"] = 'attachment; filename="template_cartoes.xlsx"'
+        return response
+
+
+class SalesTemplateView(APIView):
+    """Modelo de Excel para carregar as vendas ja realizadas."""
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("imports.manage",)
+
+    def get(self, request):
+        response = HttpResponse(
+            generate_sales_template_excel(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = 'attachment; filename="modelo_vendas_historicas.xlsx"'
         return response

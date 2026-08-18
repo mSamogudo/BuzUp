@@ -25,6 +25,9 @@ class Branding {
     this.termsIntro = '',
     this.termsClosing = '',
     this.termsVersion = '',
+    this.termsEn = const [],
+    this.termsIntroEn = '',
+    this.termsClosingEn = '',
   ]);
 
   final String platformName;
@@ -35,11 +38,26 @@ class Branding {
   final List<TermsSection> terms;
   final String termsIntro;
   final String termsClosing;
+  /// Versao inglesa. Vazia = cai para a portuguesa: mais vale os termos na
+  /// lingua errada do que termos nenhuns a quem esta prestes a aceitar.
+  final List<TermsSection> termsEn;
+  final String termsIntroEn;
+  final String termsClosingEn;
   /// A versao viaja com a compra: guardar so um "sim" nao diria QUE termos
   /// foram aceites, e uns termos alterados depois valeriam para tras.
   final String termsVersion;
 
   bool get hasTerms => terms.isNotEmpty;
+
+  /// Termos na lingua pedida, com recurso a portuguesa.
+  List<TermsSection> termsFor(String lingua) =>
+      (lingua == 'en' && termsEn.isNotEmpty) ? termsEn : terms;
+
+  String introFor(String lingua) =>
+      (lingua == 'en' && termsEn.isNotEmpty) ? termsIntroEn : termsIntro;
+
+  String closingFor(String lingua) =>
+      (lingua == 'en' && termsEn.isNotEmpty) ? termsClosingEn : termsClosing;
 
   String get companyName => (contacts['company_name'] ?? '').trim();
 
@@ -68,26 +86,32 @@ class Branding {
       if (_contactKeys.contains(k)) contacts[k] = v;
     });
 
-    final seccoes = <TermsSection>[];
-    for (final raw in (j['terms_sections'] as List<dynamic>? ?? const [])) {
-      if (raw is! Map) continue;
-      final itens = (raw['items'] as List<dynamic>? ?? const [])
-          .map((e) => e.toString())
-          .where((e) => e.trim().isNotEmpty)
-          .toList();
-      final titulo = (raw['title'] ?? '').toString();
-      if (titulo.isEmpty || itens.isEmpty) continue;
-      seccoes.add(TermsSection(titulo, itens));
+    List<TermsSection> lerSeccoes(String campo) {
+      final saida = <TermsSection>[];
+      for (final raw in (j[campo] as List<dynamic>? ?? const [])) {
+        if (raw is! Map) continue;
+        final itens = (raw['items'] as List<dynamic>? ?? const [])
+            .map((e) => e.toString())
+            .where((e) => e.trim().isNotEmpty)
+            .toList();
+        final titulo = (raw['title'] ?? '').toString();
+        if (titulo.isEmpty || itens.isEmpty) continue;
+        saida.add(TermsSection(titulo, itens));
+      }
+      return saida;
     }
 
     return Branding(
       (j['platform_name'] as String?) ?? 'BuzUp',
       logos,
       contacts,
-      seccoes,
+      lerSeccoes('terms_sections'),
       (j['terms_intro'] as String?) ?? '',
       (j['terms_closing'] as String?) ?? '',
       (j['terms_version'] as String?) ?? '',
+      lerSeccoes('terms_sections_en'),
+      (j['terms_intro_en'] as String?) ?? '',
+      (j['terms_closing_en'] as String?) ?? '',
     );
   }
 }

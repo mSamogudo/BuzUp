@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
 import '../../core/branding.dart';
+import '../../core/i18n.dart';
 import '../../core/bus_loader.dart';
 import '../../core/documents.dart';
 import '../../core/logger.dart';
@@ -1414,6 +1415,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
   /// O texto inteiro nao cabe aqui nem devia: quem quer ler abre; quem ja leu
   /// marca e segue. O que nao pode acontecer e comprar sem ter tido a hipotese.
   Widget _caixaDeTermos(Branding marca) {
+    final tr = ref.watch(trProvider);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -1435,15 +1437,15 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
               padding: const EdgeInsets.only(top: 3),
               child: Text.rich(
                 TextSpan(children: [
-                  const TextSpan(text: 'Li e aceito os '),
+                  TextSpan(text: '${tr('terms.acceptPre')} '),
                   WidgetSpan(
                     alignment: PlaceholderAlignment.baseline,
                     baseline: TextBaseline.alphabetic,
                     child: GestureDetector(
                       onTap: () => mostrarTermos(context, marca),
-                      child: const Text(
-                        'Termos e Condições',
-                        style: TextStyle(
+                      child: Text(
+                        tr('terms.link'),
+                        style: const TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w800,
                           color: BuzUpColors.blue,
@@ -1454,7 +1456,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
                   ),
                   TextSpan(
                     text: marca.companyName.isNotEmpty
-                        ? ' da ${marca.companyName}.'
+                        ? " ${tr('terms.of')} ${marca.companyName}."
                         : '.',
                   ),
                 ]),

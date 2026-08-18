@@ -203,6 +203,13 @@ const Map<String, String> _pt = {
   'fees.title': 'Taxas e tarifas',
   'fees.loading': 'A carregar taxas...',
   'fees.empty': 'Sem taxas activas no momento.',
+  // termos e condicoes
+  'terms.title': 'Termos e Condições',
+  'terms.read': 'Li e compreendi',
+  'terms.version': 'Versão',
+  'terms.acceptPre': 'Li e aceito os',
+  'terms.link': 'Termos e Condições',
+  'terms.of': 'da',
 };
 
 const Map<String, String> _en = {
@@ -377,6 +384,13 @@ const Map<String, String> _en = {
   'fees.title': 'Fees and charges',
   'fees.loading': 'Loading fees...',
   'fees.empty': 'No active fees at the moment.',
+  // terms and conditions
+  'terms.title': 'Terms & Conditions',
+  'terms.read': 'I have read and understood',
+  'terms.version': 'Version',
+  'terms.acceptPre': 'I have read and accept the',
+  'terms.link': 'Terms & Conditions',
+  'terms.of': 'of',
 };
 
 /// Resolves the current locale to its translations dictionary, with PT as

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/branding.dart';
+import '../../core/i18n.dart';
+import '../../core/providers.dart';
 import '../../core/theme.dart';
 
 /// Termos e Condicoes do operador, na integra.
@@ -17,13 +20,19 @@ Future<void> mostrarTermos(BuildContext context, Branding marca) {
   );
 }
 
-class _FolhaDeTermos extends StatelessWidget {
+class _FolhaDeTermos extends ConsumerWidget {
   const _FolhaDeTermos({required this.marca});
 
   final Branding marca;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(trProvider);
+    // Os termos seguem a lingua escolhida no Perfil, com recurso a portuguesa.
+    final lingua = ref.watch(localeControllerProvider).languageCode;
+    final seccoes = marca.termsFor(lingua);
+    final intro = marca.introFor(lingua);
+    final fecho = marca.closingFor(lingua);
     final escuro = Theme.of(context).brightness == Brightness.dark;
     final fundo = escuro ? const Color(0xFF141C2E) : Colors.white;
     final texto = escuro ? Colors.white70 : const Color(0xFF33404F);
@@ -53,7 +62,7 @@ class _FolhaDeTermos extends StatelessWidget {
             child: Row(children: [
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Termos e Condições',
+                  Text(tr('terms.title'),
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: titulo)),
                   if (marca.companyName.isNotEmpty)
                     Padding(
@@ -76,17 +85,17 @@ class _FolhaDeTermos extends StatelessWidget {
               controller: scrollController,
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               children: [
-                if (marca.termsIntro.isNotEmpty) ...[
-                  Text(marca.termsIntro,
+                if (intro.isNotEmpty) ...[
+                  Text(intro,
                       style: TextStyle(fontSize: 14, height: 1.6, color: texto)),
                   const SizedBox(height: 18),
                 ],
-                for (var i = 0; i < marca.terms.length; i++) ...[
-                  Text('${i + 1}. ${marca.terms[i].title}',
+                for (var i = 0; i < seccoes.length; i++) ...[
+                  Text('${i + 1}. ${seccoes[i].title}',
                       style: TextStyle(
                           fontSize: 14.5, fontWeight: FontWeight.w800, color: titulo)),
                   const SizedBox(height: 6),
-                  for (final item in marca.terms[i].items)
+                  for (final item in seccoes[i].items)
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 7),
                       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -106,9 +115,9 @@ class _FolhaDeTermos extends StatelessWidget {
                     ),
                   const SizedBox(height: 14),
                 ],
-                if (marca.termsClosing.isNotEmpty) ...[
+                if (fecho.isNotEmpty) ...[
                   const Divider(height: 28),
-                  Text(marca.termsClosing,
+                  Text(fecho,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w800, color: titulo)),
@@ -116,7 +125,7 @@ class _FolhaDeTermos extends StatelessWidget {
                 if (marca.termsVersion.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 14),
-                    child: Text('Versão ${marca.termsVersion}',
+                    child: Text('${tr('terms.version')} ${marca.termsVersion}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 11, color: BuzUpColors.muted)),
                   ),
@@ -136,8 +145,8 @@ class _FolhaDeTermos extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Li e compreendi',
-                      style: TextStyle(fontWeight: FontWeight.w900)),
+                  child: Text(tr('terms.read'),
+                      style: const TextStyle(fontWeight: FontWeight.w900)),
                 ),
               ),
             ),

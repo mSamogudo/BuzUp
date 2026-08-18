@@ -13,11 +13,11 @@
 /* Escuro por preferência do sistema... */
 @media (prefers-color-scheme: dark){
   .bzlp:not([data-theme="light"]){--ink:#EAF1F8;--muted:#9DB2C8;--line:#20303F;--line-soft:#1A2734;
-    --bg:#0C1520;--surface:#101B27}
+    --bg:#0C1520;--surface:#101B27;--blue2:#7FBEFF}
 }
 /* ...ou por escolha explícita do visitante (o botão da barra manda). */
 .bzlp[data-theme="dark"]{--ink:#EAF1F8;--muted:#9DB2C8;--line:#20303F;--line-soft:#1A2734;
-  --bg:#0C1520;--surface:#101B27}
+  --bg:#0C1520;--surface:#101B27;--blue2:#7FBEFF}
 
 /* Controlos da barra (tema e idioma) */
 .bzlp-tools{display:flex;align-items:center;gap:6px}
@@ -360,3 +360,11 @@
 .bzlp-foot-cols a:hover{color:var(--blue-bright)}
 .bzlp-foot-bar{border-top:1px solid rgba(255,255,255,.08);text-align:center;padding:18px;
   font-size:12.5px;color:#7c98b4}
+
+/* Aviso de erro com paleta clara fixa: no escuro era uma ilha branca.
+   Dois selectores porque o tema escuro chega por dois caminhos — a preferência
+   do sistema (dentro da media query) e a escolha explícita do visitante. */
+.bzlp[data-theme="dark"] .bzlp-form-error{background:#2C1618;color:#F2B8BC;border-color:#4D2226}
+@media (prefers-color-scheme: dark){
+  .bzlp:not([data-theme="light"]) .bzlp-form-error{background:#2C1618;color:#F2B8BC;border-color:#4D2226}
+}

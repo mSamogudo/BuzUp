@@ -5472,6 +5472,31 @@ html[data-theme="dark"] .otp-digit:focus {
    A geração era um botão que dizia o resultado depois de o fazer; aqui o
    operador vê a distribuição por dia antes de confirmar.
 --------------------------------------------------------------------------- */
+/* --- Pré-visualização da planta de bancos (ficha da viatura) ------------ */
+.bzsl {
+  margin-top: 6px; padding: 12px; border-radius: 12px;
+  border: 1px solid var(--app-border); background: var(--app-surface-soft);
+}
+.bzsl-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 1px dashed var(--app-border);
+  font-size: 10.5px; font-weight: 800; letter-spacing: .8px;
+  color: var(--app-text-muted); text-transform: uppercase;
+}
+.bzsl-rows { display: flex; flex-direction: column; gap: 4px; max-width: 300px; margin: 0 auto; }
+.bzsl-row { display: grid; gap: 4px; align-items: center; }
+.bzsl-seat {
+  height: 26px; display: grid; place-items: center;
+  border-radius: 6px; border: 1px solid var(--app-border);
+  background: var(--app-surface); font-size: 10px; font-weight: 700;
+}
+/* Lugar que não existe naquela fila: ocupa a coluna para as filas incompletas
+   não empurrarem os bancos para o meio. */
+.bzsl-void { height: 26px; }
+.bzsl-aisle { height: 26px; }
+.bzsl-note { margin: 6px 0 0; font-size: 12px; color: var(--app-text-muted); }
+
 /* === Programar viagens ================================================== */
 /* Duas colunas: o QUE se cria à esquerda, o QUANDO à direita. Nada muda de
    sítio enquanto se trabalha, e por isso não há rolagem a meio da tarefa. */

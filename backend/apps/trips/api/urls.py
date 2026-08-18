@@ -14,6 +14,7 @@ from apps.trips.api.views import (
     TripManifestView,
     TripSearchView,
     TripViewSet,
+    VehicleSeatPreviewView,
     VehicleViewSet,
 )
 
@@ -36,6 +37,7 @@ urlpatterns = [
     path("driver/trips/<int:pk>/manifest/", DriverTripManifestView.as_view(), name="driver-trip-manifest"),
     path("trips/<int:pk>/manifest/", TripManifestView.as_view(), name="trip-manifest"),
     path("trips/<int:pk>/manifest.pdf", TripManifestPdfView.as_view(), name="trip-manifest-pdf"),
+    path("vehicles/seat-preview/", VehicleSeatPreviewView.as_view(), name="vehicle-seat-preview"),
     path("trips/search/", TripSearchView.as_view(), name="trip-search"),
     path("trips/generate/", GenerateTripsView.as_view(), name="trip-generate"),
     path("trips/schedule-days/", ProgramarPartidasView.as_view(), name="trip-schedule-days"),

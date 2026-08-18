@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import SeatLayoutPreview from "./SeatLayoutPreview";
 import { useConfirm } from "../ui/ConfirmDialog";
 
 interface Vehicle { id: number; uuid: string; registration: string; make: string; model_name: string; seated_capacity: number; standing_capacity: number; seat_layout?: string; last_row_seats?: number; status: string; livrete_url?: string; }
@@ -94,6 +95,17 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "standingCapacity")}</span><input type="number" min="0" value={form.standing_capacity} onChange={(e) => setForm((p) => ({ ...p, standing_capacity: e.target.value }))} /></label>
             <label className="field"><span>Disposição dos bancos</span><select value={form.seat_layout} onChange={(e) => setForm((p) => ({ ...p, seat_layout: e.target.value }))}><option value="1+1">1+1 — um banco de cada lado</option><option value="1+2">1+2 — um à esquerda, dois à direita</option><option value="2+1">2+1 — dois à esquerda, um à direita</option><option value="2+2">2+2 — dois de cada lado</option><option value="2+3">2+3</option><option value="3+2">3+2</option></select></label>
             <label className="field"><span>Bancos na fila do fundo</span><input type="number" min="0" value={form.last_row_seats} onChange={(e) => setForm((p) => ({ ...p, last_row_seats: e.target.value }))} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>Fila corrida sem corredor. Zero se não houver.</small></label>
+            {/* Ver antes de gravar: a planta que o passageiro vai encontrar a
+                bordo. Escolher "2+2" numa lista sem ver o resultado é onde os
+                minibus acabavam com uma planta que não existe. */}
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <span>Como fica a planta</span>
+              <SeatLayoutPreview
+                capacity={Number(form.seated_capacity) || 0}
+                layout={form.seat_layout}
+                lastRow={Number(form.last_row_seats) || 0}
+              />
+            </div>
             <label className="field"><span>{t(lc, "status")}</span><select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}><option value="active">{t(lc, "active")}</option><option value="maintenance">{t(lc, "maintenance")}</option><option value="retired">{t(lc, "retired")}</option></select></label>
             <label className="field admin-field-span-full"><span>{t(lc, "livrete")}</span><input type="file" accept="application/pdf,image/*" onChange={(e) => setLivrete(e.target.files?.[0] ?? null)} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "livreteHint")}</small></label>
           </div>

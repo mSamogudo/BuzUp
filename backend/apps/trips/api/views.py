@@ -151,6 +151,47 @@ class GenerateTripsView(APIView):
         )
 
 
+class VehicleSeatPreviewView(APIView):
+    """Como fica a planta com esta lotacao e esta disposicao.
+
+    O operador escolhia "2+2" numa lista e nunca via o resultado — tinha de
+    imaginar. Num autocarro de 50 lugares engana-se pouco; num minibus de 15,
+    a diferenca entre 2+2 e 1+2 e a diferenca entre uma planta que existe e uma
+    que o passageiro nao vai encontrar a bordo.
+
+    Calculada aqui e nao no browser de proposito: a regra da planta e uma so, e
+    escreve-la outra vez em JavaScript era garantir que um dia deixavam de
+    concordar.
+    """
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("vehicles.read",)
+
+    def get(self, request):
+        from apps.guest_checkouts.seatmap import DEFAULT_LAYOUT, seat_rows
+
+        try:
+            capacidade = int(request.query_params.get("capacity") or 0)
+            ultima = int(request.query_params.get("last_row") or 0)
+        except (TypeError, ValueError):
+            return Response({"detail": "Lotacao invalida."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Um tecto: isto e uma pre-visualizacao, nao um gerador de plantas de
+        # comboio. Sem ele, um engano num campo devolvia mil filas.
+        if capacidade < 0 or capacidade > 120 or ultima < 0 or ultima > 10:
+            return Response({"detail": "Valores fora do razoavel."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        layout = request.query_params.get("layout") or DEFAULT_LAYOUT
+        filas = seat_rows(capacidade, layout, ultima)
+        return Response({
+            "layout": layout,
+            "capacity": capacidade,
+            "rows": filas,
+            "seats": sum(len(f["left"]) + len(f["right"]) for f in filas),
+        })
+
+
 class ProgramarPartidasView(APIView):
     """Partidas marcadas no calendario, sem passar por um horario recorrente.
 

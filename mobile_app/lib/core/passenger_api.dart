@@ -220,10 +220,16 @@ class PassengerApi {
     String? emergencyPhone,
     String documentType = '',
     String documentNumber = '',
+    bool acceptTerms = false,
+    String termsVersion = '',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/travel-passes/purchase/',
       data: {
+        // Aceitacao dos Termos do operador: vale em todas as portas de compra,
+        // e o servidor recusa sem ela quando ha termos publicados.
+        'accept_terms': acceptTerms,
+        if (termsVersion.isNotEmpty) 'terms_version': termsVersion,
         if (routeId != null) 'route_id': routeId,
         if (originStopId != null) 'origin_stop_id': originStopId,
         if (destinationStopId != null) 'destination_stop_id': destinationStopId,
@@ -291,11 +297,18 @@ class PassengerApi {
     String passengerName = '',
     String documentType = '',
     String documentNumber = '',
+    bool acceptTerms = false,
+    String termsVersion = '',
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/guest-checkouts/',
       data: {
         'payer_phone': payerPhone,
+        // Aceitacao dos Termos e Condicoes do operador. O servidor recusa a
+        // compra sem ela quando ha termos publicados — a caixa no ecra e para
+        // o passageiro poder LER antes de dizer que sim, nao e a barreira.
+        'accept_terms': acceptTerms,
+        if (termsVersion.isNotEmpty) 'terms_version': termsVersion,
         if (passengerName.isNotEmpty) 'buyer_name': passengerName,
         'origin_stop': originName,
         'destination_stop': destinationName,

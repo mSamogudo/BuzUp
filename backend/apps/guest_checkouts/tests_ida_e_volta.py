@@ -62,6 +62,10 @@ class IdaEVoltaTests(TestCase):
             "origin_stop": self.a.name, "destination_stop": self.b.name,
             "origin_stop_id": self.a.id, "destination_stop_id": self.b.id,
             "trip_id": self.ida.id,
+            # Os termos da TPM-TUR vem semeados por migracao: a partir do
+            # momento em que ha termos publicados, aceita-los e condicao para
+            # comprar — e e isso que o site e a app fazem.
+            "accept_terms": True,
             "quantity": len(passageiros or [{}]) or 1,
             "passengers": passageiros or [
                 {"name": "Antonio Joaquim", "document_number": "110100234567B",

@@ -6,12 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
+import '../../core/branding.dart';
 import '../../core/bus_loader.dart';
 import '../../core/documents.dart';
 import '../../core/logger.dart';
 import '../../core/providers.dart';
 import '../../core/seat_map_screen.dart';
 import '../../core/theme.dart';
+import 'terms_sheet.dart';
 import 'stop_picker.dart';
 
 /// Como o passageiro paga o bilhete: com o saldo BusUp (fluxo original) ou
@@ -400,6 +402,11 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
 
   // --- compra ---------------------------------------------------------------
 
+  /// Aceitacao dos Termos. O servidor recusa a compra sem ela quando ha termos
+  /// publicados; a caixa no ecra e para o passageiro poder LER antes de dizer
+  /// que sim, nao e a barreira.
+  bool _aceitouTermos = false;
+
   Future<void> _purchaseWithWallet() async {
     try {
       final res = await ref.read(passengerApiProvider).purchaseTicket(
@@ -413,6 +420,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             emergencyPhone: _emergencyPhoneCtrl.text.trim(),
             documentType: _effectiveDocType,
             documentNumber: _effectiveDocNumber,
+            acceptTerms: _aceitouTermos,
+            termsVersion: ref.read(brandingProvider).termsVersion,
           );
       Log.info('ticket.purchase ok', data: 'id=${res['id']}');
       ref.invalidate(meProvider);
@@ -454,6 +463,8 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
             passengerName: _holderName,
             documentType: _effectiveDocType,
             documentNumber: _effectiveDocNumber,
+            acceptTerms: _aceitouTermos,
+            termsVersion: ref.read(brandingProvider).termsVersion,
           );
       Log.info('ticket.direct ok', data: 'ref=${res['checkout_reference']} status=${res['status']}');
       final reference = (res['checkout_reference'] ?? '').toString();
@@ -1398,9 +1409,71 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
     }
   }
 
+  /// Caixa de aceitacao dos Termos, com o trecho que abre o documento.
+  ///
+  /// O texto inteiro nao cabe aqui nem devia: quem quer ler abre; quem ja leu
+  /// marca e segue. O que nao pode acontecer e comprar sem ter tido a hipotese.
+  Widget _caixaDeTermos(Branding marca) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => setState(() => _aceitouTermos = !_aceitouTermos),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(
+            width: 26, height: 26,
+            child: Checkbox(
+              value: _aceitouTermos,
+              activeColor: BuzUpColors.blue,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: (v) => setState(() => _aceitouTermos = v ?? false),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text.rich(
+                TextSpan(children: [
+                  const TextSpan(text: 'Li e aceito os '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: GestureDetector(
+                      onTap: () => mostrarTermos(context, marca),
+                      child: const Text(
+                        'Termos e Condições',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: BuzUpColors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                  TextSpan(
+                    text: marca.companyName.isNotEmpty
+                        ? ' da ${marca.companyName}.'
+                        : '.',
+                  ),
+                ]),
+                style: const TextStyle(fontSize: 12.5, height: 1.45, color: BuzUpColors.muted),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   /// Barra fixa no fundo: a accao do passo esta SEMPRE visivel, sem rolar.
   Widget _bottomBar() {
     final missing = _missingForStep();
+    final marca = ref.watch(brandingProvider);
+    // Só no passo do pagamento: aceitar os termos é parte de pagar, não de
+    // escolher a viagem.
+    final pedeTermos = _step == _Step.payment && marca.hasTerms;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: const BoxDecoration(
@@ -1420,6 +1493,7 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
               ),
             ]),
           ),
+        if (pedeTermos && !_purchasing) _caixaDeTermos(marca),
         SizedBox(
           width: double.infinity,
           child: FilledButton(
@@ -1428,7 +1502,10 @@ class _BuyTicketScreenState extends ConsumerState<BuyTicketScreen> {
               padding: const EdgeInsets.symmetric(vertical: 15),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: (_purchasing || missing.isNotEmpty) ? null : _onAction,
+            onPressed: (_purchasing || missing.isNotEmpty
+                    || (pedeTermos && !_aceitouTermos))
+                ? null
+                : _onAction,
             child: _purchasing
                 ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : Text(_actionLabel(),

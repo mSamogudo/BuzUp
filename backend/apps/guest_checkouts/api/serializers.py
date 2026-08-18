@@ -89,6 +89,12 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
     display_currency = serializers.CharField(
         max_length=3, required=False, allow_blank=True, default="MZN",
     )
+    # Aceitacao dos termos. Exigida na vista, que e quem sabe se ha termos
+    # publicados — uma caixa que o servidor nao verifica e decoracao.
+    accept_terms = serializers.BooleanField(required=False, default=False)
+    terms_version = serializers.CharField(
+        max_length=32, required=False, allow_blank=True, default="",
+    )
 
     def validate(self, attrs):
         origin_id = attrs.get("origin_stop_id")

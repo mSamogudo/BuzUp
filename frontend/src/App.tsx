@@ -38,6 +38,7 @@ import DriverPortalPage from "./driver/DriverPortalPage";
 import ProfilePage from "./profile/ProfilePage";
 import TripDetailPage from "./admin/TripDetailPage";
 import TripSchedulerPage from "./admin/TripSchedulerPage";
+import TermsPage from "./admin/TermsPage";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { BrandingProvider } from "./lib/branding";
 import SplashScreen from "./ui/SplashScreen";
@@ -87,6 +88,7 @@ function AppContent() {
           <Route path="stops" element={<StopsPage />} />
           <Route path="trips" element={<OperationPage />} />
           <Route path="trips/schedule" element={<TripSchedulerPage />} />
+          <Route path="terms" element={<TermsPage />} />
           <Route path="trips/:tripId" element={<TripDetailPage />} />
           {/* Horários deixaram de ter menu próprio: são um separador das
               viagens. A rota antiga continua a funcionar para não partir

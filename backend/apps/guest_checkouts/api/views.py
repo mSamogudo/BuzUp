@@ -110,6 +110,22 @@ class GuestCheckoutCreateView(APIView):
             except RouteSegmentError as e:
                 return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Termos e condicoes. A regra vive em `apps.branding.termos` porque ha
+        # mais do que uma porta para comprar um bilhete — o site, a app por
+        # carteira, a app por M-Pesa — e cada copia da regra e uma porta que um
+        # dia deixa de a aplicar. A verificacao esta no servidor e nao so na
+        # caixa do site: um pedido feito por fora do browser nao pode comprar
+        # sem aceitar aquilo que o balcao faz toda a gente aceitar.
+        from apps.branding.termos import TermosNaoAceites, registar_aceitacao
+
+        try:
+            aceitou_em, versao_aceite = registar_aceitacao(
+                aceitou=data.get("accept_terms", False),
+                versao_enviada=data.get("terms_version", ""),
+            )
+        except TermosNaoAceites as e:
+            return Response({"detail": e.detail}, status=e.status_code)
+
         # Contacto de emergencia: obrigatorio onde ha manifesto de bordo.
         # Numa carreira urbana nem se guarda — sao dados de terceiros que nao
         # foram pedidos nem vao ser usados.
@@ -304,6 +320,8 @@ class GuestCheckoutCreateView(APIView):
                 trip=trip,
                 return_trip=return_trip,
                 return_unit_amount=return_unit_amount,
+                terms_accepted_at=aceitou_em,
+                terms_version=versao_aceite,
                 linked_passenger=linked_passenger,
                 emergency_contact_name=emerg_name,
                 emergency_contact_phone=emerg_phone,

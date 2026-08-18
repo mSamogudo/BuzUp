@@ -13,6 +13,24 @@ export interface Branding {
   report_logo_url: string;
   powered_by_logo_url: string;
   favicon_url: string;
+
+  // Identificação e contactos do operador. O rodapé da compra, o bilhete e as
+  // apps mostram-nos: quem compra tem de saber a quem está a comprar, e a quem
+  // telefonar quando algo corre mal na estrada.
+  company_name: string;
+  company_address: string;
+  company_website: string;
+  contact_phones: string[];
+  support_phone: string;
+  support_email: string;
+  emergency_phone: string;
+
+  // Termos e Condições, publicados pelo operador.
+  terms_sections: { title: string; items: string[] }[];
+  terms_intro: string;
+  terms_closing: string;
+  terms_version: string;
+  terms_updated_at: string | null;
 }
 
 const EMPTY: Branding = {
@@ -20,6 +38,10 @@ const EMPTY: Branding = {
   primary_logo_url: "", sidebar_logo_url: "", sidebar_mark_url: "",
   auth_logo_url: "", pos_logo_url: "", mobile_logo_url: "",
   report_logo_url: "", powered_by_logo_url: "", favicon_url: "",
+  company_name: "", company_address: "", company_website: "",
+  contact_phones: [], support_phone: "", support_email: "", emergency_phone: "",
+  terms_sections: [], terms_intro: "", terms_closing: "",
+  terms_version: "", terms_updated_at: null,
 };
 
 interface BrandingState {

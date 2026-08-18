@@ -71,6 +71,9 @@ class PurchaseTravelPassSerializer(serializers.Serializer):
     # Documento do passageiro. A app envia-o quando a conta ainda nao tem um
     # guardado; sem isto, o bilhete interprovincial comprado com a carteira
     # saia sem documento nenhum — e e nominal, conferido na fronteira.
+    # Aceitacao dos Termos: mesma regra do site (ver `apps.branding.termos`).
+    accept_terms = serializers.BooleanField(required=False, default=False)
+    terms_version = serializers.CharField(max_length=32, required=False, allow_blank=True, default="")
     document_type = serializers.CharField(max_length=16, required=False, allow_blank=True, default="")
     document_number = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
     passenger_package_id = serializers.IntegerField(required=False, allow_null=True)

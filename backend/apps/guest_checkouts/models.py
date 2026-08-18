@@ -82,6 +82,15 @@ class GuestCheckout(BaseModel):
         max_digits=12, decimal_places=2, null=True, blank=True,
     )
 
+    # Aceitacao dos termos e condicoes, no acto da compra.
+    #
+    # Guarda-se a VERSAO e nao apenas um sim: sem ela sabia-se que o passageiro
+    # aceitou "os termos", mas nao QUAIS — e uns termos alterados depois da
+    # compra passariam a valer para tras. Numa disputa sobre um cancelamento ou
+    # uma bagagem, e esta linha que diz o que estava escrito nesse dia.
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    terms_version = models.CharField(max_length=32, blank=True)
+
     class Meta:
         ordering = ("-created_at",)
         indexes = [

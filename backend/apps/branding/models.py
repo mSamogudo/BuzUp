@@ -50,6 +50,33 @@ class BrandingSettings(BaseModel):
     support_phone = models.CharField(max_length=32, blank=True)
     support_email = models.EmailField(blank=True)
 
+    # Identificacao do operador. Sai no rodape do portal de compra, no bilhete
+    # e nos termos — quem compra tem de saber a quem esta a comprar.
+    company_name = models.CharField(max_length=160, blank=True)
+    company_address = models.CharField(max_length=255, blank=True)
+    company_website = models.CharField(max_length=160, blank=True)
+    # Varios numeros: um operador de carreiras tem a central, o balcao e o
+    # movel, e o passageiro precisa de todos.
+    contact_phones = models.JSONField(default=list, blank=True)
+
+    # --- Termos e condicoes ------------------------------------------------
+    #
+    # Guardados em ESTRUTURA e nao em HTML: sao texto que o cliente edita no
+    # portal, e um campo de HTML editavel e um campo por onde entra qualquer
+    # coisa na pagina de compra. Assim cada seccao e um titulo e uma lista de
+    # paragrafos, e nada do que la for escrito pode ser interpretado como
+    # marcacao.
+    #
+    # Formato: [{"title": str, "items": [str, ...]}, ...]
+    terms_sections = models.JSONField(default=list, blank=True)
+    terms_intro = models.TextField(blank=True)
+    terms_closing = models.TextField(blank=True)
+    # A versao viaja com cada compra. Sem ela, saber-se-ia que o passageiro
+    # aceitou "os termos" — mas nao QUAIS, e uns termos alterados depois da
+    # compra passariam a valer para tras.
+    terms_version = models.CharField(max_length=32, blank=True)
+    terms_updated_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         verbose_name = "Configuracao de marca"
         verbose_name_plural = "Configuracao de marca"
@@ -61,6 +88,10 @@ class BrandingSettings(BaseModel):
     def load(cls) -> "BrandingSettings":
         obj, _ = cls.objects.get_or_create(key="default")
         return obj
+
+    @property
+    def has_terms(self) -> bool:
+        return bool(self.terms_sections)
 
     def file_url(self, field_name: str, request=None) -> str:
         """URL absoluta de um slot de logo (string vazia quando nao definido)."""

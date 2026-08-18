@@ -9,13 +9,39 @@ import 'logger.dart';
 
 /// Marca configuravel no portal (apps/branding). Cada slot e uma URL absoluta
 /// (ou "" quando nao definido). Cai sempre para o asset embutido na app.
+/// Uma seccao dos Termos e Condicoes: um titulo e paragrafos.
+class TermsSection {
+  const TermsSection(this.title, this.items);
+  final String title;
+  final List<String> items;
+}
+
 class Branding {
-  const Branding(this.platformName, this.logos, [this.contacts = const {}]);
+  const Branding(
+    this.platformName,
+    this.logos, [
+    this.contacts = const {},
+    this.terms = const [],
+    this.termsIntro = '',
+    this.termsClosing = '',
+    this.termsVersion = '',
+  ]);
 
   final String platformName;
   final Map<String, String> logos; // chave = <slot>_url
   /// Contactos configurados no portal e impressos no bilhete.
   final Map<String, String> contacts;
+  /// Termos e Condicoes do operador. Vazio = nao ha nada para aceitar.
+  final List<TermsSection> terms;
+  final String termsIntro;
+  final String termsClosing;
+  /// A versao viaja com a compra: guardar so um "sim" nao diria QUE termos
+  /// foram aceites, e uns termos alterados depois valeriam para tras.
+  final String termsVersion;
+
+  bool get hasTerms => terms.isNotEmpty;
+
+  String get companyName => (contacts['company_name'] ?? '').trim();
 
   static const empty = Branding('BuzUp', {});
 
@@ -28,7 +54,10 @@ class Branding {
           ? contacts['emergency_phone']!.trim()
           : (contacts['support_phone'] ?? '').trim();
 
-  static const _contactKeys = ['emergency_phone', 'support_phone', 'support_email'];
+  static const _contactKeys = [
+    'emergency_phone', 'support_phone', 'support_email',
+    'company_name', 'company_address', 'company_website',
+  ];
 
   static Branding fromJson(Map<String, dynamic> j) {
     final logos = <String, String>{};
@@ -38,7 +67,28 @@ class Branding {
       if (k.endsWith('_url')) logos[k] = v;
       if (_contactKeys.contains(k)) contacts[k] = v;
     });
-    return Branding((j['platform_name'] as String?) ?? 'BuzUp', logos, contacts);
+
+    final seccoes = <TermsSection>[];
+    for (final raw in (j['terms_sections'] as List<dynamic>? ?? const [])) {
+      if (raw is! Map) continue;
+      final itens = (raw['items'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
+      final titulo = (raw['title'] ?? '').toString();
+      if (titulo.isEmpty || itens.isEmpty) continue;
+      seccoes.add(TermsSection(titulo, itens));
+    }
+
+    return Branding(
+      (j['platform_name'] as String?) ?? 'BuzUp',
+      logos,
+      contacts,
+      seccoes,
+      (j['terms_intro'] as String?) ?? '',
+      (j['terms_closing'] as String?) ?? '',
+      (j['terms_version'] as String?) ?? '',
+    );
   }
 }
 

@@ -6,6 +6,7 @@ import {
 import { useBranding, pickLogo } from "../../lib/branding";
 import SeatMap, { type SeatRow } from "./SeatMap";
 import StopCombo from "./StopCombo";
+import TermsDialog from "./TermsDialog";
 import "./booking.css";
 
 // `rtrips`/`rseats` são a ida e volta: o regresso é outro autocarro, com a
@@ -158,6 +159,10 @@ export default function BookingPage() {
   const [emergPhone, setEmergPhone] = useState("");
   const [email, setEmail] = useState("");
   const [method, setMethod] = useState<"mpesa" | "emola">("mpesa");
+  // Aceitação dos Termos. O servidor recusa a compra sem ela — a caixa aqui é
+  // para o passageiro poder ler antes de dizer que sim, não é a barreira.
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [termosAbertos, setTermosAbertos] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -448,6 +453,8 @@ export default function BookingPage() {
           emergency_contact_name: emergName,
           emergency_contact_phone: emergPhone.replace(/\D/g, ""),
           display_currency: currency,
+          accept_terms: aceitouTermos,
+          terms_version: branding.terms_version,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -459,6 +466,12 @@ export default function BookingPage() {
     } finally { setBusy(false); }
   };
 
+  const temTermos = (branding.terms_sections || []).length > 0;
+  // Sem duplicados: o número de apoio costuma estar também na lista geral.
+  const telefones = [...new Set([
+    ...(branding.contact_phones || []),
+    branding.support_phone,
+  ].filter(Boolean))];
   const passos = idaEVolta ? STEPS_IDA_E_VOLTA : STEPS_IDA;
   const stepIndex = passos.findIndex((s) => s.key === step);
 
@@ -920,11 +933,27 @@ export default function BookingPage() {
                   </div>
                 </div>
 
+                {temTermos ? (
+                  <label className="bzbk-accept">
+                    <input type="checkbox" checked={aceitouTermos} required
+                      onChange={(e) => setAceitouTermos(e.target.checked)} />
+                    <span>
+                      Li e aceito os{" "}
+                      <button type="button" className="bzbk-terms-link"
+                        onClick={() => setTermosAbertos(true)}>
+                        Termos e Condições
+                      </button>
+                      {branding.company_name ? ` da ${branding.company_name}` : ""}.
+                    </span>
+                  </label>
+                ) : null}
+
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button" onClick={() => setStep("pax")} disabled={busy}>
                     <ArrowLeft size={16} /> Voltar
                   </button>
-                  <button className="bzbk-btn" type="submit" disabled={busy || !phoneValid}>
+                  <button className="bzbk-btn" type="submit"
+                    disabled={busy || !phoneValid || (temTermos && !aceitouTermos)}>
                     {busy ? <><span className="bzbk-spin" /> A processar…</> : <>Pagar {money(total)} MZN</>}
                   </button>
                 </div>
@@ -960,10 +989,43 @@ export default function BookingPage() {
           </div>
         </div>
 
-        <p className="bzbk-foot">
-          Precisa de ajuda? <a href="mailto:comercial@updigital.co.mz">comercial@updigital.co.mz</a> · BusUp by UpDigital
-        </p>
+        {/* Contactos do OPERADOR, não os nossos: quem tem um problema com a
+            viagem precisa de falar com quem a faz. Vêm da marca, por isso
+            mudam no portal sem passar por aqui. */}
+        <footer className="bzbk-foot">
+          <div className="bzbk-foot-main">
+            {branding.company_name ? <b>{branding.company_name}</b> : null}
+            {branding.company_address ? <span>{branding.company_address}</span> : null}
+          </div>
+          <div className="bzbk-foot-contacts">
+            {telefones.map((n) => (
+              <a key={n} href={`tel:${n.replace(/[^+\d]/g, "")}`}>{n}</a>
+            ))}
+            {branding.support_email ? (
+              <a href={`mailto:${branding.support_email}`}>{branding.support_email}</a>
+            ) : null}
+            {branding.company_website ? (
+              <a href={`https://${branding.company_website.replace(/^https?:\/\//, "")}`}
+                target="_blank" rel="noreferrer">{branding.company_website}</a>
+            ) : null}
+          </div>
+          {temTermos ? (
+            <button type="button" className="bzbk-terms-link"
+              onClick={() => setTermosAbertos(true)}>Termos e Condições</button>
+          ) : null}
+        </footer>
       </div>
+
+      <TermsDialog
+        open={termosAbertos}
+        onClose={() => setTermosAbertos(false)}
+        sections={branding.terms_sections || []}
+        intro={branding.terms_intro}
+        closing={branding.terms_closing}
+        company={branding.company_name}
+        version={branding.terms_version}
+        updatedAt={branding.terms_updated_at || undefined}
+      />
     </div>
   );
 }

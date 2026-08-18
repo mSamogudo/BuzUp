@@ -193,6 +193,18 @@ class PurchaseTravelPassView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Comprar com a carteira e comprar na mesma: os termos valem em todas as
+        # portas. A regra vive em `apps.branding.termos`, uma so vez.
+        from apps.branding.termos import TermosNaoAceites, registar_aceitacao
+
+        try:
+            registar_aceitacao(
+                aceitou=data.get("accept_terms", False),
+                versao_enviada=data.get("terms_version", ""),
+            )
+        except TermosNaoAceites as e:
+            return Response({"detail": e.detail}, status=e.status_code)
+
         try:
             travel_pass = purchase_travel_pass(
                 passenger=passenger,

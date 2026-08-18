@@ -5497,6 +5497,28 @@ html[data-theme="dark"] .otp-digit:focus {
 .bzsl-aisle { height: 26px; }
 .bzsl-note { margin: 6px 0 0; font-size: 12px; color: var(--app-text-muted); }
 
+/* --- Editor dos Termos e Condições -------------------------------------- */
+.bzterms-phones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.bzterms-phone { display: inline-flex; align-items: center; gap: 4px; }
+.bzterms-phone input { width: 168px; }
+
+.bzterms-sections { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.bzterms-editor {
+  padding: 14px; border-radius: 14px;
+  border: 1px solid var(--app-border); background: var(--app-surface-soft);
+}
+.bzterms-editor-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.bzterms-num {
+  display: grid; place-items: center; width: 26px; height: 26px; flex: none;
+  border-radius: 8px; background: var(--app-accent); color: #fff;
+  font-size: 12px; font-weight: 800;
+}
+.bzterms-title { flex: 1; min-width: 0; font-weight: 700; }
+.bzterms-editor-actions { display: inline-flex; gap: 4px; flex: none; }
+.bzterms-item { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 8px; }
+.bzterms-item textarea { flex: 1; min-width: 0; }
+.bzterms-item .bzsched-time-x { margin-top: 6px; }
+
 /* === Programar viagens ================================================== */
 /* Duas colunas: o QUE se cria à esquerda, o QUANDO à direita. Nada muda de
    sítio enquanto se trabalha, e por isso não há rolagem a meio da tarefa. */

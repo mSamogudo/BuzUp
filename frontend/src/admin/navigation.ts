@@ -59,6 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
   { i18nKey: "reports", path: "/app/reports", icon: BarChart3, caps: ["reports.read"] },
   { i18nKey: "audit", path: "/app/audit", icon: FileText, caps: ["audit.read"] },
   { i18nKey: "branding", path: "/app/branding", icon: Palette, caps: ["settings.manage"] },
+  { i18nKey: "terms", path: "/app/terms", icon: FileText, caps: ["settings.manage"] },
 ];
 /** Itens visíveis para o utilizador: superuser vê tudo; senão basta uma capability. */
 export function visibleNavItems(items: NavItem[], caps: string[], isSuperuser: boolean): NavItem[] {

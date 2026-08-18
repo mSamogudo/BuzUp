@@ -37,9 +37,14 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
             # mostram-nos a quem precisa deles, e nao ha nada de sensivel num
             # numero de apoio.
             "emergency_phone", "support_phone", "support_email",
+            "company_name", "company_address", "company_website", "contact_phones",
+            # Termos: publicos por definicao — quem compra tem de os poder ler
+            # ANTES de aceitar, e nao depois de se autenticar.
+            "terms_sections", "terms_intro", "terms_closing",
+            "terms_version", "terms_updated_at",
             *LOGO_FIELDS,
         )
-        read_only_fields = ("updated_at",)
+        read_only_fields = ("updated_at", "terms_updated_at")
         extra_kwargs = {
             name: {"write_only": True, "required": False, "allow_null": True}
             for name in LOGO_FIELDS
@@ -67,6 +72,45 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_terms_sections(self, value):
+        """Cada seccao tem de ter titulo e pelo menos um paragrafo.
+
+        Sem isto, uma seccao vazia gravada por engano aparecia na pagina de
+        compra como um titulo sem nada por baixo — e o passageiro aceitava
+        termos com um buraco.
+        """
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Formato invalido.")
+        if len(value) > 40:
+            raise serializers.ValidationError("Demasiadas seccoes (maximo 40).")
+        seccoes = TermosSeccaoSerializer(data=value, many=True)
+        seccoes.is_valid(raise_exception=True)
+        return seccoes.validated_data
+
+    def update(self, instance, validated_data):
+        """Mexer nos termos carimba a data e sobe a versao.
+
+        A versao viaja com cada compra: sem a subir, uma alteracao feita hoje
+        passava a valer para quem aceitou os termos de ontem — e ninguem
+        conseguiria dizer o que essa pessoa aceitou.
+        """
+        from django.utils import timezone
+
+        campos_dos_termos = {"terms_sections", "terms_intro", "terms_closing"}
+        mexeu = any(
+            campo in validated_data and validated_data[campo] != getattr(instance, campo)
+            for campo in campos_dos_termos
+        )
+        instancia = super().update(instance, validated_data)
+        if mexeu and "terms_version" not in validated_data:
+            agora = timezone.now()
+            instancia.terms_updated_at = agora
+            instancia.terms_version = agora.strftime("%Y-%m-%d.%H%M")
+            instancia.save(update_fields=["terms_updated_at", "terms_version", "updated_at"])
+        return instancia
+
     # Aplica a mesma validacao de extensao a todos os slots de logo.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -79,3 +123,17 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
         for name in LOGO_FIELDS:
             data[f"{name}_url"] = instance.file_url(name, request)
         return data
+
+
+class TermosSeccaoSerializer(serializers.Serializer):
+    """Uma seccao dos termos: um titulo e paragrafos.
+
+    Estrutura, e nao HTML. Um campo de HTML editavel no portal seria um campo
+    por onde entra qualquer coisa na pagina de compra publica — e quem edita a
+    marca nao devia poder injectar marcacao no browser de quem compra.
+    """
+
+    title = serializers.CharField(max_length=160)
+    items = serializers.ListField(
+        child=serializers.CharField(max_length=2000), min_length=1, max_length=40,
+    )

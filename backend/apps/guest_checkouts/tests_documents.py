@@ -148,6 +148,9 @@ class CompraBase(TestCase):
             "origin_stop_id": self.origem.id,
             "destination_stop_id": self.destino.id,
             "quantity": len(passageiros) or 1,
+            # Ha termos publicados (semeados por migracao): sem aceitar, o
+            # servidor recusa — que e o que se quer.
+            "accept_terms": True,
             "passengers": passageiros,
             **extra,
         }

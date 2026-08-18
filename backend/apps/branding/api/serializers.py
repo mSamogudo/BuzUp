@@ -41,6 +41,7 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
             # Termos: publicos por definicao — quem compra tem de os poder ler
             # ANTES de aceitar, e nao depois de se autenticar.
             "terms_sections", "terms_intro", "terms_closing",
+            "terms_sections_en", "terms_intro_en", "terms_closing_en",
             "terms_version", "terms_updated_at",
             *LOGO_FIELDS,
         )
@@ -72,7 +73,13 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def validate_terms_sections_en(self, value):
+        return self._validar_seccoes(value)
+
     def validate_terms_sections(self, value):
+        return self._validar_seccoes(value)
+
+    def _validar_seccoes(self, value):
         """Cada seccao tem de ter titulo e pelo menos um paragrafo.
 
         Sem isto, uma seccao vazia gravada por engano aparecia na pagina de
@@ -98,7 +105,10 @@ class BrandingSettingsSerializer(serializers.ModelSerializer):
         """
         from django.utils import timezone
 
-        campos_dos_termos = {"terms_sections", "terms_intro", "terms_closing"}
+        campos_dos_termos = {
+            "terms_sections", "terms_intro", "terms_closing",
+            "terms_sections_en", "terms_intro_en", "terms_closing_en",
+        }
         mexeu = any(
             campo in validated_data and validated_data[campo] != getattr(instance, campo)
             for campo in campos_dos_termos

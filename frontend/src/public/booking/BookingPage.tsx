@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, Bus, Calendar, CheckCircle2, Download, MapPin, Repeat, Search, Users,
+  ArrowLeft, ArrowRight, Bus, Calendar, CheckCircle2, Download, MapPin, Moon,
+  Repeat, Search, Sun, Users,
 } from "lucide-react";
 import { useBranding, pickLogo } from "../../lib/branding";
+import { useUi } from "../../ui/UiPreferences";
+import { bt, type BookingKey } from "./booking.i18n";
 import SeatMap, { type SeatRow } from "./SeatMap";
 import StopCombo from "./StopCombo";
 import TermsDialog from "./TermsDialog";
@@ -13,25 +16,25 @@ import "./booking.css";
 // sua lotação e o seu lugar, por isso escolhe-se à parte.
 type Step = "search" | "trips" | "seats" | "rtrips" | "rseats" | "pax" | "pay" | "done";
 
-const STEPS_IDA: { key: Step; label: string }[] = [
-  { key: "search", label: "Viagem" },
-  { key: "trips", label: "Partida" },
-  { key: "seats", label: "Lugares" },
-  { key: "pax", label: "Passageiros" },
-  { key: "pay", label: "Pagamento" },
+const CHAVES_IDA: { key: Step; label: BookingKey }[] = [
+  { key: "search", label: "stepTrip" },
+  { key: "trips", label: "stepDeparture" },
+  { key: "seats", label: "stepSeats" },
+  { key: "pax", label: "stepPax" },
+  { key: "pay", label: "stepPay" },
 ];
 
 /** Com regresso, as etapas do caminho de volta entram na barra de progresso.
  *  Escondê-las fazia o passageiro pensar que estava a um passo do fim quando
  *  ainda lhe faltavam dois. */
-const STEPS_IDA_E_VOLTA: { key: Step; label: string }[] = [
-  { key: "search", label: "Viagem" },
-  { key: "trips", label: "Ida" },
-  { key: "seats", label: "Lugares" },
-  { key: "rtrips", label: "Volta" },
-  { key: "rseats", label: "Lugares" },
-  { key: "pax", label: "Passageiros" },
-  { key: "pay", label: "Pagamento" },
+const CHAVES_IDA_E_VOLTA: { key: Step; label: BookingKey }[] = [
+  { key: "search", label: "stepTrip" },
+  { key: "trips", label: "stepOutbound" },
+  { key: "seats", label: "stepSeats" },
+  { key: "rtrips", label: "stepReturn" },
+  { key: "rseats", label: "stepSeats" },
+  { key: "pax", label: "stepPax" },
+  { key: "pay", label: "stepPay" },
 ];
 
 interface StopOpt { id: number; code: string; name: string }
@@ -85,7 +88,9 @@ function filterDoc(raw: string, rule: DocRule) {
 async function getJson(path: string) {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" } });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.detail || "Não foi possível contactar o servidor.");
+  // Sem mensagem própria: quem chama tem uma traduzida para o caso. Esta
+  // função vive fora do componente e não alcança o dicionário.
+  if (!res.ok) throw new Error(body.detail || "");
   return body;
 }
 
@@ -107,6 +112,10 @@ function longDate(iso: string) {
 
 export default function BookingPage() {
   const { branding } = useBranding();
+  // Idioma e tema vêm do mesmo sítio que o resto da aplicação: quem escolheu
+  // inglês no portal não devia voltar ao português ao clicar em "comprar".
+  const { locale, setLocale, theme, toggleTheme } = useUi();
+  const tr = (k: Parameters<typeof bt>[1], v?: Record<string, string | number>) => bt(locale, k, v);
   const logo = pickLogo(branding.sidebar_logo_url, branding.primary_logo_url);
 
   const [step, setStep] = useState<Step>("search");
@@ -184,7 +193,7 @@ export default function BookingPage() {
       : (t.route_name || t.route_code);
 
   useEffect(() => {
-    document.title = "Comprar bilhete · BusUp";
+    document.title = `${tr("pageTitle")} · ${branding.platform_name || "BusUp"}`;
     // sellable=1: só origens/destinos com partidas futuras à venda.
     getJson("/api/public/trips/?sellable=1")
       .then((d) => setStops(d.stops || []))
@@ -230,7 +239,7 @@ export default function BookingPage() {
     : `${money(mzn)} MZN`);
 
   const currencyToggle = otherCurrencies.length > 0 && (
-    <div className="bzbk-currency" role="group" aria-label="Moeda dos preços">
+    <div className="bzbk-currency" role="group" aria-label={tr("currencyGroup")}>
       {["MZN", ...otherCurrencies].map((c) => (
         <button key={c} type="button" aria-pressed={currency === c}
           className={`bzbk-currency-btn${currency === c ? " is-on" : ""}`}
@@ -261,7 +270,7 @@ export default function BookingPage() {
       setTrips(data.trips || []);
       setStep("trips");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro na pesquisa.");
+      setError(err instanceof Error && err.message ? err.message : tr("errSearch"));
     } finally { setBusy(false); }
   }, []);
 
@@ -304,7 +313,7 @@ export default function BookingPage() {
       setStep("pax");
       startPax([], Boolean(d.seat_selection));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível carregar os lugares.");
+      setError(err instanceof Error && err.message ? err.message : tr("errSeats"));
     } finally { setBusy(false); }
   };
 
@@ -317,7 +326,7 @@ export default function BookingPage() {
       setRtrips(data.trips || []);
       setStep("rtrips");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível procurar o regresso.");
+      setError(err instanceof Error && err.message ? err.message : tr("errReturnSearch"));
     } finally { setBusy(false); }
   }, [destination, origin, returnDate]);
 
@@ -330,7 +339,7 @@ export default function BookingPage() {
       setStep("pax");
       startPax(picked, needsIdentity, []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível carregar os lugares do regresso.");
+      setError(err instanceof Error && err.message ? err.message : tr("errReturnSeats"));
     } finally { setBusy(false); }
   };
 
@@ -401,7 +410,7 @@ export default function BookingPage() {
   /// o comprador sem saber o que corrigir — e o erro só aparecia quando o
   /// servidor recusava a compra, já depois de escolher o lugar.
   const paxMissing = useMemo(() => {
-    if (pax.length === 0) return "Indique quem viaja.";
+    if (pax.length === 0) return tr("errWhoTravels");
     for (let i = 0; i < pax.length; i++) {
       const p = pax[i];
       const quem = pax.length === 1 ? "" : ` do passageiro ${i + 1}`;
@@ -410,9 +419,9 @@ export default function BookingPage() {
       if (erro) return pax.length === 1 ? erro : `Passageiro ${i + 1}: ${erro}`;
     }
     if (needsIdentity) {
-      if (emergName.trim().length < 3) return "Indique o nome do contacto de emergência.";
+      if (emergName.trim().length < 3) return tr("errEmergencyName");
       if (!/^\d{9}$/.test(emergPhone.replace(/\D/g, ""))) {
-        return "Indique o telefone do contacto de emergência (9 dígitos).";
+        return tr("errEmergencyPhone");
       }
     }
     return "";
@@ -458,21 +467,26 @@ export default function BookingPage() {
         }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || "Não foi possível concluir a compra.");
+      if (!res.ok) throw new Error(body.detail || tr("errPurchase"));
       setResult(body);
       setStep("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro no pagamento.");
+      setError(err instanceof Error && err.message ? err.message : tr("errPayment"));
     } finally { setBusy(false); }
   };
 
   const temTermos = (branding.terms_sections || []).length > 0;
+  // Termos na língua escolhida, com recurso à portuguesa: mais vale mostrá-los
+  // na língua errada do que não mostrar termos nenhuns a quem vai aceitar.
+  const termos = (locale === "en" && (branding.terms_sections_en || []).length > 0)
+    ? { sections: branding.terms_sections_en, intro: branding.terms_intro_en, closing: branding.terms_closing_en }
+    : { sections: branding.terms_sections || [], intro: branding.terms_intro, closing: branding.terms_closing };
   // Sem duplicados: o número de apoio costuma estar também na lista geral.
   const telefones = [...new Set([
     ...(branding.contact_phones || []),
     branding.support_phone,
   ].filter(Boolean))];
-  const passos = idaEVolta ? STEPS_IDA_E_VOLTA : STEPS_IDA;
+  const passos = idaEVolta ? CHAVES_IDA_E_VOLTA : CHAVES_IDA;
   const stepIndex = passos.findIndex((s) => s.key === step);
 
   return (
@@ -485,18 +499,31 @@ export default function BookingPage() {
                 ? <img src={logo} alt="BusUp" style={{ height: 30, display: "block" }} />
                 : <strong style={{ fontSize: 22 }}>Bus<span style={{ color: "#2D8CF0" }}>Up</span></strong>}
             </Link>
-            <Link to="/" className="bzbk-kicker" style={{ color: "#a9c2dc" }}>Voltar ao site</Link>
+            <div className="bzbk-top-controls">
+              <div className="bzbk-lang" role="group" aria-label="PT / EN">
+                <button type="button" aria-pressed={locale === "pt"}
+                  onClick={() => setLocale("pt")}>PT</button>
+                <button type="button" aria-pressed={locale === "en"}
+                  onClick={() => setLocale("en")}>EN</button>
+              </div>
+              <button type="button" className="bzbk-theme" onClick={toggleTheme}
+                aria-label={theme === "dark" ? tr("lightTheme") : tr("darkTheme")}
+                title={theme === "dark" ? tr("lightTheme") : tr("darkTheme")}>
+                {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+              </button>
+              <Link to="/" className="bzbk-kicker" style={{ color: "#a9c2dc" }}>{tr("backToSite")}</Link>
+            </div>
           </div>
           <div style={{ position: "relative", zIndex: 2, marginTop: 18 }}>
-            <div className="bzbk-kicker">Bilhetes interurbanos</div>
-            <h1 className="bzbk-title">Compre a sua viagem</h1>
-            <p className="bzbk-sub">Escolha a data, o lugar e receba o bilhete no telemóvel.</p>
+            <div className="bzbk-kicker">{tr("kicker")}</div>
+            <h1 className="bzbk-title">{tr("title")}</h1>
+            <p className="bzbk-sub">{tr("sub")}</p>
           </div>
-          <nav className="bzbk-steps" aria-label="Etapas da compra">
+          <nav className="bzbk-steps" aria-label={tr("steps")}>
             {passos.map((s, i) => (
               <span key={s.key}
                 className={`bzbk-step${s.key === step ? " is-active" : ""}${i < stepIndex ? " is-done" : ""}`}>
-                <b>{i < stepIndex ? "✓" : i + 1}</b>{s.label}
+                <b>{i < stepIndex ? "✓" : i + 1}</b>{tr(s.label)}
               </span>
             ))}
           </nav>
@@ -510,37 +537,37 @@ export default function BookingPage() {
 
             {step === "search" && (
               <form onSubmit={search}>
-                <h2 className="bzbk-h2">Para onde vai?</h2>
-                <p className="bzbk-lead">Indique o percurso, a data da viagem e quantos bilhetes precisa.</p>
+                <h2 className="bzbk-h2">{tr("whereTo")}</h2>
+                <p className="bzbk-lead">{tr("searchLead")}</p>
 
-                <div className="bzbk-triptype" role="radiogroup" aria-label="Tipo de bilhete">
+                <div className="bzbk-triptype" role="radiogroup" aria-label={tr("ticketType")}>
                   <button type="button" role="radio" aria-checked={!idaEVolta}
                     className={`bzbk-triptype-opt${!idaEVolta ? " is-on" : ""}`}
                     onClick={() => escolherTipo("ida")}>
                     <ArrowRight size={15} />
-                    <span>Só ida</span>
+                    <span>{tr("oneWay")}</span>
                   </button>
                   <button type="button" role="radio" aria-checked={idaEVolta}
                     className={`bzbk-triptype-opt${idaEVolta ? " is-on" : ""}`}
                     onClick={() => escolherTipo("idaevolta")}>
                     <Repeat size={15} />
-                    <span>Ida e volta</span>
+                    <span>{tr("roundTrip")}</span>
                   </button>
                 </div>
 
                 <div className="bzbk-grid">
                   <div className="bzbk-field bzbk-field-wide">
-                    <label className="bzbk-label" htmlFor="o"><MapPin size={12} style={{ verticalAlign: -2 }} /> Origem</label>
-                    <StopCombo id="o" onChange={setOrigin} placeholder="Escreva para procurar"
+                    <label className="bzbk-label" htmlFor="o"><MapPin size={12} style={{ verticalAlign: -2 }} /> {tr("origin")}</label>
+                    <StopCombo id="o" onChange={setOrigin} placeholder={tr("searchStops")}
                       stops={stops} value={origin} />
                   </div>
                   <div className="bzbk-field bzbk-field-wide">
-                    <label className="bzbk-label" htmlFor="d"><MapPin size={12} style={{ verticalAlign: -2 }} /> Destino</label>
+                    <label className="bzbk-label" htmlFor="d"><MapPin size={12} style={{ verticalAlign: -2 }} /> {tr("destination")}</label>
                     <StopCombo exclude={origin} id="d" onChange={setDestination}
-                      placeholder="Escreva para procurar" stops={stops} value={destination} />
+                      placeholder={tr("searchStops")} stops={stops} value={destination} />
                   </div>
                   <div className="bzbk-field">
-                    <label className="bzbk-label" htmlFor="dt"><Calendar size={12} style={{ verticalAlign: -2 }} /> Data de ida</label>
+                    <label className="bzbk-label" htmlFor="dt"><Calendar size={12} style={{ verticalAlign: -2 }} /> {tr("outboundDate")}</label>
                     <input id="dt" className="bzbk-input" type="date" value={date} min={today} required
                       onChange={(e) => setDate(e.target.value)} />
                   </div>
@@ -557,11 +584,11 @@ export default function BookingPage() {
                     </div>
                   ) : null}
                   <div className="bzbk-field">
-                    <label className="bzbk-label" htmlFor="q"><Users size={12} style={{ verticalAlign: -2 }} /> Passageiros</label>
+                    <label className="bzbk-label" htmlFor="q"><Users size={12} style={{ verticalAlign: -2 }} /> {tr("passengersCount")}</label>
                     <select id="q" className="bzbk-select" value={qty}
                       onChange={(e) => setQty(Number(e.target.value))}>
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <option key={n} value={n}>{n} {n === 1 ? "passageiro" : "passageiros"}</option>
+                        <option key={n} value={n}>{n} {n === 1 ? tr("passenger") : tr("passengersPlural")}</option>
                       ))}
                     </select>
                   </div>
@@ -570,7 +597,7 @@ export default function BookingPage() {
                   <span />
                   <button className="bzbk-btn" type="submit"
                     disabled={busy || !origin || !destination || !date || (idaEVolta && !returnDate)}>
-                    {busy ? <span className="bzbk-spin" /> : <Search size={17} />} Procurar partidas
+                    {busy ? <span className="bzbk-spin" /> : <Search size={17} />} {tr("searchTrips")}
                   </button>
                 </div>
               </form>
@@ -579,13 +606,13 @@ export default function BookingPage() {
             {step === "trips" && (
               <div>
                 <div className="bzbk-h2-row">
-                  <h2 className="bzbk-h2">Partidas disponíveis</h2>
+                  <h2 className="bzbk-h2">{tr("tripsTitle")}</h2>
                   {currencyToggle}
                 </div>
-                <p className="bzbk-lead">{date && longDate(date)} · {qty} {qty === 1 ? "bilhete" : "bilhetes"}</p>
+                <p className="bzbk-lead">{date && longDate(date)} · {qty} {qty === 1 ? tr("ticket") : tr("ticketsPlural")}</p>
                 {trips.length === 0 && (
                   <div className="bzbk-notice warn">
-                    Não há partidas nesta data para o percurso escolhido. Experimente outro dia.
+                    {tr("noTrips")}
                   </div>
                 )}
                 {trips.map((t) => {
@@ -610,24 +637,24 @@ export default function BookingPage() {
                           {!t.on_sale
                             ? <span className="bzbk-seats-none">{t.sale_unavailable_reason}</span>
                             : left === null
-                              ? "Lugares disponíveis"
+                              ? tr("seatsAvailable")
                               : left === 0
-                                ? <span className="bzbk-seats-none">Esgotado</span>
+                                ? <span className="bzbk-seats-none">{tr("soldOut")}</span>
                                 : left <= 5
-                                  ? <span className="bzbk-seats-few">Só {left} lugares</span>
-                                  : <span className="bzbk-seats-left">{left} lugares livres</span>}
+                                  ? <span className="bzbk-seats-few">{tr("onlyNSeats", { n: left })}</span>
+                                  : <span className="bzbk-seats-left">{tr("nSeatsLeft", { n: left })}</span>}
                         </span>
                       </span>
                       <span className="bzbk-trip-price">
                         {priceLabel(Number(t.fare_amount || 0))}
-                        <small>{rate ? `${money(t.fare_amount)} MZN · por pessoa` : "por pessoa"}</small>
+                        <small>{rate ? `${money(t.fare_amount)} MZN · ${tr("perPerson")}` : tr("perPerson")}</small>
                       </span>
                     </button>
                   );
                 })}
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button" onClick={() => setStep("search")}>
-                    <ArrowLeft size={16} /> Alterar pesquisa
+                    <ArrowLeft size={16} /> {tr("changeSearch")}
                   </button>
                 </div>
               </div>
@@ -635,21 +662,21 @@ export default function BookingPage() {
 
             {step === "seats" && trip && (
               <div>
-                <h2 className="bzbk-h2">Escolha {qty === 1 ? "o seu lugar" : `os ${qty} lugares`}</h2>
+                <h2 className="bzbk-h2">{qty === 1 ? tr("pickSeat") : tr("pickSeats", { n: qty })}</h2>
                 <p className="bzbk-lead">
-                  {percurso(trip)} · {date && longDate(date)} · partida às {timeOf(trip.departure)}
+                  {percurso(trip)} · {date && longDate(date)} · {tr("departsAt")} {timeOf(trip.departure)}
                 </p>
                 {hasSeatMap
                   ? <SeatMap rows={rows} picked={picked} maxPick={qty} onToggle={toggleSeat} />
-                  : <div className="bzbk-notice info">Esta partida não tem lugares marcados.</div>}
+                  : <div className="bzbk-notice info">{tr("noSeatMap")}</div>}
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button" onClick={() => setStep("trips")}>
-                    <ArrowLeft size={16} /> Outra partida
+                    <ArrowLeft size={16} /> {tr("otherTrip")}
                   </button>
                   <button className="bzbk-btn" type="button" disabled={picked.length !== qty} onClick={goToPax}>
                     {picked.length === qty
-                      ? <>Continuar <ArrowRight size={16} /></>
-                      : `Falta escolher ${qty - picked.length}`}
+                      ? <>{tr("continue")} <ArrowRight size={16} /></>
+                      : tr("stillToPick", { n: qty - picked.length })}
                   </button>
                 </div>
               </div>
@@ -658,15 +685,15 @@ export default function BookingPage() {
             {step === "rtrips" && (
               <div>
                 <div className="bzbk-h2-row">
-                  <h2 className="bzbk-h2">Partidas de regresso</h2>
+                  <h2 className="bzbk-h2">{tr("returnTripsTitle")}</h2>
                   {currencyToggle}
                 </div>
                 <p className="bzbk-lead">
-                  {returnDate && longDate(returnDate)} · o mesmo percurso ao contrário
+                  {returnDate && longDate(returnDate)} · {tr("returnLead")}
                 </p>
                 {rtrips.length === 0 && (
                   <div className="bzbk-notice warn">
-                    Não há regresso nesta data. Escolha outro dia, ou compre só a ida.
+                    {tr("noReturn")}
                   </div>
                 )}
                 {rtrips.map((t) => {
@@ -683,17 +710,17 @@ export default function BookingPage() {
                           {!t.on_sale
                             ? <span className="bzbk-seats-none">{t.sale_unavailable_reason}</span>
                             : left === null
-                              ? "Lugares disponíveis"
+                              ? tr("seatsAvailable")
                               : left === 0
-                                ? <span className="bzbk-seats-none">Esgotado</span>
+                                ? <span className="bzbk-seats-none">{tr("soldOut")}</span>
                                 : left <= 5
-                                  ? <span className="bzbk-seats-few">Só {left} lugares</span>
-                                  : <span className="bzbk-seats-left">{left} lugares livres</span>}
+                                  ? <span className="bzbk-seats-few">{tr("onlyNSeats", { n: left })}</span>
+                                  : <span className="bzbk-seats-left">{tr("nSeatsLeft", { n: left })}</span>}
                         </span>
                       </span>
                       <span className="bzbk-trip-price">
                         {priceLabel(Number(t.fare_amount || 0))}
-                        <small>{rate ? `${money(t.fare_amount)} MZN · por pessoa` : "por pessoa"}</small>
+                        <small>{rate ? `${money(t.fare_amount)} MZN · ${tr("perPerson")}` : tr("perPerson")}</small>
                       </span>
                     </button>
                   );
@@ -701,12 +728,12 @@ export default function BookingPage() {
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button"
                     onClick={() => setStep(hasSeatMap ? "seats" : "trips")}>
-                    <ArrowLeft size={16} /> Voltar
+                    <ArrowLeft size={16} /> {tr("back")}
                   </button>
                   {/* Desistir do regresso não pode obrigar a recomeçar tudo. */}
                   <button className="bzbk-btn ghost" type="button"
                     onClick={() => { escolherTipo("ida"); startPax(picked, needsIdentity, []); setStep("pax"); }}>
-                    Comprar só a ida
+                    {tr("buyOneWayInstead")}
                   </button>
                 </div>
               </div>
@@ -714,20 +741,20 @@ export default function BookingPage() {
 
             {step === "rseats" && rtrip && (
               <div>
-                <h2 className="bzbk-h2">Lugares do regresso</h2>
+                <h2 className="bzbk-h2">{tr("returnSeats")}</h2>
                 <p className="bzbk-lead">
-                  {percurso(rtrip)} · {returnDate && longDate(returnDate)} · partida às {timeOf(rtrip.departure)}
+                  {percurso(rtrip)} · {returnDate && longDate(returnDate)} · {tr("departsAt")} {timeOf(rtrip.departure)}
                 </p>
                 <SeatMap rows={rrows} picked={rpicked} maxPick={qty} onToggle={toggleReturnSeat} />
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button" onClick={() => setStep("rtrips")}>
-                    <ArrowLeft size={16} /> Outro regresso
+                    <ArrowLeft size={16} /> {tr("otherReturn")}
                   </button>
                   <button className="bzbk-btn" type="button"
                     disabled={rpicked.length !== qty} onClick={goToPaxFromReturn}>
                     {rpicked.length === qty
-                      ? <>Continuar <ArrowRight size={16} /></>
-                      : `Falta escolher ${qty - rpicked.length}`}
+                      ? <>{tr("continue")} <ArrowRight size={16} /></>
+                      : tr("stillToPick", { n: qty - rpicked.length })}
                   </button>
                 </div>
               </div>
@@ -735,7 +762,7 @@ export default function BookingPage() {
 
             {step === "pax" && trip && (
               <div>
-                <h2 className="bzbk-h2">Quem viaja?</h2>
+                <h2 className="bzbk-h2">{tr("whoTravels")}</h2>
                 <p className="bzbk-lead">
                   {needsIdentity
                     ? "O bilhete é nominal. Em viagens internacionais o documento é conferido na fronteira."
@@ -831,7 +858,7 @@ export default function BookingPage() {
                       <div className="bzbk-field bzbk-field-wide">
                         <label className="bzbk-label">Nome</label>
                         <input className="bzbk-input" value={emergName} required
-                          placeholder="Ex.: Maria Sitoe"
+                          placeholder={tr("nameExample")}
                           onChange={(e) => setEmergName(e.target.value)} />
                       </div>
                       <div className="bzbk-field bzbk-field-wide">
@@ -849,7 +876,7 @@ export default function BookingPage() {
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button"
                     onClick={() => setStep(hasSeatMap ? "seats" : "trips")}>
-                    <ArrowLeft size={16} /> Voltar
+                    <ArrowLeft size={16} /> {tr("back")}
                   </button>
                   <button className="bzbk-btn" type="button" disabled={!paxValid} onClick={() => setStep("pay")}>
                     Continuar <ArrowRight size={16} />
@@ -864,22 +891,22 @@ export default function BookingPage() {
                   <h2 className="bzbk-h2">Pagamento</h2>
                   {currencyToggle}
                 </div>
-                <p className="bzbk-lead">Confirme os dados e pague com a sua carteira móvel.</p>
+                <p className="bzbk-lead">{tr("payLead")}</p>
 
                 <div className="bzbk-summary">
-                  <div className="bzbk-sum-row"><span>{rtrip ? "Ida" : "Percurso"}</span><b>{percurso(trip)}</b></div>
-                  <div className="bzbk-sum-row"><span>Partida</span><b>{date && longDate(date)} · {timeOf(trip.departure)}</b></div>
+                  <div className="bzbk-sum-row"><span>{rtrip ? tr("outbound") : tr("route")}</span><b>{percurso(trip)}</b></div>
+                  <div className="bzbk-sum-row"><span>{tr("departure")}</span><b>{date && longDate(date)} · {timeOf(trip.departure)}</b></div>
                   {rtrip ? (
                     <>
-                      <div className="bzbk-sum-row"><span>Volta</span><b>{percurso(rtrip)}</b></div>
+                      <div className="bzbk-sum-row"><span>{tr("returnLeg")}</span><b>{percurso(rtrip)}</b></div>
                       <div className="bzbk-sum-row">
-                        <span>Partida da volta</span>
+                        <span>{tr("returnDeparture")}</span>
                         <b>{returnDate && longDate(returnDate)} · {timeOf(rtrip.departure)}</b>
                       </div>
                     </>
                   ) : null}
                   <div className="bzbk-sum-row">
-                    <span>Passageiros</span>
+                    <span>{tr("passengersCount")}</span>
                     <b>{pax.map((p) => p.name
                       + (p.seat ? ` (${p.seat}${p.return_seat ? ` / ${p.return_seat}` : ""})` : "")).join(", ")}</b>
                   </div>
@@ -893,10 +920,10 @@ export default function BookingPage() {
                       <b>{rate ? priceLabel(unitVolta * qty) : `${money(unitVolta * qty)} MZN`}</b>
                     </div>
                   ) : null}
-                  <div className="bzbk-sum-total"><span>TOTAL A PAGAR</span><b>{money(total)} MZN</b></div>
+                  <div className="bzbk-sum-total"><span>{tr("totalToPay")}</span><b>{money(total)} MZN</b></div>
                   {rate && (
                     <div className="bzbk-sum-row bzbk-sum-fx">
-                      <span>Equivalente em {currency}</span>
+                      <span>{tr("equivalentIn")} {currency}</span>
                       <b>{money(inDisplay(total))} {currency} · 1 {currency} = {money(rate)} MZN</b>
                     </div>
                   )}
@@ -921,14 +948,14 @@ export default function BookingPage() {
 
                 <div className="bzbk-grid">
                   <div className="bzbk-field bzbk-field-wide">
-                    <label className="bzbk-label" htmlFor="ph">Telemóvel para pagamento</label>
+                    <label className="bzbk-label" htmlFor="ph">{tr("payPhone")}</label>
                     <input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
                       value={phone} required onChange={(e) => setPhone(e.target.value)} />
-                    <span className="bzbk-hint">Vai receber um pedido de PIN neste número.</span>
+                    <span className="bzbk-hint">{tr("payPhoneHint")}</span>
                   </div>
                   <div className="bzbk-field bzbk-field-wide">
-                    <label className="bzbk-label" htmlFor="em">Email (opcional)</label>
-                    <input id="em" className="bzbk-input" type="email" placeholder="para receber o bilhete"
+                    <label className="bzbk-label" htmlFor="em">{tr("emailOptional")}</label>
+                    <input id="em" className="bzbk-input" type="email" placeholder={tr("emailHint")}
                       value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
                 </div>
@@ -938,28 +965,28 @@ export default function BookingPage() {
                     <input type="checkbox" checked={aceitouTermos} required
                       onChange={(e) => setAceitouTermos(e.target.checked)} />
                     <span>
-                      Li e aceito os{" "}
+                      {tr("acceptPre")}{" "}
                       <button type="button" className="bzbk-terms-link"
                         onClick={() => setTermosAbertos(true)}>
-                        Termos e Condições
+                        {tr("termsLink")}
                       </button>
-                      {branding.company_name ? ` da ${branding.company_name}` : ""}.
+                      {branding.company_name ? ` ${tr("acceptOf")} ${branding.company_name}` : ""}.
                     </span>
                   </label>
                 ) : null}
 
                 <div className="bzbk-actions">
                   <button className="bzbk-btn ghost" type="button" onClick={() => setStep("pax")} disabled={busy}>
-                    <ArrowLeft size={16} /> Voltar
+                    <ArrowLeft size={16} /> {tr("back")}
                   </button>
                   <button className="bzbk-btn" type="submit"
                     disabled={busy || !phoneValid || (temTermos && !aceitouTermos)}>
-                    {busy ? <><span className="bzbk-spin" /> A processar…</> : <>Pagar {money(total)} MZN</>}
+                    {busy ? <><span className="bzbk-spin" /> {tr("processing")}</> : <>{tr("pay")} {money(total)} MZN</>}
                   </button>
                 </div>
                 {busy && (
                   <div className="bzbk-notice info" style={{ marginTop: 16 }}>
-                    Confirme o pagamento no seu telemóvel se lhe for pedido o PIN. Não feche esta página.
+                    {tr("pinNotice")}
                   </div>
                 )}
               </form>
@@ -977,11 +1004,11 @@ export default function BookingPage() {
                 <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
                   {result.ticket_url && (
                     <a className="bzbk-btn" href={result.ticket_url} target="_blank" rel="noreferrer">
-                      <Download size={17} /> Descarregar bilhete
+                      <Download size={17} /> {tr("downloadTicket")}
                     </a>
                   )}
                   <Link className="bzbk-btn ghost" to="/">
-                    <Bus size={17} /> Voltar ao início
+                    <Bus size={17} /> {tr("backHome")}
                   </Link>
                 </div>
               </div>
@@ -1019,9 +1046,9 @@ export default function BookingPage() {
       <TermsDialog
         open={termosAbertos}
         onClose={() => setTermosAbertos(false)}
-        sections={branding.terms_sections || []}
-        intro={branding.terms_intro}
-        closing={branding.terms_closing}
+        sections={termos.sections}
+        intro={termos.intro}
+        closing={termos.closing}
         company={branding.company_name}
         version={branding.terms_version}
         updatedAt={branding.terms_updated_at || undefined}

@@ -33,9 +33,24 @@ export default function TermsPage() {
     support_email: "", support_phone: "", emergency_phone: "",
   });
   const [telefones, setTelefones] = useState<string[]>([]);
+  // Duas línguas, dois conjuntos. O passageiro lê os termos na língua que
+  // escolheu; a inglesa vazia cai para a portuguesa no site — mais vale
+  // mostrá-los na língua errada do que não mostrar termos nenhuns.
+  const [lingua, setLingua] = useState<"pt" | "en">("pt");
   const [intro, setIntro] = useState("");
   const [fecho, setFecho] = useState("");
   const [seccoes, setSeccoes] = useState<Seccao[]>([]);
+  const [introEn, setIntroEn] = useState("");
+  const [fechoEn, setFechoEn] = useState("");
+  const [seccoesEn, setSeccoesEn] = useState<Seccao[]>([]);
+
+  const pt = lingua === "pt";
+  const introActual = pt ? intro : introEn;
+  const fechoActual = pt ? fecho : fechoEn;
+  const seccoesActuais = pt ? seccoes : seccoesEn;
+  const setIntroActual = pt ? setIntro : setIntroEn;
+  const setFechoActual = pt ? setFecho : setFechoEn;
+  const setSeccoesActuais = pt ? setSeccoes : setSeccoesEn;
   const [versao, setVersao] = useState("");
   const [actualizado, setActualizado] = useState<string | null>(null);
 
@@ -55,6 +70,9 @@ export default function TermsPage() {
         setIntro(d?.terms_intro || "");
         setFecho(d?.terms_closing || "");
         setSeccoes(d?.terms_sections || []);
+        setIntroEn(d?.terms_intro_en || "");
+        setFechoEn(d?.terms_closing_en || "");
+        setSeccoesEn(d?.terms_sections_en || []);
         setVersao(d?.terms_version || "");
         setActualizado(d?.terms_updated_at || null);
         setCarregado(true);
@@ -65,9 +83,9 @@ export default function TermsPage() {
   useEffect(() => { carregar(); }, [carregar]);
 
   const mexerSeccao = (i: number, mudanca: Partial<Seccao>) =>
-    setSeccoes((p) => p.map((s, j) => (j === i ? { ...s, ...mudanca } : s)));
+    setSeccoesActuais((p) => p.map((s, j) => (j === i ? { ...s, ...mudanca } : s)));
 
-  const mover = (i: number, delta: number) => setSeccoes((p) => {
+  const mover = (i: number, delta: number) => setSeccoesActuais((p) => {
     const j = i + delta;
     if (j < 0 || j >= p.length) return p;
     const copia = [...p];
@@ -78,9 +96,11 @@ export default function TermsPage() {
   const gravar = async () => {
     // Secções e parágrafos vazios não vão: um título sem nada por baixo
     // aparecia na página de compra como um buraco nos termos.
-    const limpas = seccoes
+    const limpar = (lista: Seccao[]) => lista
       .map((s) => ({ title: s.title.trim(), items: s.items.map((i) => i.trim()).filter(Boolean) }))
       .filter((s) => s.title && s.items.length > 0);
+    const limpas = limpar(seccoes);
+    const limpasEn = limpar(seccoesEn);
 
     if (seccoes.length > 0 && limpas.length === 0) {
       showToast("danger", "Cada secção precisa de um título e de pelo menos um parágrafo.");
@@ -95,8 +115,12 @@ export default function TermsPage() {
         terms_intro: intro.trim(),
         terms_closing: fecho.trim(),
         terms_sections: limpas,
+        terms_intro_en: introEn.trim(),
+        terms_closing_en: fechoEn.trim(),
+        terms_sections_en: limpasEn,
       });
       setSeccoes(limpas);
+      setSeccoesEn(limpasEn);
       setVersao(r?.terms_version || versao);
       setActualizado(r?.terms_updated_at || actualizado);
       showToast("success", "Termos e contactos gravados.");
@@ -179,14 +203,35 @@ export default function TermsPage() {
         description={versao
           ? `Versão em vigor: ${versao}${actualizado ? ` · actualizada a ${new Date(actualizado).toLocaleDateString("pt-PT")}` : ""}`
           : "Ainda sem versão publicada."}>
+        <div className="bzterms-langs" role="tablist" aria-label="Língua dos termos">
+          {(["pt", "en"] as const).map((l) => (
+            <button key={l} type="button" role="tab" aria-selected={lingua === l}
+              className={`bzterms-lang${lingua === l ? " is-on" : ""}`}
+              onClick={() => setLingua(l)}>
+              {l === "pt" ? "Português" : "English"}
+              <small>
+                {(l === "pt" ? seccoes : seccoesEn).length} secção(ões)
+              </small>
+            </button>
+          ))}
+        </div>
+        {!pt && seccoesEn.length === 0 ? (
+          <p className="bzsched-note">
+            Sem versão inglesa, o site mostra a portuguesa a quem escolher English —
+            mais vale os termos na língua errada do que termos nenhuns.
+          </p>
+        ) : null}
+
         <label className="field"><span>Introdução</span>
-          <textarea rows={2} value={intro}
-            placeholder="Os passageiros embarcam sujeitos a certos requerimentos das nossas condições de embarque."
-            onChange={(e) => setIntro(e.target.value)} />
+          <textarea rows={2} value={introActual}
+            placeholder={pt
+              ? "Os passageiros embarcam sujeitos a certos requerimentos das nossas condições de embarque."
+              : "Passengers are subject to the following terms:"}
+            onChange={(e) => setIntroActual(e.target.value)} />
         </label>
 
         <div className="bzterms-sections">
-          {seccoes.map((s, i) => (
+          {seccoesActuais.map((s, i) => (
             <div className="bzterms-editor" key={i}>
               <div className="bzterms-editor-head">
                 <span className="bzterms-num">{i + 1}</span>
@@ -196,9 +241,9 @@ export default function TermsPage() {
                   <button type="button" className="bzsched-time-x" aria-label="Subir"
                     disabled={i === 0} onClick={() => mover(i, -1)}><ChevronUp size={13} /></button>
                   <button type="button" className="bzsched-time-x" aria-label="Descer"
-                    disabled={i === seccoes.length - 1} onClick={() => mover(i, 1)}><ChevronDown size={13} /></button>
+                    disabled={i === seccoesActuais.length - 1} onClick={() => mover(i, 1)}><ChevronDown size={13} /></button>
                   <button type="button" className="bzsched-time-x" aria-label="Eliminar secção"
-                    onClick={() => setSeccoes(seccoes.filter((_, j) => j !== i))}><Trash2 size={13} /></button>
+                    onClick={() => setSeccoesActuais(seccoesActuais.filter((_, j) => j !== i))}><Trash2 size={13} /></button>
                 </div>
               </div>
               {s.items.map((item, j) => (
@@ -224,22 +269,25 @@ export default function TermsPage() {
         </div>
 
         <button type="button" className="icon-text-button" style={{ marginTop: 12 }}
-          onClick={() => setSeccoes([...seccoes, { ...VAZIA, items: [""] }])}>
+          onClick={() => setSeccoesActuais([...seccoesActuais, { ...VAZIA, items: [""] }])}>
           <FileText size={15} /><span>Nova secção</span>
         </button>
 
         <label className="field" style={{ marginTop: 16 }}><span>Fecho</span>
-          <input value={fecho} placeholder="A TPM-TUR deseja-lhe uma viagem segura e confortável."
-            onChange={(e) => setFecho(e.target.value)} />
+          <input value={fechoActual}
+            placeholder={pt
+              ? "A TPM-TUR deseja-lhe uma viagem segura e confortável."
+              : "We wish you a safe and pleasant journey."}
+            onChange={(e) => setFechoActual(e.target.value)} />
         </label>
       </SectionCard>
 
       <TermsDialog
         open={previa}
         onClose={() => setPrevia(false)}
-        sections={seccoes.filter((s) => s.title.trim() && s.items.some((i) => i.trim()))}
-        intro={intro}
-        closing={fecho}
+        sections={seccoesActuais.filter((s) => s.title.trim() && s.items.some((i) => i.trim()))}
+        intro={introActual}
+        closing={fechoActual}
         company={empresa.company_name}
         version={versao}
         updatedAt={actualizado || undefined}

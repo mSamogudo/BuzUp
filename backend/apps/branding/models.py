@@ -71,6 +71,16 @@ class BrandingSettings(BaseModel):
     terms_sections = models.JSONField(default=list, blank=True)
     terms_intro = models.TextField(blank=True)
     terms_closing = models.TextField(blank=True)
+    # Versao inglesa. Campos proprios e nao um JSON por lingua porque a
+    # aplicacao inteira so conhece duas (pt/en) e um par de campos diz-se em
+    # duas linhas — um mapa de linguas custaria um editor generico para
+    # resolver um problema que ninguem tem.
+    #
+    # Vazia = cai para a portuguesa. Melhor mostrar os termos na lingua errada
+    # do que nao mostrar termos nenhuns a quem esta prestes a comprar.
+    terms_sections_en = models.JSONField(default=list, blank=True)
+    terms_intro_en = models.TextField(blank=True)
+    terms_closing_en = models.TextField(blank=True)
     # A versao viaja com cada compra. Sem ela, saber-se-ia que o passageiro
     # aceitou "os termos" — mas nao QUAIS, e uns termos alterados depois da
     # compra passariam a valer para tras.
@@ -92,6 +102,20 @@ class BrandingSettings(BaseModel):
     @property
     def has_terms(self) -> bool:
         return bool(self.terms_sections)
+
+    def terms_for(self, locale: str = "pt") -> dict:
+        """Termos na lingua pedida, com recurso a portuguesa."""
+        if str(locale).lower().startswith("en") and self.terms_sections_en:
+            return {
+                "sections": self.terms_sections_en,
+                "intro": self.terms_intro_en,
+                "closing": self.terms_closing_en,
+            }
+        return {
+            "sections": self.terms_sections,
+            "intro": self.terms_intro,
+            "closing": self.terms_closing,
+        }
 
     def file_url(self, field_name: str, request=None) -> str:
         """URL absoluta de um slot de logo (string vazia quando nao definido)."""

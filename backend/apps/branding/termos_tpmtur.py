@@ -152,3 +152,93 @@ EMPRESA = {
         "+258 86 200 2211",
     ],
 }
+
+
+# --- Versao inglesa, tal como impressa no mesmo bilhete ---------------------
+#
+# O verso do bilhete traz as duas. A inglesa e mais curta de proposito — o
+# operador condensou-a — e nao e uma traducao literal da portuguesa. Fica como
+# esta impressa: e o texto que a TPM-TUR ja entrega ao passageiro, e reescreve-lo
+# em ingles "melhor" seria publicar termos que ninguem aprovou.
+
+INTRO_EN = "Passengers are subject to the following terms:"
+
+FECHO_EN = "We wish you a safe and pleasant journey."
+
+SECCOES_EN = [
+    {
+        "title": "Tickets",
+        "items": [
+            "Non-transferable, valid only for the named person, date, and time.",
+            "It is the passenger's responsibility to confirm that the ticket "
+            "information is correct.",
+            "Stopovers are only allowed with the appropriate fare.",
+        ],
+    },
+    {
+        "title": "Changes",
+        "items": [
+            "Any change makes the ticket invalid.",
+            "A new ticket and service fee are required for modifications.",
+        ],
+    },
+    {
+        "title": "Cancellations",
+        "items": [
+            "Must be made at the issuing agency.",
+            "Cancellations 24+ hours before departure are subject to a 20% fee.",
+            "No refunds for late cancellations.",
+        ],
+    },
+    {
+        "title": "Departure Time",
+        "items": [
+            "Passengers must arrive 15 minutes before departure.",
+            "Unclaimed seats 3 minutes before will be reassigned.",
+        ],
+    },
+    {
+        "title": "Luggage",
+        "items": [
+            "One personal item per passenger (max. 100x80x40 cm, 20 kg).",
+            "Customs rules apply; goods over USD 50 and commercial items are prohibited.",
+            "TPM-TUR is not responsible for border delays, and no refund will be "
+            "issued if a passenger is left behind.",
+            "Oversized items go in the trailer.",
+            "Unaccompanied luggage is not accepted.",
+            "No liability for lost or damaged items.",
+        ],
+    },
+    {
+        "title": "Smoking",
+        "items": ["Not allowed on board."],
+    },
+    {
+        "title": "Unaccompanied Minors",
+        "items": ["Children under 12 must be accompanied by an adult."],
+    },
+    {
+        "title": "Alcohol",
+        "items": [
+            "Alcohol consumption is prohibited.",
+            "Intoxicated passengers will not be transported.",
+            "Right of admission is reserved.",
+        ],
+    },
+    {
+        "title": "Animals",
+        "items": [
+            "Animals are not allowed, except certified guide dogs with proper "
+            "documentation.",
+        ],
+    },
+    {
+        "title": "General Conditions",
+        "items": [
+            "Delays may occur due to factors beyond TPM-TUR's control.",
+            "The company may change vehicles or seating without notice, and cancel "
+            "services if needed, with no liability.",
+            "Fares and schedules are subject to change.",
+        ],
+    },
+]

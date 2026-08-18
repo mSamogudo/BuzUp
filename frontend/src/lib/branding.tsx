@@ -29,6 +29,9 @@ export interface Branding {
   terms_sections: { title: string; items: string[] }[];
   terms_intro: string;
   terms_closing: string;
+  terms_sections_en: { title: string; items: string[] }[];
+  terms_intro_en: string;
+  terms_closing_en: string;
   terms_version: string;
   terms_updated_at: string | null;
 }
@@ -41,6 +44,7 @@ const EMPTY: Branding = {
   company_name: "", company_address: "", company_website: "",
   contact_phones: [], support_phone: "", support_email: "", emergency_phone: "",
   terms_sections: [], terms_intro: "", terms_closing: "",
+  terms_sections_en: [], terms_intro_en: "", terms_closing_en: "",
   terms_version: "", terms_updated_at: null,
 };
 

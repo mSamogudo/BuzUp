@@ -364,6 +364,14 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
     ext_ref = _extract_value(payload, (
         "output_TransactionID", "data.output_TransactionID",
         "transaction_id", "transactionId", "reference", "data.reference",
+        # O Payless devolve o identificador dele em `gwtransid` (e o do pedido
+        # em `original.requestId`). Nenhum dos dois estava nesta lista, por isso
+        # `provider_reference` ficava VAZIA — e sem ela nao ha como ligar um
+        # callback ao pagamento, nem como pedir a Bluteki que rastreie a
+        # transaccao. O pagamento ficava sem nome do nosso lado.
+        "gwtransid", "data.gwtransid",
+        "original.requestId", "original.request_id",
+        "data.original.requestId",
     ))
 
     mpesa_success = {"0", "00", "000", "INS-0", "SUCCESS", "OK"}

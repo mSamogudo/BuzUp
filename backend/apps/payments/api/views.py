@@ -191,6 +191,13 @@ class MobileWalletWebhookView(APIView):
             "output_TransactionID", "data.output_TransactionID",
             "transaction_id", "transactionId", "transaction",
             "provider_reference", "providerReference",
+            # Como o Payless nomeia a transaccao dele. Sem estas chaves, um
+            # callback de e-Mola nao casava com nenhum pagamento nosso — e o
+            # e-Mola nao tem endpoint de consulta (404 em /search/emola/c2b),
+            # por isso o callback e a UNICA maneira de saber que o passageiro
+            # pagou.
+            "gwtransid", "data.gwtransid",
+            "original.requestId", "original.request_id",
         ))
 
         payment_intent = _resolve_payment_intent(reference, provider_reference, normalized_provider)
@@ -233,5 +240,14 @@ def _resolve_payment_intent(reference: str, provider_reference: str, provider: s
         pi = PaymentIntent.objects.filter(provider_reference=provider_reference).first()
         if pi:
             return pi
+        # Pagamentos iniciados ANTES de passarmos a guardar o `gwtransid`
+        # ficaram com `provider_reference` vazia. O identificador esta na
+        # resposta guardada — e sem esta procura ficavam orfaos para sempre,
+        # porque o e-Mola nao se pode consultar.
+        for campo in ("metadata__gateway_response__gwtransid",
+                      "metadata__gateway_response__original__requestId"):
+            pi = PaymentIntent.objects.filter(**{campo: provider_reference}).first()
+            if pi:
+                return pi
 
     return None

@@ -59,18 +59,70 @@ interface DocRule {
 
 /// Usada só até as regras chegarem do servidor (e se a rede falhar): deixa o
 /// formulário utilizável em vez de o bloquear.
+/// Regras usadas enquanto `/api/public/document-types/` não responde.
+///
+/// Eram todas `4 a 32 caracteres` com ajuda vazia — mais FROUXAS do que as do
+/// servidor. O campo aceitava 13 dígitos num BI (que precisa de 12 + letra),
+/// deixava avançar, e a compra rebentava no fim com um erro que o comprador
+/// nem via. Um recurso mais permissivo do que a regra real não é um recurso: é
+/// uma armadilha que só aparece quando a rede está lenta.
+///
+/// Espelham agora as regras do servidor. Ele continua a ser a autoridade — isto
+/// é só para o campo não mentir enquanto elas não chegam.
 const DOC_FALLBACK: DocRule[] = [
-  { value: "bi", label: "Bilhete de Identidade", pattern: "^[A-Z0-9]{4,32}$",
-    max_length: 32, placeholder: "", help: "", digits_only: false },
-  { value: "passport", label: "Passaporte", pattern: "^[A-Z0-9]{4,32}$",
-    max_length: 32, placeholder: "", help: "", digits_only: false },
-  { value: "dire", label: "DIRE", pattern: "^[A-Z0-9]{4,32}$",
-    max_length: 32, placeholder: "", help: "", digits_only: false },
-  { value: "cedula", label: "Cédula", pattern: "^[A-Z0-9]{4,32}$",
-    max_length: 32, placeholder: "", help: "", digits_only: false },
+  { value: "bi", label: "Bilhete de Identidade", pattern: "^\\d{12}[A-Z]$",
+    max_length: 13, placeholder: "110100123456A",
+    help: "13 caracteres: 12 dígitos seguidos de uma letra.", digits_only: false },
+  { value: "passport", label: "Passaporte", pattern: "^[A-Z0-9]{6,9}$",
+    max_length: 9, placeholder: "AB1234567",
+    help: "6 a 9 caracteres, só letras e números.", digits_only: false },
+  { value: "dire", label: "DIRE", pattern: "^\\d{12}$",
+    max_length: 12, placeholder: "123456789012",
+    help: "12 dígitos.", digits_only: true },
+  { value: "cedula", label: "Cédula", pattern: "^\\d{9}$",
+    max_length: 9, placeholder: "123456789",
+    help: "9 dígitos.", digits_only: true },
   { value: "other", label: "Outro", pattern: "^[A-Z0-9]{4,32}$",
-    max_length: 32, placeholder: "", help: "", digits_only: false },
+    max_length: 32, placeholder: "Número do documento",
+    help: "4 a 32 caracteres, só letras e números.", digits_only: false },
 ];
+
+/// Um número moçambicano tem 9 dígitos (8X XXX XXXX). O campo passa a aceitar
+/// só isso: deixar escrever 15 dígitos e recusar no fim é fazer o comprador
+/// descobrir o erro depois de preencher tudo o resto.
+const TELEFONE_DIGITOS = 9;
+function filterPhone(raw: string) {
+  return String(raw || "").replace(/\D/g, "").slice(0, TELEFONE_DIGITOS);
+}
+
+/// A mensagem que o servidor devolve, seja qual for a forma em que vem.
+///
+/// O DRF aninha os erros de campo — `{"passengers":[{"document_number":["..."]}]}`
+/// — e o portal só olhava para `detail`. Um erro de documento chegava como
+/// `undefined` e caía numa frase genérica: o comprador via "não foi possível
+/// concluir a compra" sem saber que bastava corrigir um dígito.
+function readServerError(body: unknown, fallback: string): string {
+  const primeira = (v: unknown, prefixo = ""): string => {
+    if (typeof v === "string") return prefixo + v;
+    if (Array.isArray(v)) {
+      for (let i = 0; i < v.length; i += 1) {
+        const achado = primeira(v[i], v.length > 1 ? `Passageiro ${i + 1}: ` : prefixo);
+        if (achado) return achado;
+      }
+      return "";
+    }
+    if (v && typeof v === "object") {
+      for (const val of Object.values(v as Record<string, unknown>)) {
+        const achado = primeira(val, prefixo);
+        if (achado) return achado;
+      }
+    }
+    return "";
+  };
+  const b = body as Record<string, unknown> | null;
+  if (b && typeof b.detail === "string" && b.detail) return b.detail;
+  return primeira(body) || fallback;
+}
 
 /// Tira o que é só aspecto (espaços, traços) e põe em maiúsculas — a mesma
 /// normalização que o servidor faz antes de gravar.
@@ -494,7 +546,7 @@ export default function BookingPage() {
         }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || tr("errPurchase"));
+      if (!res.ok) throw new Error(readServerError(body, tr("errPurchase")));
       setResult(body);
       setStep("done");
     } catch (err) {
@@ -891,8 +943,9 @@ export default function BookingPage() {
                       <div className="bzbk-field bzbk-field-wide">
                         <label className="bzbk-label">Telefone</label>
                         <input className="bzbk-input" value={emergPhone} required
-                          inputMode="tel" placeholder="84/85/86/87..."
-                          onChange={(e) => setEmergPhone(e.target.value)} />
+                          inputMode="numeric" placeholder="84/85/86/87..."
+                          autoComplete="off"
+                          onChange={(e) => setEmergPhone(filterPhone(e.target.value))} />
                       </div>
                     </div>
                   </div>
@@ -977,7 +1030,8 @@ export default function BookingPage() {
                   <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="ph">{tr("payPhone")}</label>
                     <input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
-                      value={phone} required onChange={(e) => setPhone(e.target.value)} />
+                      autoComplete="off"
+                      value={phone} required onChange={(e) => setPhone(filterPhone(e.target.value))} />
                     <span className="bzbk-hint">{tr("payPhoneHint")}</span>
                   </div>
                   <div className="bzbk-field bzbk-field-wide">

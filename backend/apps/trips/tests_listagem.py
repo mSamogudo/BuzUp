@@ -9,6 +9,7 @@ página, por isso mentiam.
 """
 
 from datetime import timedelta
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -24,7 +25,22 @@ class ListagemBase(APITestCase):
         self.rota = Route.objects.create(code="R-LIST", name="Lista", status=Route.Status.ACTIVE)
         self.viatura = Vehicle.objects.create(registration="LS-01-MP", seated_capacity=30)
         self.motorista = Driver.objects.create(full_name="Motorista Lista")
-        agora = timezone.now()
+        # A hora a que a suite corre nao pode decidir se um teste passa.
+        #
+        # Estes testes precisam de partidas que sejam ao mesmo tempo DE HOJE e
+        # NO FUTURO. Com `timezone.now()` real isso e impossivel de garantir:
+        # depois das 22h, "agora + 2 horas" ja e amanha e a viagem "de hoje"
+        # deixava de contar. A suite falhava a noite e passava de manha — o que
+        # faz um teste parecer instavel quando o errado era ele.
+        #
+        # Prende-se o relogio as 10:00 locais de hoje. Nao e artificio: e a
+        # unica forma de a pergunta "o que ha hoje ainda por sair?" ter uma
+        # resposta fixa.
+        agora = timezone.localtime(timezone.now()).replace(
+            hour=10, minute=0, second=0, microsecond=0)
+        relogio = mock.patch("django.utils.timezone.now", return_value=agora)
+        relogio.start()
+        self.addCleanup(relogio.stop)
 
         self.hoje = Trip.objects.create(
             route=self.rota, vehicle=self.viatura, driver=self.motorista,

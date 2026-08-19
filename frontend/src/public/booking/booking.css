@@ -146,8 +146,14 @@
    Com bancos a `1fr` num 2+2 cada um ficava com ~63px de lado e as 15 filas
    davam ~1000px dentro de uma caixa de 430 — cartões enormes e a planta toda
    por rolar. Assim o autocarro cabe de uma vez. */
-.bzbk-bus{--gap:6px;--avail:min(70vh,700px);--aisle:22px;
-  --seat:clamp(30px, calc((var(--avail) - (var(--rows) - 1) * var(--gap)) / var(--rows)), 44px);
+.bzbk-bus{--gap:6px;--avail:min(70vh,700px);--aisle:22px;--cols:4;
+  /* O banco tem de caber na ALTURA (para a planta nao rolar) e na LARGURA
+     (para nao transbordar o ecra). Antes so se olhava para a altura: num
+     telemovel, uma fila larga saia fora do cartao e a planta ficava cortada.
+     `min()` faz mandar a restricao mais apertada das duas. */
+  --seat-altura:calc((var(--avail) - (var(--rows) - 1) * var(--gap)) / var(--rows));
+  --seat-largura:calc((min(100vw - 78px, 620px) - var(--aisle) - (var(--cols) - 1) * var(--gap)) / var(--cols));
+  --seat:clamp(24px, min(var(--seat-altura), var(--seat-largura)), 44px);
   border:1.5px solid var(--line);border-radius:18px;padding:14px;background:var(--bg);
   width:max-content;max-width:100%;margin:0 auto}
 .bzbk-bus-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;

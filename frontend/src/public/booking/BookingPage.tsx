@@ -409,6 +409,46 @@ export default function BookingPage() {
       : (prev.length >= qty ? prev : [...prev, label]));
   };
 
+  /// O tipo de documento, garantidamente entre os que ESTA rota aceita.
+  ///
+  /// Um `<select>` cujo `value` não está entre as opções mostra a PRIMEIRA
+  /// opção mas mantém no estado o valor antigo. Numa rota internacional só o
+  /// passaporte é oferecido; como o tipo por omissão era `"bi"`, o ecrã dizia
+  /// "Passaporte" e o estado dizia "bi". A pessoa escrevia um número de
+  /// passaporte e o servidor recusava-o por não ser um BI — a recusa estava
+  /// certa, quem mentia era o formulário.
+  const tipoPermitido = useCallback((tipo: string) => {
+    if (docRules.some((d) => d.value === tipo)) return tipo;
+    return docRules[0]?.value || "";
+  }, [docRules]);
+
+  /// A regra deste tipo. Cai no PRIMEIRO permitido e não no último: o primeiro
+  /// é o que o `<select>` mostra quando o valor não existe, e assim a regra
+  /// que valida é a mesma que a pessoa está a ver.
+  const docRule = useCallback(
+    (type: string) => docRules.find((d) => d.value === type) || docRules[0],
+    [docRules],
+  );
+
+  /// Corrige quem ficou com um tipo que a rota não aceita.
+  ///
+  /// Corre sempre que as regras mudam — e não só quando chegam do servidor —
+  /// porque `startPax` pode reconstruir a lista depois delas e repor o "bi".
+  useEffect(() => {
+    if (docRules.length === 0) return;
+    setPax((prev) => {
+      let mudou = false;
+      const novo = prev.map((p) => {
+        if (!p.document_type) return p;
+        const valido = tipoPermitido(p.document_type);
+        if (valido === p.document_type) return p;
+        mudou = true;
+        return { ...p, document_type: valido, document_number: "" };
+      });
+      return mudou ? novo : prev;
+    });
+  }, [docRules, tipoPermitido]);
+
   const startPax = useCallback((seats: string[], comDocumento?: boolean, returnSeats?: string[]) => {
     // `needsIdentity` acabou de ser definido no mesmo ciclo em `chooseTrip`;
     // ler o estado aqui traria o valor da partida ANTERIOR.
@@ -423,13 +463,13 @@ export default function BookingPage() {
         // O tipo só se preenche onde o documento é pedido. Numa carreira
         // urbana o campo do número nem aparece, e mandar o tipo sozinho era
         // mandar meia resposta a uma pergunta que não foi feita.
-        document_type: pedeDocumento ? (antes?.document_type || "bi") : "",
+        document_type: pedeDocumento ? tipoPermitido(antes?.document_type || "bi") : "",
         document_number: pedeDocumento ? (antes?.document_number || "") : "",
         seat: seats[i] || "",
         return_seat: (returnSeats ?? rpicked)[i] || "",
       };
     }));
-  }, [qty, needsIdentity, rpicked]);
+  }, [qty, needsIdentity, rpicked, tipoPermitido]);
 
   /** Fim da escolha de lugares da ida: ou vai ao regresso, ou aos passageiros. */
   const goToPax = () => {
@@ -469,10 +509,6 @@ export default function BookingPage() {
     return () => { cancelado = true; };
   }, [trip?.service_type]);
 
-  const docRule = useCallback(
-    (type: string) => docRules.find((d) => d.value === type) || docRules[docRules.length - 1],
-    [docRules],
-  );
 
   /// O que está errado no documento deste passageiro, por palavras. Vazio
   /// quando está bem — ou quando a viagem nem pede documento.

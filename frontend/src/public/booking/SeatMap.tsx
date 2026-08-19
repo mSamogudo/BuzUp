@@ -40,10 +40,21 @@ export default function SeatMap({
     right: r.right ?? r.seats?.slice(2) ?? [],
   });
 
-  // A grelha do autocarro é a da fila mais completa de cada lado.
-  const esqMax = rows.reduce((m, r) => Math.max(m, ladosDe(r).left.length), 0);
-  const dirMax = rows.reduce((m, r) => Math.max(m, ladosDe(r).right.length), 0);
-  const colunas = Math.max(1, esqMax + dirMax);
+  // A grelha vem das filas NORMAIS. A fila corrida do fundo traz todos os
+  // bancos em `left` — contá-la aqui fazia `esqMax` saltar de 2 para 4 e
+  // alargava TODAS as filas: um 2+2 passava a desenhar-se como 4+2, e no
+  // telemóvel a planta transbordava o ecrã por causa da última linha.
+  const normais = rows.filter((r) => !r.full_width);
+  const base = normais.length > 0 ? normais : rows;
+  const esqMax = base.reduce((m, r) => Math.max(m, ladosDe(r).left.length), 0);
+  const dirMax = base.reduce((m, r) => Math.max(m, ladosDe(r).right.length), 0);
+
+  // A fila do fundo pode ser mais larga do que as outras (5 bancos num 2+2).
+  // Nesse caso é ela que manda na largura — mas só nesse caso.
+  const larguraDoFundo = rows
+    .filter((r) => r.full_width)
+    .reduce((m, r) => Math.max(m, ladosDe(r).left.length), 0);
+  const colunas = Math.max(1, esqMax + dirMax, larguraDoFundo);
 
   const grelha = dirMax > 0
     ? `repeat(${esqMax}, var(--seat)) var(--aisle) repeat(${dirMax}, var(--seat))`
@@ -54,10 +65,16 @@ export default function SeatMap({
 
   return (
     <div>
-      {/* `--rows` deixa o CSS calcular o tamanho do banco para a planta caber
-          na altura disponível: com bancos de tamanho fixo, um autocarro de 15
-          filas ficava com 1000px numa caixa de 430 e obrigava a rolar tudo. */}
-      <div className="bzbk-bus" style={{ ["--rows" as string]: Math.max(1, rows.length) }}>
+      {/* O CSS dimensiona o banco a partir de DUAS restrições:
+          `--rows` para a planta caber na altura (um autocarro de 15 filas ficava
+          com 1000px numa caixa de 430 e obrigava a rolar tudo), e `--cols` para
+          caber na largura — que é o que faltava. Sem o número de colunas, o
+          CSS não tinha como saber se a fila mais larga transbordava o ecrã do
+          telemóvel, e transbordava. */}
+      <div className="bzbk-bus" style={{
+        ["--rows" as string]: Math.max(1, rows.length),
+        ["--cols" as string]: colunas,
+      }}>
         <div className="bzbk-bus-head">
           <span>FRENTE DO AUTOCARRO</span>
           <span aria-hidden>🚍</span>

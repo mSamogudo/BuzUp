@@ -108,7 +108,10 @@ class MensagemAoPassageiroTests(SimpleTestCase):
     MPESA_TRANSPORT="PAYLESS",
     PAYLESS_MPESA_BEARER_TOKEN="token-de-teste",
     MPESA_C2B_URL="https://payless.bluteki.com/api/v2.0/c2b",
-    MPESA_SHORTCODE="171717",
+    # Um shortcode de PRODUCAO de proposito. Estes testes sao sobre repeticao,
+    # nao sobre o simulador — e usar o `171717` aqui era testar o caminho que
+    # producao nunca deve percorrer (ver `tests_sandbox_em_producao`).
+    MPESA_SHORTCODE="901913",
     PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS=5,
 )
 class RepeticaoRealTests(TestCase):

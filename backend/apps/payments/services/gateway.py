@@ -94,6 +94,20 @@ def _resolve_payless_token(provider: str) -> str:
     return ""
 
 
+#: Shortcode do SIMULADOR do M-Pesa. Aceita qualquer PIN e responde sempre
+#: "Request processed successfully" — util em testes, catastrofico em producao:
+#: uma venda dava-se por paga sem dinheiro nenhum ter saido, e o bilhete era
+#: emitido na mesma. Aconteceu a 19/08/2026, porque o contentor de producao foi
+#: criado antes de o ficheiro de configuracao ser corrigido e o `docker restart`
+#: nao rele o `env_file`.
+MPESA_SANDBOX_SHORTCODE = "171717"
+
+
+def usando_sandbox(config: dict) -> bool:
+    """O gateway esta apontado ao simulador?"""
+    return str(config.get("shortcode") or "") == MPESA_SANDBOX_SHORTCODE
+
+
 def _resolve_payless_urls(provider: str, direct_url: str) -> tuple[str, str]:
     normalized = provider.upper()
     base_url = _payless_base_url()
@@ -472,6 +486,23 @@ class MobileWalletGateway:
             return PaymentGatewayResult(
                 success=False,
                 error=f"Provider {self.provider} nao esta configurado.",
+                provider=self.provider,
+            )
+
+        # O simulador aceita qualquer PIN e da tudo por pago. Em producao isso
+        # nao e um defeito de configuracao: e uma porta aberta para levantar
+        # bilhetes sem pagar. Mais vale a venda parar aqui, com um motivo, do
+        # que emitir um bilhete que ninguem pagou.
+        if not settings.DEBUG and usando_sandbox(self.config):
+            logger.error(
+                "[PAY][sandbox_em_producao] provider=%s shortcode=%s — venda recusada",
+                self.provider, self.config.get("shortcode"),
+            )
+            return PaymentGatewayResult(
+                success=False,
+                error="Pagamentos indisponiveis: o sistema esta ligado ao "
+                      "simulador. Contacte o administrador.",
+                detail_message="Pagamentos indisponiveis. Contacte o administrador.",
                 provider=self.provider,
             )
 

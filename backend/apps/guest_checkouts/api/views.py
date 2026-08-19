@@ -239,6 +239,19 @@ class GuestCheckoutCreateView(APIView):
         total = (unit_amount + (return_unit_amount or 0)) * quantity
         ref = f"GC-{uuid4().hex[:18].upper()}"
 
+        # A tentativa anterior do MESMO comprador nao lhe pode tapar o lugar.
+        # A reserva vale contra terceiros; contra quem a fez, nao. Ver
+        # `apps.guest_checkouts.retomar`.
+        from apps.guest_checkouts.retomar import (
+            libertar_tentativas_mortas,
+            pagamento_a_decorrer,
+        )
+
+        if trip is not None:
+            libertar_tentativas_mortas(trip, data["payer_phone"])
+            if return_trip is not None:
+                libertar_tentativas_mortas(return_trip, data["payer_phone"])
+
         # Reserva do lugar: bloqueia a linha da viagem para que dois
         # compradores simultaneos nao levem o mesmo ultimo lugar.
         with transaction.atomic():
@@ -264,6 +277,19 @@ class GuestCheckoutCreateView(APIView):
                     taken = occupied_seats(trip)
                     clash = sorted(set(chosen) & taken)
                     if clash:
+                        # Se quem segura o lugar e o proprio comprador, dizer-lhe
+                        # "escolha outro" e mandá-lo resolver um problema que nao
+                        # tem: o que ele precisa e de confirmar o PIN que ja lhe
+                        # foi pedido. Libertar tambem nao serve — arriscava uma
+                        # segunda cobranca pelo mesmo lugar.
+                        proprio = pagamento_a_decorrer(trip, data["payer_phone"], chosen)
+                        if proprio is not None:
+                            return Response({
+                                "detail": "Já tem um pagamento a decorrer para este lugar. "
+                                          "Confirme o PIN no telemóvel, ou aguarde alguns "
+                                          "minutos antes de tentar de novo.",
+                                "checkout_reference": proprio.reference,
+                            }, status=status.HTTP_409_CONFLICT)
                         return Response(
                             {"detail": f"Lugar(es) ja ocupado(s): {', '.join(clash)}. Escolha outro."},
                             status=status.HTTP_409_CONFLICT,

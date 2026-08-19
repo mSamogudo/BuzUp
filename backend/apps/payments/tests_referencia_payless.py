@@ -46,14 +46,72 @@ class ExtraccaoDaReferenciaTests(TestCase):
         _, _, ext_ref = _interpret_response("EMOLA", 200, resposta)
         self.assertEqual(ext_ref, "28612260819001899287772")
 
-    def test_pedido_aceite_fica_pendente_e_nao_confirmado(self):
-        """O e-Mola pede PIN ao passageiro: aceite nao e pago."""
-        resultado, _, _ = _interpret_response("EMOLA", 200, RESPOSTA_EMOLA)
-        self.assertEqual(resultado, "PENDING")
-
     def test_as_chaves_antigas_continuam_a_valer(self):
         _, _, ext_ref = _interpret_response("MPESA", 200, {"output_TransactionID": "ABC123"})
         self.assertEqual(ext_ref, "ABC123")
+
+
+# Recusa real, copiada do eTicketing em producao (mesma carteira e-Mola).
+RECUSA_EMOLA = {
+    "error": 0,
+    "original": {
+        "message": "Customer did not enter PIN",
+        "errorCode": "11",
+        "requestId": "28612260809001877541837",
+    },
+    "gwtransid": "202608091510379003138",
+}
+
+
+class DesfechoDoEmolaTests(TestCase):
+    """O e-Mola do Payless e SINCRONO: a resposta e o desfecho.
+
+    A chamada espera pelo PIN do cliente. `errorCode: "0"` significa que o
+    dinheiro saiu; `"11"` que o cliente nao confirmou. Nao ha estado
+    intermedio — e nao ha para onde perguntar depois, porque o
+    `/search/emola/c2b` do Payless nao existe (404, verificado).
+
+    O nosso codigo lia `message` e `code` no topo do JSON, mas o Payless poe
+    ambos dentro de `original`. Nao encontrando nada, tudo caia no "pendente"
+    do fim da cadeia: o pagamento feito nunca virava bilhete, e o recusado
+    nunca libertava o lugar.
+    """
+
+    def test_pagamento_feito_e_sucesso(self):
+        resultado, _, _ = _interpret_response("EMOLA", 200, RESPOSTA_EMOLA)
+        self.assertEqual(
+            resultado, "SUCCESS",
+            "o passageiro pagou e o dinheiro entrou — isto tem de emitir bilhete",
+        )
+
+    def test_cliente_que_nao_confirma_e_falha(self):
+        resultado, detalhe, _ = _interpret_response("EMOLA", 200, RECUSA_EMOLA)
+        self.assertEqual(
+            resultado, "FAILED",
+            "sem PIN nao ha dinheiro: deixar pendente prendia o lugar para sempre",
+        )
+        self.assertIn("PIN", detalhe)
+
+    def test_a_recusa_tambem_guarda_a_referencia(self):
+        """Para se poder rastrear com a Bluteki o que quer que tenha acontecido."""
+        _, _, ext_ref = _interpret_response("EMOLA", 200, RECUSA_EMOLA)
+        self.assertEqual(ext_ref, "202608091510379003138")
+
+    def test_o_erro_do_topo_nao_e_o_desfecho(self):
+        """`error: 0` diz que o pedido chegou ao gateway, nao que foi pago.
+
+        As duas respostas — a paga e a recusada — trazem `error: 0`. Quem
+        olhasse so para ai dava as duas por boas.
+        """
+        self.assertEqual(RESPOSTA_EMOLA["error"], RECUSA_EMOLA["error"])
+        pago, _, _ = _interpret_response("EMOLA", 200, RESPOSTA_EMOLA)
+        recusado, _, _ = _interpret_response("EMOLA", 200, RECUSA_EMOLA)
+        self.assertNotEqual(pago, recusado)
+
+    def test_o_mpesa_continua_a_esperar_confirmacao(self):
+        """O M-Pesa e assincrono e TEM consulta: ai o pendente e correcto."""
+        resultado, _, _ = _interpret_response("MPESA", 200, {"status": "accepted"})
+        self.assertEqual(resultado, "PENDING")
 
 
 class CallbackEncontraOPagamentoTests(TestCase):

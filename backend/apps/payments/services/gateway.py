@@ -341,6 +341,12 @@ def _status_words(payload: dict) -> set[str]:
         "output_ResponseDesc", "data.output_ResponseDesc",
         "message", "data.message", "detail", "data.detail",
         "description", "data.description", "result", "data.result",
+        # O Payless poe o desfecho DENTRO de `original` — e era ai que estava a
+        # unica coisa que interessava ("Successfully" / "Customer did not enter
+        # PIN"). Como nao se olhava para la, todas as respostas caiam no
+        # "pendente" do fim da cadeia.
+        "original.message", "original.status", "original.description",
+        "data.original.message",
     )
     words: set[str] = set()
     for key in fields:
@@ -356,10 +362,16 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
 
     response_code = _extract_value(payload, (
         "output_ResponseCode", "data.output_ResponseCode", "response_code", "responseCode", "code", "data.code",
+        # `original.errorCode` e o resultado do PAGAMENTO. Nao confundir com o
+        # `error` do topo, que so diz que o pedido chegou ao gateway: uma
+        # transaccao recusada vem com `error: 0` e `original.errorCode: "11"`.
+        "original.errorCode", "original.error_code", "original.responseCode",
+        "data.original.errorCode",
     )).upper()
     detail = _extract_value(payload, (
         "output_ResponseDesc", "message", "detail", "description",
         "data.output_ResponseDesc", "data.message", "data.detail",
+        "original.message", "data.original.message",
     ))
     ext_ref = _extract_value(payload, (
         "output_TransactionID", "data.output_TransactionID",
@@ -408,6 +420,16 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
         result = "SUCCESS"
     elif (status_words & success_words) and not negated:
         result = "SUCCESS"
+    # O e-Mola do Payless e SINCRONO: a chamada espera pelo PIN do cliente e
+    # devolve o desfecho final. `errorCode: "0"` e "Successfully" (pago);
+    # `errorCode: "11"` e "Customer did not enter PIN" (nao pago). Nao ha
+    # estado intermedio — e nao ha para onde perguntar depois, porque o
+    # `/search/emola/c2b` nao existe (404). Deixar isto em "pendente" era
+    # condenar a venda: a paga nunca virava bilhete e a recusada nunca
+    # libertava o lugar.
+    elif provider == "EMOLA" and response_code:
+        result = "FAILED"
+        detail = detail or "Pagamento nao concluido na carteira e-Mola."
     elif 200 <= status_code < 300:
         result = "PENDING"
     else:

@@ -5951,3 +5951,27 @@ html[data-theme="dark"] .otp-digit:focus {
 html[data-theme="dark"] .fare-matrix-warn > svg { color: var(--app-warning); }
 html[data-theme="dark"] .fare-matrix-warn { background: rgba(255, 183, 3, 0.08); }
 html[data-theme="dark"] .fare-matrix td input.fare-matrix-empty { background: rgba(214, 40, 40, 0.16); }
+
+/* --- Compra pelo QR do autocarro: aceitação e desvio ------------------- */
+/* A caixa dos termos não é decoração: o servidor recusa a compra sem ela, e
+   até ontem esta página nem sequer perguntava. */
+.bus-pay-accept {
+  display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 6px;
+  padding: 12px 14px; border-radius: 11px; cursor: pointer;
+  border: 1px solid var(--app-border); background: var(--app-surface);
+  font-size: 13px; line-height: 1.5;
+}
+.bus-pay-accept input { width: 18px; height: 18px; flex: none; margin-top: 1px; cursor: pointer; }
+.bus-pay-terms-link {
+  padding: 0; border: 0; background: none; font: inherit; font-weight: 700;
+  color: var(--app-accent); text-decoration: underline; text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Carreira com lugar marcado: entrega-se ao fluxo completo em vez de montar
+   aqui uma compra que o servidor recusa. */
+.bus-pay-handoff h2 { margin: 0 0 8px; font-size: 17px; }
+.bus-pay-handoff p {
+  margin: 0 0 16px; font-size: 13.5px; line-height: 1.55; color: var(--app-text-muted);
+}
+.bus-pay-handoff .bus-pay-btn { margin-top: 6px; text-decoration: none; }

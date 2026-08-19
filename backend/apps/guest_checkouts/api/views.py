@@ -196,11 +196,24 @@ class GuestCheckoutCreateView(APIView):
         # A FORMA do numero ja foi validada no serializer; aqui decide-se se ele
         # e sequer preciso.
         if route.requires_seat_selection:
+            from apps.guest_checkouts.documents import DocumentError, validate_document_for
+
             for i, p in enumerate(passengers, start=1):
                 if not (p.get("document_number") or "").strip():
                     return Response(
                         {"detail": f"Indique o documento do passageiro {i}. "
                                    "E obrigatorio nesta viagem."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                # Numa rota internacional a fronteira so aceita passaporte.
+                # Sem esta guarda, comprava-se com BI e descobria-se em Ressano
+                # Garcia — com o autocarro a espera e sem reembolso.
+                try:
+                    p["document_number"] = validate_document_for(
+                        route.service_type, p.get("document_type") or "", p["document_number"])
+                except DocumentError as e:
+                    return Response(
+                        {"detail": f"Passageiro {i}: {e}"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
             # Numa carreira com lugar marcado, a volta tambem tem lugar. Sem
@@ -584,7 +597,11 @@ class PublicDocumentTypesView(APIView):
     def get(self, request):
         from apps.guest_checkouts.documents import public_rules
 
-        return Response({"document_types": public_rules()})
+        # `?service_type=international` devolve so o passaporte: e o unico
+        # documento com que se atravessa a fronteira.
+        return Response({
+            "document_types": public_rules(request.query_params.get("service_type")),
+        })
 
 
 class PublicBusInfoView(APIView):
@@ -631,6 +648,14 @@ class PublicBusInfoView(APIView):
                 "departure": trip.planned_departure_at.isoformat() if trip.planned_departure_at else None,
                 "started_at": trip.activity_started_at.isoformat() if trip.activity_started_at else None,
                 "status": trip.status,
+                # O tipo de carreira decide o que a pagina do QR pode fazer.
+                # Numa urbana basta origem, destino e telemovel. Numa carreira
+                # com lugar marcado o bilhete e nominal, leva assento, documento
+                # e contacto de emergencia — coisas que um formulario rapido nao
+                # recolhe, e que o servidor exige. Sem isto a pagina do QR nao
+                # tinha como saber que estava a montar uma compra impossivel.
+                "service_type": trip.route.service_type,
+                "seat_selection": trip.route.requires_seat_selection,
                 "stops": list(stops_seen.values()),
             })
 

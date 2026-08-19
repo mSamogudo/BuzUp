@@ -42,6 +42,8 @@ interface TripOpt {
   trip_id: number; route_id: number; route_code: string; route_name: string;
   origin_stop: string; destination_stop: string;
   vehicle: string | null; departure: string | null; fare_amount: string | null;
+  /** Urbana, interprovincial ou internacional — decide que documentos servem. */
+  service_type?: string;
   seats_available: number | null; on_sale: boolean; sale_unavailable_reason: string;
 }
 interface Passenger { name: string; document_type: string; document_number: string; seat: string; return_seat: string }
@@ -389,6 +391,31 @@ export default function BookingPage() {
   const setPaxField = (i: number, key: keyof Passenger, value: string) => {
     setPax((prev) => prev.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
   };
+
+  // Os documentos aceites dependem da carreira: numa rota internacional so o
+  // passaporte atravessa a fronteira, e oferecer BI ou DIRE seria deixar o
+  // passageiro escolher um documento com que nao vai passar — descobre-o em
+  // Ressano Garcia, com o autocarro a espera e sem reembolso.
+  useEffect(() => {
+    const tipo = trip?.service_type;
+    if (!tipo) return;
+    let cancelado = false;
+    getJson(`/api/public/document-types/?service_type=${encodeURIComponent(tipo)}`)
+      .then((d) => {
+        if (cancelado || !d.document_types?.length) return;
+        setDocRules(d.document_types);
+        // Quem ja tinha escolhido um tipo que esta rota nao aceita fica com o
+        // primeiro permitido, em vez de um campo que o servidor vai recusar.
+        const permitidos = new Set(d.document_types.map((r: DocRule) => r.value));
+        setPax((prev) => prev.map((p) => (
+          p.document_type && !permitidos.has(p.document_type)
+            ? { ...p, document_type: d.document_types[0].value, document_number: "" }
+            : p
+        )));
+      })
+      .catch(() => { /* fica a lista geral: melhor comprar do que travar */ });
+    return () => { cancelado = true; };
+  }, [trip?.service_type]);
 
   const docRule = useCallback(
     (type: string) => docRules.find((d) => d.value === type) || docRules[docRules.length - 1],

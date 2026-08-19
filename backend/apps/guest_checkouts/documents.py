@@ -108,9 +108,44 @@ def validate_document(document_type: str, raw: str) -> str:
     return numero
 
 
-def public_rules() -> list[dict]:
+# Que documentos servem em cada tipo de carreira.
+#
+# Numa rota INTERNACIONAL atravessa-se uma fronteira, e a fronteira so aceita
+# passaporte. Oferecer BI, DIRE ou cedula na compra e deixar o passageiro
+# escolher um documento com que nao vai passar — descobre-o em Ressano Garcia,
+# com o autocarro a espera e sem reembolso (ver os termos, seccao da bagagem).
+#
+# Numa interprovincial viaja-se dentro de Mocambique e qualquer identificacao
+# serve. Numa urbana nao se pede documento nenhum.
+DOCUMENTOS_POR_SERVICO: dict[str, tuple] = {
+    "international": ("passport",),
+}
+
+
+def allowed_document_types(service_type: str | None) -> tuple:
+    """Tipos aceites nesta carreira. Sem tipo indicado, todos."""
+    if not service_type:
+        return tuple(DOCUMENT_RULES.keys())
+    return DOCUMENTOS_POR_SERVICO.get(str(service_type), tuple(DOCUMENT_RULES.keys()))
+
+
+def validate_document_for(service_type: str | None, document_type: str, raw: str) -> str:
+    """Valida a FORMA e tambem se o tipo serve nesta carreira."""
+    permitidos = allowed_document_types(service_type)
+    if document_type and document_type not in permitidos:
+        nomes = ", ".join(DOCUMENT_RULES[t]["label"] for t in permitidos)
+        raise DocumentError(
+            f"Nesta viagem so e aceite: {nomes}. Numa rota internacional a "
+            f"fronteira nao aceita outro documento."
+        )
+    return validate_document(document_type, raw)
+
+
+def public_rules(service_type: str | None = None) -> list[dict]:
     """As regras como o portal as consome, por ordem de uso em Mocambique."""
+    permitidos = allowed_document_types(service_type)
     return [
         {"value": chave, **{k: v for k, v in regra.items()}}
         for chave, regra in DOCUMENT_RULES.items()
+        if chave in permitidos
     ]

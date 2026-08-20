@@ -260,6 +260,16 @@ class TripViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        # Os filtros sao da LISTA. Quando se pede uma viagem pelo numero, ela ja
+        # esta identificada — nao ha nada para filtrar.
+        #
+        # Aplicados a tudo, escondiam do proprio `retrieve` as partidas que ja
+        # tinham saido: abrir, editar, apagar ou ver o manifesto de uma viagem
+        # de ontem respondia "No Trip matches the given query". Em producao eram
+        # quatro das seis viagens — e sao precisamente as que se vao consultar
+        # depois de acontecerem.
+        if self.action != "list":
+            return qs
         route_id = self.request.query_params.get("route")
         if route_id:
             qs = qs.filter(route_id=route_id)

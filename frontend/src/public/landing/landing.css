@@ -95,7 +95,8 @@
 .bzlp-links a:hover{color:var(--ink)}
 .bzlp-links a[aria-current="location"]{color:var(--blue2);border-bottom-color:var(--blue)}
 .bzlp-nav-cta{display:flex;align-items:center;gap:12px}
-.bzlp-ghost{font-weight:700;font-size:14px;color:var(--ink)}
+.bzlp-ghost{font-weight:700;font-size:14px;color:var(--ink);
+  display:inline-flex;align-items:center;min-height:38px;padding:0 6px}
 .bzlp-ghost:hover{color:var(--blue)}
 .bzlp-burger{display:none;background:none;border:none;color:var(--ink);padding:8px;cursor:pointer}
 @media(max-width:900px){
@@ -356,7 +357,12 @@
 .bzlp-foot-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 @media(max-width:520px){.bzlp-foot-cols{grid-template-columns:1fr 1fr}}
 .bzlp-foot-cols h4{color:#fff;font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 12px}
-.bzlp-foot-cols a{display:block;font-size:13.5px;margin-bottom:9px;color:#a9c2dc}
+/* O alvo cresce, o texto nao. Estes links tinham 20px de altura tocavel — o
+   minimo que a norma pede sao 24px, e um polegar quer mais. A margem que os
+   separava passa a ser padding DENTRO do link, por isso o espacamento visual
+   fica igual e a area de toque quase duplica. */
+.bzlp-foot-cols a{display:block;font-size:13.5px;padding:7px 0;color:#a9c2dc;
+  margin-bottom:0;min-height:34px;line-height:20px}
 .bzlp-foot-cols a:hover{color:var(--blue-bright)}
 .bzlp-foot-bar{border-top:1px solid rgba(255,255,255,.08);text-align:center;padding:18px;
   font-size:12.5px;color:#7c98b4}
@@ -368,3 +374,7 @@
 @media (prefers-color-scheme: dark){
   .bzlp:not([data-theme="light"]) .bzlp-form-error{background:#2C1618;color:#F2B8BC;border-color:#4D2226}
 }
+
+/* Contactos no rodape: tocam-se, nao se leem. Tinham 22px de altura. */
+.bzlp-foot a[href^="mailto:"],.bzlp-foot a[href^="tel:"],
+.bzlp-foot-bar a{display:inline-flex;align-items:center;min-height:34px;padding:0 4px}

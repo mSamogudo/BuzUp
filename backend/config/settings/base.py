@@ -343,6 +343,22 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = config("DATA_UPLOAD_MAX_MEMORY_SIZE", default=10 *
 FILE_UPLOAD_MAX_MEMORY_SIZE = config("FILE_UPLOAD_MAX_MEMORY_SIZE", default=10 * 1024 * 1024, cast=int)
 
 
+# Este ambiente pode usar o SIMULADOR de pagamentos?
+#
+# O simulador (shortcode 171717 do M-Pesa) aceita qualquer PIN e da tudo por
+# pago. Em desenvolvimento e em staging isso e exactamente o que se quer; em
+# producao e uma porta aberta para levantar bilhetes sem pagar — e esteve
+# aberta quatro dias, ate 19/08/2026.
+#
+# O default e False de proposito: um ambiente novo nasce protegido, e quem o
+# quiser em modo de teste tem de o dizer. O contrario — assumir que se pode
+# simular e exigir que producao o negue — poe o peso da prova no sitio errado.
+#
+# Nao se usa `DEBUG` para isto: staging tambem corre com `DEBUG=False`, e
+# confundir os dois faz uma guarda de producao bloquear os testes (foi o que
+# aconteceu na primeira versao desta guarda).
+PAYMENTS_ALLOW_SANDBOX = config("PAYMENTS_ALLOW_SANDBOX", default=False, cast=bool)
+
 # A correr a suite de testes?
 #
 # Nao havia forma nenhuma de saber. `send_sms` ja perguntava por
@@ -359,3 +375,4 @@ if TESTING:
     # Nada de dinheiro nem de mensagens reais a partir de um teste.
     PAYMENT_GATEWAY_PROVIDER = "MOCK"
     SMS_PROVIDER = "MOCK"
+    PAYMENTS_ALLOW_SANDBOX = True

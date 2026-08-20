@@ -46,7 +46,26 @@ class DeteccaoDoSandboxTests(SimpleTestCase):
         self.assertEqual(MPESA_SANDBOX_SHORTCODE, "171717")
 
 
-@override_settings(DEBUG=False, PAYMENT_GATEWAY_PROVIDER="AUTO")
+class DefinicaoDoAmbienteTests(SimpleTestCase):
+    """Um ambiente novo nasce protegido."""
+
+    def test_por_omissao_nao_se_simula(self):
+        from config.settings import base
+
+        self.assertIs(
+            base.config("PAYMENTS_ALLOW_SANDBOX", default=False, cast=bool), False,
+            "o default tem de ser 'nao simular': quem quiser simular que o diga",
+        )
+
+    def test_producao_nao_declara_que_pode_simular(self):
+        """Se prod.py um dia o declarar, este teste avisa."""
+        from pathlib import Path
+
+        prod = Path(__file__).resolve().parents[2] / "config" / "settings" / "prod.py"
+        self.assertNotIn("PAYMENTS_ALLOW_SANDBOX", prod.read_text(encoding="utf-8"))
+
+
+@override_settings(PAYMENTS_ALLOW_SANDBOX=False, PAYMENT_GATEWAY_PROVIDER="AUTO")
 class RecusaEmProducaoTests(SimpleTestCase):
     """A venda para aqui, e diz porque."""
 
@@ -71,9 +90,16 @@ class RecusaEmProducaoTests(SimpleTestCase):
             gw.initiate_payment("PAY-2", Decimal("1650.00"), "841234567")
         chamada.assert_not_called()
 
-    @override_settings(DEBUG=True)
-    def test_em_desenvolvimento_o_simulador_e_permitido(self):
-        """E para isso que ele existe — so nao pode estar em producao."""
+    @override_settings(PAYMENTS_ALLOW_SANDBOX=True)
+    def test_onde_o_simulador_e_permitido_ele_funciona(self):
+        """Staging e desenvolvimento simulam — e para isso que o simulador existe.
+
+        A primeira versao desta guarda olhava para `DEBUG`, e staging tambem
+        corre com `DEBUG=False`: bloqueou os pagamentos de teste durante uma
+        hora. Quem decide agora e uma definicao propria, que cada ambiente
+        declara — e cujo default e "nao simular", para um ambiente novo nascer
+        protegido.
+        """
         gw = self._gateway("171717")
         with mock.patch("apps.payments.services.gateway._provider_is_configured", return_value=True), \
              mock.patch("apps.payments.services.gateway._post_with_retry",

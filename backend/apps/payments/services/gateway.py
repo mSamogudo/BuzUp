@@ -493,7 +493,7 @@ class MobileWalletGateway:
         # nao e um defeito de configuracao: e uma porta aberta para levantar
         # bilhetes sem pagar. Mais vale a venda parar aqui, com um motivo, do
         # que emitir um bilhete que ninguem pagou.
-        if not settings.DEBUG and usando_sandbox(self.config):
+        if usando_sandbox(self.config) and not getattr(settings, "PAYMENTS_ALLOW_SANDBOX", False):
             logger.error(
                 "[PAY][sandbox_em_producao] provider=%s shortcode=%s — venda recusada",
                 self.provider, self.config.get("shortcode"),

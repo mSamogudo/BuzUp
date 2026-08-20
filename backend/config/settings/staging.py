@@ -39,3 +39,8 @@ CACHES = {
 # O gateway nginx monta o volume de media e tem a location `/protected-media/`:
 # os APKs sao entregues por ele, nao pelo gunicorn (ver apps/core/file_serving.py).
 USE_X_ACCEL_REDIRECT = config("USE_X_ACCEL_REDIRECT", default=True, cast=bool)
+
+# Staging aponta ao SIMULADOR de pagamentos: e para isso que existe. Sem esta
+# linha a guarda de producao bloqueava aqui tambem — a primeira versao dela
+# olhava para `DEBUG`, que em staging tambem e False.
+PAYMENTS_ALLOW_SANDBOX = config("PAYMENTS_ALLOW_SANDBOX", default=True, cast=bool)

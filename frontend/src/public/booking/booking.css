@@ -316,7 +316,10 @@
 .bzbk-foot-main{display:flex;flex-direction:column;gap:2px}
 .bzbk-foot-main b{color:var(--ink);font-size:13.5px}
 .bzbk-foot-contacts{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px}
-.bzbk-foot-contacts a{color:var(--blue2);text-decoration:none}
+/* Numeros e email do operador: sao para se tocar com o polegar a meio da
+   estrada, nao para se ler. 19px de altura nao chega. */
+.bzbk-foot-contacts a{color:var(--blue2);text-decoration:none;
+  display:inline-flex;align-items:center;min-height:34px;padding:0 4px}
 .bzbk-foot-contacts a:hover{text-decoration:underline}
 
 /* Diálogo dos Termos e Condições */
@@ -354,14 +357,16 @@
 .bzbk-top-controls{display:flex;align-items:center;gap:10px}
 .bzbk-lang{display:inline-flex;gap:2px;padding:3px;border-radius:999px;
   background:rgba(255,255,255,.12)}
-.bzbk-lang button{min-width:34px;height:26px;padding:0 8px;cursor:pointer;font:inherit;
+/* 26px nao se acerta com o polegar. O botao cresce; a pastilha branca que o
+   marca continua do mesmo tamanho visual porque so o padding aumenta. */
+.bzbk-lang button{min-width:38px;height:34px;padding:0 10px;cursor:pointer;font:inherit;
   font-size:11.5px;font-weight:800;letter-spacing:.4px;border:0;border-radius:999px;
   background:none;color:#a9c2dc;transition:background .15s,color .15s}
 .bzbk-lang button:hover{color:#fff}
 /* Pastilha branca fixa sobre o cabeçalho escuro: o texto é escuro nos DOIS
    temas, senão desaparecia no escuro (claro sobre branco). */
 .bzbk-lang button[aria-pressed="true"]{background:#fff;color:#0D3B66}
-.bzbk-theme{display:grid;place-items:center;width:30px;height:30px;cursor:pointer;
+.bzbk-theme{display:grid;place-items:center;width:38px;height:38px;cursor:pointer;
   border-radius:999px;border:0;background:rgba(255,255,255,.12);color:#e8f1fa;
   transition:background .15s}
 .bzbk-theme:hover{background:rgba(255,255,255,.22)}
@@ -425,3 +430,13 @@
 :root[data-theme="dark"] .bzbk-notice.error{background:#2C1618;border-color:#4D2226;color:#F2B8BC}
 :root[data-theme="dark"] .bzbk-hint-error{color:#F2B8BC}
 :root[data-theme="dark"] .bzbk-done-mark{background:#14301F;color:#34D399}
+
+/* "Voltar ao site" e um link de navegacao, nao uma palavra no meio de uma
+   frase: tinha 17px de altura tocavel. Ganha area sem mudar de sitio. */
+.bzbk-top-controls .bzbk-kicker{display:inline-flex;align-items:center;
+  min-height:38px;padding:0 4px}
+
+/* O link dos Termos no rodape esta sozinho (o da caixa de aceitacao vive
+   dentro de uma frase e a norma isenta esses). */
+.bzbk-foot .bzbk-terms-link{display:inline-flex;align-items:center;
+  min-height:34px;padding:0 6px}

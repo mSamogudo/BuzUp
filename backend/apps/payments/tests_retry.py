@@ -185,3 +185,77 @@ class RepeticaoRealTests(TestCase):
         self.assertEqual(len(chamadas), 1,
                          "pediu o PIN outra vez por uma recusa que ja era resposta")
         self.assertFalse(r.success)
+
+
+class TimeoutLocalNaoRepeteTests(SimpleTestCase):
+    """O nosso timeout nao e o mesmo que o da operadora.
+
+    Quando e ela a desistir, o pedido morreu e repetir e correcto. Quando somos
+    nos a desistir, o pedido pode continuar vivo do lado dela — com o passageiro
+    a digitar o PIN nesse momento. Repetir manda-lhe um segundo pedido de PIN
+    pelo mesmo bilhete, que e exactamente o que o retry existe para evitar.
+    """
+
+    def test_o_nosso_timeout_nao_e_repetido(self):
+        corpo = {"detail": "Request timed out.", "_timeout_local": True}
+        self.assertFalse(_is_transient_gateway_failure(408, corpo))
+
+    def test_o_408_da_operadora_continua_a_ser_repetido(self):
+        # Sem a marca `_timeout_local`, e a operadora a desistir: o pedido
+        # morreu do lado dela e repetir nao incomoda ninguem.
+        self.assertTrue(_is_transient_gateway_failure(408, {"detail": "Request timed out."}))
+
+    def test_o_http_marca_o_proprio_timeout(self):
+        """A marca tem de ser posta por quem apanha o socket.timeout."""
+        import socket
+        from unittest.mock import patch
+
+        from apps.payments.services.gateway import _http_json_request
+
+        with patch("apps.payments.services.gateway.urllib.request.urlopen", side_effect=socket.timeout()):
+            status, corpo = _http_json_request(
+                url="https://exemplo.test/c2b", method="POST", headers={}, timeout_seconds=1, body={}
+            )
+
+        self.assertEqual(status, 408)
+        self.assertTrue(corpo.get("_timeout_local"))
+        self.assertFalse(_is_transient_gateway_failure(status, corpo))
+
+
+class TimeoutsPorProvedorTests(SimpleTestCase):
+    """A cobranca nao pode segurar um worker os 180s do prazo do passageiro."""
+
+    @override_settings(
+        PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS=180,
+        PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA=15,
+        PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA=60,
+        PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS=15,
+        MPESA_TRANSPORT="PAYLESS",
+        EMOLA_TRANSPORT="PAYLESS",
+        PAYLESS_BEARER_TOKEN="token",
+        MPESA_SHORTCODE="901913",
+        EMOLA_WALLET_CODE="28612",
+    )
+    def test_mpesa_espera_pouco_e_emola_espera_mais(self):
+        from apps.payments.services.gateway import MobileWalletGateway
+
+        mpesa = MobileWalletGateway("MPESA")
+        emola = MobileWalletGateway("EMOLA")
+
+        self.assertEqual(mpesa.charge_timeout, 15)
+        self.assertEqual(emola.charge_timeout, 60)
+        # O prazo do passageiro fica intocado — e o que a aplicacao mostra.
+        self.assertEqual(mpesa.timeout, 180)
+        self.assertEqual(mpesa.query_timeout, 15)
+
+    @override_settings(
+        PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS=20,
+        PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA=60,
+        EMOLA_TRANSPORT="PAYLESS",
+        PAYLESS_BEARER_TOKEN="token",
+        EMOLA_WALLET_CODE="28612",
+    )
+    def test_a_cobranca_nunca_espera_mais_do_que_o_prazo_do_passageiro(self):
+        from apps.payments.services.gateway import MobileWalletGateway
+
+        self.assertEqual(MobileWalletGateway("EMOLA").charge_timeout, 20)

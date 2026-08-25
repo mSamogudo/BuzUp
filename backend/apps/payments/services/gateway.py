@@ -258,7 +258,12 @@ def _http_json_request(*, url: str, method: str, headers: dict, timeout_seconds:
                 payload = {"raw_response": raw}
             return int(getattr(response, "status", 200)), payload
     except socket.timeout:
-        return 408, {"detail": "Request timed out."}
+        # `_timeout_local` distingue o NOSSO timeout do 408 que a operadora
+        # possa devolver. Sao coisas diferentes: quando e ela a desistir, o
+        # pedido morreu; quando somos nos, ele pode continuar vivo do lado dela,
+        # com o passageiro a digitar o PIN nesse preciso momento. Repetir aqui
+        # manda-lhe um segundo pedido de PIN pelo mesmo bilhete.
+        return 408, {"detail": "Request timed out.", "_timeout_local": True}
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode("utf-8", errors="replace")
         try:
@@ -285,6 +290,12 @@ def _is_transient_gateway_failure(status_code: int, payload: dict) -> bool:
     "saldo insuficiente" ou um "PIN nao introduzido" sao respostas — repeti-las
     seria chatear o passageiro com um segundo pedido de PIN.
     """
+    # O nosso proprio timeout nao conta. O pedido pode estar vivo do lado da
+    # operadora, e repeti-lo pede o PIN uma segunda vez — precisamente o que
+    # esta funcao existe para evitar. Fica pendente e a reconciliacao resolve,
+    # perguntando a operadora o que aconteceu.
+    if isinstance(payload, dict) and payload.get("_timeout_local"):
+        return False
     if status_code in (408, 429) or status_code >= 500:
         return True
     texto = json.dumps(payload, ensure_ascii=False).lower() if payload else ""
@@ -480,6 +491,15 @@ class MobileWalletGateway:
         # gateway acima do timeout do nginx (60s). 5s e o minimo razoavel para
         # nao cortar um pedido lento legitimo.
         self.timeout = max(5, int(getattr(settings, "PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", 25)))
+        # Cobranca e consulta nao levam o mesmo tempo de espera: a primeira
+        # aguarda o passageiro a digitar o PIN, a segunda e um GET. Ver as
+        # settings para a razao de MPESA e EMOLA diferirem.
+        if self.provider == "MPESA":
+            configurado = getattr(settings, "PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA", 15)
+        else:
+            configurado = getattr(settings, "PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA", 60)
+        self.charge_timeout = max(5, min(int(configurado), self.timeout))
+        self.query_timeout = max(5, int(getattr(settings, "PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS", 15)))
 
     def initiate_payment(self, reference: str, amount, payer_phone: str, description: str = "") -> PaymentGatewayResult:
         if not _provider_is_configured(self.provider):
@@ -551,7 +571,7 @@ class MobileWalletGateway:
         status_code, response_payload, tentativas = _post_with_retry(
             url=str(self.config["url"]),
             headers=headers,
-            timeout_seconds=self.timeout,
+            timeout_seconds=self.charge_timeout,
             body=request_payload,
             provider=self.provider,
         )
@@ -586,7 +606,7 @@ class MobileWalletGateway:
                 "Accept": "application/json",
                 "Authorization": f"Bearer {self.config['bearer_token']}",
             },
-            timeout_seconds=self.timeout,
+            timeout_seconds=self.query_timeout,
         )
 
         result, detail, ext_ref = _interpret_response(self.provider, status_code, response_payload)

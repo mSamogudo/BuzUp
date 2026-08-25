@@ -159,7 +159,23 @@ PAYMENT_MOBILE_WALLET_METHODS = config("PAYMENT_MOBILE_WALLET_METHODS", default=
 # validacoes em voo, e a resposta do gateway (que chegaria aos 150s) era
 # perdida deixando o pagamento PENDING para sempre. Ver docker-compose.prod.yml
 # e docker/prod/nginx.conf.
+# Prazo que o passageiro tem para confirmar na carteira. E o valor que a
+# aplicacao mostra, nao o tempo que o servidor fica a segurar a ligacao.
 PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", default=25, cast=int)
+# Quanto tempo o pedido de cobranca espera pela operadora antes de desistir. O
+# worker do gunicorn fica preso todo esse tempo — e a espera inclui o passageiro
+# a digitar o PIN. Em producao isto estava em 180s, e com ate 3 tentativas dava
+# 9 minutos por pagamento.
+#
+#  - MPESA tem consulta de estado (/search/mpesa/c2b), logo o desfecho e sempre
+#    recuperavel depois pela reconciliacao. Espera-se pouco.
+#  - EMOLA nao tem consulta. A resposta sincrona e o unico sitio onde se aprende
+#    o desfecho, por isso nao se pode largar cedo. Medido na producao do
+#    ETICKETING: maximo de 43,5s em 111 pagamentos.
+PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA", default=15, cast=int)
+PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA", default=60, cast=int)
+# A consulta de estado e um GET, nao espera por ninguem.
+PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS = config("PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS", default=15, cast=int)
 PAYLESS_BASE_URL = config("PAYLESS_BASE_URL", default="https://payless.bluteki.com/api/v2.0")
 PAYLESS_BEARER_TOKEN = config("PAYLESS_BEARER_TOKEN", default="")
 

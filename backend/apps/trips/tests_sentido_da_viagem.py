@@ -129,3 +129,66 @@ class SentidoDaViagemTests(TestCase):
         self.assertEqual(criadas.count(), 2)
         self.assertEqual(
             sorted(criadas.values_list("direction", flat=True)), ["inbound", "outbound"])
+
+
+class SentidoObrigatorioTests(TestCase):
+    """Poder declarar o sentido nao chega — tem de ser impossivel esquece-lo.
+
+    Enquanto for opcional, a proxima partida criada sem ele volta a aparecer
+    nas duas pesquisas e o defeito reaparece sem ninguem dar por isso. Uma
+    correccao que depende de alguem se lembrar nao e uma correccao.
+
+    Quem decide se ha pergunta a fazer e a propria rota: definida num so
+    sentido, a partida herda-o; definida nos dois, tem de dizer por qual vai.
+    """
+
+    def setUp(self):
+        self.dois = Route.objects.create(code="RT-DOIS", name="Ida e volta",
+                                         status=Route.Status.ACTIVE,
+                                         service_type="interprovincial")
+        self.um = Route.objects.create(code="RT-UM", name="So ida",
+                                       status=Route.Status.ACTIVE,
+                                       service_type="interprovincial")
+        a = Stop.objects.create(code="O-A", name="A", status="active")
+        b = Stop.objects.create(code="O-B", name="B", status="active")
+        for i, p in enumerate((a, b)):
+            RouteStop.objects.create(route=self.dois, stop=p, sequence=i,
+                                     direction=RouteStop.Direction.OUTBOUND)
+            RouteStop.objects.create(route=self.um, stop=p, sequence=i,
+                                     direction=RouteStop.Direction.OUTBOUND)
+        for i, p in enumerate((b, a)):
+            RouteStop.objects.create(route=self.dois, stop=p, sequence=i,
+                                     direction=RouteStop.Direction.INBOUND)
+        self.dia = (timezone.now() + timedelta(days=1)).date()
+
+    def _programar(self, rota, direction=""):
+        from apps.trips.services import programar_partidas
+
+        from datetime import time
+        return programar_partidas(route=rota, dates=[self.dia], times=[time(6, 0)],
+                                  direction=direction)
+
+    def test_rota_com_dois_sentidos_recusa_programacao_sem_sentido(self):
+        from apps.routes.services import SentidoIndefinido
+
+        with self.assertRaises(SentidoIndefinido) as ctx:
+            self._programar(self.dois)
+        self.assertIn("ida e volta", str(ctx.exception).lower())
+
+    def test_rota_com_um_sentido_herda_o_sem_perguntar(self):
+        """Nao ha escolha a fazer: perguntar seria fazer o operador decidir
+        uma coisa que a rota ja decidiu."""
+        self._programar(self.um)
+        t = Trip.objects.filter(route=self.um).first()
+        self.assertEqual(t.direction, RouteStop.Direction.OUTBOUND)
+
+    def test_rota_com_um_sentido_recusa_o_sentido_que_nao_existe(self):
+        from apps.routes.services import SentidoIndefinido
+
+        with self.assertRaises(SentidoIndefinido):
+            self._programar(self.um, direction=RouteStop.Direction.INBOUND)
+
+    def test_com_sentido_declarado_programa(self):
+        self._programar(self.dois, direction=RouteStop.Direction.INBOUND)
+        t = Trip.objects.filter(route=self.dois).first()
+        self.assertEqual(t.direction, RouteStop.Direction.INBOUND)

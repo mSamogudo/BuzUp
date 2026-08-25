@@ -105,6 +105,12 @@ def programar_partidas(
     06h sao duas partidas distintas da mesma rota — sem o sentido na chave, a
     segunda era descartada como repetida.
     """
+    from apps.routes.services import sentido_obrigatorio
+
+    # A rota diz se ha escolha a fazer. Numa rota com ida e volta isto recusa
+    # a programacao sem sentido, em vez de a deixar nascer ambigua.
+    direction = sentido_obrigatorio(route, direction)
+
     tz = timezone.get_current_timezone()
     por_dia: dict[str, dict] = {}
     criadas: list[Trip] = []

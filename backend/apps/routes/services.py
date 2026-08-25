@@ -200,3 +200,59 @@ def paragens_no_sentido(route, direction: str = "") -> list:
     for rs in paragens:
         vistas.setdefault(rs.stop_id, {"id": rs.stop_id, "code": rs.stop.code, "name": rs.stop.name})
     return list(vistas.values())
+
+
+class SentidoIndefinido(Exception):
+    """A rota tem dois sentidos e a partida nao diz por qual vai."""
+
+
+def sentidos_da_rota(route) -> set:
+    """Os sentidos que esta rota tem realmente definidos nas paragens."""
+    from apps.routes.models import RouteStop
+
+    return set(
+        RouteStop.objects.filter(route=route)
+        .values_list("direction", flat=True)
+        .distinct()
+    )
+
+
+def sentido_obrigatorio(route, direction: str) -> str:
+    """O sentido de uma partida nesta rota, validado contra as paragens dela.
+
+    Poder declarar o sentido nao chega: enquanto for opcional, a proxima
+    partida criada por engano sem ele volta a aparecer nas duas pesquisas, e o
+    defeito reaparece sem ninguem dar por isso. Uma correccao que depende de
+    alguem se lembrar nao e uma correccao.
+
+    Quem sabe se ha escolha a fazer e a propria rota:
+
+    - definida num so sentido — nao ha nada a escolher, e a partida herda-o;
+    - definida nos dois — a partida TEM de dizer por qual vai;
+    - sem paragens ainda — nao ha como validar, aceita-se o que vier.
+
+    Assim o operador so responde quando a pergunta existe mesmo, e nunca fica
+    a decidir uma coisa que a rota ja decidiu por ele.
+    """
+    sentidos = {d for d in sentidos_da_rota(route) if d}
+    escolhido = (direction or "").strip()
+
+    if not sentidos:
+        return escolhido
+    if len(sentidos) == 1:
+        unico = next(iter(sentidos))
+        if escolhido and escolhido != unico:
+            raise SentidoIndefinido(
+                f"Esta rota so esta definida no sentido "
+                f"'{'ida' if unico == 'outbound' else 'volta'}'. "
+                f"Acrescente as paragens do outro sentido antes de a programar."
+            )
+        return unico
+    if not escolhido:
+        raise SentidoIndefinido(
+            "Esta rota tem ida e volta. Indique o sentido da partida — sem ele, "
+            "quem procurar a ida recebe tambem as viagens de volta."
+        )
+    if escolhido not in sentidos:
+        raise SentidoIndefinido(f"Sentido desconhecido: {escolhido!r}.")
+    return escolhido

@@ -107,11 +107,34 @@ class GuestCheckoutCreateView(APIView):
                 {"detail": "Nao existe rota entre a origem e o destino seleccionados."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        segmento = None
         if route and (origin or destination):
             try:
-                resolve_route_segment(route, origin.id if origin else None, destination.id if destination else None)
+                segmento = resolve_route_segment(
+                    route, origin.id if origin else None, destination.id if destination else None)
             except RouteSegmentError as e:
                 return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # O SENTIDO. A pesquisa ja so mostra partidas que vao para o lado
+        # pedido, mas a pesquisa e o que se ve — isto e o que se compromete.
+        # Aqui chega um `trip_id`, e ate agora so se verificava que o par
+        # origem-destino formava segmento na ROTA. Bastava uma pagina aberta
+        # ha uma hora, um "voltar" do browser, uma segunda tentativa de
+        # pagamento, ou o QR do autocarro (que lista as partidas do veiculo, e
+        # o mesmo veiculo faz a ida de manha e a volta a tarde) para o
+        # passageiro sair com bilhete no autocarro que vai para o lado
+        # contrario. Verificado: o servidor emitia o bilhete com 201.
+        #
+        # Partida sem sentido declarado passa — sao as criadas antes do campo
+        # existir, e escondê-las tirava do ar bilhetes que hoje se vendem.
+        sentido_pedido = getattr(segmento, "direction", "") if segmento else ""
+        if trip is not None and trip.direction and sentido_pedido \
+                and trip.direction != sentido_pedido:
+            return Response(
+                {"detail": "Esta partida vai no sentido contrario ao percurso "
+                           "escolhido. Volte a pesquisar."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Termos e condicoes. A regra vive em `apps.branding.termos` porque ha
         # mais do que uma porta para comprar um bilhete — o site, a app por
@@ -166,6 +189,18 @@ class GuestCheckoutCreateView(APIView):
             if not (origin and destination):
                 return Response({"detail": "Indique origem e destino para comprar ida e volta."},
                                 status=status.HTTP_400_BAD_REQUEST)
+            # A volta tem de ir para o OUTRO lado. Verificava-se que era na
+            # mesma rota e que partia depois da ida — e as duas coisas sao
+            # verdade quando se escolhem por engano duas partidas do mesmo
+            # sentido. Vendia-se "ida e volta" com dois bilhetes para o mesmo
+            # lado, e o passageiro so descobria no dia de regressar.
+            if return_trip.direction and trip is not None and trip.direction \
+                    and return_trip.direction == trip.direction:
+                return Response(
+                    {"detail": "A partida de volta vai no mesmo sentido da ida. "
+                               "Escolha uma partida de regresso."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             try:
                 return_unit_amount = quote_fare(
                     route=route, origin_stop=destination, destination_stop=origin).amount

@@ -266,6 +266,30 @@ class TripSerializer(serializers.ModelSerializer):
             "pause_seconds", "closure_summary", "created_at", "updated_at",
         )
 
+    def validate(self, attrs):
+        """Uma partida nova nunca nasce sem saber para onde vai.
+
+        A validacao so aperta na CRIACAO. As partidas que ja existem foram
+        criadas antes do campo existir e nao tem sentido nenhum; exigi-lo a
+        quem so quer corrigir a viatura de uma delas seria prende-lo por uma
+        decisao que nao e a que veio tomar. Para essas ha o formulario, e ha o
+        comando `declarar_sentido`.
+        """
+        from apps.routes.services import SentidoIndefinido, sentido_obrigatorio
+
+        rota = attrs.get("route") or getattr(self.instance, "route", None)
+        if rota is None:
+            return attrs
+        sentido = attrs.get("direction", "" if self.instance is None else None)
+        if self.instance is not None and not sentido:
+            # Edicao que nao mexe no sentido: deixa-o como esta.
+            return attrs
+        try:
+            attrs["direction"] = sentido_obrigatorio(rota, sentido or "")
+        except SentidoIndefinido as e:
+            raise serializers.ValidationError({"direction": str(e)}) from e
+        return attrs
+
 
 class TripDetailSerializer(TripSerializer):
     purchases = serializers.SerializerMethodField()

@@ -37,11 +37,15 @@ const EMPTY_TRIP = {
  *
  *  Uma rota traz as paragens nos dois sentidos; a viagem não trazia nenhum, e
  *  por isso quem procurava Maputo→Nelspruit recebia também as partidas de
- *  Nelspruit→Maputo. Fica vazio por omissão de propósito: as partidas antigas
- *  não têm como saber para onde iam, e inventar-lhes um sentido punha
- *  passageiros no autocarro errado. */
+ *  Nelspruit→Maputo.
+ *
+ *  Deixar em branco não é "sem sentido": é deixar a ROTA decidir. Numa rota
+ *  definida num só sentido o servidor preenche-o sozinho — não há escolha a
+ *  fazer, e perguntar seria pôr o operador a decidir uma coisa já decidida.
+ *  Numa rota com ida e volta o servidor recusa e diz que falta, porque uma
+ *  partida nova não pode nascer ambígua. */
 const DIRECTIONS = [
-  { key: "", label: "Não declarado" },
+  { key: "", label: "Automático (a rota decide)" },
   { key: "outbound", label: "Ida" },
   { key: "inbound", label: "Volta" },
 ];

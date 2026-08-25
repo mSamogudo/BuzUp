@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -23,7 +24,9 @@ from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.routes.models import Route, Stop
-from apps.routes.services import RouteSegmentError, resolve_route_segment, route_segments_for_stop_pair
+from apps.routes.services import (
+    RouteSegmentError, paragens_no_sentido, resolve_route_segment, route_segments_for_stop_pair,
+)
 from apps.trips.models import Trip
 
 
@@ -430,7 +433,6 @@ class PublicTripSearchView(APIView):
     authentication_classes = []
 
     def get(self, request):
-        from apps.routes.models import RouteStop
         from datetime import timedelta
 
         route_id = request.query_params.get("route")
@@ -463,7 +465,25 @@ class PublicTripSearchView(APIView):
         if route_id:
             qs = qs.filter(route_id=route_id)
         if origin_id and destination_id:
-            qs = qs.filter(route_id__in=segments_by_route.keys())
+            # Filtrar so pela ROTA nao chega. A mesma rota tem as duas listas de
+            # paragens — Maputo->Nelspruit e Nelspruit->Maputo sao a mesma rota —
+            # e por isso quem procurava a ida recebia tambem as partidas da
+            # volta, com o percurso escrito ao contrario do que ia acontecer.
+            #
+            # O sentido do troco pedido ja estava resolvido aqui em
+            # `segments_by_route`; faltava exigi-lo a partida. Cada rota traz o
+            # seu, porque um par origem-destino pode ser ida numa rota e volta
+            # noutra.
+            #
+            # Sentido em branco = partida criada antes deste campo existir.
+            # Continua a aparecer nos dois lados, como sempre apareceu: nao ha
+            # como saber para onde ia, e adivinhar poria gente no autocarro
+            # errado. Ver `Trip.Direction`.
+            condicao = Q()
+            for rid, segment in segments_by_route.items():
+                sentido = getattr(segment, "direction", "") or ""
+                condicao |= Q(route_id=rid, direction__in=[sentido, ""]) if sentido else Q(route_id=rid)
+            qs = qs.filter(condicao) if condicao else qs.none()
 
         if date_str:
             from django.utils.dateparse import parse_date
@@ -543,21 +563,11 @@ class PublicTripSearchView(APIView):
 
         routes_list = list(Route.objects.filter(status="active").values("id", "code", "name"))
         if route_id:
-            stops_list = []
-            seen_stop_ids = set()
-            route_stops = RouteStop.objects.select_related("stop").filter(
-                route_id=route_id,
-                stop__status="active",
-            ).order_by("direction", "sequence")
-            for route_stop in route_stops:
-                if route_stop.stop_id in seen_stop_ids:
-                    continue
-                seen_stop_ids.add(route_stop.stop_id)
-                stops_list.append({
-                    "id": route_stop.stop_id,
-                    "code": route_stop.stop.code,
-                    "name": route_stop.stop.name,
-                })
+            # Ordem da IDA. Ordenar por `("direction", "sequence")` dava a ordem
+            # da VOLTA — "inbound" vem antes de "outbound" por ordem alfabetica —
+            # e a lista abria pelo destino em vez da origem.
+            rota = Route.objects.filter(pk=route_id).first()
+            stops_list = paragens_no_sentido(rota, "") if rota else []
         elif request.query_params.get("sellable"):
             # Portal publico: so paragens de rotas com partidas futuras — evita
             # oferecer origens/destinos onde nao ha nada para comprar.
@@ -638,7 +648,6 @@ class PublicBusInfoView(APIView):
 
     def get(self, request, vehicle_uuid):
         from apps.trips.models import Vehicle
-        from apps.routes.models import RouteStop
 
         vehicle = Vehicle.objects.filter(uuid=vehicle_uuid).first()
         if not vehicle:
@@ -651,20 +660,7 @@ class PublicBusInfoView(APIView):
 
         trips_payload = []
         for trip in trips:
-            stops = list(
-                RouteStop.objects.select_related("stop")
-                .filter(route=trip.route, stop__status="active")
-                .order_by("direction", "sequence")
-            )
-            stops_seen = {}
-            for rs in stops:
-                key = rs.stop_id
-                if key not in stops_seen:
-                    stops_seen[key] = {
-                        "id": rs.stop_id,
-                        "code": rs.stop.code,
-                        "name": rs.stop.name,
-                    }
+            stops_no_sentido = paragens_no_sentido(trip.route, trip.direction)
             trips_payload.append({
                 "trip_id": trip.id,
                 "route_id": trip.route_id,
@@ -682,7 +678,7 @@ class PublicBusInfoView(APIView):
                 # tinha como saber que estava a montar uma compra impossivel.
                 "service_type": trip.route.service_type,
                 "seat_selection": trip.route.requires_seat_selection,
-                "stops": list(stops_seen.values()),
+                "stops": stops_no_sentido,
             })
 
         return Response({

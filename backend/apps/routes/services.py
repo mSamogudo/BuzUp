@@ -164,3 +164,39 @@ def route_segments_for_stop_pair(
         if segment:
             result[route.id] = segment
     return result
+
+
+def paragens_no_sentido(route, direction: str = "") -> list:
+    """As paragens da rota pela ordem em que o autocarro as vai encontrar.
+
+    Uma rota tem duas listas — `outbound` e `inbound` — e sao a mesma estrada ao
+    contrario. Quem listava paragens ordenava por `("direction", "sequence")` e
+    ficava-se pela primeira ocorrencia de cada paragem: como "inbound" vem antes
+    de "outbound" por ordem alfabetica, o percurso saia SEMPRE na ordem da
+    volta. Na ida, o passageiro via o destino em primeiro lugar e a origem no
+    fim — exactamente o percurso contrario ao que ia fazer.
+
+    Com o sentido conhecido, mostra-se o dele. Sem sentido declarado (partidas
+    anteriores ao campo existir), fica a ida — que e a leitura natural da rota,
+    e a mesma que o portal ja usa para o nome dela.
+    """
+    from apps.routes.models import RouteStop
+
+    escolhido = direction or RouteStop.Direction.OUTBOUND
+    paragens = list(
+        RouteStop.objects.select_related("stop")
+        .filter(route=route, direction=escolhido, stop__status="active")
+        .order_by("sequence")
+    )
+    if not paragens:
+        # Rota so definida no outro sentido: mais vale mostrar o que existe do
+        # que devolver um percurso vazio.
+        paragens = list(
+            RouteStop.objects.select_related("stop")
+            .filter(route=route, stop__status="active")
+            .order_by("direction", "sequence")
+        )
+    vistas: dict = {}
+    for rs in paragens:
+        vistas.setdefault(rs.stop_id, {"id": rs.stop_id, "code": rs.stop.code, "name": rs.stop.name})
+    return list(vistas.values())

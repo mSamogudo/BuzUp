@@ -73,6 +73,9 @@ export default function TripSchedulerPage() {
   const [rota, setRota] = useState("");
   const [viatura, setViatura] = useState("");
   const [motorista, setMotorista] = useState("");
+  // Para que lado vai a partida. A rota tem as paragens nos dois sentidos; a
+  // viagem não tinha nenhum, e quem procurava a ida recebia também a volta.
+  const [sentido, setSentido] = useState<"outbound" | "inbound">("outbound");
   const [horas, setHoras] = useState<string[]>(["05:00"]);
   const [duracao, setDuracao] = useState("");
   const [dias, setDias] = useState<string[]>([]);
@@ -102,8 +105,9 @@ export default function TripSchedulerPage() {
     dates: dias,
     times: horasValidas,
     duration_minutes: duracao ? Number(duracao) : null,
+    direction: sentido,
     preview,
-  }), [rota, viatura, motorista, dias, horasValidas, duracao]);
+  }), [rota, viatura, motorista, dias, horasValidas, duracao, sentido]);
 
   useEffect(() => {
     if (modo !== "calendario" || !pronto || !token) { setPrevia(null); return; }
@@ -219,6 +223,23 @@ export default function TripSchedulerPage() {
                     ))}
                   </select>
                 </label>
+                <div className="field">
+                  <span>Sentido</span>
+                  {/* A ida e a volta são duas programações. Fazê-las de uma vez,
+                      como duas horas do mesmo dia, criava partidas sem sentido
+                      declarado — e o passageiro que procurava Maputo→Nelspruit
+                      recebia também as de Nelspruit→Maputo. */}
+                  <div className="bzsched-dir">
+                    {([["outbound", "Ida"], ["inbound", "Volta"]] as const).map(([v, rotulo]) => (
+                      <button key={v} type="button"
+                        className={`bzsched-dir-b${sentido === v ? " is-on" : ""}`}
+                        aria-pressed={sentido === v}
+                        onClick={() => setSentido(v)}>
+                        {rotulo}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <label className="field">
                   <span><Bus size={12} style={{ verticalAlign: -2 }} /> Autocarro</span>
                   <select value={viatura} onChange={(e) => setViatura(e.target.value)}>
@@ -262,7 +283,8 @@ export default function TripSchedulerPage() {
                   ) : null}
                 </div>
                 <p className="bzsched-note">
-                  Cada hora cria uma partida em cada dia marcado — é assim que se programa a ida e a volta.
+                  Cada hora cria uma partida em cada dia marcado, todas no sentido escolhido acima.
+                  A volta programa-se a seguir, trocando o sentido.
                 </p>
                 <label className="field">
                   <span>Duração da viagem (minutos)</span>

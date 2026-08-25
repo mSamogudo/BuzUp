@@ -42,6 +42,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   bool _loadingTrips = true;
   String? _error;
 
+  /// O agente pediu a lista de propósito ("Trocar de viagem").
+  ///
+  /// Enquanto for falso, a venda salta o passo de escolher: se há uma viagem
+  /// a decorrer, é nessa que se vende. Ver [_viagemEmCurso].
+  bool _escolhaManual = false;
+
   Map<String, dynamic>? _selectedTrip;
   List<dynamic> _stops = [];
   int? _originId;
@@ -79,6 +85,22 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   final _emergNameCtrl = TextEditingController();
   final _emergPhoneCtrl = TextEditingController();
 
+  /// Identificação de quem viaja, um registo por bilhete.
+  ///
+  /// Nas rotas com manifesto de bordo o bilhete é nominal, e numa
+  /// internacional é o documento que a fronteira confere. A venda ao balcão
+  /// não pedia nada — o bilhete saía anónimo e o manifesto sem nomes — apesar
+  /// de ser aqui, com o passageiro à frente, que dá para perguntar.
+  final List<_Passageiro> _passageiros = [];
+
+  /// Regras do documento nesta rota, vindas do servidor.
+  ///
+  /// Numa internacional só passaporte. A regra não se escreve aqui: viria a
+  /// discordar da do servidor, e o campo passaria a aceitar o que a venda
+  /// recusa.
+  List<dynamic> _documentTypes = [];
+  bool _pedeIdentidade = false;
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +133,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     NfcCardReader.stop();
     _emergNameCtrl.dispose();
     _emergPhoneCtrl.dispose();
+    for (final p in _passageiros) {
+      p.dispose();
+    }
     super.dispose();
   }
 
@@ -127,6 +152,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   void _resetSale() {
     _emergNameCtrl.clear();
     _emergPhoneCtrl.clear();
+    // O passageiro seguinte é outra pessoa: o nome e o documento do anterior
+    // não podem ficar no ecrã à espera de irem parar ao bilhete errado.
+    for (final p in _passageiros) {
+      p.dispose();
+    }
+    _passageiros.clear();
     setState(() {
       _step = _Step.trip;
       _selectedTrip = null;
@@ -155,6 +186,28 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     _loadTrips();
   }
 
+  /// Estados em que o autocarro já está a operar — embarque aberto, a
+  /// caminho, ou parado a meio do percurso.
+  static const _emCurso = {'boarding', 'departed', 'paused'};
+
+  /// A viagem que está a decorrer, quando é só uma.
+  ///
+  /// O motorista abria o embarque na página inicial e, ao voltar para vender,
+  /// voltava a receber a lista de viagens. Já tinha escolhido — mostrar-lhe as
+  /// outras não acrescenta nada e abre a porta a vender para o autocarro
+  /// errado, o que só se descobre com o passageiro já a bordo.
+  ///
+  /// Só vale quando há UMA a decorrer. Num terminal com três autocarros em
+  /// embarque ao mesmo tempo não há nada a adivinhar, e a lista volta.
+  Map<String, dynamic>? get _viagemEmCurso {
+    final activas = _trips
+        .whereType<Map>()
+        .map((t) => t.cast<String, dynamic>())
+        .where((t) => _emCurso.contains((t['status'] ?? '').toString()))
+        .toList();
+    return activas.length == 1 ? activas.first : null;
+  }
+
   Future<void> _loadTrips() async {
     setState(() {
       _loadingTrips = true;
@@ -164,6 +217,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       final api = ref.read(agentApiProvider);
       final trips = await api.trips();
       setState(() => _trips = trips);
+      // Uma só a decorrer: é essa. Vende-se nela sem passar pela lista.
+      final activa = _viagemEmCurso;
+      if (activa != null && !_escolhaManual && _step == _Step.trip) {
+        await _selectTrip(activa);
+      }
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
     } finally {
@@ -181,9 +239,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       setState(() {
         _stops = (detail['stops'] as List?) ?? [];
         _seatMap = (detail['seat_map'] as Map?)?.cast<String, dynamic>();
+        _documentTypes = (detail['document_types'] as List?) ?? [];
+        _pedeIdentidade = detail['requires_passenger_identity'] == true;
         _pickedSeats.clear();
         _step = _Step.route;
       });
+      _ajustarPassageiros();
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
     }
@@ -257,13 +318,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         seats: _seatsRequired ? List<String>.from(_pickedSeats) : const [],
         emergencyName: _seatsRequired ? _emergNameCtrl.text.trim() : '',
         emergencyPhone: _seatsRequired ? _emergPhoneCtrl.text.trim() : '',
+        passengers: _pedeIdentidade
+            ? [for (final p in _passageiros) p.toJson()]
+            : const [],
         // A assinatura inclui tudo o que define a venda: se o agente voltar
         // atras e corrigir o destino ou a quantidade, a chave roda sozinha e a
         // venda seguinte nao e confundida com a anterior.
         idempotencyKey: _idem.keyFor(
           'sale:${_selectedTrip!['id']}:$_originId:$_destinationId:$_quantity'
           ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}:$_currency'
-          ':${_pickedSeats.join(",")}',
+          ':${_pickedSeats.join(",")}'
+          ':${_passageiros.map((p) => p.numero.text.trim()).join(",")}',
         ),
       );
       // O servidor respondeu: a venda seguinte e nova e leva chave nova.
@@ -410,6 +475,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       case _Step.trip:
         return false;
       case _Step.route:
+        // Recuar até à lista é um acto deliberado: a partir daqui é o agente
+        // que escolhe, e a viagem em curso deixa de ser imposta.
+        _escolhaManual = true;
         _goTo(_Step.trip);
         return true;
       case _Step.seats:
@@ -543,6 +611,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (_originId == null) return 'Escolha a origem.';
         if (_destinationId == null) return 'Escolha o destino.';
         if (_originId == _destinationId) return 'Origem e destino devem ser diferentes.';
+        final falta = _faltaIdentidade();
+        if (falta.isNotEmpty) return falta;
         if (_seatsRequired && _emergPhoneCtrl.text.trim().length != 9) {
           return 'Indique o contacto de emergencia (9 digitos).';
         }
@@ -669,6 +739,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     );
   }
 
+  /// "Ida"/"Volta" — vazio quando a partida não o declara (as criadas antes
+  /// de o campo existir; ver `Trip.Direction` no servidor).
+  static String _sentidoLabel(String d) => switch (d) {
+        'outbound' => 'Ida',
+        'inbound' => 'Volta',
+        _ => '',
+      };
+
   Widget _stepSelectTrip() {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _errorBanner(),
@@ -693,7 +771,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                         child: ListTile(
                           leading: const Icon(Icons.directions_bus, color: Color(0xFF1D5FA7)),
                           title: Text('${t['route_code']} - ${t['route_name']}'),
-                          subtitle: Text('${t['vehicle']} · motorista: ${t['driver']}'),
+                          // O sentido distingue a ida da volta: a mesma rota
+                          // aparecia duas vezes no mesmo dia, escrita igual.
+                          subtitle: Text([
+                            _sentidoLabel((t['direction'] ?? '').toString()),
+                            '${t['vehicle']}',
+                            'motorista: ${t['driver']}',
+                          ].where((e) => e.isNotEmpty).join(' · ')),
                           trailing: Chip(label: Text(tripStatusLabel((t['status'] ?? '').toString()), style: const TextStyle(fontSize: 10))),
                           onTap: () => _selectTrip(t),
                         ),
@@ -715,8 +799,23 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _errorBanner(),
         if (_selectedTrip != null)
-          Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Row(children: [
+            Expanded(
+              child: Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ),
+            // A viagem em curso é imposta, mas não é uma prisão: um agente de
+            // terminal também vende bilhete antecipado para outra partida.
+            if (_trips.length > 1)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() => _escolhaManual = true);
+                  _goTo(_Step.trip);
+                },
+                icon: const Icon(Icons.swap_horiz, size: 18),
+                label: const Text('Trocar'),
+              ),
+          ]),
         const SizedBox(height: 12),
         StopPickerField(
           label: 'Origem',
@@ -739,6 +838,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _quantityCard(),
         if (_seatsRequired) ...[
           const SizedBox(height: 12),
+          _identityFields(),
           _emergencyFields(),
         ],
       ]),
@@ -762,21 +862,29 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         IconButton(
           icon: const Icon(Icons.remove_circle_outline),
           onPressed: _quantity > 1
-              ? () => setState(() {
+              ? () {
+                  setState(() {
                     _quantity--;
                     // Baixar a quantidade tem de largar os lugares a mais,
                     // senao ficavam escolhidos mais lugares do que bilhetes.
                     while (_pickedSeats.length > _quantity) {
                       _pickedSeats.removeLast();
                     }
-                  })
+                  });
+                  _ajustarPassageiros();
+                }
               : null,
         ),
         Text('$_quantity',
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
         IconButton(
           icon: const Icon(Icons.add_circle_outline),
-          onPressed: _quantity < 10 ? () => setState(() => _quantity++) : null,
+          onPressed: _quantity < 10
+              ? () {
+                  setState(() => _quantity++);
+                  _ajustarPassageiros();
+                }
+              : null,
         ),
       ]),
     );
@@ -1131,6 +1239,158 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     );
   }
 
+  /// Uma ficha por bilhete — nem mais, nem menos.
+  ///
+  /// Chamado quando a quantidade muda e quando se escolhe a viagem. Descartar
+  /// as fichas a mais liberta os controladores; sem isso, subir e baixar a
+  /// quantidade ia acumulando campos de texto vivos.
+  void _ajustarPassageiros() {
+    if (!_pedeIdentidade) {
+      for (final p in _passageiros) {
+        p.dispose();
+      }
+      _passageiros.clear();
+      setState(() {});
+      return;
+    }
+    while (_passageiros.length < _quantity) {
+      final p = _Passageiro();
+      // Rota com um único documento aceite (internacional: passaporte): já vem
+      // escolhido, porque não há escolha nenhuma a fazer.
+      if (_documentTypes.length == 1) {
+        p.tipo = (_documentTypes.first as Map)['value']?.toString() ?? '';
+      }
+      _passageiros.add(p);
+    }
+    while (_passageiros.length > _quantity) {
+      _passageiros.removeLast().dispose();
+    }
+    setState(() {});
+  }
+
+  /// Ficha de cada passageiro: nome e documento.
+  ///
+  /// Só aparece nas rotas com manifesto de bordo. Numa carreira urbana pedir o
+  /// documento seria guardar dados pessoais sem necessidade e atrasar uma
+  /// compra que tem de ser rápida.
+  Widget _identityFields() {
+    if (!_pedeIdentidade || _passageiros.isEmpty) return const SizedBox.shrink();
+    final internacional =
+        (_selectedTrip?['service_type'] ?? '').toString() == 'international';
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SizedBox(height: 14),
+      Row(children: [
+        const Icon(Icons.badge_outlined, size: 18, color: Color(0xFF1D5FA7)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            _quantity == 1 ? 'Passageiro' : 'Passageiros ($_quantity)',
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ]),
+      const SizedBox(height: 4),
+      Text(
+        internacional
+            ? 'O bilhete é nominal e o documento é conferido na fronteira.'
+            : 'O bilhete é nominal e entra no manifesto de bordo.',
+        style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7A8F)),
+      ),
+      for (var i = 0; i < _passageiros.length; i++) ...[
+        const SizedBox(height: 10),
+        _fichaPassageiro(i),
+      ],
+    ]);
+  }
+
+  Widget _fichaPassageiro(int i) {
+    final p = _passageiros[i];
+    final regra = _documentTypes.cast<Map>().firstWhere(
+          (r) => r['value']?.toString() == p.tipo,
+          orElse: () => const {},
+        );
+    final maxLen = (regra['max_length'] as num?)?.toInt();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4EBF3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (_quantity > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text('Bilhete ${i + 1}',
+                style: const TextStyle(
+                    fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7A8F))),
+          ),
+        TextField(
+          controller: p.nome,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Nome completo',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: 'Como está no documento',
+            prefixIcon: Icon(Icons.person_outline),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        // Um só tipo aceite (internacional) não é uma escolha: mostra-se o
+        // nome do documento em vez de uma lista com uma linha.
+        if (_documentTypes.length > 1)
+          DropdownButtonFormField<String>(
+            value: p.tipo.isEmpty ? null : p.tipo,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Tipo de documento',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              prefixIcon: Icon(Icons.badge_outlined),
+            ),
+            items: [
+              for (final r in _documentTypes.cast<Map>())
+                DropdownMenuItem(
+                  value: r['value']?.toString(),
+                  child: Text(r['label']?.toString() ?? '', overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: (v) => setState(() {
+              p.tipo = v ?? '';
+              // Formato diferente: o que estava escrito já não serve.
+              p.numero.clear();
+            }),
+          )
+        else if (_documentTypes.isNotEmpty)
+          Row(children: [
+            const Icon(Icons.badge_outlined, size: 18, color: Color(0xFF6B7A8F)),
+            const SizedBox(width: 8),
+            Text(_documentTypes.first is Map
+                ? ((_documentTypes.first as Map)['label']?.toString() ?? '')
+                : ''),
+          ]),
+        const SizedBox(height: 10),
+        TextField(
+          controller: p.numero,
+          textCapitalization: TextCapitalization.characters,
+          keyboardType: regra['digits_only'] == true ? TextInputType.number : TextInputType.text,
+          inputFormatters: [
+            if (regra['digits_only'] == true) FilteringTextInputFormatter.digitsOnly,
+            if (maxLen != null) LengthLimitingTextInputFormatter(maxLen),
+          ],
+          decoration: InputDecoration(
+            labelText: 'Número do documento',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: regra['placeholder']?.toString() ?? '',
+            helperText: regra['help']?.toString() ?? '',
+            helperMaxLines: 2,
+            prefixIcon: const Icon(Icons.numbers),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      ]),
+    );
+  }
+
   /// O que falta para poder cobrar, em palavras. Vazio quando nao falta nada.
   ///
   /// Um botao cinzento sem explicacao deixa o agente parado com o passageiro
@@ -1141,8 +1401,26 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       final f = _quantity - _pickedSeats.length;
       return f > 0 ? 'Escolha mais $f lugar(es).' : 'Escolheu lugares a mais.';
     }
+    final falta = _faltaIdentidade();
+    if (falta.isNotEmpty) return falta;
     if (_emergPhoneCtrl.text.trim().length != 9) {
       return 'Indique o contacto de emergencia (9 digitos).';
+    }
+    return '';
+  }
+
+  /// Qual a ficha por preencher, em palavras.
+  ///
+  /// O servidor recusa a venda sem isto; dizê-lo aqui evita que o agente
+  /// descubra o problema com o pagamento já pedido e o passageiro à espera.
+  String _faltaIdentidade() {
+    if (!_pedeIdentidade) return '';
+    for (var i = 0; i < _passageiros.length; i++) {
+      final p = _passageiros[i];
+      final quem = _quantity > 1 ? ' do bilhete ${i + 1}' : '';
+      if (p.nome.text.trim().isEmpty) return 'Indique o nome do passageiro$quem.';
+      if (p.tipo.isEmpty) return 'Escolha o tipo de documento$quem.';
+      if (p.numero.text.trim().isEmpty) return 'Indique o número do documento$quem.';
     }
     return '';
   }
@@ -1479,5 +1757,32 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
         ),
       ]),
     );
+  }
+}
+
+
+/// Nome e documento de um passageiro, um por bilhete.
+///
+/// Os controladores vivem aqui e não numa lista solta de strings porque
+/// sobrevivem aos rebuilds: escritos de outra forma, baixar a quantidade a
+/// meio do preenchimento deixava o texto do passageiro removido a aparecer no
+/// campo do seguinte.
+class _Passageiro {
+  final nome = TextEditingController();
+  final numero = TextEditingController();
+  String tipo = '';
+
+  bool get completo =>
+      nome.text.trim().isNotEmpty && tipo.isNotEmpty && numero.text.trim().isNotEmpty;
+
+  Map<String, String> toJson() => {
+        'name': nome.text.trim(),
+        'document_type': tipo,
+        'document_number': numero.text.trim().toUpperCase(),
+      };
+
+  void dispose() {
+    nome.dispose();
+    numero.dispose();
   }
 }

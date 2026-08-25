@@ -70,6 +70,9 @@ def generate_daily_trips(schedule: RouteSchedule, target_date: datetime | None =
                 vehicle=schedule.vehicle,
                 driver=schedule.driver,
                 schedule=schedule,
+                # O horario descreve uma carreira num sentido; as partidas que
+                # dele nascem vao para esse lado.
+                direction=schedule.direction or "",
                 planned_departure_at=departure,
                 status=Trip.Status.SCHEDULED,
             )
@@ -82,7 +85,7 @@ def generate_daily_trips(schedule: RouteSchedule, target_date: datetime | None =
 
 def programar_partidas(
     *, route, dates, times, vehicle=None, driver=None, agent=None,
-    duration_minutes: int | None = None, preview: bool = False,
+    duration_minutes: int | None = None, direction: str = "", preview: bool = False,
 ) -> dict:
     """Cria uma partida por cada (dia x hora) escolhidos no calendario.
 
@@ -96,7 +99,11 @@ def programar_partidas(
 
     Aqui o operador marca os dias no calendario e diz a hora. Repetir a mesma
     marcacao nao duplica nada: uma partida ja existente na mesma rota, a mesma
-    hora e com a mesma viatura e contada como ja programada.
+    hora, no mesmo sentido e com a mesma viatura e contada como ja programada.
+
+    O `direction` diz para que lado vai a partida. A ida das 06h e a volta das
+    06h sao duas partidas distintas da mesma rota — sem o sentido na chave, a
+    segunda era descartada como repetida.
     """
     tz = timezone.get_current_timezone()
     por_dia: dict[str, dict] = {}
@@ -109,6 +116,7 @@ def programar_partidas(
             partida = timezone.make_aware(datetime.combine(date, hora), tz)
             ja_existe = Trip.objects.filter(
                 route=route, planned_departure_at=partida, vehicle=vehicle,
+                direction=direction or "",
             ).exists()
             if ja_existe:
                 repetidas += 1
@@ -118,6 +126,7 @@ def programar_partidas(
                 continue
             criadas.append(Trip.objects.create(
                 route=route, vehicle=vehicle, driver=driver, agent=agent,
+                direction=direction or "",
                 planned_departure_at=partida,
                 planned_arrival_at=(
                     partida + timedelta(minutes=duration_minutes)

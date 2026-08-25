@@ -5613,6 +5613,22 @@ html[data-theme="dark"] .otp-digit:focus {
 }
 .bzsched-add:hover { border-color: var(--app-accent); color: var(--app-accent); }
 
+/* Sentido da partida: dois botoes lado a lado em vez de um select.
+   Sao duas opcoes fixas e mutuamente exclusivas, e a escolha muda o que se
+   vai criar — vale a pena estar visivel sem abrir nada. Ocupam metade cada,
+   por isso continuam a caber num telemovel. */
+.bzsched-dir { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bzsched-dir-b {
+  min-height: 40px; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 13px; font-weight: 700;
+  border: 1px solid var(--app-border); border-radius: 10px;
+  background: var(--app-surface); color: var(--app-text-muted);
+}
+.bzsched-dir-b:hover { border-color: var(--app-accent); }
+.bzsched-dir-b.is-on {
+  border-color: var(--app-accent); background: var(--app-accent); color: #fff;
+}
+
 .bzsched-note { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: var(--app-text-muted); }
 
 .bzsched-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }

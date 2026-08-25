@@ -301,7 +301,17 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
         ]),
         const SizedBox(height: 6),
         Text(
-          hasVehicle ? 'Partida $depLabel · Viatura $vehicle' : 'Partida $depLabel',
+          [
+            // O sentido separa a ida da volta: a mesma rota aparecia duas
+            // vezes no mesmo dia, escrita exactamente igual.
+            switch ((t['direction'] ?? '').toString()) {
+              'outbound' => 'Ida',
+              'inbound' => 'Volta',
+              _ => '',
+            },
+            'Partida $depLabel',
+            if (hasVehicle) 'Viatura $vehicle',
+          ].where((e) => e.isNotEmpty).join(' · '),
           style: TextStyle(color: txtMuted, fontSize: 12),
         ),
         if (!hasVehicle && status == 'scheduled')

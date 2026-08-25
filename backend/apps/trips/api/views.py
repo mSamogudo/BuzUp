@@ -229,6 +229,7 @@ class ProgramarPartidasView(APIView):
             driver=_opcional(Driver, "driver_id"),
             agent=_opcional(Agent, "agent_id"),
             duration_minutes=data.get("duration_minutes"),
+            direction=data.get("direction") or "",
             preview=data["preview"],
         )
         criadas = resultado.pop("trips")

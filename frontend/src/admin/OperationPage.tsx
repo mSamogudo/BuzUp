@@ -20,6 +20,8 @@ interface Trip {
   vehicle_id: number | null; vehicle_registration: string;
   driver_id: number | null; driver_name: string;
   planned_departure_at: string | null;
+  /** "outbound" | "inbound" — vazio nas partidas criadas antes do campo. */
+  direction: string;
   status: string;
 }
 interface RouteOpt { id: number; code: string; name: string }
@@ -27,9 +29,23 @@ interface VehicleOpt { id: number; registration: string }
 interface DriverOpt { id: number; full_name: string }
 
 const EMPTY_TRIP = {
-  route: "", vehicle: "", driver: "",
+  route: "", vehicle: "", driver: "", direction: "",
   planned_departure_at: "", planned_arrival_at: "", status: "scheduled",
 };
+
+/** Para que lado vai a partida.
+ *
+ *  Uma rota traz as paragens nos dois sentidos; a viagem não trazia nenhum, e
+ *  por isso quem procurava Maputo→Nelspruit recebia também as partidas de
+ *  Nelspruit→Maputo. Fica vazio por omissão de propósito: as partidas antigas
+ *  não têm como saber para onde iam, e inventar-lhes um sentido punha
+ *  passageiros no autocarro errado. */
+const DIRECTIONS = [
+  { key: "", label: "Não declarado" },
+  { key: "outbound", label: "Ida" },
+  { key: "inbound", label: "Volta" },
+];
+const dirLabel = (d: string) => DIRECTIONS.find((x) => x.key === d)?.label ?? "";
 
 /** Janelas de tempo para a lista de viagens. "Próximas" é o que interessa
  *  no dia-a-dia; o histórico só se procura de propósito. */
@@ -127,6 +143,7 @@ export default function OperationPage() {
       driver: form.driver ? Number(form.driver) : null,
       planned_departure_at: form.planned_departure_at || null,
       planned_arrival_at: form.planned_arrival_at || null,
+      direction: form.direction,
       status: form.status,
     };
     try {
@@ -221,6 +238,11 @@ export default function OperationPage() {
                   />
                 ) },
                 { header: t(lc, "departure"), render: (r: Trip) => formatDateTime(r.planned_departure_at) },
+                { header: "Sentido", render: (r: Trip) => (
+                  r.direction
+                    ? <span>{dirLabel(r.direction)}</span>
+                    : <span className="text-muted" title="Partida criada antes de existir o sentido. Aparece nas pesquisas dos dois lados até ser declarado.">—</span>
+                ) },
                 { header: t(lc, "status"), render: (r: Trip) => <StatusBadge value={r.status} /> },
                 { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Trip) => (
                   <div className="admin-inline-actions">
@@ -235,6 +257,7 @@ export default function OperationPage() {
                           driver: r.driver_id ? String(r.driver_id) : "",
                           planned_departure_at: r.planned_departure_at || "",
                           planned_arrival_at: "",
+                          direction: r.direction || "",
                           status: r.status,
                         });
                       }} />
@@ -282,6 +305,11 @@ export default function OperationPage() {
               <select value={form.driver} onChange={(e) => f("driver", e.target.value)}>
                 <option value="">{t(lc, "select")}</option>
                 {(driverOpts || []).map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+              </select>
+            </label>
+            <label className="field"><span>Sentido</span>
+              <select value={form.direction} onChange={(e) => f("direction", e.target.value)}>
+                {DIRECTIONS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
               </select>
             </label>
             <label className="field"><span>{t(lc, "plannedDeparture")}</span>

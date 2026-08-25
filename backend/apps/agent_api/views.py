@@ -102,6 +102,13 @@ def _trip_payload(trip: Trip) -> dict:
         "status": trip.status,
         "service_type": trip.route.service_type,
         "seat_selection": trip.route.requires_seat_selection,
+        # Para que lado vai. O POS mostra-o na lista: numa rota com ida e volta
+        # no mesmo dia, "RT-MPM-NLS" aparecia duas vezes sem nada a distinguir.
+        "direction": trip.direction,
+        # O bilhete e nominal nesta rota? Nas interprovinciais e internacionais
+        # o passageiro entra no manifesto e, na fronteira, o documento e
+        # conferido — o POS tem de pedir nome e documento.
+        "requires_passenger_identity": trip.route.requires_manifest,
     }
 
 
@@ -598,27 +605,29 @@ class AgentTripDetailView(APIView):
     permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def get(self, request, trip_id: int):
-        from apps.routes.models import RouteStop
         trip = Trip.objects.select_related("route", "vehicle", "driver").filter(pk=trip_id).first()
         if not trip:
             return Response({"detail": "Viagem nao encontrada."}, status=404)
         if not _trip_in_scope(request.user, trip):
             return Response({"detail": "Esta viagem nao lhe esta alocada."}, status=403)
-        stops = list(
-            RouteStop.objects.select_related("stop").filter(route=trip.route, stop__status="active")
-            .order_by("direction", "sequence")
-        )
-        seen = {}
-        for rs in stops:
-            seen.setdefault(rs.stop_id, {"id": rs.stop_id, "code": rs.stop.code, "name": rs.stop.name})
+        from apps.routes.services import paragens_no_sentido
+
         payload = _trip_payload(trip)
-        payload["stops"] = list(seen.values())
+        # Pela ordem em que ESTA partida as vai encontrar, e nao sempre pela da
+        # volta como acontecia. Ver `paragens_no_sentido`.
+        payload["stops"] = paragens_no_sentido(trip.route, trip.direction)
         # Planta de lugares: o POS precisa dela para as rotas que marcam lugar
         # (interprovincial, internacional). Nas urbanas vem `has_seat_map`
         # falso e o agente vende sem passar por aqui.
         from apps.guest_checkouts.seatmap import seat_map
 
         payload["seat_map"] = seat_map(trip)
+        # Regras do documento nesta rota: numa internacional so passaporte, e
+        # e o servidor que o diz. O POS desenha o campo a partir daqui em vez
+        # de trazer a regra escrita em Dart, que um dia deixaria de concordar.
+        from apps.guest_checkouts.documents import public_rules
+
+        payload["document_types"] = public_rules(trip.route.service_type)
         return Response(payload)
 
 
@@ -738,6 +747,7 @@ class AgentSaleCreateView(APIView):
                     seats=data.get("seats") or [],
                     emergency_contact_name=data.get("emergency_contact_name") or "",
                     emergency_contact_phone=data.get("emergency_contact_phone") or "",
+                    passengers=data.get("passengers") or [],
                 )
                 # Card payment is confirmed synchronously; return final state.
                 return Response({
@@ -768,6 +778,7 @@ class AgentSaleCreateView(APIView):
                 seats=data.get("seats") or [],
                 emergency_contact_name=data.get("emergency_contact_name") or "",
                 emergency_contact_phone=data.get("emergency_contact_phone") or "",
+                passengers=data.get("passengers") or [],
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)

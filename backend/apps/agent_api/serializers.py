@@ -92,6 +92,18 @@ class AgentSaleSerializer(serializers.Serializer):
         child=serializers.CharField(max_length=8),
         required=False, allow_empty=True, default=list,
     )
+    # Identificacao de quem viaja, um por bilhete. Obrigatoria nas rotas com
+    # manifesto de bordo (interprovincial e internacional): o bilhete e nominal
+    # e, na fronteira, e conferido contra o documento. O portal publico ja a
+    # pedia; a venda ao balcao nao — e era ao balcao que o passageiro estava
+    # mesmo a frente do agente, com o passaporte na mao.
+    #
+    # A validacao vive na venda, que e quem conhece a rota. Ver
+    # `apps.guest_checkouts.documents`.
+    passengers = serializers.ListField(
+        child=serializers.DictField(child=serializers.CharField(allow_blank=True, max_length=255)),
+        required=False, allow_empty=True, default=list,
+    )
 
     def validate(self, attrs):
         if not attrs.get("trip_id") and not attrs.get("route_id"):

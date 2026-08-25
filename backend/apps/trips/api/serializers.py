@@ -253,6 +253,7 @@ class TripSerializer(serializers.ModelSerializer):
             "driver", "driver_id", "driver_name",
             "agent", "agent_id", "agent_name",
             "schedule", "schedule_id",
+            "direction",
             "planned_departure_at", "actual_departure_at",
             "planned_arrival_at", "actual_arrival_at",
             "activity_started_at", "activity_paused_at", "activity_closed_at",
@@ -283,7 +284,23 @@ class TripDetailSerializer(TripSerializer):
         )
 
     def get_stops(self, obj):
-        """Paragens da rota, na ordem do percurso (sentido de ida)."""
+        """Paragens da rota — as DESTA partida primeiro.
+
+        Dizia-se "na ordem do percurso (sentido de ida)", mas ordenava-se por
+        `("direction", "sequence")`: como "inbound" vem antes de "outbound" por
+        ordem alfabetica, a lista comecava sempre pela volta. Numa partida de
+        ida, o percurso aparecia ao contrario do que ia acontecer.
+
+        Mantem-se os dois sentidos — o detalhe da viagem serve tambem para
+        conferir a rota — mas o da partida vem a frente.
+        """
+        from apps.routes.models import RouteStop
+
+        sentido = obj.direction or RouteStop.Direction.OUTBOUND
+        paragens = sorted(
+            obj.route.route_stops.select_related("stop"),
+            key=lambda rs: (rs.direction != sentido, rs.direction, rs.sequence),
+        )
         return [
             {
                 "sequence": rs.sequence,
@@ -291,8 +308,7 @@ class TripDetailSerializer(TripSerializer):
                 "code": rs.stop.code,
                 "direction": rs.direction,
             }
-            for rs in obj.route.route_stops.select_related("stop")
-            .order_by("direction", "sequence")
+            for rs in paragens
         ]
 
     def get_occupancy(self, obj):
@@ -424,9 +440,16 @@ class ProgramarPartidasSerializer(serializers.Serializer):
     dates = serializers.ListField(
         child=serializers.DateField(), min_length=1, max_length=92,
     )
-    # Varias horas no mesmo dia servem a carreira com ida e volta (05:00 e 15:00).
+    # Varias horas no mesmo dia servem a carreira que sai mais do que uma vez
+    # no MESMO sentido. A ida e a volta programam-se em separado, cada uma com
+    # o seu `direction` — sao percursos diferentes, com paragens por ordem
+    # inversa, e o passageiro tem de poder procurar so um deles.
     times = serializers.ListField(
         child=serializers.TimeField(), min_length=1, max_length=24,
+    )
+    direction = serializers.ChoiceField(
+        choices=[("outbound", "Ida"), ("inbound", "Volta")],
+        required=False, allow_blank=True, default="",
     )
     duration_minutes = serializers.IntegerField(
         required=False, allow_null=True, min_value=1, max_value=60 * 48,

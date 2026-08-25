@@ -33,12 +33,113 @@ class SaleError(Exception):
     pass
 
 
-def _seat_payload(seats: list[str] | None, quantity: int) -> list[dict]:
-    """Lugares no formato que `issue_guest_pass` ja consome (um por bilhete)."""
+def _seat_payload(seats: list[str] | None, quantity: int,
+                  passengers: list[dict] | None = None) -> list[dict]:
+    """Um registo por bilhete: lugar e identificacao de quem viaja.
+
+    `issue_guest_pass` le daqui `seat`, `name`, `document_type` e
+    `document_number`. Antes so se enchia o lugar, e por isso os bilhetes
+    vendidos ao balcao saiam sem nome nem documento — inclusive nas rotas
+    internacionais, onde e o documento que a fronteira confere.
+    """
     chosen = [s for s in (seats or []) if s]
-    if not chosen:
+    gente = passengers or []
+    if not chosen and not gente:
         return []
-    return [{"seat": chosen[i] if i < len(chosen) else ""} for i in range(quantity)]
+    saida = []
+    for i in range(quantity):
+        pessoa = gente[i] if i < len(gente) else {}
+        saida.append({
+            "seat": chosen[i] if i < len(chosen) else "",
+            "name": (pessoa.get("name") or "").strip()[:255],
+            "document_type": (pessoa.get("document_type") or "").strip(),
+            "document_number": (pessoa.get("document_number") or "").strip()[:64],
+        })
+    return saida
+
+
+# Primeira versao do POS que recolhe nome e documento do passageiro.
+#
+# A exigencia so vale para terminais que a conseguem cumprir. Os que ainda
+# correm uma versao anterior nao tem os campos no ecra: exigi-lo deles nao
+# tornava um bilhete nominal — parava a venda, com o passageiro a frente do
+# agente e nada que ele pudesse fazer. Havia 7 terminais em servico quando
+# isto foi escrito.
+#
+# Nao e um controlo de seguranca; e a pergunta "este cliente consegue
+# responder?". Cada terminal passa a exigir a identificacao no dia em que
+# actualiza, e quando o ultimo actualizar este ramo deixa de ser usado.
+POS_MIN_VERSION_IDENTIDADE = (1, 8, 0)
+
+
+def _versao(texto: str) -> tuple:
+    """"1.8.0" -> (1, 8, 0). Lixo -> (0, 0, 0), que nunca exige nada."""
+    partes = []
+    for pedaco in str(texto or "").split(".")[:3]:
+        digitos = "".join(c for c in pedaco if c.isdigit())
+        partes.append(int(digitos) if digitos else 0)
+    while len(partes) < 3:
+        partes.append(0)
+    return tuple(partes)
+
+
+def _terminal_recolhe_identidade(device: Device | None) -> bool:
+    """O terminal ja tem os campos de nome e documento no ecra?
+
+    Sem terminal identificado (venda pelo portal do agente, testes) assume-se
+    que sim: nao ha app velha do outro lado.
+    """
+    if device is None:
+        return True
+    return _versao(device.app_version) >= POS_MIN_VERSION_IDENTIDADE
+
+
+def _identidades_para(route, passengers: list[dict] | None, quantity: int,
+                      device: Device | None = None) -> list[dict]:
+    """Valida o nome e o documento de cada passageiro contra a regra da rota.
+
+    Nas rotas com manifesto de bordo o bilhete e nominal: sem nome nao ha
+    manifesto, e numa internacional sem documento o passageiro nao passa a
+    fronteira com o bilhete que acabou de comprar. O agente tem a pessoa a
+    frente — e o unico momento em que da para perguntar.
+
+    Numa carreira urbana nao se pede nada: guardar o documento de quem apanha
+    o autocarro do bairro seria recolher dados pessoais sem necessidade.
+
+    O que vier de um terminal antigo e gravado na mesma se vier — so nao e
+    exigido. Ver `POS_MIN_VERSION_IDENTIDADE`.
+    """
+    from apps.guest_checkouts.documents import DocumentError, validate_document_for
+
+    gente = list(passengers or [])
+    if not getattr(route, "requires_manifest", False):
+        return gente
+    if not gente and not _terminal_recolhe_identidade(device):
+        return gente
+
+    servico = getattr(route, "service_type", "")
+    limpos = []
+    for i in range(quantity):
+        pessoa = dict(gente[i]) if i < len(gente) else {}
+        nome = (pessoa.get("name") or "").strip()
+        if not nome:
+            raise SaleError(
+                f"Indique o nome do passageiro {i + 1}. Nesta rota o bilhete e "
+                f"nominal e entra no manifesto de bordo."
+            )
+        tipo = (pessoa.get("document_type") or "").strip()
+        numero = (pessoa.get("document_number") or "").strip()
+        if not tipo or not numero:
+            raise SaleError(
+                f"Indique o documento do passageiro {i + 1} ({nome})."
+            )
+        try:
+            numero = validate_document_for(servico, tipo, numero)
+        except DocumentError as e:
+            raise SaleError(f"Passageiro {i + 1} ({nome}): {e}") from e
+        pessoa.update({"name": nome, "document_type": tipo, "document_number": numero})
+        limpos.append(pessoa)
+    return limpos
 
 
 def _assert_seats_free(trip, seats: list[str] | None) -> None:
@@ -88,6 +189,7 @@ def create_pos_sale(
     seats: list[str] | None = None,
     emergency_contact_name: str = "",
     emergency_contact_phone: str = "",
+    passengers: list[dict] | None = None,
 ) -> tuple[GuestCheckout, PaymentIntent]:
     """Create a sale + initiate payment for an agent's POS terminal.
 
@@ -166,6 +268,9 @@ def create_pos_sale(
 
     emerg_name, emerg_phone = _emergency_for(
         route, emergency_contact_name, emergency_contact_phone)
+    # Validar ANTES do lock: recusar depois de reservar lugar deixava a
+    # lotacao presa por uma venda que nunca ia acontecer.
+    identidades = _identidades_para(route, passengers, quantity, device)
 
     with transaction.atomic():
         # Lotacao: sem este lock, um agente e um comprador web vendiam o mesmo
@@ -181,7 +286,7 @@ def create_pos_sale(
             reference=ref,
             payer_phone=phone,
             buyer_name="",
-            passengers=_seat_payload(seats, quantity),
+            passengers=_seat_payload(seats, quantity, identidades),
             route_code=route.code,
             route_name=route.name,
             origin_stop=origin.name,
@@ -253,6 +358,7 @@ def create_card_sale(
     seats: list[str] | None = None,
     emergency_contact_name: str = "",
     emergency_contact_phone: str = "",
+    passengers: list[dict] | None = None,
 ) -> tuple[GuestCheckout, PaymentIntent, list]:
     """Card-based POS sale: lookup card -> debit wallet -> confirm + issue.
 
@@ -395,13 +501,14 @@ def create_card_sale(
         # the gross fare.
         net_unit = (charged_total / quantity).quantize(Decimal("0.01")) if quantity else charged_total
         _card_emerg = _emergency_for(route, emergency_contact_name, emergency_contact_phone)
+        identidades = _identidades_para(route, passengers, quantity, device)
         from apps.fares.services import display_snapshot
         disp_ccy, disp_total, disp_rate = display_snapshot(charged_total, display_currency)
         gc = GuestCheckout.objects.create(
             reference=ref,
             payer_phone=phone,
             buyer_name=pa.full_name or "",
-            passengers=_seat_payload(seats, quantity),
+            passengers=_seat_payload(seats, quantity, identidades),
             route_code=route.code,
             route_name=route.name,
             origin_stop=origin.name,

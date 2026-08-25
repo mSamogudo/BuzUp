@@ -90,6 +90,24 @@ class Agent(BaseModel):
         return self.full_name
 
 
+class Direction(models.TextChoices):
+    """Para que lado vai o autocarro.
+
+    Uma rota tem duas listas de paragens — `outbound` e `inbound` — e sao a
+    mesma estrada em sentidos opostos. A VIAGEM nao guardava nenhum, e por isso
+    quem procurava Maputo->Nelspruit recebia tambem as partidas de
+    Nelspruit->Maputo: o sistema so sabia a que rota pertenciam.
+
+    Vazio significa "nao declarado", e nao um sentido por omissao. As viagens
+    criadas antes deste campo existir nao tem como saber para onde iam, e
+    inventar-lhes um sentido poria passageiros no autocarro errado; enquanto
+    nao for declarado, continuam a aparecer nos dois — como sempre apareceram.
+    """
+
+    OUTBOUND = "outbound", "Ida"
+    INBOUND = "inbound", "Volta"
+
+
 class RouteSchedule(BaseModel):
     class Status(models.TextChoices):
         ACTIVE = "active", "Activo"
@@ -104,6 +122,11 @@ class RouteSchedule(BaseModel):
     vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, null=True, blank=True, related_name="schedules")
     driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True, related_name="schedules")
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name="schedules")
+    # As viagens geradas por este horario herdam o sentido. Um horario descreve
+    # uma carreira num sentido — a volta tem outro horario.
+    direction = models.CharField(
+        max_length=8, choices=Direction.choices, blank=True, default="",
+    )
     start_time = models.TimeField()
     end_time = models.TimeField()
     # Minimo 1: com 0, `generate_daily_trips` entra em ciclo infinito
@@ -124,6 +147,9 @@ class RouteSchedule(BaseModel):
 
 
 class Trip(BaseModel):
+    # Atalho: `Trip.Direction.OUTBOUND` le-se melhor onde se fala de viagens.
+    Direction = Direction
+
     class Status(models.TextChoices):
         SCHEDULED = "scheduled", "Agendada"
         BOARDING = "boarding", "Embarque"
@@ -141,6 +167,10 @@ class Trip(BaseModel):
     # GPS "do autocarro" no mapa dos passageiros.
     device = models.ForeignKey(
         "devices.Device", on_delete=models.SET_NULL, null=True, blank=True, related_name="trips",
+    )
+    # O sentido em que esta partida percorre a rota. Ver `Direction`.
+    direction = models.CharField(
+        max_length=8, choices=Direction.choices, blank=True, default="", db_index=True,
     )
     planned_departure_at = models.DateTimeField(null=True, blank=True)
     actual_departure_at = models.DateTimeField(null=True, blank=True)

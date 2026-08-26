@@ -27,7 +27,7 @@ import '../../core/theme.dart';
 ///
 /// `processing` e `done` nao sao escolhas do agente: sao o que acontece depois
 /// de cobrar. Por isso nao contam na barra de progresso.
-enum _Step { trip, route, seats, payment, processing, done }
+enum _Step { trip, route, seats, passengers, payment, processing, done }
 
 class SaleFlowScreen extends ConsumerStatefulWidget {
   const SaleFlowScreen({super.key});
@@ -273,9 +273,10 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       );
       setState(() {
         _fare = fare;
-        // Numa rota com lugar marcado o passo seguinte e a planta; numa
-        // carreira urbana passa-se directo ao pagamento.
-        _step = _seatsRequired ? _Step.seats : _Step.payment;
+        // O passo seguinte sai de `_proximo`, que salta o que esta venda nao
+        // precisa: sem lugar marcado nao ha planta, sem manifesto de bordo
+        // nao ha ficha de passageiro.
+        _step = _proximo(_Step.route);
       });
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
@@ -314,7 +315,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         originStopId: _originId!,
         destinationStopId: _destinationId!,
         paymentMethod: _paymentMethod,
-        passengerPhone: _paymentMethod == 'mobile_money' ? _phone : null,
+        // Em numerário o telefone também vai — não como carteira a debitar,
+        // mas como destino do bilhete por SMS. Sem isto o servidor recusava a
+        // venda com 400 depois de o agente já ter recebido o dinheiro.
+        passengerPhone:
+            (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ? _phone : null,
         cardUid: _paymentMethod == 'card' ? _cardUid : null,
         qrToken: _paymentMethod == 'card' ? _qrToken : null,
         quantity: _quantity,
@@ -452,16 +457,51 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
 
   /// Os passos de escolha desta venda, por ordem. Sem `processing`/`done`:
   /// esses acontecem, nao se escolhem.
-  List<String> get _stepLabels => _seatsRequired
-      ? const ['Viagem', 'Trajecto', 'Lugares', 'Pagamento']
-      : const ['Viagem', 'Trajecto', 'Pagamento'];
+  /// Os passos desta venda, montados a partir do que ELA precisa.
+  ///
+  /// `Lugares` so nas rotas que marcam lugar; `Passageiros` so nas que levam
+  /// manifesto de bordo. Numa carreira urbana a venda continua a ser
+  /// viagem -> trajecto -> pagamento, como sempre foi.
+  List<String> get _stepLabels => [
+        'Viagem',
+        'Trajecto',
+        if (_seatsRequired) 'Lugares',
+        if (_pedeIdentidade) 'Passageiros',
+        'Pagamento',
+      ];
 
-  int get _stepIndex => switch (_step) {
-        _Step.trip => 0,
-        _Step.route => 1,
-        _Step.seats => 2,
-        _Step.payment => _seatsRequired ? 3 : 2,
-        _ => _stepLabels.length - 1,
+  int get _stepIndex {
+    final ordem = [
+      _Step.trip,
+      _Step.route,
+      if (_seatsRequired) _Step.seats,
+      if (_pedeIdentidade) _Step.passengers,
+      _Step.payment,
+    ];
+    final i = ordem.indexOf(_step);
+    return i < 0 ? _stepLabels.length - 1 : i;
+  }
+
+  /// O passo a seguir a este, saltando os que esta venda nao precisa.
+  _Step _proximo(_Step actual) => switch (actual) {
+        _Step.route when _seatsRequired => _Step.seats,
+        _Step.route when _pedeIdentidade => _Step.passengers,
+        _Step.route => _Step.payment,
+        _Step.seats when _pedeIdentidade => _Step.passengers,
+        _Step.seats => _Step.payment,
+        _Step.passengers => _Step.payment,
+        _ => _Step.payment,
+      };
+
+  /// O passo anterior a este, pelo mesmo caminho.
+  _Step _anterior(_Step actual) => switch (actual) {
+        _Step.payment when _pedeIdentidade => _Step.passengers,
+        _Step.payment when _seatsRequired => _Step.seats,
+        _Step.payment => _Step.route,
+        _Step.passengers when _seatsRequired => _Step.seats,
+        _Step.passengers => _Step.route,
+        _Step.seats => _Step.route,
+        _ => _Step.trip,
       };
 
   bool get _showsProgress => _step != _Step.processing && _step != _Step.done;
@@ -486,10 +526,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _goTo(_Step.trip);
         return true;
       case _Step.seats:
-        _goTo(_Step.route);
-        return true;
+      case _Step.passengers:
       case _Step.payment:
-        _goTo(_seatsRequired ? _Step.seats : _Step.route);
+        _goTo(_anterior(_step));
         return true;
       case _Step.processing:
       case _Step.done:
@@ -545,6 +584,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _Step.trip => 'Nova venda',
         _Step.route => 'Trajecto',
         _Step.seats => 'Escolha dos lugares',
+        _Step.passengers => _quantity == 1 ? 'Dados do passageiro' : 'Dados dos passageiros',
         _Step.payment => 'Pagamento',
         _Step.processing => 'A processar',
         _Step.done => 'Venda concluida',
@@ -597,6 +637,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         return _stepSelectStops();
       case _Step.seats:
         return _stepSeats();
+      case _Step.passengers:
+        return _stepPassageiros();
       case _Step.payment:
         return _stepPhoneAndConfirm();
       case _Step.processing:
@@ -616,8 +658,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (_originId == null) return 'Escolha a origem.';
         if (_destinationId == null) return 'Escolha o destino.';
         if (_originId == _destinationId) return 'Origem e destino devem ser diferentes.';
-        final falta = _faltaIdentidade();
-        if (falta.isNotEmpty) return falta;
         if (_seatsRequired && _emergPhoneCtrl.text.trim().length != 9) {
           return 'Indique o contacto de emergencia (9 digitos).';
         }
@@ -627,6 +667,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (f > 0) return 'Escolha mais $f lugar${f == 1 ? '' : 'es'}.';
         if (f < 0) return 'Escolheu lugares a mais.';
         return '';
+      case _Step.passengers:
+        return _faltaIdentidade();
       case _Step.payment:
         // Rede de seguranca: chegado aqui os lugares e o contacto ja estao
         // completos, mas se um dia deixarem de estar e melhor o botao dizer
@@ -658,6 +700,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         return _pickedSeats.length == _quantity
             ? 'AVANCAR COM ${_pickedSeats.join(", ")}'
             : 'ESCOLHA OS LUGARES';
+      case _Step.passengers:
+        return 'CONTINUAR';
       case _Step.payment:
         return switch (_paymentMethod) {
           'card' => 'COBRAR DO CARTAO',
@@ -675,7 +719,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       case _Step.route:
         _calculateFare();
       case _Step.seats:
-        _goTo(_Step.payment);
+      case _Step.passengers:
+        _goTo(_proximo(_step));
       case _Step.payment:
         _requestPayment();
       default:
@@ -889,7 +934,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _quantityCard(),
         if (_seatsRequired) ...[
           const SizedBox(height: 12),
-          _identityFields(),
           _emergencyFields(),
         ],
       ]),
@@ -1326,6 +1370,26 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     setState(() {});
   }
 
+  /// Passo próprio para os dados de quem viaja.
+  ///
+  /// Estes campos viviam no passo do trajecto, empilhados por baixo da origem,
+  /// do destino, da quantidade e do contacto de emergência. Com dois ou três
+  /// bilhetes aquilo era uma coluna interminável, e o agente perdia-se a rolar
+  /// com o passageiro à frente. Sozinhos num passo, cabem no ecrã e a barra de
+  /// progresso diz quantos faltam.
+  Widget _stepPassageiros() {
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _errorBanner(),
+        if (_selectedTrip != null)
+          Text('${_selectedTrip!['route_code']} · ${_fare?['origin'] ?? ''} → ${_fare?['destination'] ?? ''}',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7A8F))),
+        _identityFields(),
+        const SizedBox(height: 12),
+      ]),
+    );
+  }
+
   /// Ficha de cada passageiro: nome e documento.
   ///
   /// Só aparece nas rotas com manifesto de bordo. Numa carreira urbana pedir o
@@ -1540,29 +1604,38 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
               decoration: BoxDecoration(
                 color: selected ? BuzUpColors.orange : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: selected ? BuzUpColors.orange : Colors.grey.shade400),
               ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(icon, color: selected ? Colors.white : Colors.grey, size: 18),
-                const SizedBox(width: 6),
+              // Ícone EM CIMA do rótulo, e não ao lado.
+              //
+              // Lado a lado cabiam dois; ao acrescentar o numerário passaram a
+              // ser três, cada um com um terço da largura do telemóvel, e os
+              // nomes ficavam cortados a meio. Empilhados, o rótulo tem a
+              // largura toda do cartão e ainda sobra para duas linhas.
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon, color: selected ? Colors.white : Colors.grey, size: 20),
+                const SizedBox(height: 5),
                 Text(label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: selected ? Colors.white : Colors.grey.shade700,
-                      fontWeight: FontWeight.w800, fontSize: 12.5, letterSpacing: 0.4,
+                      fontWeight: FontWeight.w800, fontSize: 11.5, height: 1.15,
                     )),
               ]),
             ),
           ),
         );
       }
-      return Row(children: [
-        tile('mobile_money', Icons.phone_iphone, 'M-Pesa / E-Mola'),
-        tile('cash', Icons.payments_outlined, 'Numerario'),
-        tile('card', Icons.credit_card, 'Cartao NFC'),
+      return Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        tile('mobile_money', Icons.phone_iphone, 'M-Pesa\ne-Mola'),
+        tile('cash', Icons.payments_outlined, 'Numerário'),
+        tile('card', Icons.credit_card, 'Cartão NFC'),
       ]);
     });
   }

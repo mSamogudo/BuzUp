@@ -1,3 +1,5 @@
+import decimal
+
 from rest_framework import serializers
 
 
@@ -46,13 +48,45 @@ class AgentDeviceRegisterSerializer(serializers.Serializer):
         return serial
 
 
+class _ValorArredondado(serializers.DecimalField):
+    """Numero de sensor: arredonda-se, nao se recusa.
+
+    O GPS de um telemovel devolve `-25.891234567890` — 14 digitos. O campo
+    exigia no maximo 9 e recusava o heartbeat inteiro com 400. Resultado: entre
+    18 e 26 de Agosto de 2026, NENHUMA posicao chegou ao servidor. O autocarro
+    esteve invisivel no mapa dos passageiros durante oito dias, e ninguem deu
+    por isso porque a app engole o erro do heartbeat (e bem: uma falha de
+    telemetria nao pode parar uma venda).
+
+    Exigir do cliente a precisao exacta era pedir-lhe que soubesse a forma da
+    coluna da base de dados. Um sensor da o que tem; quem grava e que decide
+    quantas casas guarda. Seis casas sao cerca de 11 cm.
+
+    O arredondamento acontece ANTES da validacao porque o DRF valida os digitos
+    do valor recebido e so depois quantiza — pela ordem inversa, o `rounding`
+    do proprio campo nunca chegaria a salvar nada.
+    """
+
+    def to_internal_value(self, data):
+        if data is None or data == "":
+            return super().to_internal_value(data)
+        try:
+            valor = decimal.Decimal(str(data).strip())
+        except (decimal.InvalidOperation, ValueError, TypeError):
+            # Nao e um numero: deixa a mensagem normal do DRF explicar porque.
+            return super().to_internal_value(data)
+        casas = decimal.Decimal(1).scaleb(-self.decimal_places)
+        return super().to_internal_value(
+            valor.quantize(casas, rounding=decimal.ROUND_HALF_UP))
+
+
 class AgentDeviceHeartbeatSerializer(serializers.Serializer):
     serial_number = serializers.CharField(max_length=128, required=False, allow_blank=True)
     app_version = serializers.CharField(max_length=32, required=False, allow_blank=True)
-    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
-    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
-    speed = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, allow_null=True)
-    heading = serializers.DecimalField(max_digits=6, decimal_places=2, required=False, allow_null=True)
+    latitude = _ValorArredondado(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    longitude = _ValorArredondado(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    speed = _ValorArredondado(max_digits=6, decimal_places=2, required=False, allow_null=True)
+    heading = _ValorArredondado(max_digits=6, decimal_places=2, required=False, allow_null=True)
     metadata = serializers.DictField(required=False, default=dict)
 
 

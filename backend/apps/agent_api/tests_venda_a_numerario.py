@@ -133,3 +133,91 @@ class VendaANumerarioTests(TestCase):
 
         self._vender(quantity=3)
         self.assertEqual(seats_taken_bulk([self.viagem]).get(self.viagem.id), 3)
+
+
+class VendaANumerarioPelaApiTests(TestCase):
+    """A venda a dinheiro pelo ENDPOINT, com o corpo que a app manda.
+
+    Os testes de cima chamam `create_pos_sale` directamente e passavam todos —
+    mas a venda falhava no terminal com 400. A app so enviava `passenger_phone`
+    quando o pagamento era mobile money; a numerario mandava `null`, a chave
+    saia do corpo, e o serializer recusava. Nenhum teste de servico podia
+    apanhar isso, porque o problema estava na FORMA DO PEDIDO.
+
+    E por isso que este passa pelo HTTP.
+    """
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from apps.routes.models import RouteStop
+
+        User = get_user_model()
+        u = User.objects.create_user(username="apic", email="apic@x.mz", password="x")
+        Agent.objects.create(user=u, full_name="Agente", status=Agent.Status.ACTIVE)
+
+        self.origem = Stop.objects.create(code="AP-A", name="Maputo", status="active")
+        self.destino = Stop.objects.create(code="AP-B", name="Xai-Xai", status="active")
+        self.rota = Route.objects.create(code="RT-API", name="Api", status=Route.Status.ACTIVE,
+                                         service_type="urban")
+        for i, p in enumerate((self.origem, self.destino)):
+            RouteStop.objects.create(route=self.rota, stop=p, sequence=i, direction="outbound")
+        prod = FareProduct.objects.create(
+            name="Avulso", product_type=FareProduct.ProductType.SINGLE_TRIP)
+        FareRule.objects.create(fare_product=prod, route=self.rota,
+                                calculation_method=FareRule.CalculationMethod.FIXED,
+                                fixed_amount=Decimal("250.00"))
+        v = Vehicle.objects.create(registration="AP-01-AA", seated_capacity=30)
+        self.viagem = Trip.objects.create(
+            route=self.rota, vehicle=v, status=Trip.Status.BOARDING,
+            direction=Trip.Direction.OUTBOUND,
+            planned_departure_at=timezone.now() + timedelta(hours=1))
+
+        self.client = APIClient()
+        self.client.force_authenticate(u)
+
+    def _post(self, corpo):
+        return self.client.post("/api/agent/sales/", corpo, format="json")
+
+    def test_o_corpo_que_a_app_manda_conclui_a_venda(self):
+        r = self._post({
+            "trip_id": self.viagem.id,
+            "origin_stop_id": self.origem.id,
+            "destination_stop_id": self.destino.id,
+            "payment_method": "cash",
+            "passenger_phone": "841234567",
+            "quantity": 1,
+        })
+        self.assertEqual(r.status_code, 201, r.content)
+        corpo = r.json()
+        self.assertEqual(corpo["payment"]["status"], "confirmed")
+        self.assertEqual(corpo["payment"]["provider"], CASH_PROVIDER)
+        self.assertEqual(len(corpo["tickets"]), 1, "o bilhete tem de vir na resposta")
+
+    def test_sem_telefone_a_recusa_diz_o_que_falta(self):
+        """Era este 400 que o terminal levava — e a mensagem tem de explicar."""
+        r = self._post({
+            "trip_id": self.viagem.id,
+            "origin_stop_id": self.origem.id,
+            "destination_stop_id": self.destino.id,
+            "payment_method": "cash",
+            "quantity": 1,
+        })
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("SMS", str(r.content))
+
+    def test_a_numerario_nao_se_pede_pagamento_ao_gateway(self):
+        """O dinheiro ja esta na mao do agente: pedir PIN ao passageiro por um
+        pagamento que ele acabou de fazer em notas seria absurdo."""
+        from unittest.mock import patch
+
+        with patch("apps.agent_api.views.request_payment") as pedido:
+            r = self._post({
+                "trip_id": self.viagem.id,
+                "origin_stop_id": self.origem.id,
+                "destination_stop_id": self.destino.id,
+                "payment_method": "cash",
+                "passenger_phone": "841234567",
+                "quantity": 1,
+            })
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertFalse(pedido.called)

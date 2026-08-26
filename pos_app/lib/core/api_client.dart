@@ -139,12 +139,40 @@ class ApiClient {
         if (v is String) return v;
       }
     }
-    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-      return 'Servidor demorou a responder. Tente de novo.';
+    // Daqui para baixo não há mensagem do servidor para mostrar: ou ele não
+    // respondeu, ou respondeu algo que não é um erro nosso (uma página HTML do
+    // nginx, por exemplo). O agente tem um passageiro à frente — precisa de
+    // saber o que fazer, não de ler o nome de uma classe do Dart.
+    //
+    // Antes acabava em `'Erro : ${e.message}'`, que punha "DioException
+    // [bad response]: ..." no ecrã. Isso não é uma mensagem: é um despejo.
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'O servidor demorou a responder. Verifique a rede e tente de novo.';
+      case DioExceptionType.connectionError:
+        return 'Sem ligação ao servidor. Verifique a internet do terminal.';
+      case DioExceptionType.badCertificate:
+        return 'Ligação ao servidor não confiável. Contacte o suporte.';
+      case DioExceptionType.cancel:
+        return 'Operação cancelada.';
+      case DioExceptionType.badResponse:
+      case DioExceptionType.unknown:
+        break;
     }
-    if (e.type == DioExceptionType.connectionError) {
-      return 'Sem ligacao a internet ou servidor inacessivel.';
+    final codigo = e.response?.statusCode;
+    if (codigo == null) {
+      return 'Não foi possível falar com o servidor. Tente de novo.';
     }
-    return 'Erro ${e.response?.statusCode ?? ''}: ${e.message ?? 'desconhecido'}'.trim();
+    // Os códigos que o agente pode mesmo resolver, ditos por palavras.
+    return switch (codigo) {
+      401 || 403 => 'Sessão expirada ou sem permissão. Entre de novo.',
+      404 => 'Não encontrado. Actualize e tente de novo.',
+      409 => 'Este pedido já não é válido. Actualize e tente de novo.',
+      >= 500 => 'O servidor falhou a responder ($codigo). '
+          'Se continuar, contacte o suporte.',
+      _ => 'Não foi possível concluir a operação (erro $codigo). Tente de novo.',
+    };
   }
 }

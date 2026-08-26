@@ -1098,12 +1098,23 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 Row(children: [
                   const Text('Mostrar em', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 8),
-                  // Rola em vez de transbordar: com três ou mais moedas os
-                  // chips saíam do cartão.
+                  // MUDA DE LINHA em vez de rolar.
+                  //
+                  // Tentei primeiro um scroll horizontal aqui dentro. Um
+                  // scroll horizontal dentro do scroll vertical do passo dá ao
+                  // filho altura INFINITA — `BoxConstraints forces an infinite
+                  // height` — e o layout do ecrã inteiro rebenta. Em release
+                  // não estoira: desenha torto. E com o layout torto o
+                  // hit-test aterra no sítio errado, o que faz um campo de
+                  // texto perfeitamente funcional parecer que "não aceita
+                  // escrever nada".
+                  //
+                  // `Wrap` resolve o transbordo sem pedir altura nenhuma.
                   Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(children: [
+                    child: Wrap(
+                      spacing: 0,
+                      runSpacing: 4,
+                      children: [
                         for (final c in ['MZN', ..._rates.keys.toList()..sort()])
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
@@ -1130,7 +1141,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                               onSelected: (_) => setState(() => _currency = c),
                             ),
                           ),
-                      ]),
+                      ],
                     ),
                   ),
                 ]),
@@ -1683,12 +1694,16 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         final selected = _paymentMethod == key;
         return Expanded(
           child: GestureDetector(
-            onTap: () async {
-              if (key == 'card') {
-                await _startCardScan();
-              } else {
-                await NfcCardReader.stop();
-              }
+            onTap: () {
+              // A ESCOLHA PRIMEIRO, o hardware depois.
+              //
+              // Estava ao contrário: esperava-se pelo canal do NFC e só então
+              // se marcava a opção. Entre uma coisa e outra o ecrã não mudava
+              // nada — e num terminal onde o leitor demore a responder, tocar
+              // num método de pagamento parece simplesmente não fazer nada.
+              //
+              // Escolher o método é uma decisão do agente e não precisa de
+              // pedir licença ao leitor de cartões.
               setState(() {
                 _paymentMethod = key;
                 _error = null;
@@ -1697,6 +1712,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   _scannedCard = null;
                 }
               });
+              if (key == 'card') {
+                _startCardScan();
+              } else {
+                NfcCardReader.stop();
+              }
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -1734,11 +1754,23 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           ),
         );
       }
-      return Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      // SEM `CrossAxisAlignment.stretch`.
+      //
+      // Num `Row`, `stretch` estica os filhos até à ALTURA da linha — e aqui a
+      // linha vive dentro do scroll vertical do passo, onde a altura é
+      // infinita. Os cartões pediam altura infinita, o layout do ecrã rebentava
+      // e o campo de texto ficava por dispor (`RenderEditable NEEDS-LAYOUT`).
+      //
+      // Era esta a razão real por que o telefone "não aceitava escrever": o
+      // campo estava lá e funcionava, mas nunca chegava a ser desenhado no
+      // sítio onde o dedo tocava. `IntrinsicHeight` dá aos três a mesma altura
+      // sem exigir uma altura ao pai.
+      return IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         tile('mobile_money', Icons.phone_iphone, 'M-Pesa\ne-Mola'),
         tile('cash', Icons.payments_outlined, 'Numerário'),
         tile('card', Icons.credit_card, 'Cartão NFC'),
-      ]);
+      ]));
     });
   }
 

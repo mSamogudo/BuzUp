@@ -108,8 +108,10 @@ class _FakeApi extends AgentApi {
     List<String> seats = const [],
     String emergencyName = '',
     String emergencyPhone = '',
+    List<Map<String, String>> passengers = const [],
   }) async {
     vendas.add({
+      'passengers': passengers,
       'seats': seats,
       'emergency_name': emergencyName,
       'emergency_phone': emergencyPhone,
@@ -364,6 +366,52 @@ void main() {
     expect(api.vendas.last['seats'], ['1A']);
     expect(api.vendas.last['quantity'], 1);
     expect(api.vendas.last['currency'], 'MZN');
+  });
+
+  testWidgets('o ecra de pagamento desenha-se sem erros de layout', (tester) async {
+    // O defeito que este teste fixa: dois widgets do ecra de pagamento pediam
+    // ALTURA INFINITA — um `Row` com `CrossAxisAlignment.stretch` e um scroll
+    // horizontal — ambos dentro do scroll vertical do passo, onde nao ha
+    // altura para esticar.
+    //
+    // Em debug isso lanca `BoxConstraints forces an infinite height`. Em
+    // RELEASE nao estoira: desenha torto. E com o layout torto o hit-test
+    // aterra no sitio errado — o campo do telefone ficava por dispor
+    // (`RenderEditable NEEDS-LAYOUT`) e o agente escrevia sem que nada
+    // acontecesse.
+    //
+    // Passei tres rondas a corrigir sintomas (Expanded, controlador, tema)
+    // porque olhei sempre para o codigo e nunca corri isto. O teste ja existia
+    // e nem sequer compilava.
+    await _pump(tester, _FakeApi(seated: false));
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('SOLICITAR PAGAMENTO'), findsOneWidget);
+    // `pumpAndSettle` sem excepcoes ja prova que o layout fechou; isto garante
+    // que o campo existe MESMO e recebe texto.
+    await tester.enterText(find.byType(TextField).last, '849876543');
+    await tester.pumpAndSettle();
+    expect(find.text('849876543'), findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('o campo do telefone aceita escrita tambem a numerario',
+      (tester) async {
+    await _pump(tester, _FakeApi(seated: false));
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Numerário'));
+    await tester.pumpAndSettle();
+    expect(find.text('RECEBI O DINHEIRO'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, '841112223');
+    await tester.pumpAndSettle();
+    expect(find.text('841112223'), findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNotNull);
   });
 
   testWidgets('recuar do pagamento volta aos lugares, nao ao inicio',

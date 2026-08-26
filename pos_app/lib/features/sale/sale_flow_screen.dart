@@ -48,6 +48,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   /// a decorrer, é nessa que se vende. Ver [_viagemEmCurso].
   bool _escolhaManual = false;
 
+  /// O agente pediu para ver as partidas que ainda não saíram.
+  ///
+  /// Fechado por omissão: a venda normal é para o autocarro que está ali. Ver
+  /// [_viagensPorEstado].
+  bool _verProximas = false;
+
   Map<String, dynamic>? _selectedTrip;
   List<dynamic> _stops = [];
   int? _originId;
@@ -160,6 +166,10 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     _passageiros.clear();
     setState(() {
       _step = _Step.trip;
+      // A venda seguinte volta a abrir limpa: se o agente abriu as próximas
+      // para vender um bilhete antecipado, isso não pode ficar aberto para
+      // sempre e trazer o ruído de volta.
+      _verProximas = false;
       _selectedTrip = null;
       _stops = [];
       _originId = null;
@@ -758,10 +768,39 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _ => '',
       };
 
+  /// As viagens divididas em duas: as que estão a acontecer e as que ainda vão.
+  ///
+  /// O balcão via 14 viagens das quais 3 estavam a decorrer — as outras 11
+  /// eram a mesma rota repetida por sete dias, com o mesmo nome, distintas só
+  /// pela data. Para vender ao passageiro que está à frente, todas as outras
+  /// são ruído, e ruído com risco: basta tocar na linha errada para o bilhete
+  /// sair para o autocarro de amanhã.
+  ({List<Map<String, dynamic>> agora, List<Map<String, dynamic>> proximas}) get _viagensPorEstado {
+    final agora = <Map<String, dynamic>>[];
+    final proximas = <Map<String, dynamic>>[];
+    for (final e in _trips.whereType<Map>()) {
+      final t = e.cast<String, dynamic>();
+      (_emCurso.contains((t['status'] ?? '').toString()) ? agora : proximas).add(t);
+    }
+    return (agora: agora, proximas: proximas);
+  }
+
   Widget _stepSelectTrip() {
+    final grupos = _viagensPorEstado;
+    // As agendadas não desaparecem — ficam atrás de um toque. Apagá-las seria
+    // tirar ao balcão a venda antecipada, que numa carreira interprovincial é
+    // uso corrente: o passageiro compra hoje o lugar de amanhã.
+    final mostraProximas = _verProximas || grupos.agora.isEmpty;
+    final visiveis = [
+      ...grupos.agora,
+      if (mostraProximas) ...grupos.proximas,
+    ];
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _errorBanner(),
-      const Text('1. Escolha a viagem', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      Text(
+        grupos.agora.isEmpty ? '1. Escolha a viagem' : '1. Viagens a decorrer',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
       const SizedBox(height: 12),
       Expanded(
         child: _loadingTrips
@@ -774,22 +813,34 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                     TextButton(onPressed: _loadTrips, child: const Text('Actualizar')),
                   ]))
                 : ListView.separated(
-                    itemCount: _trips.length,
+                    itemCount: visiveis.length + (grupos.proximas.isEmpty ? 0 : 1),
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (_, i) {
-                      final t = _trips[i] as Map<String, dynamic>;
+                      // A última linha é o interruptor das próximas partidas.
+                      if (i == visiveis.length) {
+                        return _botaoProximas(grupos.proximas.length, mostraProximas);
+                      }
+                      final t = visiveis[i];
+                      final emCurso = _emCurso.contains((t['status'] ?? '').toString());
                       return Card(
                         child: ListTile(
-                          leading: const Icon(Icons.directions_bus, color: Color(0xFF1D5FA7)),
+                          leading: Icon(Icons.directions_bus,
+                              color: emCurso ? const Color(0xFF1D5FA7) : const Color(0xFF6B7A8F)),
                           title: Text('${t['route_code']} - ${t['route_name']}'),
                           // O sentido distingue a ida da volta: a mesma rota
                           // aparecia duas vezes no mesmo dia, escrita igual.
+                          // A data só nas próximas — nas que estão a decorrer
+                          // seria repetir "hoje" em todas as linhas.
                           subtitle: Text([
                             _sentidoLabel((t['direction'] ?? '').toString()),
+                            if (!emCurso) _quandoParte(t),
                             '${t['vehicle']}',
                             'motorista: ${t['driver']}',
                           ].where((e) => e.isNotEmpty).join(' · ')),
-                          trailing: Chip(label: Text(tripStatusLabel((t['status'] ?? '').toString()), style: const TextStyle(fontSize: 10))),
+                          trailing: Chip(
+                            label: Text(tripStatusLabel((t['status'] ?? '').toString()),
+                                style: const TextStyle(fontSize: 10)),
+                          ),
                           onTap: () => _selectTrip(t),
                         ),
                       );
@@ -797,6 +848,28 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   ),
       ),
     ]);
+  }
+
+  /// "dd/MM HH:mm" da partida — só faz falta nas que ainda não saíram.
+  static String _quandoParte(Map<String, dynamic> t) {
+    final d = DateTime.tryParse((t['planned_departure_at'] ?? '').toString())?.toLocal();
+    if (d == null) return '';
+    String dois(int n) => n.toString().padLeft(2, '0');
+    return '${dois(d.day)}/${dois(d.month)} ${dois(d.hour)}:${dois(d.minute)}';
+  }
+
+  Widget _botaoProximas(int quantas, bool aberto) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: OutlinedButton.icon(
+        onPressed: () => setState(() => _verProximas = !_verProximas),
+        icon: Icon(aberto ? Icons.expand_less : Icons.expand_more, size: 18),
+        label: Text(aberto
+            ? 'Esconder as próximas partidas'
+            : 'Vender para outra partida ($quantas)'),
+        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+      ),
+    );
   }
 
   /// Passo 2: de onde para onde, quantos bilhetes e — nas rotas longas — o

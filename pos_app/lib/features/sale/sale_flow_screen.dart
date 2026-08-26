@@ -1788,9 +1788,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       // sem exigir uma altura ao pai.
       return IntrinsicHeight(
           child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        tile('mobile_money', Icons.phone_iphone, 'M-Pesa\ne-Mola'),
+        tile('mobile_money', Icons.phone_iphone, 'M-Pesa / e-Mola'),
         tile('cash', Icons.payments_outlined, 'Numerário'),
-        tile('card', Icons.credit_card, 'Cartão NFC'),
+        // CARTAO NFC ESCONDIDO a pedido do operador (2026-08-26): a TPM-TUR
+        // ainda nao usa cartoes. Um metodo que ninguem pode concluir e um
+        // toque em falso — e este levava o agente a encostar o telemovel a um
+        // cartao que nao existe, com o passageiro a espera.
+        //
+        // Escondido, nao apagado: o painel de leitura (`_cardCapturePanel`), o
+        // leitor NFC e a venda por cartao no servidor continuam la. Volta
+        // descomentando esta linha.
+        // tile('card', Icons.credit_card, 'Cartão NFC'),
       ]));
     });
   }

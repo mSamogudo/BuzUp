@@ -438,6 +438,21 @@ void main() {
     expect(_actionButton(tester).onPressed, isNotNull);
   });
 
+  testWidgets('o pagamento oferece so M-Pesa/e-Mola e numerario', (tester) async {
+    // O cartao NFC esta escondido a pedido do operador: a TPM-TUR ainda nao
+    // usa cartoes, e um metodo que ninguem pode concluir e um toque em falso.
+    // Se um dia voltar, e este teste que muda — de proposito, para que a
+    // decisao seja tomada e nao acontecer por descuido.
+    await _pump(tester, _FakeApi(seated: false));
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('M-Pesa / e-Mola'), findsOneWidget);
+    expect(find.text('Numerário'), findsOneWidget);
+    expect(find.text('Cartão NFC'), findsNothing);
+  });
+
   testWidgets('recuar do pagamento volta aos lugares, nao ao inicio',
       (tester) async {
     await _pump(tester, _FakeApi(seated: true));

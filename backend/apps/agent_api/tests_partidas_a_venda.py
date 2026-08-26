@@ -6,13 +6,18 @@ que uma viagem nasce) e o POS so mostrava as que ja estavam em embarque. Ou
 seja: a unica maneira de vender era o motorista abrir o embarque primeiro, o
 que numa carreira internacional acontece horas depois de o bilhete ser vendido.
 
-A regra passou a ser uma so, em `Trip.sellable_statuses_for`: numa rota com
-lugar marcado vende-se antes de haver embarque; numa urbana vende-se o
-autocarro que esta ali.
+**A regra mudou em 2026-08-26, por decisao do operador.** O balcao passou a
+mostrar SO o que esta a circular: a TPM-TUR nao vende antecipado ao balcao, e
+abrir o embarque e o acto que poe o autocarro a venda.
 
-**Ate onde** se vende foi corrigido em 2026-08-26: era uma semana, e passou a
-ser o dia. O operador esclareceu que o balcao nao vende antecipado — isso
-faz-se pelo site. Ver `test_partida_de_amanha_nao_aparece`.
+Isso repoe, de propósito, o comportamento que originou o incidente acima — com
+uma diferenca que e tudo: agora e a REGRA e nao um acidente, e o ecra vazio diz
+o que falta ("A venda so esta disponivel depois de o motorista abrir o
+embarque") com atalho para o ecra onde se abre.
+
+`Trip.sellable_statuses_for` continua a permitir a venda a uma partida agendada
+— o portal publico usa-a para a venda antecipada pelo site. O que mudou foi o
+que o BALCAO ve.
 """
 
 from __future__ import annotations
@@ -57,14 +62,16 @@ class PartidasNoBalcaoTests(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         return {t["id"] for t in r.json()}
 
-    def test_partida_agendada_de_hoje_aparece(self):
-        """A viagem criada no portal nasce `agendada` e tem de aparecer.
-
-        Era este o incidente: o cliente criava a viagem no portal, ia ao POS, e
-        a lista estava vazia. Continua a ser o caso a proteger.
-        """
+    def test_partida_agendada_nao_aparece_no_balcao(self):
+        """Nem a de hoje: e o embarque que poe o autocarro a venda."""
         rota = self._rota("R-INT", Route.ServiceType.INTERNATIONAL)
         viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(minutes=90))
+        self.assertNotIn(viagem.id, self.ids_listados())
+
+    def test_abrir_o_embarque_poe_a_viagem_a_venda(self):
+        """O outro lado da mesma regra — sem isto nao havia como vender nada."""
+        rota = self._rota("R-INT-B", Route.ServiceType.INTERNATIONAL)
+        viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now() + timedelta(minutes=90))
         self.assertIn(viagem.id, self.ids_listados())
 
     def test_partida_de_amanha_nao_aparece(self):
@@ -99,10 +106,10 @@ class PartidasNoBalcaoTests(TestCase):
         viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now())
         self.assertIn(viagem.id, self.ids_listados())
 
-    def test_partida_atrasada_continua_a_venda(self):
-        """O autocarro atrasa-se; o balcao nao pode fechar a venda no minuto."""
+    def test_partida_atrasada_ja_em_embarque_continua_a_venda(self):
+        """O autocarro atrasa-se; enquanto o embarque estiver aberto, vende."""
         rota = self._rota("R-INT2", Route.ServiceType.INTERNATIONAL)
-        viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() - timedelta(hours=1))
+        viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now() - timedelta(hours=1))
         self.assertIn(viagem.id, self.ids_listados())
 
     def test_partida_de_daqui_a_um_mes_nao_enche_a_lista(self):

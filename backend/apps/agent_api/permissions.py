@@ -48,19 +48,32 @@ def provision_pos_agent(user):
 
 
 def driver_only_scope(user):
-    """Devolve o Driver quando o utilizador e SO motorista.
+    """Devolve o Driver quando o utilizador conduz um autocarro.
 
-    Um motorista tem perfil de Agente (ver `provision_pos_agent`) para poder
-    entrar no POS, mas nao tem a liberdade comercial do agente: vende apenas
-    nas viagens que lhe estao alocadas. Quem tem `pos.operate` (agente) ou e
-    superuser fica fora deste ambito e continua a escolher qualquer viagem.
+    Um motorista vende apenas nas viagens que lhe estao alocadas: cada um tem o
+    seu terminal e o seu autocarro, e uma venda feita na viagem de outro so se
+    descobre com o passageiro ja a bordo do errado.
+
+    **A pergunta e "conduz?", e nao "que permissoes tem?".** Antes bastava ter
+    `pos.operate` para ficar isento do limite — e o papel "Motorista" em
+    producao tinha essa permissao, posta a mao no portal (a migracao que o cria
+    deixa-o SEM permissoes nenhumas). Provavelmente para dar acesso ao POS, sem
+    se saber que ser motorista activo ja bastava: ver `provision_pos_agent`.
+
+    O resultado e que TODOS os motoristas ficavam isentos, e este limite nunca
+    se aplicava a ninguem. O codigo estava certo; morria por causa de uma
+    permissao concedida noutro sitio.
+
+    Passa a depender do facto operacional — ter um registo de Motorista activo —
+    que nao se liga nem desliga por engano numa caixa de permissoes. Quem nao
+    conduz (agente de balcao) continua a escolher qualquer viagem; o superuser
+    tambem, porque precisa de ver tudo para diagnosticar.
     """
-    from apps.core.permissions.base import has_capabilities
     from apps.trips.models import Driver
 
     if not user or not getattr(user, "is_authenticated", False):
         return None
-    if getattr(user, "is_superuser", False) or has_capabilities(user, ("pos.operate",)):
+    if getattr(user, "is_superuser", False):
         return None
     return Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).first()
 

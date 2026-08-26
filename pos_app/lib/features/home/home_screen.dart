@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/app_version.dart';
 import '../../core/app_update.dart';
 import '../../core/config.dart';
+import '../../core/api_client.dart';
 import '../../core/feedback.dart';
 import '../trips/driver_trip_actions.dart';
 import '../../core/location.dart';
@@ -121,6 +123,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// O que se mostra quando o perfil nao carrega.
+  ///
+  /// So chega aqui depois de a segunda tentativa tambem falhar (ver
+  /// `agentMeProvider`): nao e um solucao, e algo que precisa de accao.
+  Widget _erroAoAbrir(Object e) {
+    final msg = e is DioException
+        ? ApiClient.extractError(e)
+        : 'Nao foi possivel carregar o seu perfil.';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.cloud_off, size: 46, color: Color(0xFF6B7A8F)),
+          const SizedBox(height: 12),
+          Text(msg,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14.5, height: 1.4)),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => ref.invalidate(agentMeProvider),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('TENTAR DE NOVO'),
+          ),
+        ]),
+      ),
+    );
+  }
+
   Future<void> _loadSummary() async {
     try {
       final res = await ref.read(agentApiProvider).salesSummary();
@@ -178,7 +208,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         body: SafeArea(
           child: meAsync.when(
             loading: () => _loadingState(),
-            error: (e, _) => Center(child: Text('Erro: $e')),
+            // A excepcao em bruto nunca vai ao ecra: "DioException [connection
+            // timeout]" nao diz nada a quem esta ao balcao. E um erro sem
+            // saida e pior ainda — daqui da para tentar outra vez.
+            error: (e, _) => _erroAoAbrir(e),
             data: (me) {
               final agent = (me['agent'] as Map?) ?? {};
               return RefreshIndicator(

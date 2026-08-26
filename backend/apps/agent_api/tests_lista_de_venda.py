@@ -5,10 +5,9 @@ a mesma rota repetida dia apos dia, com o mesmo nome e o mesmo autocarro. Para
 vender ao passageiro que esta a frente isso e ruido — e ruido com risco, porque
 uma linha tocada por engano manda o bilhete para o autocarro de amanha.
 
-O que enchia a lista era o PRAZO — sete dias — e nao o estado. Cortar as
-agendadas por completo repunha dois defeitos ja corrigidos (ver
-`tests_partidas_a_venda`): a viagem criada no portal deixava de aparecer, e o
-autocarro atrasado deixava de vender. Fica a janela do DIA.
+A TPM-TUR nao vende antecipado ao balcao: abrir o embarque passa a ser o acto
+que poe o autocarro a venda. Enquanto o motorista nao o fizer, a viagem nao
+aparece aqui — e deliberado, e a lista vazia diz o que falta e quem o faz.
 
 O ciclo do motorista vive noutro endpoint e CONTINUA a mostrar as agendadas —
 e la que o embarque se abre. Se um dia alguem estreitar esse tambem, o
@@ -67,31 +66,13 @@ class ListaDeVendaTests(TestCase):
         """Era esta que fazia o agente vender para o autocarro errado."""
         self.assertNotIn(self.amanha.id, self._lista())
 
-    def test_mostra_a_de_hoje_com_o_embarque_ainda_por_abrir(self):
-        """A viagem criada no portal nasce `agendada`.
+    def test_nao_mostra_a_de_hoje_com_o_embarque_por_abrir(self):
+        """Abrir o embarque e o acto que poe o autocarro a venda.
 
-        Escondê-la ate o motorista abrir o embarque foi o defeito reportado no
-        primeiro dia: o cliente criava a viagem no portal e o POS aparecia
-        vazio. Numa carreira internacional o primeiro bilhete vende-se horas
-        antes de haver embarque.
+        A viagem existe, e de hoje, e parte daqui a duas horas — e mesmo assim
+        nao aparece. E a regra pedida pelo operador, e o ecra vazio explica-a
+        em vez de deixar o agente sem perceber.
         """
-        self.assertIn(self.hoje_por_abrir.id, self._lista())
-
-    def test_mostra_a_partida_atrasada(self):
-        """O autocarro atrasou-se e o embarque ainda nao abriu — e exactamente
-        o minuto em que mais gente aparece a comprar."""
-        from datetime import timedelta as td
-
-        self.hoje_por_abrir.planned_departure_at = timezone.now() - td(hours=1)
-        self.hoje_por_abrir.save(update_fields=["planned_departure_at"])
-        self.assertIn(self.hoje_por_abrir.id, self._lista())
-
-    def test_nao_mostra_a_de_ontem(self):
-        """Passada a folga do atraso, a partida sai da lista."""
-        from datetime import timedelta as td
-
-        self.hoje_por_abrir.planned_departure_at = timezone.now() - td(hours=20)
-        self.hoje_por_abrir.save(update_fields=["planned_departure_at"])
         self.assertNotIn(self.hoje_por_abrir.id, self._lista())
 
     def test_continua_na_lista_depois_de_abrir_o_embarque(self):

@@ -112,6 +112,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   List<dynamic> _documentTypes = [];
   bool _pedeIdentidade = false;
 
+  /// A rota leva manifesto de bordo e por isso pede contacto de emergência.
+  ///
+  /// Hoje coincide com [_pedeIdentidade] — as duas nascem do mesmo tipo de
+  /// rota — mas dependem de coisas diferentes no servidor e podem separar-se.
+  /// Escrito a parte para que, se um dia se separarem, o passo continue a
+  /// aparecer por qualquer uma delas.
+  bool get _pedeContactoEmergencia => _seatsRequired;
+
+  /// Há alguma coisa a perguntar sobre o passageiro nesta venda?
+  bool get _temPassoDePassageiros => _pedeIdentidade || _pedeContactoEmergencia;
+
   @override
   void initState() {
     super.initState();
@@ -478,7 +489,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         'Viagem',
         'Trajecto',
         if (_seatsRequired) 'Lugares',
-        if (_pedeIdentidade) 'Passageiros',
+        if (_temPassoDePassageiros) 'Passageiros',
         'Pagamento',
       ];
 
@@ -487,7 +498,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       _Step.trip,
       _Step.route,
       if (_seatsRequired) _Step.seats,
-      if (_pedeIdentidade) _Step.passengers,
+      if (_temPassoDePassageiros) _Step.passengers,
       _Step.payment,
     ];
     final i = ordem.indexOf(_step);
@@ -497,9 +508,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   /// O passo a seguir a este, saltando os que esta venda nao precisa.
   _Step _proximo(_Step actual) => switch (actual) {
         _Step.route when _seatsRequired => _Step.seats,
-        _Step.route when _pedeIdentidade => _Step.passengers,
+        _Step.route when _temPassoDePassageiros => _Step.passengers,
         _Step.route => _Step.payment,
-        _Step.seats when _pedeIdentidade => _Step.passengers,
+        _Step.seats when _temPassoDePassageiros => _Step.passengers,
         _Step.seats => _Step.payment,
         _Step.passengers => _Step.payment,
         _ => _Step.payment,
@@ -507,7 +518,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
 
   /// O passo anterior a este, pelo mesmo caminho.
   _Step _anterior(_Step actual) => switch (actual) {
-        _Step.payment when _pedeIdentidade => _Step.passengers,
+        _Step.payment when _temPassoDePassageiros => _Step.passengers,
         _Step.payment when _seatsRequired => _Step.seats,
         _Step.payment => _Step.route,
         _Step.passengers when _seatsRequired => _Step.seats,
@@ -687,9 +698,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (_originId == null) return 'Escolha a origem.';
         if (_destinationId == null) return 'Escolha o destino.';
         if (_originId == _destinationId) return 'Origem e destino devem ser diferentes.';
-        if (_seatsRequired && _emergPhoneCtrl.text.trim().length != 9) {
-          return 'Indique o contacto de emergencia (9 digitos).';
-        }
         return '';
       case _Step.seats:
         final f = _quantity - _pickedSeats.length;
@@ -697,7 +705,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (f < 0) return 'Escolheu lugares a mais.';
         return '';
       case _Step.passengers:
-        return _faltaIdentidade();
+        final falta = _faltaIdentidade();
+        if (falta.isNotEmpty) return falta;
+        if (_pedeContactoEmergencia && _emergPhoneCtrl.text.trim().length != 9) {
+          return 'Indique o contacto de emergencia (9 digitos).';
+        }
+        return '';
       case _Step.payment:
         // Rede de seguranca: chegado aqui os lugares e o contacto ja estao
         // completos, mas se um dia deixarem de estar e melhor o botao dizer
@@ -963,7 +976,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _quantityCard(),
         if (_seatsRequired) ...[
           const SizedBox(height: 12),
-          _emergencyFields(),
+
         ],
       ]),
     );
@@ -1493,6 +1506,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           Text('${_selectedTrip!['route_code']} · ${_fare?['origin'] ?? ''} → ${_fare?['destination'] ?? ''}',
               style: const TextStyle(fontSize: 13, color: Color(0xFF6B7A8F))),
         _identityFields(),
+        // O contacto de emergencia vem A SEGUIR aos dados de quem viaja.
+        //
+        // Estava no passo do trajecto, entre a escolha das paragens e a
+        // quantidade — no meio de decisoes sobre o PERCURSO, quando e uma
+        // pergunta sobre a PESSOA. Perguntada aqui, o agente faz de uma so vez
+        // tudo o que tem de pedir ao passageiro: nome, documento e a quem
+        // telefonar se algo correr mal.
+        _emergencyFields(),
         const SizedBox(height: 12),
       ]),
     );

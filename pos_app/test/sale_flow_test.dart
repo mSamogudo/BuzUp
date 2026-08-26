@@ -205,26 +205,25 @@ void main() {
     expect(_actionButton(tester).onPressed, isNotNull);
   });
 
-  testWidgets('rota com lugar marcado vende em quatro passos', (tester) async {
+  testWidgets('rota com lugar marcado vende em cinco passos', (tester) async {
+    // Viagem -> trajecto -> lugares -> PASSAGEIROS -> pagamento.
+    //
+    // O passo dos passageiros nasceu quando o contacto de emergencia saiu do
+    // trajecto: pedir a quem viaja o nome, o documento e o contacto de
+    // emergencia sao a MESMA conversa com o passageiro, e estavam partidas
+    // entre dois ecras com a escolha dos lugares pelo meio.
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
 
-    expect(find.text('PASSO 2 DE 4'), findsOneWidget);
-    expect(find.text('Contacto de emergencia'), findsOneWidget);
-    // Sem contacto de emergencia o servidor recusaria a venda: o botao diz-lo
-    // antes, em vez de deixar o agente descobrir depois de cobrar.
-    expect(find.text('Indique o contacto de emergencia (9 digitos).'),
-        findsOneWidget);
-    expect(_actionButton(tester).onPressed, isNull);
-
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
+    expect(find.text('PASSO 2 DE 5'), findsOneWidget);
+    // O trajecto trata do PERCURSO. O contacto de emergencia ja nao vive aqui.
+    expect(find.text('Contacto de emergencia'), findsNothing);
     expect(_actionLabel(tester), 'ESCOLHER LUGARES');
 
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
 
-    expect(find.text('PASSO 3 DE 4'), findsOneWidget);
+    expect(find.text('PASSO 3 DE 5'), findsOneWidget);
     expect(find.text('1A'), findsOneWidget);
     expect(find.text('Escolha mais 1 lugar.'), findsOneWidget);
     expect(_actionButton(tester).onPressed, isNull);
@@ -235,8 +234,22 @@ void main() {
 
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
-    expect(find.text('PASSO 4 DE 4'), findsOneWidget);
-    // O lugar tem de estar a vista no pagamento: veio de um ecra atras.
+
+    // Agora sim: tudo o que ha para perguntar ao passageiro, junto.
+    expect(find.text('PASSO 4 DE 5'), findsOneWidget);
+    expect(find.text('Contacto de emergencia'), findsOneWidget);
+    expect(find.text('Indique o contacto de emergencia (9 digitos).'),
+        findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField).last, '849999999');
+    await tester.pumpAndSettle();
+    expect(_actionButton(tester).onPressed, isNotNull);
+
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    expect(find.text('PASSO 5 DE 5'), findsOneWidget);
+    // O lugar tem de estar a vista no pagamento: veio de dois ecras atras.
     expect(find.text('2C'), findsOneWidget);
   });
 
@@ -244,7 +257,8 @@ void main() {
       (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
+    // O contacto de emergencia deixou de viver no trajecto: pergunta-se no
+    // passo dos passageiros, junto com o nome e o documento.
     await tester.pumpAndSettle();
 
     // Tres bilhetes: tres lugares.
@@ -268,7 +282,8 @@ void main() {
   testWidgets('baixar a quantidade larga os lugares a mais', (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
+    // O contacto de emergencia deixou de viver no trajecto: pergunta-se no
+    // passo dos passageiros, junto com o nome e o documento.
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.add_circle_outline));
     await tester.pumpAndSettle();
@@ -296,7 +311,8 @@ void main() {
   testWidgets('lugar ocupado nao pode ser vendido', (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
+    // O contacto de emergencia deixou de viver no trajecto: pergunta-se no
+    // passo dos passageiros, junto com o nome e o documento.
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
@@ -312,16 +328,20 @@ void main() {
     final api = _FakeApi(seated: true);
     await _pump(tester, api);
 
-    // Venda 1, completa.
+    // Venda 1, completa: trajecto -> lugares -> passageiros -> pagamento.
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '840000001');
-    await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('2C'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
+    // Passo dos passageiros: o contacto de emergencia vive aqui.
+    await tester.enterText(find.byType(TextField).last, '840000001');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    // Pagamento.
     await tester.enterText(find.byType(TextField).last, '841111111');
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
@@ -341,6 +361,14 @@ void main() {
     // a rota marca lugar — so se sabe depois de escolhida a viagem.
     expect(find.text('PASSO 1 DE 3'), findsOneWidget);
     await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1A'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    // Passo dos passageiros da venda 2: tem de estar VAZIO.
     expect(find.text('840000001'), findsNothing,
         reason: 'o contacto de emergencia da venda anterior ficou no ecra');
     expect(find.text('Indique o contacto de emergencia (9 digitos).'),
@@ -349,10 +377,6 @@ void main() {
 
     // E o que chega ao servidor na venda 2 e o contacto DESTA venda.
     await tester.enterText(find.byType(TextField).last, '840000002');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(FilledButton).last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('1A'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
@@ -418,25 +442,31 @@ void main() {
       (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('2C'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
-    expect(find.text('PASSO 4 DE 4'), findsOneWidget);
 
+    // Passo dos passageiros.
+    expect(find.text('PASSO 4 DE 5'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, '849999999');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    expect(find.text('PASSO 5 DE 5'), findsOneWidget);
+
+    // Recuar devolve ao passo anterior, um de cada vez — e nao ao inicio.
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
-    expect(find.text('PASSO 3 DE 4'), findsOneWidget);
-    expect(_actionLabel(tester), 'AVANCAR COM 2C');
-
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await tester.pumpAndSettle();
-    expect(find.text('PASSO 2 DE 4'), findsOneWidget);
-    // O contacto de emergencia escrito nao se perde ao recuar.
+    expect(find.text('PASSO 4 DE 5'), findsOneWidget);
+    // O que foi escrito nao se perde ao recuar.
     expect(find.text('849999999'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.text('PASSO 3 DE 5'), findsOneWidget);
+    expect(_actionLabel(tester), 'AVANCAR COM 2C');
   });
 }

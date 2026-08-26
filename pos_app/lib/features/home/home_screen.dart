@@ -308,10 +308,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
-                  // Secondary actions grid — 3 colunas e cartoes mais baixos.
-                  // Com 2 colunas a 1.6, as 7 accoes ocupavam 4 linhas e a
-                  // ultima ficava fora do ecra num terminal de 5"; assim
-                  // cabem em 3 linhas sem rolagem.
+                  // Accoes secundarias — 3 colunas e cartoes mais baixos.
+                  //
+                  // As 3 colunas vem de quando eram 7 accoes: com 2 colunas a
+                  // 1.6 ocupavam 4 linhas e a ultima ficava fora do ecra num
+                  // terminal de 5". Agora sao 4 (5 com "Minhas viagens") e
+                  // cabem numa linha e meia — mantem-se a 3 porque cartoes
+                  // enormes numa grelha meia vazia nao ajudam ninguem, e
+                  // porque as escondidas podem voltar.
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                     sliver: SliverGrid.count(
@@ -320,9 +324,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisSpacing: 8,
                       childAspectRatio: 1.02,
                       children: [
-                        FadeIn(delay: const Duration(milliseconds: 200), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.nfc, 'TOP UP', () async { AppFeedback.click(); await context.push('/cards'); _loadSummary(); })),
-                        FadeIn(delay: const Duration(milliseconds: 210), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.person_add_alt, 'Novo passageiro', () async { AppFeedback.click(); await context.push('/passengers/onboard'); _loadSummary(); })),
-                        FadeIn(delay: const Duration(milliseconds: 220), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.replay, 'Recuperar cartao', () async { AppFeedback.click(); await context.push('/passengers/recover'); _loadSummary(); })),
+                        // ESCONDIDOS a pedido do operador (2026-08-26): TOP UP,
+                        // Novo passageiro e Recuperar cartao.
+                        //
+                        // Sao as funcoes de CARTAO/CARTEIRA, que a TPM-TUR nao
+                        // usa: vende bilhete de percurso, nao passes por
+                        // carteira. Ocupavam metade da grelha e cada uma era um
+                        // toque em falso a espera de acontecer.
+                        //
+                        // Escondidos, e nao apagados: os ecras e as rotas
+                        // continuam la (`/cards`, `/passengers/onboard`,
+                        // `/passengers/recover`) e o backend tambem. Um
+                        // operador que use cartoes volta a te-los descomentando
+                        // estas tres linhas.
                         FadeIn(delay: const Duration(milliseconds: 240), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.qr_code_scanner, 'Validar bilhete', () async { AppFeedback.click(); await context.push('/verify'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 280), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.list_alt, 'Historico', () async { AppFeedback.click(); await context.push('/history'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 360), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.lock_clock, 'Fecho do dia', () async { AppFeedback.click(); await context.push('/day-close'); _loadSummary(); })),

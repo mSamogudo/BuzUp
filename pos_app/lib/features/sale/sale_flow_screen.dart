@@ -556,7 +556,23 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
-      child: Scaffold(
+      // ESTE ECRA E CLARO, sempre.
+      //
+      // Estava escrito com 26 cores fixas claras — o cartao do resumo em
+      // creme, os chips em branco, os cartoes de pagamento em branco — mas o
+      // TEXTO vinha do tema. O tema da app segue o Android (`ThemeMode.system`)
+      // e, num terminal em modo escuro, saia texto branco sobre creme e chips
+      // brancos com letra branca. Ao agente isso nao aparece como "cores
+      // trocadas": aparece como texto sobreposto, opcoes que nao se veem, e um
+      // campo de telefone onde ele escreve e nao vê aparecer nada.
+      //
+      // Declarar o tema aqui faz com que TUDO — chips, campos, texto — se
+      // resolva contra as mesmas cores claras que os fundos ja usavam. E
+      // tambem a escolha certa para o uso: vende-se de pe, muitas vezes ao
+      // sol, e o contraste alto le-se melhor.
+      child: Theme(
+        data: BuzUpTheme.light(),
+        child: Scaffold(
         appBar: AppBar(
           title: Text(_appBarTitle()),
           backgroundColor: const Color(0xFF071E49),
@@ -588,6 +604,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             _bottomBar(),
           ]),
         ),
+      ),
       ),
     );
   }
@@ -1067,7 +1084,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _errorBanner(),
         Card(
           color: const Color(0xFFFFF8E1),
-          child: Padding(
+          // Fundo creme fixo => texto escuro fixo. Um sem o outro foi
+          // exactamente o que tornou este cartao ilegivel.
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: Color(0xFF15191E)),
+            child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}'),
@@ -1156,6 +1177,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 ),
             ]),
           ),
+          ),
         ),
         const SizedBox(height: 12),
         _methodPicker(),
@@ -1166,6 +1188,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.done,
+            // O que se escreve tem de se ver. Sem isto a cor vinha do tema, e
+            // era essa a razao por que o agente dizia que "o campo não
+            // funciona": funcionava, mas os dígitos saíam invisíveis.
+            style: const TextStyle(
+                color: Color(0xFF15191E), fontSize: 17, fontWeight: FontWeight.w600),
+            cursorColor: const Color(0xFF1D5FA7),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)],
             decoration: InputDecoration(
               // Em numerário o telefone já não é uma carteira a debitar: é
@@ -1177,8 +1205,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               helperText: _paymentMethod == 'cash'
                   ? 'É para aqui que o bilhete vai por SMS.'
                   : null,
-              prefixIcon: const Icon(Icons.phone),
+              prefixIcon: const Icon(Icons.phone, color: Color(0xFF6B7A8F)),
               hintText: '84/85/86/87...',
+              labelStyle: const TextStyle(color: Color(0xFF6B7A8F)),
+              hintStyle: const TextStyle(color: Color(0xFF9AA7B8)),
+              helperStyle: const TextStyle(color: Color(0xFF6B7A8F)),
+              filled: true,
+              fillColor: Colors.white,
               floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             // setState para a linha "indique o telefone..." por cima do botao

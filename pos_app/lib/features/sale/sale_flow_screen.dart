@@ -86,6 +86,16 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   final _emergNameCtrl = TextEditingController();
   final _emergPhoneCtrl = TextEditingController();
 
+  /// Telefone do passageiro — com controlador, como todos os outros campos.
+  ///
+  /// Era um `TextField` sem controlador cujo valor era espelhado em `_phone`
+  /// por `setState` a cada tecla. Cada tecla reconstruía o passo inteiro, e o
+  /// campo — sem `key` e sem controlador — perdia o texto pelo caminho: o
+  /// agente escrevia e não aparecia nada. O controlador sobrevive aos
+  /// rebuilds; é a mesma razão pela qual o contacto de emergência sempre teve
+  /// um.
+  final _phoneCtrl = TextEditingController();
+
   /// Identificação de quem viaja, um registo por bilhete.
   ///
   /// Nas rotas com manifesto de bordo o bilhete é nominal, e numa
@@ -134,6 +144,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     NfcCardReader.stop();
     _emergNameCtrl.dispose();
     _emergPhoneCtrl.dispose();
+    _phoneCtrl.dispose();
     for (final p in _passageiros) {
       p.dispose();
     }
@@ -153,6 +164,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   void _resetSale() {
     _emergNameCtrl.clear();
     _emergPhoneCtrl.clear();
+    _phoneCtrl.clear();
     // O passageiro seguinte é outra pessoa: o nome e o documento do anterior
     // não podem ficar no ecrã à espera de irem parar ao bilhete errado.
     for (final p in _passageiros) {
@@ -1027,6 +1039,28 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     });
   }
 
+  /// Uma linha "etiqueta ... valor" que não se atropela.
+  ///
+  /// Eram `Row`s com dois `Text` soltos. Quando a etiqueta cresce — "Em ZAR
+  /// (1 ZAR = 4.10 MZN)" — não havia nada a dizer a nenhum dos dois quem cede
+  /// espaço, e os textos passavam por cima um do outro. A etiqueta cede (pode
+  /// truncar); o valor nunca, porque é o número que o agente vai cobrar.
+  Widget _linhaResumo(String etiqueta, String valor,
+      {TextStyle? estiloEtiqueta, TextStyle? estiloValor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic, children: [
+        Expanded(
+          child: Text(etiqueta,
+              style: estiloEtiqueta, maxLines: 2, overflow: TextOverflow.ellipsis),
+        ),
+        const SizedBox(width: 10),
+        Text(valor, textAlign: TextAlign.right, style: estiloValor),
+      ]),
+    );
+  }
+
   Widget _stepPhoneAndConfirm() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -1043,51 +1077,72 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 Row(children: [
                   const Text('Mostrar em', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 8),
-                  for (final c in ['MZN', ..._rates.keys.toList()..sort()])
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ChoiceChip(
-                        label: Text(c, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                        selected: _currency == c,
-                        visualDensity: VisualDensity.compact,
-                        onSelected: (_) => setState(() => _currency = c),
-                      ),
+                  // Rola em vez de transbordar: com três ou mais moedas os
+                  // chips saíam do cartão.
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(children: [
+                        for (final c in ['MZN', ..._rates.keys.toList()..sort()])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ChoiceChip(
+                              label: Text(c,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    // Seleccionado = branco sobre azul. Antes
+                                    // ficava com a cor por omissão do tema
+                                    // sobre o realce, e mal se lia qual estava
+                                    // escolhida.
+                                    color: _currency == c ? Colors.white : const Color(0xFF15191E),
+                                  )),
+                              selected: _currency == c,
+                              selectedColor: const Color(0xFF1D5FA7),
+                              backgroundColor: Colors.white,
+                              side: BorderSide(
+                                  color: _currency == c
+                                      ? const Color(0xFF1D5FA7)
+                                      : const Color(0xFFCBD5E1)),
+                              showCheckmark: false,
+                              visualDensity: VisualDensity.compact,
+                              onSelected: (_) => setState(() => _currency = c),
+                            ),
+                          ),
+                      ]),
                     ),
+                  ),
                 ]),
               ],
               const Divider(),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Preco unit.'),
-                Text('${_fare!['fare_amount']} MZN', style: const TextStyle(fontWeight: FontWeight.bold)),
-              ]),
+              _linhaResumo('Preco unit.', '${_fare!['fare_amount']} MZN',
+                  estiloValor: const TextStyle(fontWeight: FontWeight.bold)),
               if (_rate != null)
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Em $_currency (1 $_currency = ${_rate!.toStringAsFixed(2)} MZN)',
-                      style: const TextStyle(fontSize: 12)),
-                  Text(_inDisplay(_unitFare()),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                ]),
+                _linhaResumo(
+                    'Em $_currency (1 $_currency = ${_rate!.toStringAsFixed(2)} MZN)',
+                    _inDisplay(_unitFare()),
+                    estiloEtiqueta: const TextStyle(fontSize: 12),
+                    estiloValor: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               // A quantidade e os lugares foram escolhidos nos passos
               // anteriores: aqui so se confirmam.
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Quantidade'),
-                Text('x$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ]),
+              _linhaResumo('Quantidade', 'x$_quantity',
+                  estiloValor: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               if (_seatsRequired && _pickedSeats.isNotEmpty)
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Lugares'),
-                  Text(_pickedSeats.join(', '),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                ]),
+                _linhaResumo('Lugares', _pickedSeats.join(', '),
+                    estiloValor: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold)),
                 // A moeda ESCOLHIDA aparece em grande; a outra na linha
                 // pequena. A cobranca e sempre em MZN.
-                Text(
-                  _rate != null
-                      ? _inDisplay(_unitFare() * _quantity)
-                      : '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
+                Flexible(
+                  child: Text(
+                    _rate != null
+                        ? _inDisplay(_unitFare() * _quantity)
+                        : '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
+                  ),
                 ),
               ]),
               if (_rate != null)
@@ -1095,6 +1150,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   alignment: Alignment.centerRight,
                   child: Text(
                     '≈ ${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN · cobranca em MZN',
+                    textAlign: TextAlign.right,
                     style: const TextStyle(fontSize: 11.5),
                   ),
                 ),
@@ -1107,7 +1163,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ...[
           if (_paymentMethod == 'cash') _cashNote(),
           TextField(
+            controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)],
             decoration: InputDecoration(
               // Em numerário o telefone já não é uma carteira a debitar: é
@@ -1115,10 +1173,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               // do M-Pesa a quem está a pagar em notas.
               labelText: _paymentMethod == 'cash'
                   ? 'Telefone do passageiro (9 dígitos)'
-                  : 'Telefone (9 digitos)',
-              helperText: _paymentMethod == 'cash' ? 'É para aqui que o bilhete vai por SMS.' : null,
+                  : 'Telefone (9 dígitos)',
+              helperText: _paymentMethod == 'cash'
+                  ? 'É para aqui que o bilhete vai por SMS.'
+                  : null,
               prefixIcon: const Icon(Icons.phone),
               hintText: '84/85/86/87...',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             // setState para a linha "indique o telefone..." por cima do botao
             // acompanhar o que esta a ser escrito.
@@ -1126,6 +1187,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           ),
         ] else
           _cardCapturePanel(),
+        // Fôlego no fim: com o teclado aberto, sem isto o último campo ficava
+        // colado à barra fixa do fundo e parecia estar por baixo dela.
+        const SizedBox(height: 24),
         // O botao de cobrar vive na barra fixa do fundo, sempre a vista.
       ]),
     );
@@ -1606,9 +1670,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 3),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
               decoration: BoxDecoration(
-                color: selected ? BuzUpColors.orange : Colors.transparent,
+                color: selected ? BuzUpColors.orange : Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: selected ? BuzUpColors.orange : Colors.grey.shade400),
+                border: Border.all(
+                  color: selected ? BuzUpColors.orange : const Color(0xFFCBD5E1),
+                  // O seleccionado tem de se ver de relance, num ecrã ao sol e
+                  // com o passageiro à espera.
+                  width: selected ? 2 : 1,
+                ),
               ),
               // Ícone EM CIMA do rótulo, e não ao lado.
               //
@@ -1617,14 +1686,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               // nomes ficavam cortados a meio. Empilhados, o rótulo tem a
               // largura toda do cartão e ainda sobra para duas linhas.
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon, color: selected ? Colors.white : Colors.grey, size: 20),
+                Icon(icon, color: selected ? Colors.white : const Color(0xFF6B7A8F), size: 20),
                 const SizedBox(height: 5),
                 Text(label,
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: selected ? Colors.white : Colors.grey.shade700,
+                      color: selected ? Colors.white : const Color(0xFF15191E),
                       fontWeight: FontWeight.w800, fontSize: 11.5, height: 1.15,
                     )),
               ]),

@@ -113,6 +113,8 @@ class _ManifestScreenState extends ConsumerState<ManifestScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
+                    // Rola sempre, para o gesto pegar num manifesto vazio.
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
                     children: [
                       _resumo(totals),

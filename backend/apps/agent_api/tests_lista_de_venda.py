@@ -5,9 +5,8 @@ a mesma rota repetida dia apos dia, com o mesmo nome e o mesmo autocarro. Para
 vender ao passageiro que esta a frente isso e ruido — e ruido com risco, porque
 uma linha tocada por engano manda o bilhete para o autocarro de amanha.
 
-A TPM-TUR nao vende antecipado ao balcao: abrir o embarque passa a ser o acto
-que poe o autocarro a venda. Enquanto o motorista nao o fizer, a viagem nao
-aparece aqui — e deliberado, e a lista vazia diz o que falta e quem o faz.
+A TPM-TUR nao vende antecipado ao balcao — mas as partidas de HOJE aparecem,
+porque e a primeira venda que abre o embarque. Amanha em diante nao aparece.
 
 O ciclo do motorista vive noutro endpoint e CONTINUA a mostrar as agendadas —
 e la que o embarque se abre. Se um dia alguem estreitar esse tambem, o
@@ -66,14 +65,23 @@ class ListaDeVendaTests(TestCase):
         """Era esta que fazia o agente vender para o autocarro errado."""
         self.assertNotIn(self.amanha.id, self._lista())
 
-    def test_nao_mostra_a_de_hoje_com_o_embarque_por_abrir(self):
-        """Abrir o embarque e o acto que poe o autocarro a venda.
+    def test_mostra_a_de_hoje_ainda_com_o_embarque_por_abrir(self):
+        """ESTA REGRA MUDOU DUAS VEZES. Vale a pena saber porque.
 
-        A viagem existe, e de hoje, e parte daqui a duas horas — e mesmo assim
-        nao aparece. E a regra pedida pelo operador, e o ecra vazio explica-a
-        em vez de deixar o agente sem perceber.
+        Primeiro tirou-se o prazo de sete dias (nao se vende antecipado ao
+        balcao). Depois tirou-se tambem as agendadas por completo, a pedido —
+        e abrir o embarque passou a ser o acto que punha o autocarro a venda.
+
+        Voltaram quando o embarque passou a abrir-se sozinho na PRIMEIRA VENDA
+        (`abrir_embarque_se_preciso`): sem aparecerem na lista, o agente nunca
+        as podia escolher, a primeira venda nunca acontecia, e o automatico era
+        codigo morto. As duas regras juntas nao funcionavam.
+
+        A janela do DIA concilia as duas: nao ha venda antecipada, e o
+        autocarro que o motorista vai trabalhar hoje esta la sem ele ter de
+        carregar em nada antes.
         """
-        self.assertNotIn(self.hoje_por_abrir.id, self._lista())
+        self.assertIn(self.hoje_por_abrir.id, self._lista())
 
     def test_continua_na_lista_depois_de_abrir_o_embarque(self):
         self.hoje_por_abrir.status = Trip.Status.BOARDING

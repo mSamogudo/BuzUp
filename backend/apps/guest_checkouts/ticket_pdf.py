@@ -34,6 +34,8 @@ _DOC_SHORT = {
     "other": "DOC",
 }
 RED = colors.HexColor("#D32F2F")
+#: Cinzento de apoio: para o que acompanha um valor sem competir com ele.
+MUTED = colors.HexColor("#6B7A8F")
 
 # Caixa do cartao DENTRO do JPG do template (medida ao pixel; o resto do JPG
 # e um mate branco a volta). Em coordenadas de desenho, com o y de baixo.
@@ -179,7 +181,20 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
     _text_fit(c, 192, 762, tp.origin_stop or "-", max_width=255, max_size=45, min_size=28, color=NAVY)
     _right_text_fit(c, 856, 762, tp.destination_stop or "-", max_width=205, max_size=45, min_size=28, color=NAVY)
 
-    _text_fit(c, 282, 901, _fare_label(tp), max_width=245, max_size=45, min_size=31, color=NAVY)
+    # O valor, e ao lado dele COMO foi pago.
+    #
+    # O metodo vai em corpo mais pequeno e cinzento: o numero e que se procura
+    # de relance, a forma de pagamento so interessa a quem esta a conferir.
+    valor = _fare_label(tp)
+    tamanho_valor = _fit_size(c, valor, "Helvetica-Bold", 245, 45, 31)
+    _text(c, 282, 901, valor, size=tamanho_valor, font="Helvetica-Bold", color=NAVY)
+
+    forma = _forma_de_pagamento(tp)
+    if forma:
+        largura = c.stringWidth(valor, "Helvetica-Bold", tamanho_valor)
+        # 14 pontos de folga, e nunca depois de onde comeca o estado (689).
+        x_forma = min(282 + largura + 14, 640)
+        _text(c, x_forma, 901, forma, size=22, font="Helvetica", color=MUTED)
     if tp.status == DigitalTravelPass.Status.ACTIVE:
         status_color = ORANGE
     elif tp.status == DigitalTravelPass.Status.USED:
@@ -388,6 +403,39 @@ def _fare_label(tp: DigitalTravelPass) -> str:
 def _money(value: Decimal | None) -> str:
     amount = Decimal(value or "0.00").quantize(Decimal("0.01"))
     return f"{amount:.2f}".replace(".", ",")
+
+
+#: Como cada forma de pagamento se escreve no bilhete.
+#:
+#: A chave e o `PaymentIntent.provider`. `wallet` e a carteira do passageiro
+#: (cartao/QR); `MOCK` so aparece em ambientes de teste e nao se imprime.
+FORMAS_DE_PAGAMENTO = {
+    "MPESA": "M-Pesa",
+    "EMOLA": "e-Mola",
+    "CASH": "Numerario",
+    "wallet": "Cartao",
+}
+
+
+def _forma_de_pagamento(tp: DigitalTravelPass) -> str:
+    """Como o passageiro pagou, para ficar escrito ao lado do valor.
+
+    O bilhete dizia quanto custou e nao como foi pago. Ao balcao isso importa:
+    numa reclamacao ou numa devolucao, a primeira pergunta e "pagou como?", e a
+    resposta andava a ser procurada no sistema em vez de estar no papel que o
+    passageiro tem na mao.
+
+    Vem do `PaymentIntent` confirmado da compra. Se nao houver nenhum — ou for
+    um provedor que nao se reconhece — devolve vazio, e o bilhete sai como
+    antes: melhor nao dizer nada do que dizer errado.
+    """
+    gc = getattr(tp, "guest_checkout", None)
+    if gc is None:
+        return ""
+    pi = gc.payment_intents.filter(status="confirmed").order_by("-id").first()
+    if pi is None:
+        return ""
+    return FORMAS_DE_PAGAMENTO.get(pi.provider, "")
 
 
 def _status_label(status: str) -> str:

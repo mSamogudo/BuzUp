@@ -140,9 +140,18 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
                         _mainTabs(),
                         const SizedBox(height: 10),
                         Expanded(
-                          child: _mainTab == 0
-                              ? _summaryView(context, totals)
-                              : _transactionsView(context, sales, topups, validations),
+                          // Arrastar para actualizar, como na pagina inicial.
+                          //
+                          // O fecho do dia e o ecra que o agente mantem aberto
+                          // enquanto vende: sem isto, os numeros ficavam presos
+                          // no instante em que o abriu e a unica saida era sair
+                          // e voltar a entrar.
+                          child: RefreshIndicator(
+                            onRefresh: _load,
+                            child: _mainTab == 0
+                                ? _summaryView(context, totals)
+                                : _transactionsView(context, sales, topups, validations),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         _closeButton(context),
@@ -197,6 +206,10 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
 
   Widget _summaryView(BuildContext context, Map totals) {
     return SingleChildScrollView(
+      // Rola sempre, mesmo com pouco conteudo: sem isto o gesto de arrastar
+      // para actualizar nao pega num resumo curto — que e precisamente o do
+      // inicio do dia, quando ainda nao ha vendas e o agente quer confirmar.
+      physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -507,6 +520,7 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
         border: Border.all(color: isDark ? const Color(0xFF252B33) : const Color(0xFFE7E1D4)),
       ),
       child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         itemCount: rows.length,
         separatorBuilder: (_, __) => Divider(height: 1, color: isDark ? const Color(0xFF252B33) : const Color(0xFFEFE9DD)),

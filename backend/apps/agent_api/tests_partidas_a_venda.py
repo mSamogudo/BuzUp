@@ -62,11 +62,17 @@ class PartidasNoBalcaoTests(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         return {t["id"] for t in r.json()}
 
-    def test_partida_agendada_nao_aparece_no_balcao(self):
-        """Nem a de hoje: e o embarque que poe o autocarro a venda."""
+    def test_partida_agendada_de_hoje_aparece_no_balcao(self):
+        """A viagem criada no portal nasce `agendada` e tem de aparecer.
+
+        Era este o incidente original: o cliente criava a viagem no portal, ia
+        ao POS, e a lista estava vazia. Chegou a estar escondida outra vez, e
+        voltou quando a primeira venda passou a abrir o embarque — ver
+        `tests_lista_de_venda`, que conta a historia toda.
+        """
         rota = self._rota("R-INT", Route.ServiceType.INTERNATIONAL)
         viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(minutes=90))
-        self.assertNotIn(viagem.id, self.ids_listados())
+        self.assertIn(viagem.id, self.ids_listados())
 
     def test_abrir_o_embarque_poe_a_viagem_a_venda(self):
         """O outro lado da mesma regra — sem isto nao havia como vender nada."""

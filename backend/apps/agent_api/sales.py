@@ -142,6 +142,49 @@ def _identidades_para(route, passengers: list[dict] | None, quantity: int,
     return limpos
 
 
+def abrir_embarque_se_preciso(trip, agent, user=None) -> None:
+    """A primeira venda ABRE o embarque, se ainda estiver por abrir.
+
+    O motorista tinha de carregar em "abrir embarque" antes de poder vender.
+    Era um toque a mais para uma coisa que a propria venda ja prova: se ha
+    passageiros a comprar, o autocarro esta a receber gente.
+
+    E o registo fica MAIS fiel, nao menos. O `activity_started_at` passa a
+    marcar o instante em que o embarque comecou de facto — a primeira venda —
+    em vez de depender de alguem se lembrar de carregar num botao, o que numa
+    fila cheia acontece tarde ou nao acontece.
+
+    O que NAO muda: `actual_departure_at` continua a ser marcado so por
+    "iniciar viagem". Juntar as duas coisas foi um defeito ja corrigido, e a
+    hora de saida e o unico registo que diz se o autocarro se atrasou.
+
+    Falhar aqui nao pode travar a venda: o dinheiro do passageiro nao depende
+    de um estado de viagem. Se nao conseguir abrir, a venda segue e o embarque
+    fica como estava.
+    """
+    if trip is None or trip.status != Trip.Status.SCHEDULED:
+        return
+    try:
+        from apps.trips.activity import start_trip_activity
+
+        if trip.driver_id:
+            start_trip_activity(trip, trip.driver, user or getattr(agent, "user", None))
+        else:
+            # Venda ao balcao numa partida sem motorista atribuido: nao ha
+            # ciclo de motorista para abrir, mas a viagem tem de ficar
+            # vendavel. Muda-se so o estado.
+            from django.utils import timezone as _tz
+
+            Trip.objects.filter(pk=trip.pk, status=Trip.Status.SCHEDULED).update(
+                status=Trip.Status.BOARDING,
+                activity_started_at=trip.activity_started_at or _tz.now(),
+            )
+        trip.refresh_from_db()
+    except Exception:
+        # Telemetria de estado nao pode custar uma venda.
+        pass
+
+
 def _assert_seats_free(trip, seats: list[str] | None) -> None:
     """Confirma que os lugares continuam livres. Chamar SOB o lock da viagem.
 
@@ -281,6 +324,10 @@ def create_pos_sale(
     # Validar ANTES do lock: recusar depois de reservar lugar deixava a
     # lotacao presa por uma venda que nunca ia acontecer.
     identidades = _identidades_para(route, passengers, quantity, device)
+
+    # A primeira venda abre o embarque. Antes do lock, para o estado ja estar
+    # certo quando a lotacao for contada.
+    abrir_embarque_se_preciso(trip, agent)
 
     with transaction.atomic():
         # Lotacao: sem este lock, um agente e um comprador web vendiam o mesmo

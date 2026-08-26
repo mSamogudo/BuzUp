@@ -47,6 +47,18 @@ const _seatMapRows = [
 
 /// API falsa: nao ha rede nos testes. Herda de `AgentApi` para as assinaturas
 /// ficarem presas as reais.
+const _bilhetesEmitidos = [
+  {
+    'uuid': 'uuid-bilhete-1',
+    'reference': 'S-1',
+    'route_code': 'R-XX',
+    'origin_stop': 'Maputo Junta',
+    'destination_stop': 'Xai-Xai Terminal',
+    'fare_amount': '250.00',
+    'status': 'active',
+  },
+];
+
 class _FakeApi extends AgentApi {
   _FakeApi({required this.seated}) : super(ApiClient(SecureStore()));
 
@@ -91,6 +103,20 @@ class _FakeApi extends AgentApi {
   /// chega ao servidor é o DESTA venda e não o da anterior.
   final vendas = <Map<String, dynamic>>[];
 
+  /// Bilhetes validados a bordo, para o teste conferir o que foi pedido.
+  final validados = <String>[];
+  bool recusarValidacao = false;
+
+  @override
+  Future<Map<String, dynamic>> verifyTicketByUuid(String passUuid,
+      {bool consume = true}) async {
+    if (recusarValidacao) {
+      return {'valid': false, 'reason': 'Bilhete ja utilizado.'};
+    }
+    validados.add(passUuid);
+    return {'valid': true, 'consumed': consume};
+  }
+
   @override
   Future<Map<String, dynamic>> createSale({
     required int tripId,
@@ -122,13 +148,13 @@ class _FakeApi extends AgentApi {
     return {
       'sale_reference': 'S-1',
       'payment': {'reference': 'P-1', 'status': 'confirmed'},
-      'tickets': const [],
+      'tickets': _bilhetesEmitidos,
     };
   }
 
   @override
   Future<Map<String, dynamic>> paymentStatus(String reference) async =>
-      {'status': 'confirmed', 'tickets': const []};
+      {'status': 'confirmed', 'tickets': _bilhetesEmitidos};
 }
 
 /// O armazenamento seguro assenta em canais de plataforma que não existem num
@@ -165,6 +191,21 @@ Future<void> _ateTrajecto(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('Xai-Xai Terminal').last);
   await tester.pumpAndSettle();
+}
+
+/// Vende ate ao ecra de sucesso, numa carreira urbana (sem lugares).
+Future<void> _venderAteAoFim(WidgetTester tester) async {
+  await _ateTrajecto(tester);
+  await tester.tap(find.byType(FilledButton).last);
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField).last, '841234567');
+  await tester.pumpAndSettle();
+  await tester.tap(find.byType(FilledButton).last);
+  // `pumpAndSettle` nao serve aqui: o ecra de espera do pagamento tem um
+  // indicador que roda para sempre e nunca "assenta". Avanca-se por frames.
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 120));
+  }
 }
 
 String _actionLabel(WidgetTester tester) {
@@ -451,6 +492,57 @@ void main() {
     expect(find.text('M-Pesa / e-Mola'), findsOneWidget);
     expect(find.text('Numerário'), findsOneWidget);
     expect(find.text('Cartão NFC'), findsNothing);
+  });
+
+  testWidgets('o bilhete pode ser validado ali mesmo, sem ler o QR',
+      (tester) async {
+    // Muitos bilhetes sao comprados JA DENTRO do autocarro. Nesses casos,
+    // mandar o agente sair da venda, abrir o leitor e apontar ao telemovel do
+    // passageiro — que ainda nem recebeu o SMS — e um passo sem ganho: ele
+    // acabou de emitir o bilhete e sabe qual e.
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    await _venderAteAoFim(tester);
+
+    expect(find.text('VENDA CONFIRMADA'), findsOneWidget);
+    expect(find.text('VALIDAR A BORDO'), findsOneWidget);
+
+    await tester.tap(find.text('VALIDAR A BORDO'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+
+    expect(api.validados, ['uuid-bilhete-1']);
+    expect(find.text('Validado — passageiro a bordo'), findsOneWidget);
+    // Ja nao ha nada para tocar: nao se valida duas vezes.
+    expect(find.text('VALIDAR A BORDO'), findsNothing);
+  });
+
+  testWidgets('validar continua a ser uma escolha, nao automatico',
+      (tester) async {
+    // Um bilhete vendido ao balcao para daqui a duas horas nao pode entrar no
+    // manifesto como se ja tivesse embarcado.
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    await _venderAteAoFim(tester);
+
+    expect(api.validados, isEmpty, reason: 'validou sem ninguem pedir');
+    expect(find.text('VALIDAR A BORDO'), findsOneWidget);
+  });
+
+  testWidgets('uma validacao recusada diz porque e nao marca a bordo',
+      (tester) async {
+    final api = _FakeApi(seated: false)..recusarValidacao = true;
+    await _pump(tester, api);
+    await _venderAteAoFim(tester);
+
+    await tester.tap(find.text('VALIDAR A BORDO'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+
+    expect(find.text('Validado — passageiro a bordo'), findsNothing);
+    expect(find.textContaining('ja utilizado'), findsOneWidget);
   });
 
   testWidgets('recuar do pagamento volta aos lugares, nao ao inicio',

@@ -42,6 +42,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   bool _loadingTrips = true;
   String? _error;
 
+  /// Bilhetes ja validados a bordo, por uuid — ver [_validarABordo].
+  final Set<String> _validados = {};
+
+  /// Validacao em curso, por uuid: impede o duplo toque.
+  final Set<String> _aValidar = {};
+
   /// O agente pediu a lista de propósito ("Trocar de viagem").
   ///
   /// Enquanto for falso, a venda salta o passo de escolher: se há uma viagem
@@ -184,6 +190,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     _passageiros.clear();
     setState(() {
       _step = _Step.trip;
+      _validados.clear();
+      _aValidar.clear();
       _selectedTrip = null;
       _stops = [];
       _originId = null;
@@ -1207,7 +1215,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _methodPicker(),
         const SizedBox(height: 10),
         if (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ...[
-          if (_paymentMethod == 'cash') _cashNote(),
           TextField(
             controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
@@ -1676,39 +1683,6 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     return '';
   }
 
-  /// Lembrete de que o dinheiro fica com o agente.
-  ///
-  /// Nas outras formas de pagamento o valor entra directamente na conta da
-  /// operadora e ninguém tem de o guardar. Em numerário são notas na mão de
-  /// alguém, que têm de aparecer no fecho de caixa — e é melhor o agente saber
-  /// isso no momento em que as recebe do que ao fim do dia.
-  Widget _cashNote() {
-    // O total, calculado como no resto do ecrã: a tarifa vem por bilhete.
-    final unit = double.tryParse(_fare?['fare_amount']?.toString() ?? '');
-    final valor = unit == null ? '' : (unit * _quantity).toStringAsFixed(2);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: const Color(0x14B07B24),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0x33B07B24)),
-      ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Icon(Icons.savings_outlined, size: 18, color: Color(0xFFB07B24)),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            valor.isEmpty
-                ? 'Receba o valor em dinheiro. Entra no seu fecho de caixa.'
-                : 'Receba $valor MZN em dinheiro. Entra no seu fecho de caixa.',
-            style: const TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF8A5F16)),
-          ),
-        ),
-      ]),
-    );
-  }
-
   Widget _methodPicker() {
     return LayoutBuilder(builder: (ctx, c) {
       Widget tile(String key, IconData icon, String label) {
@@ -1975,9 +1949,119 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     return '-';
   }
 
+  /// Um bilhete acabado de emitir, com a opcao de o validar ali mesmo.
+  ///
+  /// Muitos bilhetes sao comprados JA DENTRO do autocarro. Nesses casos, pedir
+  /// ao agente que saia da venda, abra o leitor e aponte ao telemovel do
+  /// passageiro — que ainda nem recebeu o SMS — e um passo sem ganho nenhum:
+  /// ele acabou de emitir o bilhete e sabe exactamente qual e.
+  ///
+  /// Continua a ser uma ESCOLHA, e nao automatico: um bilhete vendido ao balcao
+  /// para daqui a duas horas nao pode entrar no manifesto como se ja tivesse
+  /// embarcado.
+  Widget _bilheteEmitido(Map<String, dynamic> tt) {
+    final uuid = (tt['uuid'] ?? '').toString();
+    final validado = _validados.contains(uuid);
+    final aValidar = _aValidar.contains(uuid);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Icon(Icons.confirmation_number,
+                color: validado ? const Color(0xFF1FB04A) : const Color(0xFF1D5FA7)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${tt['reference']}',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  '${tt['route_code']} · ${tt['origin_stop']} → ${tt['destination_stop']} · ${tt['fare_amount']} MZN',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7A8F)),
+                ),
+              ]),
+            ),
+            Text(validado ? 'A BORDO' : 'ACTIVO',
+                style: TextStyle(
+                    color: validado ? const Color(0xFF1FB04A) : Colors.green,
+                    fontWeight: FontWeight.bold, fontSize: 11)),
+          ]),
+          if (uuid.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: validado
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.check_circle, size: 18, color: Color(0xFF1FB04A)),
+                        SizedBox(width: 6),
+                        Text('Validado — passageiro a bordo',
+                            style: TextStyle(
+                                fontSize: 12.5, fontWeight: FontWeight.w700,
+                                color: Color(0xFF1FB04A))),
+                      ]),
+                    )
+                  : OutlinedButton.icon(
+                      onPressed: aValidar ? null : () => _validarABordo(uuid),
+                      icon: aValidar
+                          ? const SizedBox(
+                              height: 16, width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.how_to_reg, size: 18),
+                      label: Text(aValidar ? 'A validar...' : 'VALIDAR A BORDO'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        foregroundColor: const Color(0xFF1D5FA7),
+                      ),
+                    ),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  /// Valida um bilhete acabado de vender, sem passar pelo leitor de QR.
+  Future<void> _validarABordo(String uuid) async {
+    setState(() => _aValidar.add(uuid));
+    try {
+      final res = await ref.read(agentApiProvider).verifyTicketByUuid(uuid);
+      // O ECRA PRIMEIRO, o som e a vibracao depois.
+      //
+      // `AppFeedback` espera pelo ficheiro de audio. Com o `setState` atras
+      // desse `await`, o resultado da validacao so aparecia quando o beep
+      // acabasse — e num terminal onde o audio demore, o agente ficava a olhar
+      // para um botao que parecia nao ter feito nada.
+      //
+      // O servidor responde `valid: true/false` com `reason` quando recusa.
+      if (res['valid'] != true) {
+        final motivo = (res['reason'] ?? res['detail'] ?? '').toString();
+        if (mounted) {
+          setState(() => _error = motivo.isEmpty
+              ? 'Nao foi possivel validar o bilhete.'
+              : motivo);
+        }
+        AppFeedback.error();
+        return;
+      }
+      if (mounted) setState(() => _validados.add(uuid));
+      AppFeedback.success();
+    } on DioException catch (e) {
+      if (mounted) setState(() => _error = ApiClient.extractError(e));
+      AppFeedback.error();
+    } finally {
+      if (mounted) setState(() => _aValidar.remove(uuid));
+    }
+  }
+
   Widget _stepDone() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // A venda esta feita, mas ainda ha coisas que podem falhar aqui — a
+        // validacao a bordo, por exemplo. Sem este banner, uma recusa nao
+        // aparecia em lado nenhum e o agente deixava subir quem nao devia.
+        _errorBanner(),
         const Icon(Icons.check_circle, color: Colors.green, size: 64),
         const SizedBox(height: 8),
         const Center(child: Text('VENDA CONFIRMADA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green))),
@@ -2010,18 +2094,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         const SizedBox(height: 12),
         const Text('Bilhetes emitidos:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        ..._tickets.map((t) {
-          final tt = t as Map<String, dynamic>;
-          return Card(
-            child: ListTile(
-              dense: true,
-              leading: const Icon(Icons.confirmation_number, color: Color(0xFF1D5FA7)),
-              title: Text('${tt['reference']}'),
-              subtitle: Text('${tt['route_code']} · ${tt['origin_stop']} → ${tt['destination_stop']} · ${tt['fare_amount']} MZN'),
-              trailing: const Text('ACTIVO', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-          );
-        }),
+        ..._tickets.map((t) => _bilheteEmitido(t as Map<String, dynamic>)),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(12),

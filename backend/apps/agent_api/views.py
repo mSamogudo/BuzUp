@@ -27,7 +27,7 @@ Endpoints provided:
 from __future__ import annotations
 
 import hashlib
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
@@ -568,7 +568,7 @@ class AgentTripListView(APIView):
     So as que estao a circular — embarque aberto, a caminho, ou paradas a meio
     do percurso. As agendadas nao entram.
 
-    So o que esta A CIRCULAR.
+    O que esta a circular, mais as partidas de HOJE.
 
     O balcao abria com 14 viagens das quais 3 estavam a acontecer; as outras
     eram a mesma rota repetida dia apos dia, com o mesmo nome e o mesmo
@@ -576,20 +576,18 @@ class AgentTripListView(APIView):
     bilhete para o autocarro de amanha.
 
     **A TPM-TUR nao vende antecipado ao balcao** — decidido pelo operador em
-    2026-08-26, e reafirmado depois de eu ter proposto uma versao intermedia
-    (mostrar tambem as de hoje ainda por embarcar). A venda antecipada faz-se
-    pelo site, onde a data se escolhe de proposito e nao por engano.
+    2026-08-26. Amanha em diante nao aparece: a venda antecipada faz-se pelo
+    site, onde a data se escolhe de proposito e nao por engano.
 
-    **A consequencia, que e preciso conhecer:** enquanto o motorista nao abrir
-    o embarque, a viagem NAO aparece aqui. Abrir o embarque passa a ser o acto
-    que poe o autocarro a venda. Foi por isso que a lista vazia deixou de dizer
-    "Nenhuma viagem disponivel" e passou a dizer o que falta e quem o faz, com
-    atalho para o ecra do motorista.
+    Chegou a mostrar SO o que circulava, tambem a pedido. Voltou a incluir as
+    de hoje quando o embarque passou a abrir-se sozinho na primeira venda (ver
+    `abrir_embarque_se_preciso`): sem isto, a partida agendada nunca aparecia,
+    o agente nunca a podia escolher, e a primeira venda — que e o que abre o
+    embarque — nunca chegava a acontecer. As duas regras juntas nao funcionam.
 
-    Ha historia nisto, e vale a pena saber: em tempos o POS mostrava apenas o
-    que circulava, o cliente criava viagens no portal e o balcao aparecia
-    vazio. A diferenca e que agora isso e a REGRA e nao um acidente — e o ecra
-    explica-a em vez de deixar o agente sem perceber.
+    A janela do DIA e o que concilia as duas: nao ha venda antecipada, e o
+    autocarro que o motorista vai trabalhar hoje esta la para ser vendido sem
+    ter de carregar em nada antes.
 
     O ciclo do motorista vive noutro sitio (`DriverTripsView`), que mostra as
     agendadas todas: e la que o embarque se abre.
@@ -611,14 +609,32 @@ class AgentTripListView(APIView):
     #: julga-las, e escondê-las era pior.
     VIDA_UTIL = timedelta(hours=24)
 
+    #: Quanto tempo uma partida atrasada continua a aparecer depois da hora.
+    #:
+    #: O autocarro atrasa-se e o agente continua a vender ate ele sair. Sem
+    #: esta folga, a partida desaparecia do POS exactamente no minuto em que
+    #: mais gente aparece a comprar.
+    TOLERANCIA = timedelta(hours=6)
+
     def get(self, request):
         agora = timezone.now()
+        tz = timezone.get_current_timezone()
+        # Fim do dia em hora LOCAL: o balcao raciocina no dia dele, nao em UTC.
+        # Com o fuso de Maputo (+2) a diferenca sao duas partidas inteiras.
+        fim_do_dia = timezone.make_aware(
+            datetime.combine(agora.astimezone(tz).date(), time.max), tz)
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
             Q(
                 status__in=Trip.RUNNING_STATUSES,
                 planned_departure_at__gte=agora - self.VIDA_UTIL,
             )
             | Q(status__in=Trip.RUNNING_STATUSES, planned_departure_at__isnull=True)
+            | Q(
+                status=Trip.Status.SCHEDULED,
+                route__service_type__in=Route.SEATED_SERVICE_TYPES,
+                planned_departure_at__gte=agora - self.TOLERANCIA,
+                planned_departure_at__lte=fim_do_dia,
+            )
         )
         # Motorista ve apenas as viagens que conduz; o agente escolhe qualquer.
         driver = driver_only_scope(request.user)

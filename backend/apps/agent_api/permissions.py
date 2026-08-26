@@ -75,7 +75,16 @@ def driver_only_scope(user):
         return None
     if getattr(user, "is_superuser", False):
         return None
-    return Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).first()
+    # QUALQUER registo de motorista, activo ou nao.
+    #
+    # Filtrar por `status=ACTIVE` fazia com que DESACTIVAR um motorista lhe
+    # desse MAIS acesso: deixava de contar como motorista e passava a ver e a
+    # vender em todas as viagens. Uma desactivacao nunca pode alargar
+    # permissoes.
+    #
+    # Quem conduz vende so nas suas. Sem viagens alocadas, o filtro devolve
+    # lista vazia e ele nao vende nada — que e a regra do operador.
+    return Driver.objects.filter(user=user).order_by("-status", "id").first()
 
 
 class DeviceBlocked(Exception):

@@ -51,6 +51,23 @@ class MotoristaVeAsSuasTests(TestCase):
         self.u1, self.d1, self.t1 = motorista("amabui", "AA-01-MP")
         self.u2, self.d2, self.t2 = motorista("emaungue", "BB-02-MP")
 
+        # Percurso e tarifa: sem isto a venda parava antes de chegar a regra.
+        from decimal import Decimal
+
+        from apps.fares.models import FareProduct, FareRule
+        from apps.routes.models import RouteStop, Stop
+
+        self.origem = Stop.objects.create(code="M-A", name="A", status="active")
+        self.destino = Stop.objects.create(code="M-B", name="B", status="active")
+        for i, p in enumerate((self.origem, self.destino)):
+            RouteStop.objects.create(route=self.rota, stop=p, sequence=i,
+                                     direction=RouteStop.Direction.OUTBOUND)
+        prod = FareProduct.objects.create(
+            name="Avulso", product_type=FareProduct.ProductType.SINGLE_TRIP)
+        FareRule.objects.create(fare_product=prod, route=self.rota,
+                                calculation_method=FareRule.CalculationMethod.FIXED,
+                                fixed_amount=Decimal("250.00"))
+
         # O papel "Motorista" COM `pos.operate`, tal como esta em producao.
         # (E semeado por migracao sem permissoes; aqui reproduz-se o estado
         # real, em que alguem lhe acrescentou a permissao pelo portal.)
@@ -88,6 +105,46 @@ class MotoristaVeAsSuasTests(TestCase):
         self.assertIn("pos.operate", self.papel_motorista.permissions)
         self.assertNotIn(self.t2.id, self._lista(self.u1))
 
+    # --- E SOBRETUDO: nao pode VENDER na viagem do outro -------------------
+
+    def _vender(self, u, trip):
+        c = APIClient()
+        c.force_authenticate(u)
+        return c.post("/api/agent/sales/", {
+            "trip_id": trip.id,
+            "origin_stop_id": self.origem.id,
+            "destination_stop_id": self.destino.id,
+            "payment_method": "cash",
+            "passenger_phone": "841234567",
+            "quantity": 1,
+        }, format="json")
+
+    def test_o_motorista_nao_vende_na_viagem_do_outro(self):
+        """O que importa nao e o que ele VE — e o que ele consegue FAZER.
+
+        Esconder a viagem da lista e conveniencia. Se o pedido chegar na mesma
+        (uma app antiga, um ecra que ficou aberto, um pedido a mao), o servidor
+        tem de recusar.
+        """
+        r = self._vender(self.u1, self.t2)
+        self.assertEqual(r.status_code, 403, r.content)
+        self.assertIn("alocada", r.content.decode())
+
+    def test_o_motorista_vende_na_sua(self):
+        r = self._vender(self.u1, self.t1)
+        self.assertNotEqual(r.status_code, 403, r.content)
+
+    def test_o_agente_de_balcao_vende_em_qualquer_uma(self):
+        User = get_user_model()
+        u = User.objects.create_user(username="balcao2", email="b2@x.mz", password="x")
+        Agent.objects.create(user=u, full_name="Balcao", status=Agent.Status.ACTIVE)
+        UserRole.objects.create(
+            user=u, role=Role.objects.get_or_create(
+                code="pos_agent",
+                defaults={"name": "Agente POS", "permissions": ["pos.operate"]})[0])
+        self.assertNotEqual(self._vender(u, self.t1).status_code, 403)
+        self.assertNotEqual(self._vender(u, self.t2).status_code, 403)
+
     # --- quem NAO conduz continua a ver tudo ------------------------------
 
     def test_o_agente_de_balcao_continua_a_ver_todas(self):
@@ -112,8 +169,125 @@ class MotoristaVeAsSuasTests(TestCase):
 
     # --- um motorista desactivado deixa de ser motorista -------------------
 
-    def test_motorista_inactivo_deixa_de_ter_viagens_proprias(self):
+    def test_desactivar_um_motorista_nao_lhe_da_mais_acesso(self):
+        """Ao contrario do que eu tinha escrito primeiro.
+
+        Filtrar so por motoristas ACTIVOS fazia com que desactivar um lhe
+        desse acesso a TODAS as viagens: deixava de contar como motorista e
+        caia na regra do balcao. Uma desactivacao nunca pode alargar
+        permissoes.
+        """
         self.d1.status = Driver.Status.INACTIVE
         self.d1.save(update_fields=["status"])
-        # Ja nao conduz: volta a regra do balcao.
-        self.assertIn(self.t2.id, self._lista(self.u1))
+        self.assertNotIn(self.t2.id, self._lista(self.u1),
+                         "desactivar deu-lhe a viagem do outro")
+
+    def test_motorista_sem_viagens_alocadas_nao_vende_nada(self):
+        """A regra do operador: sem viagem atribuida, nao vende para nenhuma."""
+        User = get_user_model()
+        u = User.objects.create_user(username="semviagens", email="s@x.mz", password="x")
+        Agent.objects.create(user=u, full_name="Sem viagens", status=Agent.Status.ACTIVE)
+        Driver.objects.create(user=u, full_name="Sem viagens", status=Driver.Status.ACTIVE)
+        UserRole.objects.create(user=u, role=self.papel_motorista)
+
+        self.assertEqual(self._lista(u), [], "devia ver a lista vazia")
+        for t in (self.t1, self.t2):
+            c = APIClient()
+            c.force_authenticate(u)
+            r = c.post("/api/agent/sales/", {
+                "trip_id": t.id,
+                "origin_stop_id": self.origem.id,
+                "destination_stop_id": self.destino.id,
+                "payment_method": "cash",
+                "passenger_phone": "841234567",
+                "quantity": 1,
+            }, format="json")
+            self.assertEqual(r.status_code, 403, r.content)
+
+
+class MotoristaSemViagemTests(MotoristaVeAsSuasTests):
+    """E se o pedido nao indicar viagem nenhuma?
+
+    O guarda da venda so corre `if data.get("trip_id")`. Um pedido feito so com
+    `route_id` — que a app nunca envia, mas que nada impede — escapava-lhe.
+    """
+
+    def test_vender_so_com_a_rota_nao_da_ao_motorista_uma_saida(self):
+        c = APIClient()
+        c.force_authenticate(self.u1)
+        r = c.post("/api/agent/sales/", {
+            "route_id": self.rota.id,
+            "origin_stop_id": self.origem.id,
+            "destination_stop_id": self.destino.id,
+            "payment_method": "cash",
+            "passenger_phone": "841234567",
+            "quantity": 1,
+        }, format="json")
+        # Sem viagem indicada a venda nao fica ligada a autocarro nenhum: nao
+        # ha "viagem do outro" para invadir, e a lotacao nao e tocada. O que
+        # NAO pode acontecer e o bilhete sair agarrado a uma viagem concreta
+        # que nao e a dele.
+        if r.status_code < 300:
+            from apps.guest_checkouts.models import GuestCheckout
+
+            gc = GuestCheckout.objects.get(reference=r.json()["sale_reference"])
+            self.assertIsNone(gc.trip_id,
+                              "uma venda sem viagem indicada nao pode acabar "
+                              "agarrada a uma viagem")
+
+
+class TudoOQueTocaNaViagemDoOutroTests(MotoristaVeAsSuasTests):
+    """Um por um, todos os caminhos que abrem a viagem de outro motorista.
+
+    Esconder da lista nao chega, e recusar so a venda tambem nao: o detalhe da
+    viagem traz a planta de lugares, e o manifesto traz a lista de quem vai a
+    bordo — nomes, documentos e contactos de emergencia de passageiros que nao
+    sao dele.
+    """
+
+    def _como(self, u):
+        c = APIClient()
+        c.force_authenticate(u)
+        return c
+
+    def test_nao_abre_o_detalhe_da_viagem_do_outro(self):
+        r = self._como(self.u1).get(f"/api/agent/trips/{self.t2.id}/")
+        self.assertEqual(r.status_code, 403, r.content)
+
+    def test_abre_o_detalhe_da_sua(self):
+        r = self._como(self.u1).get(f"/api/agent/trips/{self.t1.id}/")
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def test_nao_cota_tarifa_na_viagem_do_outro(self):
+        """A tarifa e o passo antes da venda: fechar so a venda deixava-o
+        chegar ao fim do fluxo para levar com um erro no ultimo toque."""
+        r = self._como(self.u1).post(
+            f"/api/agent/trips/{self.t2.id}/fare/",
+            {"origin_stop_id": self.origem.id, "destination_stop_id": self.destino.id},
+            format="json")
+        self.assertEqual(r.status_code, 403, r.content)
+
+    def test_nao_ve_o_manifesto_do_outro(self):
+        """Sao dados pessoais de passageiros que nao viajam com ele."""
+        r = self._como(self.u1).get(f"/api/driver/trips/{self.t2.id}/manifest/")
+        self.assertIn(r.status_code, (403, 404), r.content)
+
+    def test_nao_arranca_nem_encerra_a_viagem_do_outro(self):
+        """O bloqueio esta em `start_trip_activity` e devolve 400, nao 403.
+
+        O codigo e discutivel — 403 seria mais exacto — mas o que interessa e
+        que a accao e RECUSADA e que a mensagem diz porque. Fixar aqui o 403
+        seria inventar um requisito e obrigar a mexer no tratamento de erros da
+        app sem ninguem ganhar nada.
+        """
+        for accao in ("start", "depart", "close"):
+            r = self._como(self.u1).post(f"/api/driver/trips/{self.t2.id}/{accao}/")
+            self.assertGreaterEqual(r.status_code, 400,
+                                    f"{accao} na viagem do outro foi ACEITE")
+            self.assertIn("alocada", r.content.decode().lower(),
+                          f"{accao}: a recusa nao explica que a viagem nao e dele")
+
+    def test_arranca_a_sua(self):
+        """O outro lado: sem isto, nao havia como trabalhar."""
+        r = self._como(self.u1).post(f"/api/driver/trips/{self.t1.id}/start/")
+        self.assertEqual(r.status_code, 200, r.content)

@@ -27,7 +27,7 @@ Endpoints provided:
 from __future__ import annotations
 
 import hashlib
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
@@ -563,32 +563,79 @@ class AgentDeviceHeartbeatView(APIView):
 # ----------------------------------------------------------------------------
 
 class AgentTripListView(APIView):
+    """As viagens que o balcao pode vender AGORA.
+
+    So as que estao a circular — embarque aberto, a caminho, ou paradas a meio
+    do percurso. As agendadas nao entram.
+
+    So a operacao de HOJE.
+
+    O balcao abria com 14 viagens das quais 3 estavam a acontecer; as outras 11
+    eram a mesma rota repetida por sete dias, com o mesmo nome e o mesmo
+    autocarro, distintas so pela data. Para vender ao passageiro que esta a
+    frente isso e ruido — e ruido com risco, porque uma linha tocada por engano
+    manda o bilhete para o autocarro de amanha.
+
+    **O que enchia a lista era o PRAZO, e nao o estado.** Cortar as partidas
+    agendadas por completo — que foi o primeiro instinto — repunha dois
+    defeitos ja corrigidos, ambos protegidos por testes em
+    `tests_partidas_a_venda`:
+
+      - a viagem criada no portal nascia `agendada` e o POS nao a mostrava; a
+        unica forma de vender era o motorista abrir o embarque primeiro, o que
+        numa carreira internacional acontece horas depois da primeira venda;
+      - o autocarro atrasa-se, o embarque ainda nao abriu, e o balcao fechava a
+        venda no minuto exacto em que mais gente aparece a comprar.
+
+    Fica entao a janela do dia: o que esta a circular, mais o que parte hoje.
+    Amanha em diante nao aparece — a venda antecipada faz-se pelo site, onde a
+    data se escolhe de proposito e nao por engano.
+
+    O ciclo do motorista vive noutro sitio (`DriverTripsView`), que mostra as
+    agendadas todas: e la que o embarque se abre.
+    """
+
     permission_classes = [IsAuthenticated, IsActiveAgent]
 
-    #: Ate quando o balcao mostra partidas por vender.
-    #:
-    #: Uma semana chega para a venda antecipada do interurbano sem encher a
-    #: lista com o mes inteiro gerado pelos horarios.
-    HORIZONTE = timedelta(days=7)
-    #: Quanto tempo uma partida agendada continua a aparecer depois da hora.
+    #: Quanto tempo uma partida atrasada continua a aparecer depois da hora.
     #:
     #: O autocarro atrasa-se e o agente continua a vender ate ele sair. Sem
     #: esta folga, a partida desaparecia do POS exactamente no minuto em que
     #: mais gente aparece a comprar.
     TOLERANCIA = timedelta(hours=6)
 
+    #: Ate quando uma viagem A CIRCULAR continua a ser vendavel.
+    #:
+    #: "A circular" nao tinha limite de tempo nenhum: uma viagem em embarque
+    #: ficava-o para sempre se o motorista se esquecesse de a encerrar. Em
+    #: producao havia uma em embarque desde 22/08 e outra em viagem desde
+    #: 25/08 — e o balcao vendia para as duas. O passageiro sairia com bilhete
+    #: para um autocarro que partiu ha quatro dias.
+    #:
+    #: 24h e folgado de proposito: o percurso mais longo (Maputo-Nelspruit) faz
+    #: -se em cerca de 8 horas, e o que passa disto e esquecimento, nao atraso.
+    #: As viagens sem hora prevista continuam a aparecer — nao ha por onde
+    #: julga-las, e escondê-las era pior.
+    VIDA_UTIL = timedelta(hours=24)
+
     def get(self, request):
         agora = timezone.now()
-        # Ja a circular: aparece sempre, a hora prevista nao interessa. Agendada:
-        # so nas rotas com lugar marcado (ver `Trip.sellable_statuses_for`) e
-        # dentro da janela de venda.
+        tz = timezone.get_current_timezone()
+        # Fim do dia em hora LOCAL: o balcao raciocina no dia dele, nao em UTC.
+        # Com o fuso de Maputo (+2) a diferenca sao duas partidas inteiras.
+        fim_do_dia = timezone.make_aware(
+            datetime.combine(agora.astimezone(tz).date(), time.max), tz)
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
-            Q(status__in=Trip.RUNNING_STATUSES)
+            Q(
+                status__in=Trip.RUNNING_STATUSES,
+                planned_departure_at__gte=agora - self.VIDA_UTIL,
+            )
+            | Q(status__in=Trip.RUNNING_STATUSES, planned_departure_at__isnull=True)
             | Q(
                 status=Trip.Status.SCHEDULED,
                 route__service_type__in=Route.SEATED_SERVICE_TYPES,
                 planned_departure_at__gte=agora - self.TOLERANCIA,
-                planned_departure_at__lte=agora + self.HORIZONTE,
+                planned_departure_at__lte=fim_do_dia,
             )
         )
         # Motorista ve apenas as viagens que conduz; o agente escolhe qualquer.

@@ -282,9 +282,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   }
 
   Future<void> _requestPayment() async {
-    if (_paymentMethod == 'mobile_money') {
+    if (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') {
       if (!RegExp(r'^[0-9]{9}$').hasMatch(_phone)) {
-        setState(() => _error = 'Telefone deve ter 9 digitos.');
+        // Em numerário o número não é uma carteira, mas continua a ser
+        // obrigatório: sem ele o passageiro paga e não leva bilhete nenhum.
+        setState(() => _error = _paymentMethod == 'cash'
+            ? 'Indique o telefone do passageiro (9 dígitos) — o bilhete vai por SMS.'
+            : 'Telefone deve ter 9 digitos.');
         return;
       }
     } else if (_paymentMethod == 'card') {
@@ -628,9 +632,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         // do que a venda ser recusada pelo servidor com o passageiro a frente.
         final falta = _missingForSale();
         if (falta.isNotEmpty) return falta;
-        if (_paymentMethod == 'mobile_money' &&
+        if ((_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') &&
             !RegExp(r'^[0-9]{9}$').hasMatch(_phone)) {
-          return 'Indique o telefone do passageiro (9 digitos).';
+          return _paymentMethod == 'cash'
+              ? 'Indique o telefone do passageiro — o bilhete vai por SMS.'
+              : 'Indique o telefone do passageiro (9 digitos).';
         }
         if (_paymentMethod == 'card' &&
             (_cardUid ?? '').isEmpty &&
@@ -652,7 +658,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             ? 'AVANCAR COM ${_pickedSeats.join(", ")}'
             : 'ESCOLHA OS LUGARES';
       case _Step.payment:
-        return _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO';
+        return switch (_paymentMethod) {
+          'card' => 'COBRAR DO CARTAO',
+          // Não é um pedido a ninguém: o dinheiro já está na mão do agente.
+          'cash' => 'RECEBI O DINHEIRO',
+          _ => 'SOLICITAR PAGAMENTO',
+        };
       default:
         return '';
     }
@@ -1009,20 +1020,27 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         const SizedBox(height: 12),
         _methodPicker(),
         const SizedBox(height: 10),
-        if (_paymentMethod == 'mobile_money')
+        if (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ...[
+          if (_paymentMethod == 'cash') _cashNote(),
           TextField(
             keyboardType: TextInputType.phone,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)],
-            decoration: const InputDecoration(
-              labelText: 'Telefone (9 digitos)',
-              prefixIcon: Icon(Icons.phone),
+            decoration: InputDecoration(
+              // Em numerário o telefone já não é uma carteira a debitar: é
+              // para onde o bilhete vai. Dizê-lo evita o agente pedir o número
+              // do M-Pesa a quem está a pagar em notas.
+              labelText: _paymentMethod == 'cash'
+                  ? 'Telefone do passageiro (9 dígitos)'
+                  : 'Telefone (9 digitos)',
+              helperText: _paymentMethod == 'cash' ? 'É para aqui que o bilhete vai por SMS.' : null,
+              prefixIcon: const Icon(Icons.phone),
               hintText: '84/85/86/87...',
             ),
             // setState para a linha "indique o telefone..." por cima do botao
             // acompanhar o que esta a ser escrito.
             onChanged: (v) => setState(() => _phone = v),
-          )
-        else
+          ),
+        ] else
           _cardCapturePanel(),
         // O botao de cobrar vive na barra fixa do fundo, sempre a vista.
       ]),
@@ -1425,6 +1443,39 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     return '';
   }
 
+  /// Lembrete de que o dinheiro fica com o agente.
+  ///
+  /// Nas outras formas de pagamento o valor entra directamente na conta da
+  /// operadora e ninguém tem de o guardar. Em numerário são notas na mão de
+  /// alguém, que têm de aparecer no fecho de caixa — e é melhor o agente saber
+  /// isso no momento em que as recebe do que ao fim do dia.
+  Widget _cashNote() {
+    // O total, calculado como no resto do ecrã: a tarifa vem por bilhete.
+    final unit = double.tryParse(_fare?['fare_amount']?.toString() ?? '');
+    final valor = unit == null ? '' : (unit * _quantity).toStringAsFixed(2);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: const Color(0x14B07B24),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0x33B07B24)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.savings_outlined, size: 18, color: Color(0xFFB07B24)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            valor.isEmpty
+                ? 'Receba o valor em dinheiro. Entra no seu fecho de caixa.'
+                : 'Receba $valor MZN em dinheiro. Entra no seu fecho de caixa.',
+            style: const TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF8A5F16)),
+          ),
+        ),
+      ]),
+    );
+  }
+
   Widget _methodPicker() {
     return LayoutBuilder(builder: (ctx, c) {
       Widget tile(String key, IconData icon, String label) {
@@ -1470,6 +1521,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       }
       return Row(children: [
         tile('mobile_money', Icons.phone_iphone, 'M-Pesa / E-Mola'),
+        tile('cash', Icons.payments_outlined, 'Numerario'),
         tile('card', Icons.credit_card, 'Cartao NFC'),
       ]);
     });
@@ -1655,6 +1707,30 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         const Center(child: Text('VENDA CONFIRMADA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green))),
         const SizedBox(height: 8),
         Center(child: Text('Ref: ${_saleRef ?? '-'}')),
+        const SizedBox(height: 12),
+        // O bilhete não se imprime — segue por SMS, como na compra pelo site.
+        // Dizê-lo aqui evita o agente ficar à espera de papel que não vem, e
+        // dá-lhe o número para conferir com o passageiro antes de o deixar ir.
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(
+            color: const Color(0x141D5FA7),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0x331D5FA7)),
+          ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.sms_outlined, size: 18, color: Color(0xFF1D5FA7)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _phone.isEmpty
+                    ? 'O bilhete foi enviado por SMS para o passageiro.'
+                    : 'Bilhete enviado por SMS para $_phone.',
+                style: const TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF17456F)),
+              ),
+            ),
+          ]),
+        ),
         const SizedBox(height: 12),
         const Text('Bilhetes emitidos:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),

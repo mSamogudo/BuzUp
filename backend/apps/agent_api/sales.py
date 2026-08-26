@@ -20,7 +20,7 @@ from apps.guest_checkouts.capacity import SeatsUnavailable, lock_trip_for_sale
 from apps.guest_checkouts.models import GuestCheckout
 from apps.notifications.services import notify_by_phone
 from apps.packages.services import consume_package_trip, find_active_package_for_route
-from apps.payments.models import PaymentIntent
+from apps.payments.models import CASH_PROVIDER, PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.routes.models import Route, Stop
@@ -190,10 +190,20 @@ def create_pos_sale(
     emergency_contact_name: str = "",
     emergency_contact_phone: str = "",
     passengers: list[dict] | None = None,
+    payment_method: str = "mobile_money",
 ) -> tuple[GuestCheckout, PaymentIntent]:
     """Create a sale + initiate payment for an agent's POS terminal.
 
     Backend computes the fare. Returns (GuestCheckout, PaymentIntent).
+
+    `payment_method="cash"` e a mesma venda sem gateway: o passageiro paga em
+    dinheiro ao agente e o pagamento nasce ja liquidado — nao ha carteira a
+    debitar nem PIN a esperar. Tudo o resto (tarifa, lotacao, lugar,
+    identificacao, bilhete por SMS) e igual, e por isso vive aqui em vez de
+    numa segunda funcao que ia divergir desta a primeira alteracao.
+
+    O telefone continua a ser pedido, mas ja nao e uma carteira: e para onde
+    o bilhete vai por SMS.
     """
     if device and device.status == Device.Status.BLOCKED:
         raise SaleError("Dispositivo bloqueado. Contacte o administrador.")
@@ -307,6 +317,7 @@ def create_pos_sale(
             emergency_contact_phone=emerg_phone,
         )
 
+        a_dinheiro = payment_method == "cash"
         pi = PaymentIntent.objects.create(
             reference=f"PAY-{ref}",
             idempotency_key=idempotency_key or f"agent-sale-{ref}",
@@ -315,15 +326,36 @@ def create_pos_sale(
             payer_phone=phone,
             guest_checkout=gc,
             status=PaymentIntent.Status.PENDING,
+            # `provider` marca de onde veio o dinheiro, e no numerario isso
+            # nao e um detalhe tecnico: e o unico sitio onde fica escrito que
+            # ha notas na mao do agente para entregar no fecho de caixa. Sem
+            # esta marca, a venda a dinheiro somava-se as de M-Pesa e ninguem
+            # conseguia dizer quanto cobrar a quem.
+            provider=CASH_PROVIDER if a_dinheiro else "",
+            channel="POS_CASH" if a_dinheiro else "",
             expires_at=gc.expires_at,
             metadata={
                 "agent_id": getattr(agent, "id", None),
                 "agent_user_id": getattr(agent, "user_id", None),
                 "device_id": device.id if device else None,
                 "device_serial": device.serial_number if device else "",
+                "payment_method": payment_method,
             },
             created_by=getattr(agent, "user", None),
         )
+
+        if a_dinheiro:
+            # Dentro da mesma transaccao que reservou o lugar: se a emissao
+            # falhar, o lugar volta a ficar livre em vez de ficar preso por
+            # uma venda que nunca chegou a existir.
+            confirm_payment_immediately(pi, provider_reference=f"CASH-{ref}")
+
+    if payment_method == "cash":
+        # A liquidacao aconteceu dentro da transaccao acima e mudou a linha na
+        # base de dados, nao este objecto. Sem isto quem chama recebia um
+        # pagamento "pendente" que ja estava pago.
+        pi.refresh_from_db()
+        gc.refresh_from_db()
 
     audit(
         "SALE_CREATED",
@@ -336,6 +368,7 @@ def create_pos_sale(
             "quantity": quantity,
             "trip_id": trip.id if trip else None,
             "device_serial": device.serial_number if device else "",
+            "method": payment_method,
         },
     )
 

@@ -7,6 +7,15 @@ from django.db import models
 from apps.core.models import BaseModel
 
 
+# Marca do numerario no `PaymentIntent.provider`.
+#
+# Escrita na venda e lida no fecho de caixa: sao os dois lados da mesma
+# pergunta — quanto dinheiro FISICO e que este agente tem para entregar. Vive
+# aqui, e nao no modulo da venda, porque quem a le e a contabilidade e nao se
+# quer que o relatorio importe o servico de vendas para saber o que e dinheiro.
+CASH_PROVIDER = "CASH"
+
+
 class PaymentIntent(BaseModel):
     class Purpose(models.TextChoices):
         MOBILE_WALLET_TOPUP = "mobile_wallet_topup", "Recarga App"

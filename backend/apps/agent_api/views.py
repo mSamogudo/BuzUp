@@ -64,7 +64,7 @@ from apps.fares.services import NoFareFoundError, quote_fare
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.guest_checkouts.ticket_codes import ticket_reference
 from apps.guest_checkouts.ticket_pdf import generate_tickets_pdf
-from apps.payments.models import PaymentIntent
+from apps.payments.models import CASH_PROVIDER, PaymentIntent
 from apps.payments.services.idempotency import agent_scoped_key
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.pos.models import PosSession
@@ -779,6 +779,7 @@ class AgentSaleCreateView(APIView):
                 emergency_contact_name=data.get("emergency_contact_name") or "",
                 emergency_contact_phone=data.get("emergency_contact_phone") or "",
                 passengers=data.get("passengers") or [],
+                payment_method=method,
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)
@@ -794,6 +795,29 @@ class AgentSaleCreateView(APIView):
             if vencedora is None:
                 raise
             return _venda_repetida(vencedora)
+
+        if method == "cash":
+            # Nao ha nada a pedir a ninguem: o dinheiro ja esta na mao do
+            # agente e a venda nasceu liquidada. Pedir confirmacao ao gateway
+            # aqui poria o passageiro a receber um pedido de PIN por um
+            # pagamento que ja fez em notas.
+            gc.refresh_from_db()
+            return Response({
+                "sale_reference": gc.reference,
+                "payment": {
+                    "status": pi.status,
+                    "reference": pi.reference,
+                    "provider": pi.provider,
+                    "detail": "Pagamento em numerario recebido.",
+                },
+                "amount": str(gc.total_amount),
+                "quantity": gc.quantity,
+                "status": gc.status,
+                # O bilhete nao se imprime: segue por SMS, como na compra
+                # publica. Vai tambem na resposta para o POS o poder mostrar
+                # no ecra enquanto o SMS nao chega.
+                "tickets": [_ticket_payload(tp) for tp in gc.travel_passes.all()],
+            }, status=201)
 
         if data.get("auto_request_payment", True):
             payment_status = request_payment(gc, pi)
@@ -1014,6 +1038,16 @@ class AgentDayCloseView(APIView):
         ).order_by("-created_at")
 
         sales_total = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        # NUMERARIO, em separado. E um recorte das vendas acima, nao uma
+        # parcela a somar — mas e o unico numero deste ecra que corresponde a
+        # notas que o agente tem mesmo no bolso e vai entregar. Tudo o resto
+        # (M-Pesa, carteira) entrou directamente na conta da operadora e nunca
+        # passou pelas maos de ninguem.
+        cash_total = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER,
+        ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        cash_count = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER).count()
         topup_total = topup_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
         # As validacoes aprovadas sao DUAS coisas diferentes, e somar tudo numa
         # linha so dava dinheiro a dobrar:
@@ -1045,6 +1079,9 @@ class AgentDayCloseView(APIView):
             "totals": {
                 "revenue": str(sales_total + topup_total),
                 "sales": str(sales_total),
+                # Recorte de `sales`: o dinheiro fisico a entregar.
+                "cash": str(cash_total),
+                "cash_count": cash_count,
                 "topups": str(topup_total),
                 # Movimento de hoje: so o que foi debitado na validacao.
                 "validations_revenue": str(valid_total),
@@ -1134,6 +1171,16 @@ class AgentSalesSummaryView(APIView):
         )
 
         sales_total = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        # NUMERARIO, em separado. E um recorte das vendas acima, nao uma
+        # parcela a somar — mas e o unico numero deste ecra que corresponde a
+        # notas que o agente tem mesmo no bolso e vai entregar. Tudo o resto
+        # (M-Pesa, carteira) entrou directamente na conta da operadora e nunca
+        # passou pelas maos de ninguem.
+        cash_total = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER,
+        ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        cash_count = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER).count()
         topups_total = topup_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
 
         sales_confirmed = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).count()
@@ -1158,6 +1205,9 @@ class AgentSalesSummaryView(APIView):
             "total_revenue": str(sales_total + topups_total),
             "currency": "MZN",
             "sales_total": str(sales_total),
+            # Recorte de `sales_total`: o dinheiro fisico a entregar.
+            "cash_total": str(cash_total),
+            "cash_count": cash_count,
             "topups_total": str(topups_total),
             "tickets_issued": tickets,
             "topups_count": topups_confirmed,

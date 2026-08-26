@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.db.models import Count, Q, Sum
 
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
-from apps.payments.models import PaymentIntent
+from apps.payments.models import CASH_PROVIDER, PaymentIntent
 from apps.trips.models import Trip
 from apps.validations.models import ValidationEvent
 
@@ -17,10 +17,26 @@ PAY_AS_YOU_GO_VALIDATION_TYPES = (
 
 
 def calculate_trip_revenue(trip: Trip) -> dict:
-    guest = GuestCheckout.objects.filter(
+    vendidos = GuestCheckout.objects.filter(
         trip=trip,
         status__in=[GuestCheckout.Status.PAID, GuestCheckout.Status.ISSUED],
-    ).aggregate(count=Count("id"), tickets=Sum("quantity"), total=Sum("total_amount"))
+    )
+    guest = vendidos.aggregate(
+        count=Count("id"), tickets=Sum("quantity"), total=Sum("total_amount"))
+
+    # NUMERARIO, em separado. Uma venda a dinheiro tambem e um `GuestCheckout`
+    # e ja esta contada na linha acima — mas contada nao chega. As outras
+    # formas de pagamento entram directamente na conta da operadora; esta fica
+    # em NOTAS na mao do agente, e alguem tem de as receber no fim do dia.
+    # Somada as de M-Pesa era impossivel dizer quanto cobrar a quem.
+    #
+    # Nao entra no `total`: seria contar o mesmo dinheiro duas vezes. E um
+    # recorte do que ja la esta, e o fecho de caixa le-o como tal.
+    dinheiro = vendidos.filter(
+        payment_intents__status=PaymentIntent.Status.CONFIRMED,
+        payment_intents__provider=CASH_PROVIDER,
+    ).distinct().aggregate(
+        count=Count("id", distinct=True), tickets=Sum("quantity"), total=Sum("total_amount"))
 
     app_passes = DigitalTravelPass.objects.filter(
         trip=trip,
@@ -54,6 +70,12 @@ def calculate_trip_revenue(trip: Trip) -> dict:
             "count": guest["count"] or 0,
             "tickets": guest["tickets"] or 0,
             "revenue": str(guest_total),
+        },
+        # Recorte do `guest_checkout` acima, nao uma parcela a somar.
+        "cash": {
+            "count": dinheiro["count"] or 0,
+            "tickets": dinheiro["tickets"] or 0,
+            "revenue": str(_decimal(dinheiro["total"])),
         },
         "app_passes": {
             "count": app_passes["count"] or 0,
@@ -108,6 +130,19 @@ def calculate_trips_revenue_bulk(trips) -> dict[int, dict]:
                 status__in=[GuestCheckout.Status.PAID, GuestCheckout.Status.ISSUED])
         .values("trip_id")
         .annotate(count=Count("id"), tickets=Sum("quantity"), total=Sum("total_amount"))
+    )
+    # Recorte a dinheiro, pelo mesmo criterio da versao por viagem. Tem de
+    # existir aqui tambem: ha um teste que exige que as duas contas deem o
+    # mesmo, e sem isto o relatorio em lote escondia o numerario.
+    dinheiro = by_trip(
+        GuestCheckout.objects
+        .filter(trip_id__in=trip_ids,
+                status__in=[GuestCheckout.Status.PAID, GuestCheckout.Status.ISSUED],
+                payment_intents__status=PaymentIntent.Status.CONFIRMED,
+                payment_intents__provider=CASH_PROVIDER)
+        .values("trip_id")
+        .annotate(count=Count("id", distinct=True), tickets=Sum("quantity"),
+                  total=Sum("total_amount"))
     )
     app_passes = by_trip(
         DigitalTravelPass.objects
@@ -172,7 +207,13 @@ def calculate_trips_revenue_bulk(trips) -> dict[int, dict]:
         wallet_total = _decimal(w.get("total"))
         direct_total = _decimal(d["total"])
 
+        c = dinheiro.get(trip_id, empty)
         result[trip_id] = {
+            "cash": {
+                "count": c.get("count") or 0,
+                "tickets": c.get("tickets") or 0,
+                "revenue": str(_decimal(c.get("total"))),
+            },
             "guest_checkout": {
                 "count": g.get("count") or 0,
                 "tickets": g.get("tickets") or 0,

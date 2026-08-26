@@ -67,7 +67,7 @@ class AgentSaleSerializer(serializers.Serializer):
     origin_stop_id = serializers.IntegerField()
     destination_stop_id = serializers.IntegerField()
     payment_method = serializers.ChoiceField(
-        choices=["mobile_money", "card"], default="mobile_money",
+        choices=["mobile_money", "card", "cash"], default="mobile_money",
     )
     # mobile_money: required (phone of M-Pesa / E-Mola wallet)
     passenger_phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
@@ -114,6 +114,13 @@ class AgentSaleSerializer(serializers.Serializer):
         if method == "mobile_money":
             if not attrs.get("passenger_phone"):
                 raise serializers.ValidationError({"passenger_phone": "Obrigatorio para pagamento via Mobile Money."})
+        elif method == "cash":
+            # O telefone continua obrigatorio, mas por outra razao: ja nao e
+            # uma carteira a debitar — e para onde o bilhete vai por SMS. Sem
+            # ele o passageiro paga e nao leva bilhete nenhum.
+            if not attrs.get("passenger_phone"):
+                raise serializers.ValidationError(
+                    {"passenger_phone": "Indique o telefone do passageiro — o bilhete vai por SMS."})
         elif method == "card":
             if not attrs.get("card_uid") and not attrs.get("qr_token"):
                 raise serializers.ValidationError("Indique card_uid ou qr_token para pagamento por cartao.")

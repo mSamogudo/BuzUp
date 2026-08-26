@@ -8,6 +8,7 @@ import '../../core/app_version.dart';
 import '../../core/app_update.dart';
 import '../../core/config.dart';
 import '../../core/feedback.dart';
+import '../trips/driver_trip_actions.dart';
 import '../../core/location.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -357,6 +358,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Cartao "viagem em mao" do motorista: mostra a viagem activa (ou a
   /// proxima) e leva ao ecra de viagens. As accoes vivem la — aqui e so o
   /// estado, sempre visivel mal se entra na app.
+  /// Impede o duplo toque enquanto a acção está a decorrer — no terminal, um
+  /// segundo toque impaciente chegava para enviar a mesma acção duas vezes.
+  bool _tripBusy = false;
+
   Widget _driverTripCard(Color cardBg, Color txtMain, Color txtMuted, Color border) {
     final activeAsync = ref.watch(activeDriverTripProvider);
     final nextAsync = ref.watch(nextDriverTripProvider);
@@ -384,7 +389,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       accent = BuzUpColors.blue;
     }
 
-    return Material(
+    return Column(children: [
+      Material(
       color: cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -423,6 +429,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             Icon(Icons.arrow_forward, color: txtMuted, size: 20),
           ]),
+        ),
+      ),
+      ),
+      if (trip != null) _driverQuickAction(trip, accent),
+    ]);
+  }
+
+  /// Botão que faz o passo seguinte da viagem sem sair da página inicial.
+  ///
+  /// Para abrir o embarque o motorista tinha de tocar no cartão, esperar pelo
+  /// ecrã de viagens e só aí carregar — três toques para uma decisão que já
+  /// tinha tomado antes de pegar no terminal. O toque que sobrava era o de
+  /// NAVEGAR, e é esse que sai.
+  ///
+  /// Os dois passos do ciclo mantêm-se separados de propósito: abrir o
+  /// embarque não é partir, e juntá-los punha na hora de saída o instante em
+  /// que o primeiro passageiro subiu. Ver [DriverTripActions.next].
+  Widget _driverQuickAction(Map<String, dynamic> trip, Color accent) {
+    final passo = DriverTripActions.next((trip['status'] ?? '').toString());
+    if (passo == null) return const SizedBox.shrink();
+    final id = trip['id'] as int?;
+    if (id == null) return const SizedBox.shrink();
+    // Sem viatura não há embarque a abrir — o botão morto só confundia.
+    final semViatura = (trip['vehicle_registration'] ?? '').toString().isEmpty
+        && passo.action == 'start';
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: (_tripBusy || semViatura)
+              ? null
+              : () async {
+                  AppFeedback.click();
+                  setState(() => _tripBusy = true);
+                  await DriverTripActions.run(ref, context, id, passo.action);
+                  if (mounted) setState(() => _tripBusy = false);
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: accent,
+            padding: const EdgeInsets.symmetric(vertical: 13),
+          ),
+          child: _tripBusy
+              ? const SizedBox(
+                  height: 18, width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : Text(semViatura ? 'SEM VIATURA ATRIBUIDA' : passo.label,
+                  style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.8)),
         ),
       ),
     );

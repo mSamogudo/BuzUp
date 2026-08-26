@@ -311,6 +311,18 @@ class _DayCloseScreenState extends ConsumerState<DayCloseScreen> {
         footer: '${totals['tickets'] ?? 0} bilhetes emitidos',
         accent: const Color(0xFF1FB04A),
       ),
+      // NUMERARIO. É um recorte das vendas acima, não uma parcela a somar —
+      // mas é o único número deste ecrã que corresponde a notas que o agente
+      // tem mesmo no bolso. Tudo o resto entrou directamente na conta da
+      // operadora e nunca lhe passou pelas mãos. Sem esta linha o agente não
+      // tinha como saber quanto dinheiro entregar.
+      _kpiData(
+        icon: Icons.payments_outlined,
+        label: 'NUMERARIO',
+        value: '${totals['cash'] ?? '0.00'} MZN',
+        footer: '${totals['cash_count'] ?? 0} venda(s) — dinheiro a entregar',
+        accent: const Color(0xFFB07B24),
+      ),
       _kpiData(
         icon: Icons.credit_card,
         label: 'RECARGAS',

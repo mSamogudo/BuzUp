@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Clock, Download, MessageSquareWarning, RefreshCw, Wallet, XCircle } from "lucide-react";
+import { ArrowLeft, Banknote, CheckCircle2, Clock, Download, MessageSquareWarning, RefreshCw, Wallet, XCircle } from "lucide-react";
 import { apiDownload, apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
@@ -12,6 +12,9 @@ import BroadcastModal from "./BroadcastModal";
 
 interface RevenueSummary {
   guest_checkout: { revenue: string; count: number; tickets: number };
+  /** Recorte do `guest_checkout`: a parte que foi paga em dinheiro ao agente.
+   *  Não é uma parcela a somar — é a que alguém tem de entregar. */
+  cash?: { revenue: string; count: number; tickets: number };
   app_passes: { revenue: string; count: number };
   wallet_validations: { revenue: string; count: number };
   direct_payments: { revenue: string; count: number };
@@ -293,6 +296,17 @@ export default function TripDetailPage() {
             <div><span>Passes app ({revenue.app_passes.count})</span><strong>{formatCurrency(revenue.app_passes.revenue)}</strong></div>
             <div><span>Validacoes carteira ({revenue.wallet_validations.count})</span><strong>{formatCurrency(revenue.wallet_validations.revenue)}</strong></div>
             <div><span>Pagamentos directos ({revenue.direct_payments.count})</span><strong>{formatCurrency(revenue.direct_payments.revenue)}</strong></div>
+            {/* O numerário é um recorte da carteira móvel acima, e não uma
+                parcela a somar — por isso fica fora do total, marcado como
+                "dos quais". É o único valor desta lista que corresponde a
+                notas que um agente recebeu e tem de entregar. */}
+            {revenue.cash && Number(revenue.cash.revenue) > 0 ? (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <span><Banknote size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+                  dos quais em numerario ({revenue.cash.count})</span>
+                <strong>{formatCurrency(revenue.cash.revenue)}</strong>
+              </div>
+            ) : null}
             <div style={{ gridColumn: "1 / -1", borderTop: "1px solid var(--app-border)", paddingTop: 8 }}>
               <span><Wallet size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />Total</span>
               <strong>{formatCurrency(revenue.total_revenue)}</strong>

@@ -605,8 +605,18 @@ class AgentTripListView(APIView):
     #:
     #: 24h e folgado de proposito: o percurso mais longo (Maputo-Nelspruit) faz
     #: -se em cerca de 8 horas, e o que passa disto e esquecimento, nao atraso.
-    #: As viagens sem hora prevista continuam a aparecer — nao ha por onde
-    #: julga-las, e escondê-las era pior.
+    #:
+    #: **Conta-se do ARRANQUE, e nao da hora prevista.** A primeira versao
+    #: media so `planned_departure_at`, e isso escondia viagens que o motorista
+    #: tinha acabado de arrancar: bastava a partida estar marcada para uma data
+    #: antiga — uma viagem de teste, um horario mal introduzido, uma reutilizada
+    #: — para o balcao deixar de a vender assim que ele carregava em iniciar.
+    #: Foi assim que apareceu, e o sintoma enganava: "depois de iniciar viagem
+    #: o POS nao vende mais".
+    #:
+    #: Uma viagem esta viva se QUALQUER um dos dois sinais for recente. As que
+    #: nao tem nenhum continuam a aparecer — nao ha por onde julga-las, e
+    #: escondê-las era pior.
     VIDA_UTIL = timedelta(hours=24)
 
     #: Quanto tempo uma partida atrasada continua a aparecer depois da hora.
@@ -624,11 +634,21 @@ class AgentTripListView(APIView):
         fim_do_dia = timezone.make_aware(
             datetime.combine(agora.astimezone(tz).date(), time.max), tz)
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
+            # Viva por qualquer um dos dois sinais: arrancada ha pouco, ou
+            # com partida prevista para ha pouco.
             Q(
+                status__in=Trip.RUNNING_STATUSES,
+                activity_started_at__gte=agora - self.VIDA_UTIL,
+            )
+            | Q(
                 status__in=Trip.RUNNING_STATUSES,
                 planned_departure_at__gte=agora - self.VIDA_UTIL,
             )
-            | Q(status__in=Trip.RUNNING_STATUSES, planned_departure_at__isnull=True)
+            | Q(
+                status__in=Trip.RUNNING_STATUSES,
+                planned_departure_at__isnull=True,
+                activity_started_at__isnull=True,
+            )
             | Q(
                 status=Trip.Status.SCHEDULED,
                 route__service_type__in=Route.SEATED_SERVICE_TYPES,

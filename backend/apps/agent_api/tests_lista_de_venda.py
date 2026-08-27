@@ -154,6 +154,31 @@ class ViagemEsquecidaTests(TestCase):
             planned_departure_at=timezone.now() - timedelta(hours=10))
         self.assertIn(t.id, self._ids())
 
+    def test_uma_viagem_arrancada_agora_aparece_mesmo_com_horario_antigo(self):
+        """O caso reportado: "depois de iniciar viagem o POS nao vende mais".
+
+        A viagem tinha a partida marcada para 16 dias antes — uma partida de
+        teste reutilizada — e o motorista arrancou-a hoje. A regra das 24h
+        media a hora PREVISTA, e por isso escondia-a no instante em que ele
+        carregava em iniciar.
+
+        Uma viagem que o motorista acabou de arrancar esta viva, diga o que
+        disser o horario dela.
+        """
+        t = Trip.objects.create(
+            route=self.rota, vehicle=self.v, status=Trip.Status.DEPARTED,
+            planned_departure_at=timezone.now() - timedelta(days=16),
+            activity_started_at=timezone.now() - timedelta(minutes=10))
+        self.assertIn(t.id, self._ids())
+
+    def test_uma_viagem_arrancada_ha_dias_e_esquecida_e_nao_viva(self):
+        """O outro lado: sem isto voltava-se ao problema que a regra resolveu."""
+        t = Trip.objects.create(
+            route=self.rota, vehicle=self.v, status=Trip.Status.BOARDING,
+            planned_departure_at=timezone.now() - timedelta(days=4),
+            activity_started_at=timezone.now() - timedelta(days=4))
+        self.assertNotIn(t.id, self._ids())
+
     def test_viagem_sem_hora_prevista_continua_a_aparecer(self):
         """Nao ha por onde julga-la; escondê-la era pior do que mostra-la."""
         t = Trip.objects.create(

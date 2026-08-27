@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { RefreshCw, Save, Upload } from "lucide-react";
 import { apiUpload } from "../lib/api";
-import { t } from "../lib/i18n";
+import { t, type Locale } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -11,16 +12,16 @@ import { PageFrame, SectionCard } from "../ui/common";
 type Slot = { key: keyof Branding; urlKey: keyof Branding; label: string; hint: string };
 
 // Cada slot mapeia para um campo do backend (apps/branding/models.py LOGO_FIELDS).
-const SLOTS: Slot[] = [
-  { key: "primary_logo_url", urlKey: "primary_logo_url", label: "Logo principal", hint: "Fallback global quando um slot especifico nao esta definido." },
-  { key: "sidebar_logo_url", urlKey: "sidebar_logo_url", label: "Logo do portal (sidebar)", hint: "Cabecalho do portal com a barra lateral expandida." },
-  { key: "sidebar_mark_url", urlKey: "sidebar_mark_url", label: "Marca compacta (sidebar recolhida)", hint: "Icone quadrado para a barra lateral recolhida." },
-  { key: "auth_logo_url", urlKey: "auth_logo_url", label: "Logo da pagina de login", hint: "Ecra de autenticacao do portal." },
-  { key: "pos_logo_url", urlKey: "pos_logo_url", label: "Logo da app POS", hint: "Aplicacao dos terminais (motoristas/agentes)." },
-  { key: "mobile_logo_url", urlKey: "mobile_logo_url", label: "Logo da app do passageiro", hint: "Aplicacao movel dos passageiros." },
-  { key: "report_logo_url", urlKey: "report_logo_url", label: "Logo dos relatorios (PDF)", hint: "Cabecalho dos relatorios e documentos PDF." },
-  { key: "powered_by_logo_url", urlKey: "powered_by_logo_url", label: "Logo \"powered by\" (UpDigital)", hint: "Rodape do portal e dos relatorios." },
-  { key: "favicon_url", urlKey: "favicon_url", label: "Favicon do portal", hint: "Icone do separador do navegador." },
+const slots = (lc: Locale): Slot[] => [
+  { key: "primary_logo_url", urlKey: "primary_logo_url", label: t(lc, "logoMain"), hint: t(lc, "logoMainHint") },
+  { key: "sidebar_logo_url", urlKey: "sidebar_logo_url", label: t(lc, "logoPortal"), hint: t(lc, "logoPortalHint") },
+  { key: "sidebar_mark_url", urlKey: "sidebar_mark_url", label: t(lc, "logoCompact"), hint: t(lc, "logoCompactHint") },
+  { key: "auth_logo_url", urlKey: "auth_logo_url", label: t(lc, "logoLogin"), hint: t(lc, "logoLoginHint") },
+  { key: "pos_logo_url", urlKey: "pos_logo_url", label: t(lc, "logoPos"), hint: t(lc, "logoPosHint") },
+  { key: "mobile_logo_url", urlKey: "mobile_logo_url", label: t(lc, "logoApp"), hint: t(lc, "logoAppHint") },
+  { key: "report_logo_url", urlKey: "report_logo_url", label: t(lc, "logoReports"), hint: t(lc, "logoReportsHint") },
+  { key: "powered_by_logo_url", urlKey: "powered_by_logo_url", label: "Logo \"powered by\" (UpDigital)", hint: t(lc, "platformNameHint") },
+  { key: "favicon_url", urlKey: "favicon_url", label: t(lc, "favicon"), hint: t(lc, "faviconHint") },
 ];
 
 // keys do FormData = nomes dos FileField no backend (sem o sufixo _url)
@@ -59,13 +60,13 @@ export default function BrandingPage() {
         form.append(fieldName(urlKey), file);
       }
       await apiUpload("/api/branding/", token!, form, "PATCH");
-      showToast("success", "Marca actualizada.");
+      showToast("success", t(lc, "okBrandSaved"));
       setFiles({});
       setPreviews({});
       setName(null);
       reload();
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setBusy(false);
     }
@@ -79,9 +80,9 @@ export default function BrandingPage() {
         </button>
       }>
       <form className="admin-form" onSubmit={submit}>
-        <SectionCard title="Identidade">
+        <SectionCard title={t(lc, "identity")}>
           <label className="field" style={{ maxWidth: 360 }}>
-            <span>Nome da plataforma</span>
+            <span>{t(lc, "platformName")}</span>
             <input
               value={name ?? branding.platform_name ?? ""}
               onChange={(e) => setName(e.target.value)}
@@ -90,16 +91,16 @@ export default function BrandingPage() {
           </label>
         </SectionCard>
 
-        <SectionCard title="Logos">
+        <SectionCard title={t(lc, "logos")}>
           <div className="branding-grid">
-            {SLOTS.map((slot) => {
+            {slots(lc).map((slot) => {
               const current = previews[slot.urlKey] || (branding[slot.urlKey] as string) || "";
               return (
                 <div className="branding-slot" key={slot.urlKey}>
                   <div className="branding-slot-preview">
                     {current
                       ? <img src={current} alt={slot.label} />
-                      : <span className="branding-slot-empty">Sem logo</span>}
+                      : <span className="branding-slot-empty">{t(lc, "noLogo")}</span>}
                   </div>
                   <div className="branding-slot-meta">
                     <strong>{slot.label}</strong>

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { t } from "../lib/i18n";
+import { useUi } from "../ui/UiPreferences";
 import { Link } from "react-router-dom";
 import {
   Smartphone, ScanLine, Download, ShieldCheck, ArrowLeft,
@@ -43,6 +45,7 @@ function AppCard({
   info: AppInfo;
   kind: "passageiro" | "pos";
 }) {
+  const { locale: lc } = useUi();
   const isPsg = kind === "passageiro";
   const title = isPsg ? "App Passageiro" : "App POS";
   const tag = isPsg ? "Para passageiros · Android" : "Para agentes e motoristas · Android";
@@ -73,7 +76,7 @@ function AppCard({
         {info?.available ? (
           <>
             <a className="bzdl-btn" href={info.download_url} rel="nofollow">
-              <Download size={18} /> Baixar APK
+              <Download size={18} /> {t(lc, "downloadApk")}
             </a>
             <div className="bzdl-meta">
               <span className="bzdl-ver">v{info.version_name}</span>
@@ -81,7 +84,7 @@ function AppCard({
             </div>
           </>
         ) : (
-          <span className="bzdl-soon">Em breve</span>
+          <span className="bzdl-soon">{t(lc, "comingSoon")}</span>
         )}
       </div>
     </div>
@@ -89,12 +92,13 @@ function AppCard({
 }
 
 export default function DownloadPage() {
+  const { locale: lc } = useUi();
   const { branding } = useBranding();
   const [info, setInfo] = useState<LatestInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = "Descarregar apps · BusUp";
+    document.title = t(lc, "downloadPageTitle");
     apiPublic("/api/apps/latest/")
       .then((d) => setInfo(d))
       .catch(() => setInfo(null))
@@ -111,14 +115,14 @@ export default function DownloadPage() {
 
       <header className="bzdl-top">
         <Link to="/" className="bzdl-brand"><Wordmark url={darkLogo} alt="BusUp" height={28} /></Link>
-        <Link to="/" className="bzdl-back"><ArrowLeft size={16} /> Voltar ao início</Link>
+        <Link to="/" className="bzdl-back"><ArrowLeft size={16} /> {t(lc, "backHome")}</Link>
       </header>
 
       <main className="bzdl-main">
         <div className="bzdl-hero">
-          <span className="bzdl-pill">Aplicações Android</span>
-          <h1>Descarregue as aplicações <span>BusUp</span></h1>
-          <p>Escolha a app certa para si. Instale em segundos, direto no seu telemóvel Android.</p>
+          <span className="bzdl-pill">{t(lc, "androidApps")}</span>
+          <h1>{t(lc, "downloadApps")} <span>BusUp</span></h1>
+          <p>{t(lc, "downloadHint")}</p>
         </div>
 
         <div className="bzdl-grid">
@@ -126,29 +130,29 @@ export default function DownloadPage() {
           <AppCard kind="pos" info={info?.pos ?? empty} />
         </div>
 
-        {loading && <div className="bzdl-loading">A carregar versões…</div>}
+        {loading && <div className="bzdl-loading">{t(lc, "loadingVersions")}</div>}
 
         <section className="bzdl-how">
-          <h3><Info size={18} /> Como instalar no Android</h3>
+          <h3><Info size={18} /> {t(lc, "howToInstall")}</h3>
           <ol>
-            <li><b>Toque em “Baixar APK”</b> na app que pretende instalar.</li>
-            <li>Quando o download terminar, <b>abra o ficheiro</b> transferido.</li>
-            <li>Se aparecer um aviso, permita <b>“Instalar de fontes desconhecidas”</b> para o seu navegador.</li>
-            <li>Confirme a instalação e <b>abra a aplicação</b>. Pronto! 🚌</li>
+            <li><b>{t(lc, "installStep1")}</b> na app que pretende instalar.</li>
+            <li>{t(lc, "installStep2")} <b>abra o ficheiro</b> transferido.</li>
+            <li>{t(lc, "installStep4")} <b>“Instalar de fontes desconhecidas”</b> para o seu navegador.</li>
+            <li>{t(lc, "installStep3")} <b>abra a aplicação</b>. Pronto! 🚌</li>
           </ol>
           <div className="bzdl-note">
-            <ShieldCheck size={16} /> As aplicações são distribuídas diretamente pela BusUp. Baixe apenas a partir deste site oficial.
+            <ShieldCheck size={16} /> {t(lc, "downloadTrustHint")}
           </div>
         </section>
 
         <div className="bzdl-store">
-          <Store size={16} /> Está a operar uma frota? Fale connosco para configurar os terminais do seu município.
+          <Store size={16} /> {t(lc, "fleetHint")}
         </div>
       </main>
 
       <footer className="bzdl-foot">
         <Wordmark url={darkLogo} alt="BusUp" height={22} />
-        <span>Transporte público cashless · Moçambique</span>
+        <span>{t(lc, "cashlessTagline")}</span>
         <a href="https://updigital.co.mz" target="_blank" rel="noreferrer">updigital.co.mz</a>
       </footer>
     </div>

@@ -4,8 +4,11 @@ import { Bus, Clock, LogOut, Pause, Play, Square, Wallet, RotateCcw, X } from "l
 import { useAuth } from "../auth/AuthContext";
 import { apiFetch, apiPost } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
+import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { StatusBadge } from "../ui/common";
+import { useUi } from "../ui/UiPreferences";
 
 const LIVE_STATUSES = new Set(["boarding", "departed", "paused"]);
 
@@ -36,6 +39,7 @@ interface DriverTrip {
 
 export default function DriverPortalPage() {
   const { token, logout } = useAuth();
+  const { locale: lc } = useUi();
   const navigate = useNavigate();
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [selected, setSelected] = useState<DriverTrip | null>(null);
@@ -77,7 +81,7 @@ export default function DriverPortalPage() {
       setLastUpdate(new Date());
     } catch (err) {
       if (!opts?.silent) {
-        showToast("danger", err instanceof Error ? err.message : "Erro ao carregar viagens.");
+        showToast("danger", mensagemDeErro(err, lc));
       }
     } finally {
       if (!opts?.silent) setLoading(false);
@@ -107,12 +111,12 @@ export default function DriverPortalPage() {
       const updated = await apiPost(`/api/driver/trips/${selected.id}/${action}/`, token, {});
       setSelected(updated);
       setTrips((items) => items.map((item) => item.id === updated.id ? updated : item));
-      showToast("success", "Estado actualizado.");
+      showToast("success", t(lc, "okTripStatus"));
       if (action === "close") {
         setClosureModal(updated);
       }
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao actualizar.");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setBusyAction("");
     }
@@ -132,16 +136,16 @@ export default function DriverPortalPage() {
     <main className="driver-page">
       <header className="driver-topbar">
         <div>
-          <span>Portal do Motorista</span>
-          <h1>Actividade do Autocarro</h1>
+          <span>{t(lc, "driverPortal")}</span>
+          <h1>{t(lc, "busActivity")}</h1>
         </div>
-        <button className="driver-ghost-button" onClick={handleLogout} type="button"><LogOut size={18} /> Sair</button>
+        <button className="driver-ghost-button" onClick={handleLogout} type="button"><LogOut size={18} /> {t(lc, "signOut")}</button>
       </header>
 
       <section className="driver-layout">
         <aside className="driver-trip-list">
           <div className="driver-section-head">
-            <strong>Viagens alocadas</strong>
+            <strong>{t(lc, "assignedTrips")}</strong>
             <button className="driver-icon-button" onClick={() => void loadTrips()} type="button"><RotateCcw size={16} /></button>
           </div>
           {lastUpdate ? (
@@ -149,8 +153,8 @@ export default function DriverPortalPage() {
               <Clock size={11} /> {lastUpdate.toLocaleTimeString("pt-MZ")}
             </p>
           ) : null}
-          {loading ? <p className="driver-muted">A carregar...</p> : null}
-          {!loading && visibleTrips.length === 0 ? <p className="driver-muted">Sem viagens pendentes.</p> : null}
+          {loading ? <p className="driver-muted">{t(lc, "loading")}</p> : null}
+          {!loading && visibleTrips.length === 0 ? <p className="driver-muted">{t(lc, "noPendingTrips")}</p> : null}
           {visibleTrips.map((trip) => {
             const isLive = LIVE_STATUSES.has(trip.status);
             const liveSummary = liveRevenue[trip.id];
@@ -185,7 +189,7 @@ export default function DriverPortalPage() {
 
         <section className="driver-workspace">
           {!selected ? (
-            <div className="driver-empty"><Bus size={42} /><p>Seleccione uma viagem alocada.</p></div>
+            <div className="driver-empty"><Bus size={42} /><p>{t(lc, "pickAssignedTrip")}</p></div>
           ) : (
             <>
               <div className="driver-trip-hero">
@@ -198,34 +202,34 @@ export default function DriverPortalPage() {
               </div>
 
               <div className="driver-metrics">
-                <article><Clock size={18} /><span>Planeado</span><strong>{formatDateTime(selected.planned_departure_at)}</strong></article>
-                <article><Play size={18} /><span>Inicio</span><strong>{formatDateTime(selected.activity_started_at)}</strong></article>
-                <article><Pause size={18} /><span>Repouso</span><strong>{formatPause(selected.pause_seconds, selected.activity_paused_at)}</strong></article>
-                <article><Wallet size={18} /><span>Receita</span><strong>{formatCurrency(liveRevenue[selected.id]?.total_revenue || selected.revenue_summary?.total_revenue || selected.closure_summary?.total_revenue || "0")}</strong></article>
+                <article><Clock size={18} /><span>{t(lc, "planned")}</span><strong>{formatDateTime(selected.planned_departure_at)}</strong></article>
+                <article><Play size={18} /><span>{t(lc, "start")}</span><strong>{formatDateTime(selected.activity_started_at)}</strong></article>
+                <article><Pause size={18} /><span>{t(lc, "idle")}</span><strong>{formatPause(selected.pause_seconds, selected.activity_paused_at)}</strong></article>
+                <article><Wallet size={18} /><span>{t(lc, "revenue")}</span><strong>{formatCurrency(liveRevenue[selected.id]?.total_revenue || selected.revenue_summary?.total_revenue || selected.closure_summary?.total_revenue || "0")}</strong></article>
               </div>
 
               {!isClosed && (
                 <div className="driver-actions">
                   {canStart && (
-                    <button className="driver-primary-button" disabled={!!busyAction} onClick={() => void runAction("start")} type="button"><Play size={18} /> Iniciar Actividade</button>
+                    <button className="driver-primary-button" disabled={!!busyAction} onClick={() => void runAction("start")} type="button"><Play size={18} /> {t(lc, "startActivity")}</button>
                   )}
                   {canPauseClose && (
                     <>
-                      <button className="driver-secondary-button" disabled={!!busyAction} onClick={() => void runAction("pause")} type="button"><Pause size={18} /> Pausar</button>
-                      <button className="driver-danger-button" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> Encerrar</button>
+                      <button className="driver-secondary-button" disabled={!!busyAction} onClick={() => void runAction("pause")} type="button"><Pause size={18} /> {t(lc, "pause")}</button>
+                      <button className="driver-danger-button" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> {t(lc, "closeTrip")}</button>
                     </>
                   )}
                   {canResumeClose && (
                     <>
-                      <button className="driver-primary-button" disabled={!!busyAction} onClick={() => void runAction("resume")} type="button"><Play size={18} /> Retomar</button>
-                      <button className="driver-danger-button" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> Encerrar</button>
+                      <button className="driver-primary-button" disabled={!!busyAction} onClick={() => void runAction("resume")} type="button"><Play size={18} /> {t(lc, "resume")}</button>
+                      <button className="driver-danger-button" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> {t(lc, "closeTrip")}</button>
                     </>
                   )}
                 </div>
               )}
 
               {(isClosed || selected.revenue_summary) && (
-                <ClosureSummary summary={selected.revenue_summary || selected.closure_summary} title={isClosed ? "Resumo de Encerramento" : "Fecho do autocarro"} />
+                <ClosureSummary summary={selected.revenue_summary || selected.closure_summary} title={isClosed ? t(lc, "closureSummary") : "Fecho do autocarro"} />
               )}
             </>
           )}
@@ -235,17 +239,17 @@ export default function DriverPortalPage() {
       {closureModal && closureModal.closure_summary && (
         <>
           <div className="admin-modal-overlay" onClick={() => setClosureModal(null)} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label="Resumo de Encerramento">
+          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label={t(lc, "closureSummary")}>
             <div className="admin-modal-card">
               <div className="admin-modal-head">
                 <div>
-                  <h3>Viagem Encerrada</h3>
+                  <h3>{t(lc, "tripClosed")}</h3>
                   <p>{closureModal.route_code} - {closureModal.route_name}</p>
                 </div>
                 <button className="icon-button" onClick={() => setClosureModal(null)} type="button"><X size={18} /></button>
               </div>
               <div className="admin-modal-body">
-                <ClosureSummary summary={closureModal.closure_summary} title="Resumo Financeiro" />
+                <ClosureSummary summary={closureModal.closure_summary} title={t(lc, "financialSummary")} />
               </div>
             </div>
           </div>
@@ -256,16 +260,17 @@ export default function DriverPortalPage() {
 }
 
 function ClosureSummary({ summary, title }: { summary?: RevenueSummary; title: string }) {
+  const { locale: lc } = useUi();
   if (!summary) return null;
   return (
     <div className="driver-revenue-panel">
       <h3>{title}</h3>
       <div className="driver-revenue-grid">
-        <div><span>Bilhetes guest ({summary.guest_checkout.count})</span><strong>{formatCurrency(summary.guest_checkout.revenue)}</strong></div>
-        <div><span>Passes app ({summary.app_passes.count})</span><strong>{formatCurrency(summary.app_passes.revenue)}</strong></div>
-        <div><span>Validacoes carteira ({summary.wallet_validations.count})</span><strong>{formatCurrency(summary.wallet_validations.revenue)}</strong></div>
-        <div><span>Pagamentos directos ({summary.direct_payments.count})</span><strong>{formatCurrency(summary.direct_payments.revenue)}</strong></div>
-        <div><span>Total</span><strong>{formatCurrency(summary.total_revenue)}</strong></div>
+        <div><span>{t(lc, "guestTicketsCount")} ({summary.guest_checkout.count})</span><strong>{formatCurrency(summary.guest_checkout.revenue)}</strong></div>
+        <div><span>{t(lc, "appPassesCount")} ({summary.app_passes.count})</span><strong>{formatCurrency(summary.app_passes.revenue)}</strong></div>
+        <div><span>{t(lc, "walletValidationsCount")} ({summary.wallet_validations.count})</span><strong>{formatCurrency(summary.wallet_validations.revenue)}</strong></div>
+        <div><span>{t(lc, "directPayments")} ({summary.direct_payments.count})</span><strong>{formatCurrency(summary.direct_payments.revenue)}</strong></div>
+        <div><span>{t(lc, "total")}</span><strong>{formatCurrency(summary.total_revenue)}</strong></div>
       </div>
     </div>
   );

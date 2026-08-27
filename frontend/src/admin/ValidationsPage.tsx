@@ -38,13 +38,13 @@ export default function ValidationsPage() {
       </SectionCard>
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.name || viewing?.serial_number || viewing?.version_name || viewing?.code || ""} fields={viewing ? [
-        { label: "Tipo", value: viewing.validation_type },
-        { label: "Rota", value: viewing.route_code || "-" },
-        { label: "Terminal", value: viewing.device_serial || "-" },
-        { label: "Valor", value: viewing.amount_debited },
-        { label: "Estado", value: viewing.status },
-        { label: "Falha", value: viewing.failure_reason || "-" },
-        { label: "Data", value: viewing.created_at },
+        { label: t(lc, "type"), value: viewing.validation_type },
+        { label: t(lc, "route"), value: viewing.route_code || "-" },
+        { label: t(lc, "terminal"), value: viewing.device_serial || "-" },
+        { label: t(lc, "amount"), value: viewing.amount_debited },
+        { label: t(lc, "status"), value: viewing.status },
+        { label: t(lc, "failure"), value: viewing.failure_reason || "-" },
+        { label: t(lc, "date"), value: viewing.created_at },
       ] : []} />
 
     </PageFrame>

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { t } from "../lib/i18n";
 import { useAuth } from "../auth/AuthContext";
 import { apiFetch } from "../lib/api";
+import { mensagemDeErro } from "../lib/errors";
+import { useUi } from "../ui/UiPreferences";
 
 interface Fila { row: number; left: string[]; right: string[]; full_width: boolean }
 
@@ -22,6 +25,7 @@ export default function SeatLayoutPreview({
   layout: string;
   lastRow: number;
 }) {
+  const { locale: lc } = useUi();
   const { token } = useAuth();
   const [filas, setFilas] = useState<Fila[] | null>(null);
   const [erro, setErro] = useState("");
@@ -35,14 +39,14 @@ export default function SeatLayoutPreview({
       });
       apiFetch(`/api/vehicles/seat-preview/?${q}`, token)
         .then((d) => { if (!cancelado) { setFilas(d.rows || []); setErro(""); } })
-        .catch((e) => { if (!cancelado) { setFilas(null); setErro(e instanceof Error ? e.message : "Erro"); } });
+        .catch((e) => { if (!cancelado) { setFilas(null); setErro(mensagemDeErro(e, lc)); } });
     }, 200);
     return () => { cancelado = true; window.clearTimeout(id); };
   }, [token, capacity, layout, lastRow]);
 
   if (erro) return <p className="bzsl-note">{erro}</p>;
   if (!filas) {
-    return <p className="bzsl-note">Indique a lotação para ver como fica a planta.</p>;
+    return <p className="bzsl-note">{t(lc, "capacityForPreview")}</p>;
   }
   if (filas.length === 0) return null;
 
@@ -63,7 +67,7 @@ export default function SeatLayoutPreview({
   return (
     <div className="bzsl">
       <div className="bzsl-head">
-        <span>FRENTE</span>
+        <span>{t(lc, "frontCaps")}</span>
         <span>{filas.length} fila(s) · {total} lugares</span>
       </div>
       <div className="bzsl-rows">

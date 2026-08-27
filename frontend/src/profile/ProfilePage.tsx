@@ -4,6 +4,7 @@ import { ArrowLeft, KeyRound, LogOut, Save, UserCircle2 } from "lucide-react";
 import { apiFetch, apiPatch } from "../lib/api";
 import { getInitials } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -44,7 +45,7 @@ export default function ProfilePage() {
         });
       })
       .catch((err) => {
-        if (active) showToast("danger", err instanceof Error ? err.message : "Erro ao carregar perfil.");
+        if (active) showToast("danger", mensagemDeErro(err, locale));
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -62,9 +63,9 @@ export default function ProfilePage() {
     try {
       const updated = await apiPatch("/api/auth/me/profile/", token, form);
       setMe((prev) => prev ? { ...prev, ...updated } : updated);
-      showToast("success", "Perfil actualizado.");
+      showToast("success", t(locale, "okProfileSaved"));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao actualizar perfil.");
+      showToast("danger", mensagemDeErro(err, locale));
     } finally {
       setSavingProfile(false);
     }
@@ -74,15 +75,15 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!token) return;
     if (!pwd.current_password || !pwd.new_password) {
-      showToast("danger", "Preencha todos os campos de senha.");
+      showToast("danger", t(locale, "errPasswordFields"));
       return;
     }
     if (pwd.new_password !== pwd.confirm_password) {
-      showToast("danger", "As senhas nao coincidem.");
+      showToast("danger", t(locale, "errPasswordMismatch"));
       return;
     }
     if (pwd.new_password.length < 8) {
-      showToast("danger", "A nova senha deve ter no minimo 8 caracteres.");
+      showToast("danger", t(locale, "errPasswordShort"));
       return;
     }
     setSavingPassword(true);
@@ -91,10 +92,10 @@ export default function ProfilePage() {
         current_password: pwd.current_password,
         new_password: pwd.new_password,
       });
-      showToast("success", "Senha actualizada.");
+      showToast("success", t(locale, "okPasswordChanged"));
       setPwd({ current_password: "", new_password: "", confirm_password: "" });
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao alterar senha.");
+      showToast("danger", mensagemDeErro(err, locale));
     } finally {
       setSavingPassword(false);
     }
@@ -111,7 +112,7 @@ export default function ProfilePage() {
         background: "var(--app-surface)",
       }}>
         <button className="icon-text-button" onClick={() => navigate(-1)} type="button">
-          <ArrowLeft size={16} /><span>Voltar</span>
+          <ArrowLeft size={16} /><span>{t(locale, "back")}</span>
         </button>
         <h2 style={{ margin: 0, fontSize: 18 }}>{t(locale, "profile")}</h2>
         <button className="danger-button" onClick={handleLogout} type="button">
@@ -140,17 +141,17 @@ export default function ProfilePage() {
 
               <div className="admin-section-head">
                 <div>
-                  <h3>Dados Pessoais</h3>
+                  <h3>{t(locale, "personalDetails")}</h3>
                 </div>
               </div>
               <form className="admin-form" onSubmit={submitProfile}>
                 <div className="admin-form-grid">
                   <label className="field">
-                    <span>Nome</span>
+                    <span>{t(locale, "name")}</span>
                     <input value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} />
                   </label>
                   <label className="field">
-                    <span>Apelido</span>
+                    <span>{t(locale, "lastName")}</span>
                     <input value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} />
                   </label>
                   <label className="field">
@@ -173,28 +174,28 @@ export default function ProfilePage() {
             <section className="admin-section">
               <div className="admin-section-head">
                 <div>
-                  <h3>Alterar Senha</h3>
-                  <p>Defina uma nova senha (minimo 8 caracteres).</p>
+                  <h3>{t(locale, "changePassword")}</h3>
+                  <p>{t(locale, "newPasswordHint")}</p>
                 </div>
               </div>
               <form className="admin-form" onSubmit={submitPassword}>
                 <div className="admin-form-grid">
                   <label className="field admin-field-span-full">
-                    <span>Senha actual</span>
+                    <span>{t(locale, "currentPassword")}</span>
                     <input type="password" value={pwd.current_password} onChange={(e) => setPwd((p) => ({ ...p, current_password: e.target.value }))} autoComplete="current-password" />
                   </label>
                   <label className="field">
-                    <span>Nova senha</span>
+                    <span>{t(locale, "newPassword")}</span>
                     <input type="password" minLength={8} value={pwd.new_password} onChange={(e) => setPwd((p) => ({ ...p, new_password: e.target.value }))} autoComplete="new-password" />
                   </label>
                   <label className="field">
-                    <span>Confirmar nova senha</span>
+                    <span>{t(locale, "confirmNewPassword")}</span>
                     <input type="password" minLength={8} value={pwd.confirm_password} onChange={(e) => setPwd((p) => ({ ...p, confirm_password: e.target.value }))} autoComplete="new-password" />
                   </label>
                 </div>
                 <div className="admin-form-actions">
                   <button className="primary-button" disabled={savingPassword} type="submit">
-                    <KeyRound size={14} /> {savingPassword ? t(locale, "saving") : "Alterar Senha"}
+                    <KeyRound size={14} /> {savingPassword ? t(locale, "saving") : t(locale, "changePassword")}
                   </button>
                 </div>
               </form>

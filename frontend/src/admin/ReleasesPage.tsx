@@ -3,6 +3,7 @@ import { Download, Eye, Pencil, Plus, RefreshCw } from "lucide-react";
 import { apiFetch, apiPatch, apiUpload } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -52,12 +53,12 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
     setBusy(true);
     try {
       if (editId) {
-        // Editing only touches metadata (not the binary).
+        // Editar so mexe nos metadados; o ficheiro fica o que estava.
         const payload = { ...form, version_code: Number(form.version_code), is_mandatory: form.is_mandatory === "true", min_supported_version_code: Number(form.min_supported_version_code || 0) };
         await apiPatch(`/api/admin/app-releases/${editId}/`, token!, payload);
-        showToast("success", t(lc, "update"));
+        showToast("success", t(lc, "okReleaseUpdated"));
       } else {
-        // New release: the APK file is uploaded directly to the portal (multipart).
+        // Versao nova: o APK sobe pelo proprio portal, em multipart.
         const fd = new FormData();
         fd.append("app_type", form.app_type);
         fd.append("version_name", form.version_name);
@@ -67,21 +68,21 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
         fd.append("min_supported_version_code", String(Number(form.min_supported_version_code || 0)));
         fd.append("apk_file", apkFile!);
         await apiUpload("/api/admin/app-releases/", token!, fd);
-        showToast("success", t(lc, "create"));
+        showToast("success", t(lc, "okReleaseCreated"));
       }
       reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
   const publish = async (id: number) => {
-    try { await apiPatch(`/api/admin/app-releases/${id}/publish/`, token!, {}); showToast("success", t(lc, "publish")); reload(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiPatch(`/api/admin/app-releases/${id}/publish/`, token!, {}); showToast("success", t(lc, "okReleasePublished")); reload(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const suspend = async (id: number) => {
-    try { await apiPatch(`/api/admin/app-releases/${id}/suspend/`, token!, {}); showToast("success", t(lc, "suspend")); reload(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiPatch(`/api/admin/app-releases/${id}/suspend/`, token!, {}); showToast("success", t(lc, "okReleaseSuspended")); reload(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   return (
@@ -92,7 +93,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
       </>}>
       <TabBar items={[
         { key: "releases", label: t(lc, "releases") },
-        { key: "installs", label: "Instalacoes" },
+        { key: "installs", label: t(lc, "installs") },
       ]} value={tab} onChange={(k) => setTab(k as "releases" | "installs")} />
 
       {tab === "releases" && (
@@ -104,7 +105,7 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
           { header: t(lc, "published"), render: (r: Release) => formatDateTime(r.published_at) },
           { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Release) => (
             <div className="admin-inline-actions">
-              <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => setViewing(r)} />
+              <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setApkFile(null); setForm({ app_type: r.app_type, version_name: r.version_name, version_code: String(r.version_code), release_notes: r.release_notes, is_mandatory: r.is_mandatory ? "true" : "false", min_supported_version_code: String(r.min_supported_version_code ?? 0) }); }} />
               {r.download_url && <TableActionButton icon={<Download size={15} />} label={t(lc, "download")} onClick={() => window.open(r.download_url, "_blank", "noopener,noreferrer")} />}
               {(r.status === "draft" || r.status === "suspended") && <button className="secondary-button" onClick={() => publish(r.id)}>{t(lc, "publish")}</button>}
@@ -116,31 +117,31 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
       )}
 
       {tab === "installs" && (
-      <SectionCard title="Instalacoes nos terminais" description="Estado das actualizacoes de app propostas a cada terminal (POS/passageiro).">
+      <SectionCard title={t(lc, "terminalInstalls")} description={t(lc, "releasesHint")}>
         <DataTable columns={[
-          { header: "Terminal", render: (r: DeviceUpdate) => <TablePrimaryCell title={r.device_serial || `#${r.device_id}`} subtitle={`Terminal #${r.device_id}`} /> },
-          { header: "App / Versao", render: (r: DeviceUpdate) => <TablePrimaryCell
+          { header: t(lc, "terminal"), render: (r: DeviceUpdate) => <TablePrimaryCell title={r.device_serial || `#${r.device_id}`} subtitle={`Terminal #${r.device_id}`} /> },
+          { header: t(lc, "appVersion"), render: (r: DeviceUpdate) => <TablePrimaryCell
               title={`v${r.release_version} (${r.target_version_code})`}
               subtitle={(appTypeByRelease.get(r.app_release_id) || "app").toUpperCase()}
               meta={r.current_version_code != null ? `Instalada: ${r.current_version_code}` : undefined} /> },
-          { header: "Estado", render: (r: DeviceUpdate) => <StatusBadge value={r.status} /> },
-          { header: "Sugerida em", render: (r: DeviceUpdate) => formatDateTime(r.prompted_at) },
-          { header: "Descarregada em", render: (r: DeviceUpdate) => formatDateTime(r.downloaded_at) },
-          { header: "Instalada em", render: (r: DeviceUpdate) => formatDateTime(r.installed_at) },
-          { header: "Detalhe", render: (r: DeviceUpdate) => r.failed_reason || (r.deferred_until ? `Adiada ate ${formatDateTime(r.deferred_until)}` : "-") },
-        ]} rows={installs || []} rowKey={(r) => r.uuid || String(r.id)} loading={loadingInstalls} emptyMessage="Sem registos de instalacao." />
+          { header: t(lc, "status"), render: (r: DeviceUpdate) => <StatusBadge value={r.status} /> },
+          { header: t(lc, "offeredAt"), render: (r: DeviceUpdate) => formatDateTime(r.prompted_at) },
+          { header: t(lc, "downloadedAt"), render: (r: DeviceUpdate) => formatDateTime(r.downloaded_at) },
+          { header: t(lc, "installedAt"), render: (r: DeviceUpdate) => formatDateTime(r.installed_at) },
+          { header: t(lc, "detail"), render: (r: DeviceUpdate) => r.failed_reason || (r.deferred_until ? `Adiada ate ${formatDateTime(r.deferred_until)}` : "-") },
+        ]} rows={installs || []} rowKey={(r) => r.uuid || String(r.id)} loading={loadingInstalls} emptyMessage={t(lc, "noInstallRecords")} />
       </SectionCard>
       )}
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.name || viewing?.serial_number || viewing?.version_name || viewing?.code || ""} fields={viewing ? [
-        { label: "Versao", value: viewing.version_name },
+        { label: t(lc, "version"), value: viewing.version_name },
         { label: "Code", value: String(viewing.version_code) },
-        { label: "Tipo", value: viewing.app_type },
-        { label: "Obrigatoria", value: viewing.is_mandatory ? "Sim" : "Nao" },
+        { label: t(lc, "type"), value: viewing.app_type },
+        { label: t(lc, "mandatoryF"), value: viewing.is_mandatory ? "Sim" : "Nao" },
         { label: t(lc, "minSupportedVersion"), value: String(viewing.min_supported_version_code ?? 0) },
-        { label: "Estado", value: viewing.status },
-        { label: "Notas", value: viewing.release_notes || "-" },
-        { label: "Publicada", value: viewing.published_at || "-" },
+        { label: t(lc, "status"), value: viewing.status },
+        { label: t(lc, "notes"), value: viewing.release_notes || "-" },
+        { label: t(lc, "publishedF"), value: viewing.published_at || "-" },
       ] : []} />
 
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editRelease") : t(lc, "newRelease")}>

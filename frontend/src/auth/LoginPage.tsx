@@ -3,6 +3,7 @@ import { AlertCircle, ArrowRight, Bus, CreditCard, Eye, EyeOff, Lock, MapPin, Mo
 import { useNavigate } from "react-router-dom";
 import { apiLogin, apiOtpRequest, apiOtpVerify, apiPublic, apiTwoFactorVerify, isTwoFactor } from "../lib/api";
 import { t, type Locale } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "./AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -114,7 +115,7 @@ export default function LoginPage() {
       setResetOpen(false);
       setResetPhone("");
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : copy.resetFail);
+      showToast("danger", mensagemDeErro(err, locale));
     } finally {
       setResetBusy(false);
     }
@@ -166,7 +167,7 @@ export default function LoginPage() {
       const tokens = await apiTwoFactorVerify(desafio.id, codigo2fa.trim());
       await entrar(tokens.access, tokens.refresh);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Codigo invalido.");
+      setError(mensagemDeErro(err, locale));
     } finally {
       setLoading(false);
     }
@@ -189,7 +190,7 @@ export default function LoginPage() {
       setOtpDigits(["", "", "", "", "", ""]);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro.");
+      setError(mensagemDeErro(err, locale));
     } finally {
       setLoading(false);
     }
@@ -213,7 +214,7 @@ export default function LoginPage() {
         navigate("/portal", { replace: true });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Codigo invalido.");
+      setError(mensagemDeErro(err, locale));
       setOtpDigits(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
@@ -276,7 +277,7 @@ export default function LoginPage() {
       setOtpDigits(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro.");
+      setError(mensagemDeErro(err, locale));
     } finally {
       setLoading(false);
     }
@@ -408,10 +409,10 @@ export default function LoginPage() {
                   <form className="bzau-form" onSubmit={handleTwoFactor}>
                     {errorBlock}
                     <p className="bzau-2fa-hint">
-                      Enviámos um código de 6 dígitos para <strong>{desafio.pista}</strong>.
+                      {t(locale, "otpSentTo")} <strong>{desafio.pista}</strong>.
                     </p>
                     <div className="bzau-field">
-                      <label className="bzau-label" htmlFor="bzau-2fa">Código de verificação</label>
+                      <label className="bzau-label" htmlFor="bzau-2fa">{t(locale, "verificationCode")}</label>
                       <span className="bzau-input">
                         <input
                           id="bzau-2fa"
@@ -436,7 +437,7 @@ export default function LoginPage() {
                     <div className="bzau-actions">
                       <button type="button" className="bzau-btn bzau-btn-ghost"
                         onClick={() => { setDesafio(null); setCodigo2fa(""); setError(""); }}>
-                        Voltar
+                        {t(locale, "back")}
                       </button>
                     </div>
                   </form>

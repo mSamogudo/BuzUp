@@ -88,7 +88,7 @@ export default function MapPage() {
   }, [devices]);
 
   return (
-    <PageFrame kicker={t(lc, "operation")} title="Mapa"
+    <PageFrame kicker={t(lc, "operation")} title={t(lc, "map")}
       action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--app-text-muted)" }}>
         <MapPin size={14} />

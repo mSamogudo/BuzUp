@@ -6,6 +6,9 @@ import { useAuth } from "../auth/AuthContext";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { showToast } from "../lib/toast";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { mensagemDeErro } from "../lib/errors";
+import { t, type Locale } from "../lib/i18n";
+import { useUi } from "../ui/UiPreferences";
 
 interface GuestCheckout {
   id: number;
@@ -52,18 +55,22 @@ interface TravelPass {
 
 type CheckoutDetail = GuestCheckout & { passes?: TravelPass[] };
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "Todos os estados" },
-  { value: "draft", label: "Rascunho" },
-  { value: "payment_pending", label: "Pagamento pendente" },
-  { value: "paid", label: "Pago" },
-  { value: "issued", label: "Emitido" },
-  { value: "expired", label: "Expirado" },
-  { value: "cancelled", label: "Cancelado" },
-  { value: "refunded", label: "Reembolsado" },
+// Depende do idioma, por isso e uma funcao e nao uma constante: uma
+// constante de modulo fixaria os rotulos no idioma que estivesse activo
+// quando o ficheiro foi carregado.
+const estados = (lc: Locale) => [
+  { value: "all", label: t(lc, "allStatuses") },
+  { value: "draft", label: t(lc, "draft") },
+  { value: "payment_pending", label: t(lc, "paymentPending") },
+  { value: "paid", label: t(lc, "paid") },
+  { value: "issued", label: t(lc, "issued") },
+  { value: "expired", label: t(lc, "expired") },
+  { value: "cancelled", label: t(lc, "cancelled") },
+  { value: "refunded", label: t(lc, "refunded") },
 ];
 
 export default function GuestCheckoutsPage() {
+  const { locale: lc } = useUi();
   const { token } = useAuth();
   const loader = useCallback(() => apiFetch("/api/admin/guest-checkouts/", token!).then((d) => d.results || d), [token]);
   const { data: rows, loading, reload } = useAsyncData<GuestCheckout[]>(loader, [token]);
@@ -89,7 +96,7 @@ export default function GuestCheckoutsPage() {
       a.href = url; a.download = "modelo_vendas_historicas.xlsx"; a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     }
   };
 
@@ -107,7 +114,7 @@ export default function GuestCheckoutsPage() {
       setResultado(data);
       if (data.imported > 0) reload();
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setACarregar(false);
     }
@@ -115,16 +122,16 @@ export default function GuestCheckoutsPage() {
 
   const modalImportacao = (
     <AdminModal open={importar} onClose={() => setImportar(false)}
-      title="Carregar vendas já realizadas"
-      description="Bilhetes vendidos noutro sistema. Entram no histórico e nos relatórios com a data em que aconteceram.">
+      title={t(lc, "importPastSales")}
+      description={t(lc, "importSalesHint")}>
       {resultado ? (
         <div className="admin-form">
           <div className="admin-metric-grid">
-            <div className="dash-kpi"><span className="dash-kpi-label">Carregadas</span>
+            <div className="dash-kpi"><span className="dash-kpi-label">{t(lc, "imported")}</span>
               <strong className="dash-kpi-value">{resultado.imported}</strong></div>
-            <div className="dash-kpi"><span className="dash-kpi-label">Já existiam</span>
+            <div className="dash-kpi"><span className="dash-kpi-label">{t(lc, "alreadyExisted")}</span>
               <strong className="dash-kpi-value">{resultado.duplicates}</strong></div>
-            <div className="dash-kpi"><span className="dash-kpi-label">Total</span>
+            <div className="dash-kpi"><span className="dash-kpi-label">{t(lc, "total")}</span>
               <strong className="dash-kpi-value">{formatCurrency(resultado.total_amount)} MZN</strong></div>
           </div>
           {resultado.errors.length > 0 ? (
@@ -144,26 +151,26 @@ export default function GuestCheckoutsPage() {
             </>
           ) : (
             <p className="dash-kpi-note" style={{ marginTop: 12 }}>
-              Nenhum erro. Os bilhetes entraram como <b>já usados</b> — são viagens que
+              {t(lc, "importNoErrors")} <b>já usados</b> — são viagens que
               aconteceram, não servem para viajar e ninguém recebeu SMS.
             </p>
           )}
           <div className="admin-form-actions">
             <button className="primary-button" type="button"
-              onClick={() => { setResultado(null); setFicheiro(null); }}>Carregar outro</button>
+              onClick={() => { setResultado(null); setFicheiro(null); }}>{t(lc, "importAnother")}</button>
             <button className="secondary-button" type="button"
-              onClick={() => setImportar(false)}>Fechar</button>
+              onClick={() => setImportar(false)}>{t(lc, "close")}</button>
           </div>
         </div>
       ) : (
         <div className="admin-form">
           <label className="field">
-            <span>Ficheiro Excel (.xlsx)</span>
+            <span>{t(lc, "excelFile")}</span>
             <input type="file" accept=".xlsx"
               onChange={(e) => setFicheiro(e.target.files?.[0] || null)} />
           </label>
           <p className="dash-kpi-note">
-            Use o <b>Modelo</b> para saber que colunas preencher. A referência do vosso
+            Use o <b>{t(lc, "template")}</b> para saber que colunas preencher. A referência do vosso
             sistema antigo é a chave: carregar o mesmo ficheiro duas vezes não duplica nada.
           </p>
           <div className="admin-form-actions">
@@ -172,7 +179,7 @@ export default function GuestCheckoutsPage() {
               {aCarregar ? "A carregar…" : "Carregar"}
             </button>
             <button className="secondary-button" type="button"
-              onClick={() => setImportar(false)}>Cancelar</button>
+              onClick={() => setImportar(false)}>{t(lc, "cancel")}</button>
           </div>
         </div>
       )}
@@ -207,78 +214,78 @@ export default function GuestCheckoutsPage() {
   };
 
   return (
-    <PageFrame kicker="Financeiro" title="Bilhetes ocasionais"
-      description="Compras de bilhetes por passageiros sem conta (guest checkout)."
+    <PageFrame kicker={t(lc, "finance")} title={t(lc, "guestCheckouts")}
+      description={t(lc, "guestPurchasesHint")}
       action={<>
         <button className="icon-text-button" onClick={descarregarModelo} type="button">
-          <Download size={15} /><span>Modelo</span>
+          <Download size={15} /><span>{t(lc, "template")}</span>
         </button>
         <button className="icon-text-button" type="button"
           onClick={() => { setFicheiro(null); setResultado(null); setImportar(true); }}>
-          <Upload size={15} /><span>Carregar histórico</span>
+          <Upload size={15} /><span>{t(lc, "importHistory")}</span>
         </button>
         <button className="icon-text-button" onClick={reload} type="button">
-          <RefreshCw size={16} /><span>Actualizar</span>
+          <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
         </button>
       </>}>
       {modalImportacao}
-      <SectionCard title="Compras" description="Bilhetes ocasionais pagos por telemovel.">
+      <SectionCard title={t(lc, "purchases")} description={t(lc, "guestCheckoutsHint")}>
         <div className="admin-toolbar" style={{ marginBottom: 12 }}>
           <label className="field" style={{ maxWidth: 260 }}>
-            <span>Estado</span>
+            <span>{t(lc, "status")}</span>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {estados(lc).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
           <label className="field" style={{ maxWidth: 200 }}>
-            <span>Moeda de exibição</span>
+            <span>{t(lc, "displayCurrency")}</span>
             <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)}>
-              <option value="all">Todas as moedas</option>
+              <option value="all">{t(lc, "allCurrencies")}</option>
               {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
         </div>
         <DataTable columns={[
-          { header: "Referencia", sortKey: "reference", render: (r: GuestCheckout) => <TablePrimaryCell title={r.reference} subtitle={r.buyer_name || "-"} /> },
-          { header: "Telefone", render: (r: GuestCheckout) => r.payer_phone || "-" },
-          { header: "Rota / Viagem", render: (r: GuestCheckout) => (
+          { header: t(lc, "reference"), sortKey: "reference", render: (r: GuestCheckout) => <TablePrimaryCell title={r.reference} subtitle={r.buyer_name || "-"} /> },
+          { header: t(lc, "phone"), render: (r: GuestCheckout) => r.payer_phone || "-" },
+          { header: t(lc, "routeTrip"), render: (r: GuestCheckout) => (
             <TablePrimaryCell title={`${r.route_code}${r.route_name ? ` - ${r.route_name}` : ""}`} subtitle={`${r.origin_stop || "?"} → ${r.destination_stop || "?"}${r.trip_id ? ` · Viagem #${r.trip_id}` : ""}`} />
           ) },
-          { header: "Qtd.", sortKey: "quantity", render: (r: GuestCheckout) => String(r.quantity) },
-          { header: "Valor", sortKey: "total_amount", render: (r: GuestCheckout) => (
+          { header: t(lc, "qty"), sortKey: "quantity", render: (r: GuestCheckout) => String(r.quantity) },
+          { header: t(lc, "amount"), sortKey: "total_amount", render: (r: GuestCheckout) => (
             r.display_currency && r.display_currency !== "MZN" && r.display_total_amount
               ? <TablePrimaryCell title={formatCurrency(r.total_amount)} subtitle={`visto como ${formatCurrency(r.display_total_amount)} ${r.display_currency}`} />
               : formatCurrency(r.total_amount)
           ) },
-          { header: "Estado", sortKey: "status", render: (r: GuestCheckout) => <StatusBadge value={r.status} /> },
-          { header: "Data", sortKey: "created_at", render: (r: GuestCheckout) => formatDateTime(r.created_at) },
-          { header: "Accoes", className: "table-actions-cell", render: (r: GuestCheckout) => (
+          { header: t(lc, "status"), sortKey: "status", render: (r: GuestCheckout) => <StatusBadge value={r.status} /> },
+          { header: t(lc, "date"), sortKey: "created_at", render: (r: GuestCheckout) => formatDateTime(r.created_at) },
+          { header: t(lc, "actions"), className: "table-actions-cell", render: (r: GuestCheckout) => (
             <div className="admin-inline-actions">
-              <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => void openDetail(r)} />
+              <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => void openDetail(r)} />
             </div>
           ) },
-        ]} rows={filtered} rowKey={(r) => r.uuid} loading={loading} emptyMessage="Sem bilhetes ocasionais." />
+        ]} rows={filtered} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noGuestCheckouts")} />
       </SectionCard>
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.reference || ""} fields={viewing ? [
-        { label: "Referencia", value: viewing.reference },
-        { label: "Comprador", value: viewing.buyer_name || "-" },
-        { label: "Telefone do pagador", value: viewing.payer_phone || "-" },
-        { label: "Rota", value: `${viewing.route_code}${viewing.route_name ? ` - ${viewing.route_name}` : ""}` },
-        { label: "Origem", value: viewing.origin_stop || "-" },
-        { label: "Destino", value: viewing.destination_stop || "-" },
-        { label: "Viagem", value: viewing.trip_id ? `#${viewing.trip_id}` : "-" },
-        { label: "Quantidade", value: String(viewing.quantity) },
-        { label: "Valor unitario", value: formatCurrency(viewing.unit_amount) },
-        { label: "Valor total", value: formatCurrency(viewing.total_amount) },
+        { label: t(lc, "reference"), value: viewing.reference },
+        { label: t(lc, "buyer"), value: viewing.buyer_name || "-" },
+        { label: t(lc, "payerPhone"), value: viewing.payer_phone || "-" },
+        { label: t(lc, "route"), value: `${viewing.route_code}${viewing.route_name ? ` - ${viewing.route_name}` : ""}` },
+        { label: t(lc, "origin"), value: viewing.origin_stop || "-" },
+        { label: t(lc, "destination"), value: viewing.destination_stop || "-" },
+        { label: t(lc, "trip"), value: viewing.trip_id ? `#${viewing.trip_id}` : "-" },
+        { label: t(lc, "quantity"), value: String(viewing.quantity) },
+        { label: t(lc, "unitAmount"), value: formatCurrency(viewing.unit_amount) },
+        { label: t(lc, "totalAmount"), value: formatCurrency(viewing.total_amount) },
         ...(viewing.display_currency && viewing.display_currency !== "MZN" ? [
-          { label: "Moeda escolhida na compra", value: viewing.display_currency },
-          { label: "Valor mostrado ao comprador", value: viewing.display_total_amount ? `${formatCurrency(viewing.display_total_amount)} ${viewing.display_currency}` : "-" },
-          { label: "Taxa congelada", value: viewing.exchange_rate ? `1 ${viewing.display_currency} = ${formatCurrency(viewing.exchange_rate)} MZN` : "-" },
+          { label: t(lc, "currencyChosen"), value: viewing.display_currency },
+          { label: t(lc, "amountShownToBuyer"), value: viewing.display_total_amount ? `${formatCurrency(viewing.display_total_amount)} ${viewing.display_currency}` : "-" },
+          { label: t(lc, "frozenRate"), value: viewing.exchange_rate ? `1 ${viewing.display_currency} = ${formatCurrency(viewing.exchange_rate)} MZN` : "-" },
         ] : []),
-        { label: "Estado", value: <StatusBadge value={viewing.status} /> },
-        { label: "Expira em", value: viewing.expires_at ? formatDateTime(viewing.expires_at) : "-" },
-        { label: "Criado em", value: formatDateTime(viewing.created_at) },
+        { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
+        { label: t(lc, "expiresAt"), value: viewing.expires_at ? formatDateTime(viewing.expires_at) : "-" },
+        { label: t(lc, "createdAt"), value: formatDateTime(viewing.created_at) },
       ] : []}>
         {viewing?.passes?.length ? (
           <div className="detail-list">

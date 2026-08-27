@@ -1,4 +1,6 @@
 import { SlidersHorizontal, X } from "lucide-react";
+import { t, type Locale } from "../../lib/i18n";
+import { useUi } from "../../ui/UiPreferences";
 import type { DashFilters, Lookup } from "./types";
 import { ISO_TODAY, isoDaysAgo, isoMonthStart, providerLabel } from "./theme";
 
@@ -29,11 +31,11 @@ export function isDefaultRange(f: DashFilters): boolean {
 
 type Shortcut = { key: string; label: string; from: () => string; to: () => string };
 
-const SHORTCUTS: Shortcut[] = [
-  { key: "today", label: "Hoje", from: ISO_TODAY, to: ISO_TODAY },
-  { key: "7d", label: "7 dias", from: () => isoDaysAgo(6), to: ISO_TODAY },
-  { key: "30d", label: "30 dias", from: () => isoDaysAgo(29), to: ISO_TODAY },
-  { key: "month", label: "Este mês", from: isoMonthStart, to: ISO_TODAY },
+const atalhos = (lc: Locale): Shortcut[] => [
+  { key: "today", label: t(lc, "today"), from: ISO_TODAY, to: ISO_TODAY },
+  { key: "7d", label: t(lc, "days7"), from: () => isoDaysAgo(6), to: ISO_TODAY },
+  { key: "30d", label: t(lc, "days30"), from: () => isoDaysAgo(29), to: ISO_TODAY },
+  { key: "month", label: t(lc, "thisMonth"), from: isoMonthStart, to: ISO_TODAY },
 ];
 
 export default function FilterBar({
@@ -48,9 +50,10 @@ export default function FilterBar({
   providers: string[];
   loading: boolean;
 }) {
+  const { locale: lc } = useUi();
   const set = (patch: Partial<DashFilters>) => onChange({ ...value, ...patch });
   const active = countActive(value);
-  const activeShortcut = SHORTCUTS.find((s) => s.from() === value.dateFrom && s.to() === value.dateTo);
+  const activeShortcut = atalhos(lc).find((s) => s.from() === value.dateFrom && s.to() === value.dateTo);
   const days = Math.max(
     1,
     Math.round((new Date(value.dateTo).getTime() - new Date(value.dateFrom).getTime()) / 86_400_000) + 1,
@@ -61,7 +64,7 @@ export default function FilterBar({
       <div className="dash-filters-head">
         <span className="dash-filters-title">
           <SlidersHorizontal size={14} />
-          Filtros
+          {t(lc, "filters")}
         </span>
         <span className={`dash-badge${active ? "" : " dash-badge-muted"}`}>
           {active === 0 ? "Sem filtros" : active === 1 ? "1 filtro activo" : `${active} filtros activos`}
@@ -71,7 +74,7 @@ export default function FilterBar({
         <div className="dash-spacer" />
 
         <div className="dash-shortcuts">
-          {SHORTCUTS.map((s) => (
+          {atalhos(lc).map((s) => (
             <button
               className={`admin-chip-button${activeShortcut?.key === s.key ? " admin-chip-button-active" : ""}`}
               key={s.key}
@@ -86,22 +89,22 @@ export default function FilterBar({
         {(active > 0 || !isDefaultRange(value)) && (
           <button className="admin-chip-button" onClick={onClear} type="button">
             <X size={11} style={{ verticalAlign: "-1px", marginRight: 4 }} />
-            Limpar
+            {t(lc, "clear")}
           </button>
         )}
       </div>
 
       <div className="dash-filter-grid">
         <label className="field">
-          <span>De</span>
+          <span>{t(lc, "from")}</span>
           <input max={value.dateTo} onChange={(e) => set({ dateFrom: e.target.value })} type="date" value={value.dateFrom} />
         </label>
         <label className="field">
-          <span>Até</span>
+          <span>{t(lc, "to")}</span>
           <input min={value.dateFrom} onChange={(e) => set({ dateTo: e.target.value })} type="date" value={value.dateTo} />
         </label>
         <label className="field">
-          <span>Rota</span>
+          <span>{t(lc, "route")}</span>
           <select onChange={(e) => set({ routeId: e.target.value })} value={value.routeId}>
             <option value="">Todas ({routes.length})</option>
             {routes.map((r) => (
@@ -110,7 +113,7 @@ export default function FilterBar({
           </select>
         </label>
         <label className="field">
-          <span>Motorista</span>
+          <span>{t(lc, "driver")}</span>
           <select onChange={(e) => set({ driverId: e.target.value })} value={value.driverId}>
             <option value="">Todos ({drivers.length})</option>
             {drivers.map((d) => (
@@ -119,7 +122,7 @@ export default function FilterBar({
           </select>
         </label>
         <label className="field">
-          <span>Agente</span>
+          <span>{t(lc, "agent")}</span>
           <select onChange={(e) => set({ agentId: e.target.value })} value={value.agentId}>
             <option value="">Todos ({agents.length})</option>
             {agents.map((a) => (
@@ -128,9 +131,9 @@ export default function FilterBar({
           </select>
         </label>
         <label className="field">
-          <span>Método de pagamento</span>
+          <span>{t(lc, "paymentMethod")}</span>
           <select onChange={(e) => set({ provider: e.target.value })} value={value.provider}>
-            <option value="">Todos</option>
+            <option value="">{t(lc, "all")}</option>
             {providers.map((p) => (
               <option key={p} value={p}>{providerLabel(p)}</option>
             ))}

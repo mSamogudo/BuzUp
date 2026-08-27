@@ -3,6 +3,7 @@ import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -31,17 +32,17 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
     e.preventDefault(); setBusy(true);
     try {
       const payload = { ...form, latitude: form.latitude || null, longitude: form.longitude || null };
-      if (editId) { await apiPatch(`/api/stops/${editId}/`, token!, payload); showToast("success", t(lc, "update")); }
-      else { await apiPost("/api/stops/", token!, payload); showToast("success", t(lc, "create")); }
+      if (editId) { await apiPatch(`/api/stops/${editId}/`, token!, payload); showToast("success", t(lc, "okStopUpdated")); }
+      else { await apiPost("/api/stops/", token!, payload); showToast("success", t(lc, "okStopCreated")); }
       reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
   const remove = async (r: Stop) => {
-    const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a paragem ${r.name}?`, tone: "danger" });
+    const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.name }), tone: "danger" });
     if (!ok) return;
-    try { await apiDelete(`/api/stops/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiDelete(`/api/stops/${r.id}/`, token!); showToast("success", t(lc, "okStopDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const openDetail = async (stop: Stop) => {
@@ -68,7 +69,7 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
           { header: t(lc, "status"), render: (r: Stop) => <StatusBadge value={r.status} /> },
           { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Stop) => (
             <div className="admin-inline-actions">
-              <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => void openDetail(r)} />
+              <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => void openDetail(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setForm({ name: r.name, latitude: r.latitude || "", longitude: r.longitude || "", status: r.status }); }} />
               <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={() => remove(r)} tone="danger" />
             </div>
@@ -77,12 +78,12 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
       </SectionCard>
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.name || viewing?.serial_number || viewing?.version_name || viewing?.code || ""} fields={viewing ? [
-        { label: "Codigo", value: viewing.code },
-        { label: "Nome", value: viewing.name },
+        { label: t(lc, "code"), value: viewing.code },
+        { label: t(lc, "name"), value: viewing.name },
         { label: t(lc, "routes"), value: String(viewing.route_count || 0) },
-        { label: "Latitude", value: viewing.latitude || "-" },
-        { label: "Longitude", value: viewing.longitude || "-" },
-        { label: "Estado", value: viewing.status },
+        { label: t(lc, "latitude"), value: viewing.latitude || "-" },
+        { label: t(lc, "longitude"), value: viewing.longitude || "-" },
+        { label: t(lc, "status"), value: viewing.status },
       ] : []}>
         {viewing?.route_links?.length ? (
           <div className="detail-list">

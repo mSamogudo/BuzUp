@@ -3,6 +3,7 @@ import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -47,8 +48,8 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
     try {
       if (editId) await apiPatch(`/api/packages/${editId}/`, token!, payload);
       else await apiPost("/api/packages/", token!, payload);
-      showToast("success", editId ? t(lc, "update") : t(lc, "create")); reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", editId ? t(lc, "okPackageUpdated") : t(lc, "okPackageCreated")); reset(); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -56,8 +57,8 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
     e.preventDefault(); setBusy(true);
     try {
       await apiPost("/api/packages/subscribe/", token!, { passenger_id: Number(subForm.passenger_id), package_id: Number(subForm.package_id), pay_from_wallet: true });
-      showToast("success", t(lc, "subscribe")); setSubModal(false); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", t(lc, "okSubscribed")); setSubModal(false); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -80,7 +81,7 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewPkg(r)} />
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setForm({ name: r.name, description: r.description, discount_type: r.discount_type, discount_value: r.discount_value, price: r.price, validity_days: String(r.validity_days), max_trips: String(r.max_trips), status: r.status }); setSelectedRoutes(new Set((r.routes || []).map((rt) => rt.route_id).filter(Boolean))); }} />
-                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar o pacote ${r.name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/packages/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.name }), tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/packages/${r.id}/`, token!); showToast("success", t(lc, "okPackageDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } }} tone="danger" />
               </div>
             )},
           ]} rows={pkgs || []} rowKey={(r) => r.uuid} loading={lP} emptyMessage={t(lc, "noPackages")} />
@@ -123,13 +124,13 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
             </label>
 
             {dt === "percentage" && (
-              <label className="field"><span>Desconto (%)</span>
+              <label className="field"><span>{t(lc, "discountPct")}</span>
                 <input required type="number" step="1" min="0" max="100" value={form.discount_value} onChange={(e) => f("discount_value", e.target.value)} />
               </label>
             )}
 
             {dt === "fixed_amount" && (
-              <label className="field"><span>Saldo Especial (MZN)</span>
+              <label className="field"><span>{t(lc, "specialBalanceAmount")}</span>
                 <input required type="number" step="0.01" min="0" value={form.discount_value} onChange={(e) => f("discount_value", e.target.value)} />
               </label>
             )}
@@ -166,7 +167,7 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
             <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
+            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okPackageUpdated") : t(lc, "okPackageCreated")}</button>
             <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
           </div>
         </form>

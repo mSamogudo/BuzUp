@@ -96,7 +96,7 @@ export default function LandingPage() {
   );
 
   const LangSwitch = () => (
-    <div className="bzlp-lang" role="group" aria-label="Idioma">
+    <div className="bzlp-lang" role="group" aria-label={t.language}>
       {(["pt", "en"] as Lang[]).map((l) => (
         <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
           {l.toUpperCase()}
@@ -428,8 +428,8 @@ export default function LandingPage() {
             <nav aria-label={t.footer.access}>
               <h4>{t.footer.access}</h4>
               <Link to="/login">{t.footer.portal}</Link>
-              <Link to="/baixar">App Passageiro</Link>
-              <Link to="/baixar">App POS</Link>
+              <Link to="/baixar">{t.footer.appPassenger}</Link>
+              <Link to="/baixar">{t.footer.appPos}</Link>
             </nav>
             <nav aria-label={t.footer.contact}>
               <h4>{t.footer.contact}</h4>

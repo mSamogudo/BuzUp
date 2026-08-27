@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet, FileText, RefreshCw, Search, Sliders } from 
 import { apiDownload, apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -213,7 +214,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
         `relatorio-${kind}.${format}`,
       );
     } catch (e) {
-      showToast("danger", e instanceof Error ? e.message : "Erro ao exportar.");
+      showToast("danger", mensagemDeErro(e, lc));
     }
   };
 
@@ -252,17 +253,17 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
         </div>
       }>
       <TabBar items={[
-        { key: "builder", label: "Gerador de relatorios" },
+        { key: "builder", label: t(lc, "reportBuilder") },
         { key: "revenue", label: t(lc, "revenueToday") },
-        { key: "operational", label: "Receita operacional" },
-        { key: "validations", label: "Validacoes" },
+        { key: "operational", label: t(lc, "operationalRevenue") },
+        { key: "validations", label: t(lc, "validations") },
         { key: "recon", label: t(lc, "reconciliation") },
       ]} value={tab} onChange={(k) => setTab(k as "builder" | "revenue" | "recon" | "operational" | "validations")} />
 
       {tab === "builder" && (
         <SectionCard
-          title="Gerador de relatorios premium"
-          description="Escolha o tipo de relatorio, defina filtros, visualize a pre-visualizacao e descarregue em PDF ou Excel com a identidade da plataforma."
+          title={t(lc, "reportBuilder")}
+          description={t(lc, "reportBuilderHint")}
         >
           {error && (
             <div style={{
@@ -272,48 +273,48 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             }}>{error}</div>
           )}
           {specsLoading && (
-            <div className="admin-empty-state">A carregar tipos de relatorio...</div>
+            <div className="admin-empty-state">{t(lc, "loadingReportTypes")}</div>
           )}
           {!specsLoading && specs.length === 0 && (
             <div className="admin-empty-state">
-              Nao foi possivel carregar os tipos de relatorio. Verifique permissoes (reports.read) ou recarregue a pagina.
+              {t(lc, "reportTypesFailed")}
             </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 10 }}>
             <label className="field">
-              <span>Tipo de relatorio</span>
+              <span>{t(lc, "reportType")}</span>
               <select value={kind} onChange={(e) => { setKind(e.target.value); setResult(null); }}>
                 {specs.length === 0 && <option value="">(nenhum disponivel)</option>}
                 {specs.map((s) => <option key={s.key} value={s.key}>{s.title}</option>)}
               </select>
             </label>
-            <label className="field"><span>De</span>
+            <label className="field"><span>{t(lc, "from")}</span>
               <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
-            <label className="field"><span>Ate</span>
+            <label className="field"><span>{t(lc, "to")}</span>
               <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
-            <label className="field"><span>Estado</span>
+            <label className="field"><span>{t(lc, "status")}</span>
               <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="">Todos</option>
-                <option value="confirmed">Confirmado</option>
-                <option value="pending">Pendente</option>
-                <option value="failed">Falhado</option>
-                <option value="expired">Expirado</option>
-                <option value="reversed">Revertido</option>
-                <option value="approved">Aprovado</option>
-                <option value="denied">Negado</option>
-                <option value="active">Activo</option>
-                <option value="used">Usado</option>
+                <option value="">{t(lc, "all")}</option>
+                <option value="confirmed">{t(lc, "confirmed")}</option>
+                <option value="pending">{t(lc, "pending")}</option>
+                <option value="failed">{t(lc, "failed")}</option>
+                <option value="expired">{t(lc, "expired")}</option>
+                <option value="reversed">{t(lc, "reversed")}</option>
+                <option value="approved">{t(lc, "approved")}</option>
+                <option value="denied">{t(lc, "denied")}</option>
+                <option value="active">{t(lc, "active")}</option>
+                <option value="used">{t(lc, "used")}</option>
               </select>
             </label>
-            <label className="field"><span>Origem</span>
+            <label className="field"><span>{t(lc, "origin")}</span>
               <select value={source} onChange={(e) => setSource(e.target.value)}>
-                <option value="">Todas</option>
-                <option value="MOBILE">App passageiro</option>
-                <option value="POS">POS agente</option>
-                <option value="PORTAL">Portal/convidado</option>
+                <option value="">{t(lc, "allRoutes")}</option>
+                <option value="MOBILE">{t(lc, "appPassenger")}</option>
+                <option value="POS">{t(lc, "agentPos")}</option>
+                <option value="PORTAL">{t(lc, "portalGuest")}</option>
               </select>
             </label>
-            <label className="field"><span>Rota</span>
+            <label className="field"><span>{t(lc, "route")}</span>
               <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
                 <option value="">Todas as rotas ({routes.length})</option>
                 {routes.map((r) => (
@@ -322,7 +323,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               </select>
             </label>
             <label className="field" style={{ position: "relative" }}>
-              <span>Agente</span>
+              <span>{t(lc, "agent")}</span>
               <input
                 type="text"
                 value={agentId
@@ -357,7 +358,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               )}
             </label>
             <label className="field" style={{ position: "relative" }}>
-              <span>Passageiro</span>
+              <span>{t(lc, "passenger")}</span>
               <input
                 type="text"
                 value={passengerId
@@ -392,13 +393,13 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               )}
             </label>
             {kind === "topups" && (
-              <label className="field"><span>Sub-tipo</span>
+              <label className="field"><span>{t(lc, "subType")}</span>
                 <select value={extraKind} onChange={(e) => setExtraKind(e.target.value)}>
-                  <option value="">Todos</option>
-                  <option value="wallet">Recarga de carteira</option>
-                  <option value="package">Pacote</option>
-                  <option value="card_issuance">Emissao de cartao</option>
-                  <option value="card_recovery">Recuperacao de cartao</option>
+                  <option value="">{t(lc, "all")}</option>
+                  <option value="wallet">{t(lc, "walletTopUp")}</option>
+                  <option value="package">{t(lc, "package")}</option>
+                  <option value="card_issuance">{t(lc, "cardIssue")}</option>
+                  <option value="card_recovery">{t(lc, "cardRecovery")}</option>
                 </select>
               </label>
             )}
@@ -407,7 +408,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             {(status || source || agentId || routeId || passengerId || extraKind) && (
               <button type="button" onClick={clearFilters}
                 style={{ fontSize: 12, color: "var(--app-accent)", background: "none", border: "none", cursor: "pointer" }}>
-                Limpar filtros
+                {t(lc, "clearFilters")}
               </button>
             )}
           </div>
@@ -436,7 +437,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
                 rows={result.rows}
                 rowKey={(r) => String((r as Record<string, unknown>).reference || (r as Record<string, unknown>).created_at || Math.random())}
                 loading={false}
-                emptyMessage="Sem registos no periodo / filtros indicados."
+                emptyMessage={t(lc, "noRecordsPeriod")}
               />
               {result.row_limit_reached ? (
                 // Nao e o mesmo que mostrar so 500 na tabela: aqui a propria
@@ -448,7 +449,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
                 </p>
               ) : result.truncated ? (
                 <p style={{ fontSize: 12, color: "#6B6356", marginTop: 6 }}>
-                  <Sliders size={11} /> Apenas as primeiras 500 linhas sao mostradas aqui. O PDF e o Excel trazem o periodo completo.
+                  <Sliders size={11} /> {t(lc, "rowLimitHint")}
                 </p>
               ) : null}
             </>
@@ -481,114 +482,114 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
       )}
 
       {tab === "operational" && (
-        <SectionCard title="Receita operacional" description="Receita por viagem, rota e autocarro no periodo escolhido (bilhetes de convidado, passes da app, carteira e pagamentos directos).">
+        <SectionCard title={t(lc, "operationalRevenue")} description={t(lc, "operationalRevenueHint")}>
           <div className="admin-form-grid" style={{ marginBottom: 12 }}>
-            <label className="field"><span>De</span><input type="date" value={opFrom} onChange={(e) => setOpFrom(e.target.value)} /></label>
-            <label className="field"><span>Ate</span><input type="date" value={opTo} onChange={(e) => setOpTo(e.target.value)} /></label>
-            <label className="field"><span>Rota</span>
+            <label className="field"><span>{t(lc, "from")}</span><input type="date" value={opFrom} onChange={(e) => setOpFrom(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "to")}</span><input type="date" value={opTo} onChange={(e) => setOpTo(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "route")}</span>
               <select value={opRouteId} onChange={(e) => setOpRouteId(e.target.value)}>
-                <option value="">Todas as rotas</option>
+                <option value="">{t(lc, "allRoutes")}</option>
                 {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
               </select>
             </label>
             <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
-              <button className="primary-button" type="button" onClick={reloadOp}>Aplicar</button>
+              <button className="primary-button" type="button" onClick={reloadOp}>{t(lc, "apply")}</button>
             </div>
           </div>
           {loadingOp ? <SkeletonCard count={4} /> : !op ? <div className="admin-empty-state">{t(lc, "noData")}</div> : (
             <>
               <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
-                <MetricCard label="Receita total" value={formatCurrency(op.totals.total_revenue)} />
-                <MetricCard label="Bilhetes convidado" value={formatCurrency(op.totals.guest_checkout_revenue)} />
-                <MetricCard label="Passes da app" value={formatCurrency(op.totals.app_pass_revenue)} />
-                <MetricCard label="Carteira (validacoes)" value={formatCurrency(op.totals.wallet_validation_revenue)} />
-                <MetricCard label="Pagamentos directos" value={formatCurrency(op.totals.direct_payment_revenue)} />
-                <MetricCard label="Validacoes" value={String(op.totals.validations_approved)} detail={`${op.totals.validations_denied} negadas`} />
+                <MetricCard label={t(lc, "totalRevenue")} value={formatCurrency(op.totals.total_revenue)} />
+                <MetricCard label={t(lc, "guestTickets")} value={formatCurrency(op.totals.guest_checkout_revenue)} />
+                <MetricCard label={t(lc, "appPasses")} value={formatCurrency(op.totals.app_pass_revenue)} />
+                <MetricCard label={t(lc, "walletValidations")} value={formatCurrency(op.totals.wallet_validation_revenue)} />
+                <MetricCard label={t(lc, "directPayments")} value={formatCurrency(op.totals.direct_payment_revenue)} />
+                <MetricCard label={t(lc, "validations")} value={String(op.totals.validations_approved)} detail={`${op.totals.validations_denied} negadas`} />
               </div>
               {op.by_route.length > 0 && (
                 <>
-                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por rota</h4>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>{t(lc, "byRoute")}</h4>
                   <DataTable columns={[
-                    { header: "Rota", render: (r: OperationalData["by_route"][number]) => `${r.route_code} ${r.route_name}` },
-                    { header: "Viagens", render: (r: OperationalData["by_route"][number]) => String(r.trips) },
+                    { header: t(lc, "route"), render: (r: OperationalData["by_route"][number]) => `${r.route_code} ${r.route_name}` },
+                    { header: t(lc, "trips"), render: (r: OperationalData["by_route"][number]) => String(r.trips) },
                     { header: t(lc, "total"), render: (r: OperationalData["by_route"][number]) => formatCurrency(r.total_revenue) },
                   ]} rows={op.by_route} rowKey={(r) => String(r.route_id)} loading={false} emptyMessage="" filterable={false} />
                 </>
               )}
               {op.by_vehicle.length > 0 && (
                 <>
-                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por autocarro</h4>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>{t(lc, "byBus")}</h4>
                   <DataTable columns={[
-                    { header: "Autocarro", render: (r: OperationalData["by_vehicle"][number]) => r.vehicle_registration || "Sem autocarro" },
-                    { header: "Viagens", render: (r: OperationalData["by_vehicle"][number]) => String(r.trips) },
+                    { header: t(lc, "bus"), render: (r: OperationalData["by_vehicle"][number]) => r.vehicle_registration || "Sem autocarro" },
+                    { header: t(lc, "trips"), render: (r: OperationalData["by_vehicle"][number]) => String(r.trips) },
                     { header: t(lc, "total"), render: (r: OperationalData["by_vehicle"][number]) => formatCurrency(r.total_revenue) },
                   ]} rows={op.by_vehicle} rowKey={(r) => String(r.vehicle_id ?? 0)} loading={false} emptyMessage="" filterable={false} />
                 </>
               )}
-              <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Viagens</h4>
+              <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>{t(lc, "trips")}</h4>
               <DataTable columns={[
-                { header: "Viagem", render: (r: OpTripRow) => <TablePrimaryCell title={`#${r.trip_id}`} subtitle={`${r.route_code} ${r.route_name}`} /> },
-                { header: "Autocarro", render: (r: OpTripRow) => r.vehicle_registration || "-" },
-                { header: "Motorista", render: (r: OpTripRow) => r.driver_name || "-" },
+                { header: t(lc, "trip"), render: (r: OpTripRow) => <TablePrimaryCell title={`#${r.trip_id}`} subtitle={`${r.route_code} ${r.route_name}`} /> },
+                { header: t(lc, "bus"), render: (r: OpTripRow) => r.vehicle_registration || "-" },
+                { header: t(lc, "driver"), render: (r: OpTripRow) => r.driver_name || "-" },
                 { header: t(lc, "status"), render: (r: OpTripRow) => <StatusBadge value={r.status} /> },
-                { header: "Abertura", render: (r: OpTripRow) => r.opened_at ? formatDateTime(r.opened_at) : "-" },
-                { header: "Fecho", render: (r: OpTripRow) => r.closed_at ? formatDateTime(r.closed_at) : "-" },
-                { header: "Validacoes (A/N)", render: (r: OpTripRow) => `${r.summary.validations.approved} / ${r.summary.validations.denied}` },
+                { header: t(lc, "openedAt"), render: (r: OpTripRow) => r.opened_at ? formatDateTime(r.opened_at) : "-" },
+                { header: t(lc, "closedAt"), render: (r: OpTripRow) => r.closed_at ? formatDateTime(r.closed_at) : "-" },
+                { header: t(lc, "validationsApprovedDenied"), render: (r: OpTripRow) => `${r.summary.validations.approved} / ${r.summary.validations.denied}` },
                 { header: t(lc, "total"), render: (r: OpTripRow) => formatCurrency(r.summary.total_revenue) },
-              ]} rows={op.trips} rowKey={(r) => String(r.trip_id)} loading={false} emptyMessage="Sem viagens no periodo indicado." />
+              ]} rows={op.trips} rowKey={(r) => String(r.trip_id)} loading={false} emptyMessage={t(lc, "noTripsPeriod")} />
             </>
           )}
         </SectionCard>
       )}
 
       {tab === "validations" && (
-        <SectionCard title="Relatorio de validacoes" description="Validacoes no periodo escolhido, por estado, tipo, motivo de recusa e terminal.">
+        <SectionCard title={t(lc, "validationsReport")} description={t(lc, "validationsReportHint")}>
           <div className="admin-form-grid" style={{ marginBottom: 12 }}>
-            <label className="field"><span>De</span><input type="date" value={valFrom} onChange={(e) => setValFrom(e.target.value)} /></label>
-            <label className="field"><span>Ate</span><input type="date" value={valTo} onChange={(e) => setValTo(e.target.value)} /></label>
-            <label className="field"><span>Rota</span>
+            <label className="field"><span>{t(lc, "from")}</span><input type="date" value={valFrom} onChange={(e) => setValFrom(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "to")}</span><input type="date" value={valTo} onChange={(e) => setValTo(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "route")}</span>
               <select value={valRouteId} onChange={(e) => setValRouteId(e.target.value)}>
-                <option value="">Todas as rotas</option>
+                <option value="">{t(lc, "allRoutes")}</option>
                 {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
               </select>
             </label>
             <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
-              <button className="primary-button" type="button" onClick={reloadV}>Aplicar</button>
+              <button className="primary-button" type="button" onClick={reloadV}>{t(lc, "apply")}</button>
             </div>
           </div>
           {loadingV ? <SkeletonCard count={4} /> : !val ? <div className="admin-empty-state">{t(lc, "noData")}</div> : (
             <>
               <div className="admin-metric-grid" style={{ marginBottom: 14 }}>
-                <MetricCard label="Total de validacoes" value={String(val.by_status.reduce((s, r) => s + r.count, 0))} />
+                <MetricCard label={t(lc, "totalValidations")} value={String(val.by_status.reduce((s, r) => s + r.count, 0))} />
                 {val.by_status.map((s) => (
                   <MetricCard key={s.status} label={s.status.toUpperCase()} value={String(s.count)} />
                 ))}
               </div>
               {val.by_type.length > 0 && (
                 <>
-                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por tipo</h4>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>{t(lc, "byType")}</h4>
                   <DataTable columns={[
-                    { header: "Tipo", render: (r: ValidationsData["by_type"][number]) => <StatusBadge value={r.validation_type} /> },
-                    { header: "Quantidade", render: (r: ValidationsData["by_type"][number]) => String(r.count) },
+                    { header: t(lc, "type"), render: (r: ValidationsData["by_type"][number]) => <StatusBadge value={r.validation_type} /> },
+                    { header: t(lc, "quantity"), render: (r: ValidationsData["by_type"][number]) => String(r.count) },
                   ]} rows={val.by_type} rowKey={(r) => r.validation_type} loading={false} emptyMessage="" filterable={false} />
                 </>
               )}
               {val.by_failure_reason.length > 0 && (
                 <>
-                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Motivos de recusa</h4>
+                  <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>{t(lc, "denyReasons")}</h4>
                   <DataTable columns={[
-                    { header: "Motivo", render: (r: ValidationsData["by_failure_reason"][number]) => r.failure_reason || "-" },
-                    { header: "Quantidade", render: (r: ValidationsData["by_failure_reason"][number]) => String(r.count) },
+                    { header: t(lc, "reason"), render: (r: ValidationsData["by_failure_reason"][number]) => r.failure_reason || "-" },
+                    { header: t(lc, "quantity"), render: (r: ValidationsData["by_failure_reason"][number]) => String(r.count) },
                   ]} rows={val.by_failure_reason} rowKey={(r) => r.failure_reason || "-"} loading={false} emptyMessage="" filterable={false} />
                 </>
               )}
-              <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>Por terminal</h4>
+              <h4 style={{ margin: "16px 0 8px", fontSize: 13, fontWeight: 600, opacity: 0.7, textTransform: "uppercase" }}>{t(lc, "byTerminal")}</h4>
               <DataTable columns={[
-                { header: "Terminal", render: (r: ValidationsData["by_device"][number]) => <TablePrimaryCell title={r.device__serial_number} subtitle={r.device__device_type} /> },
-                { header: "Validacoes", render: (r: ValidationsData["by_device"][number]) => String(r.count) },
-                { header: "Aprovadas", render: (r: ValidationsData["by_device"][number]) => String(r.approved) },
-                { header: "Receita", render: (r: ValidationsData["by_device"][number]) => formatCurrency(r.revenue ?? "0") },
-              ]} rows={val.by_device} rowKey={(r) => r.device__serial_number} loading={false} emptyMessage="Sem validacoes com terminal no periodo." />
+                { header: t(lc, "terminal"), render: (r: ValidationsData["by_device"][number]) => <TablePrimaryCell title={r.device__serial_number} subtitle={r.device__device_type} /> },
+                { header: t(lc, "validations"), render: (r: ValidationsData["by_device"][number]) => String(r.count) },
+                { header: t(lc, "approvedCount"), render: (r: ValidationsData["by_device"][number]) => String(r.approved) },
+                { header: t(lc, "revenue"), render: (r: ValidationsData["by_device"][number]) => formatCurrency(r.revenue ?? "0") },
+              ]} rows={val.by_device} rowKey={(r) => r.device__serial_number} loading={false} emptyMessage={t(lc, "noValidationsTerminal")} />
             </>
           )}
         </SectionCard>

@@ -3,6 +3,7 @@ import { Eye, Lock, QrCode, RefreshCw } from "lucide-react";
 import { apiBlobUrl, apiDownload, apiFetch, apiPost } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -33,7 +34,7 @@ export default function DigitalCardsPage() {
         created = url;
         if (alive) setQrSrc(url); else URL.revokeObjectURL(url);
       })
-      .catch((e) => showToast("danger", e instanceof Error ? e.message : "Erro ao carregar QR."));
+      .catch((e) => showToast("danger", mensagemDeErro(e, lc)));
     // Sem revogar, cada abertura do modal deixava um blob preso em memoria.
     return () => { alive = false; if (created) URL.revokeObjectURL(created); };
   }, [qrCard, token]);
@@ -43,8 +44,8 @@ export default function DigitalCardsPage() {
 
   const block = async (uid: string) => {
     if (!confirm(`${t(lc, "block")}?`)) return;
-    try { await apiPost("/api/card-actions/block/", token!, { card_uid: uid }); showToast("success", t(lc, "block")); reload(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiPost("/api/card-actions/block/", token!, { card_uid: uid }); showToast("success", t(lc, "okCardBlocked")); reload(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   return (
@@ -96,7 +97,7 @@ export default function DigitalCardsPage() {
               style={{ width: 280, height: 280, background: "#fff", borderRadius: 12, padding: 8, border: "1px solid #E7E1D4" }}
             />
             <p style={{ color: "#6B6356", fontSize: 12, textAlign: "center", margin: 0 }}>
-              Mostre este QR ao agente para cobranca de bilhetes ou recarga.<br />
+              {t(lc, "showQrAgentHint")}<br />
               Cartao: <strong>{qrCard.card_number}</strong>
             </p>
             <button
@@ -104,9 +105,9 @@ export default function DigitalCardsPage() {
               type="button"
               onClick={() => void apiDownload(
                 `/api/cards/${qrCard.id}/qr.png`, token!, `buzup-qr-${qrCard.card_number}.png`,
-              ).catch((e) => showToast("danger", e instanceof Error ? e.message : "Erro"))}
+              ).catch((e) => showToast("danger", mensagemDeErro(e, lc)))}
             >
-              <QrCode size={15} /><span>Descarregar PNG</span>
+              <QrCode size={15} /><span>{t(lc, "downloadPng")}</span>
             </button>
           </div>
         )}

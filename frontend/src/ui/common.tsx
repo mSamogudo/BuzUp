@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { humanizeStatus } from "../lib/format";
 import { showToast } from "../lib/toast";
 import { useUi } from "./UiPreferences";
@@ -270,6 +271,7 @@ export function useAsyncData<T>(loader: () => Promise<T>, deps: unknown[] = []) 
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
+  const { locale } = useUi();
   const memoizedLoader = useCallback(loader, deps);
 
   useEffect(() => {
@@ -277,7 +279,7 @@ export function useAsyncData<T>(loader: () => Promise<T>, deps: unknown[] = []) 
     setLoading(true);
     memoizedLoader()
       .then((result) => { if (active) setData(result); })
-      .catch((err) => { if (active) showToast("danger", err instanceof Error ? err.message : "Erro ao carregar."); })
+      .catch((err) => { if (active) showToast("danger", mensagemDeErro(err, locale)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [memoizedLoader, reloadToken]);

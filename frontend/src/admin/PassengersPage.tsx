@@ -3,6 +3,7 @@ import { Eye, FileText, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -87,13 +88,13 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
       if (extractFrom) params.set("date_from", extractFrom);
       if (extractTo) params.set("date_to", extractTo);
       const res = await fetch(`/api/passengers/${viewing.id}/extract/?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { showToast("danger", "Erro ao gerar extracto."); return; }
+      if (!res.ok) { showToast("danger", t(lc, "errStatement")); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = `extracto-${viewing.full_name.replace(/\s/g, "_")}.pdf`; a.click();
       URL.revokeObjectURL(url);
       setExtractModal(false);
-    } catch { showToast("danger", "Erro ao gerar extracto."); }
+    } catch { showToast("danger", t(lc, "errStatement")); }
   };
 
   const submit = async (e: FormEvent) => {
@@ -106,10 +107,10 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
         document_type: form.document_type,
         document_number: form.document_number,
       } : form;
-      if (editId) { await apiPatch(`/api/passengers/${editId}/`, token!, payload); showToast("success", t(lc, "update")); }
-      else { await apiPost("/api/passengers/", token!, payload); showToast("success", t(lc, "create")); }
+      if (editId) { await apiPatch(`/api/passengers/${editId}/`, token!, payload); showToast("success", t(lc, "okPassengerUpdated")); }
+      else { await apiPost("/api/passengers/", token!, payload); showToast("success", t(lc, "okPassengerCreated")); }
       reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -118,18 +119,18 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
     setAccountBusy(true);
     try {
       await apiPost(`/api/passengers/${viewing.id}/create-account/`, token!, { notify_by_sms: true });
-      showToast("success", "Conta criada e SMS enviado.");
+      showToast("success", t(lc, "okAccountCreated"));
       setViewing({ ...viewing, has_user_account: true });
       reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setAccountBusy(false); }
   };
 
   const remove = async (r: Passenger) => {
-    const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar ${r.full_name}?`, tone: "danger" });
+    const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.full_name }), tone: "danger" });
     if (!ok) return;
-    try { await apiDelete(`/api/passengers/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiDelete(`/api/passengers/${r.id}/`, token!); showToast("success", t(lc, "okPassengerDeleted")); reload(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   return (
@@ -161,7 +162,7 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
         { label: t(lc, "email"), value: viewing.email || "-" },
         { label: t(lc, "documentType"), value: viewing.document_type === "bi" ? t(lc, "documentBi") : viewing.document_type === "passport" ? t(lc, "documentPassport") : viewing.document_type === "driving_license" ? t(lc, "documentDrivingLicense") : "-" },
         { label: t(lc, "document"), value: viewing.document_number || "-" },
-        { label: "Conta", value: viewing.has_user_account ? "Criada" : "Nao criada" },
+        { label: t(lc, "account"), value: viewing.has_user_account ? "Criada" : "Nao criada" },
         { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
         { label: t(lc, "created"), value: formatDateTime(viewing.created_at) },
       ] : []}>
@@ -206,7 +207,7 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
                       <div style={{ marginTop: 6 }}>
                         <a href={`/admin/cards?card=${c.id}`}
                            style={{ fontSize: 11, color: "var(--app-accent)", textDecoration: "none" }}>
-                          Ver detalhes do cartao →
+                          {t(lc, "cardDetails")}
                         </a>
                       </div>
                     )}
@@ -250,7 +251,7 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
                   <div style={{ marginTop: 8, textAlign: "right" }}>
                     <a href={`/admin/wallet-transactions?wallet=${viewWallet.uuid}`}
                        style={{ fontSize: 11, color: "var(--app-accent)", textDecoration: "none" }}>
-                      Ver todas as transaccoes →
+                      {t(lc, "allTransactions")}
                     </a>
                   </div>
                 )}
@@ -317,24 +318,24 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
                 </button>
               )}
               <button className="icon-text-button" onClick={() => { setExtractFrom(""); setExtractTo(""); setExtractModal(true); }} type="button" style={{ width: "100%" }}>
-                <FileText size={15} /><span>Gerar Extracto</span>
+                <FileText size={15} /><span>{t(lc, "generateStatement")}</span>
               </button>
             </div>
           </>
         )}
       </DetailDrawer>
 
-      <AdminModal open={extractModal} onClose={() => setExtractModal(false)} title="Extracto de Transaccoes">
+      <AdminModal open={extractModal} onClose={() => setExtractModal(false)} title={t(lc, "statement")}>
         <div className="admin-form">
           <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>
-            Seleccione o periodo para gerar o extracto PDF de <strong>{viewing?.full_name}</strong>.
+            {t(lc, "statementPeriodHint")} <strong>{viewing?.full_name}</strong>.
           </p>
           <div className="admin-form-grid">
-            <label className="field"><span>Data Inicio</span><input type="date" value={extractFrom} onChange={(e) => setExtractFrom(e.target.value)} /></label>
-            <label className="field"><span>Data Fim</span><input type="date" value={extractTo} onChange={(e) => setExtractTo(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "dateFrom")}</span><input type="date" value={extractFrom} onChange={(e) => setExtractFrom(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "dateTo")}</span><input type="date" value={extractTo} onChange={(e) => setExtractTo(e.target.value)} /></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" onClick={downloadExtract} type="button"><FileText size={15} /> Gerar PDF</button>
+            <button className="primary-button" onClick={downloadExtract} type="button"><FileText size={15} /> {t(lc, "generatePdf")}</button>
             <button className="secondary-button" onClick={() => setExtractModal(false)} type="button">{t(lc, "cancel")}</button>
           </div>
         </div>
@@ -357,8 +358,8 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "document")}</span><input value={form.document_number} onChange={(e) => f("document_number", e.target.value)} /></label>
             {!editId && (
               <>
-                <label className="admin-check-row"><input type="checkbox" checked={form.create_account} onChange={(e) => f("create_account", e.target.checked)} /><span>Criar conta de acesso</span></label>
-                <label className="admin-check-row"><input type="checkbox" checked={form.notify_by_sms} onChange={(e) => f("notify_by_sms", e.target.checked)} disabled={!form.create_account} /><span>Notificar por SMS</span></label>
+                <label className="admin-check-row"><input type="checkbox" checked={form.create_account} onChange={(e) => f("create_account", e.target.checked)} /><span>{t(lc, "createLogin")}</span></label>
+                <label className="admin-check-row"><input type="checkbox" checked={form.notify_by_sms} onChange={(e) => f("notify_by_sms", e.target.checked)} disabled={!form.create_account} /><span>{t(lc, "notifyBySms")}</span></label>
               </>
             )}
           </div>

@@ -3,6 +3,7 @@ import { Check, Copy, Eye, Lock, RefreshCw, RotateCcw, Trash2, User, UserPlus, X
 import { apiFetch, apiPost, apiDelete } from "../lib/api";
 import { formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -72,7 +73,7 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
       closeAllocate();
       reload();
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setBusy(false);
     }
@@ -80,8 +81,8 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
 
   const regenerateCode = async (d: Device) => {
     const ok = await confirm({
-      title: "Gerar novo codigo?",
-      message: `Vai invalidar o codigo actual de ${d.serial_number}. Se o POS estava activo, sera necessario re-activar com o novo codigo.`,
+      title: t(lc, "newCodeConfirm"),
+      message: t(lc, "confirmNewCode", { n: d.serial_number }),
       tone: "danger",
       confirmLabel: "Gerar novo",
     });
@@ -91,54 +92,54 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
       const code = (res && res.activation_code) || "";
       setGeneratedCode({ device: d, code, agent: d.assigned_agent_name || "" });
       reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const approve = async (d: Device) => {
-    const ok = await confirm({ title: "Activar dispositivo", message: `Activar ${d.serial_number} sem codigo?`, tone: "default" });
+    const ok = await confirm({ title: t(lc, "activateDevice"), message: t(lc, "confirmActivateNoCode", { n: d.serial_number }), tone: "default" });
     if (!ok) return;
     try {
       await apiPost(`/api/admin/devices/${d.id}/approve/`, token!, {});
-      showToast("success", "Activado.");
+      showToast("success", t(lc, "okDeviceActivated"));
       reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const reject = async (d: Device) => {
-    const ok = await confirm({ title: "Rejeitar dispositivo", message: `Rejeitar ${d.serial_number}?`, tone: "danger", confirmLabel: "Rejeitar" });
+    const ok = await confirm({ title: t(lc, "rejectDevice"), message: t(lc, "confirmReject", { n: d.serial_number }), tone: "danger", confirmLabel: t(lc, "reject") });
     if (!ok) return;
     try {
       await apiPost(`/api/admin/devices/${d.id}/reject/`, token!, { rejection_reason: "Rejeitado pelo admin." });
-      showToast("success", "Rejeitado.");
+      showToast("success", t(lc, "okDeviceRejected"));
       reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const block = async (d: Device) => {
     const newStatus = d.status === "blocked" ? "active" : "blocked";
     const ok = await confirm({
       title: newStatus === "blocked" ? "Bloquear dispositivo" : "Desbloquear dispositivo",
-      message: `${newStatus === "blocked" ? "Bloquear" : "Desbloquear"} ${d.serial_number}?`,
+      message: t(lc, "confirmToggle", { a: newStatus === "blocked" ? t(lc, "block") : t(lc, "unblock"), n: d.serial_number }),
       tone: newStatus === "blocked" ? "danger" : "default",
     });
     if (!ok) return;
     try {
       await apiFetch(`/api/admin/devices/${d.id}/`, token!, { method: "PATCH", body: JSON.stringify({ status: newStatus }) });
-      showToast("success", newStatus === "blocked" ? "Bloqueado." : "Desbloqueado.");
+      showToast("success", newStatus === "blocked" ? t(lc, "okDeviceBlocked") : t(lc, "okDeviceUnblocked"));
       reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const remove = async (d: Device) => {
-    const ok = await confirm({ title: "Eliminar dispositivo", message: `Eliminar ${d.serial_number}? Esta accao nao pode ser desfeita.`, tone: "danger", confirmLabel: "Eliminar" });
+    const ok = await confirm({ title: t(lc, "deleteDevice"), message: t(lc, "confirmDelete", { n: d.serial_number }), tone: "danger", confirmLabel: t(lc, "delete") });
     if (!ok) return;
-    try { await apiDelete(`/api/admin/devices/${d.id}/`, token!); showToast("success", "Eliminado."); reload(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiDelete(`/api/admin/devices/${d.id}/`, token!); showToast("success", t(lc, "okDeviceDeleted")); reload(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const copyCode = (code: string) => {
     if (!code) return;
-    navigator.clipboard.writeText(code).then(() => showToast("success", `Codigo copiado: ${code}`));
+    navigator.clipboard.writeText(code).then(() => showToast("success", t(lc, "okCodeCopied")));
   };
 
   const renderRow = (rows: Device[]) => (
@@ -147,33 +148,33 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
         title={r.serial_number}
         subtitle={`${r.manufacturer} ${r.model_name}`.trim() || r.device_type}
         meta={r.app_version ? `v${r.app_version}` : undefined} /> },
-      { header: "Agente", render: (r: Device) => r.assigned_agent_name || <span style={{ color: "var(--app-text-muted)" }}>—</span> },
+      { header: t(lc, "agent"), render: (r: Device) => r.assigned_agent_name || <span style={{ color: "var(--app-text-muted)" }}>—</span> },
       { header: t(lc, "status"), render: (r: Device) => <StatusBadge value={r.status} /> },
       { header: t(lc, "lastContact"), render: (r: Device) => formatDateTime(r.last_seen_at) },
       { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Device) => (
         <div className="admin-inline-actions">
-          <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => setViewing(r)} />
+          <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
           {(r.status === "self_onboarded" || r.status === "pending_activation") && (
             <>
-              <TableActionButton icon={<UserPlus size={15} />} label={r.assigned_agent_id ? "Mudar agente" : "Alocar agente"} onClick={() => openAllocate(r)} />
+              <TableActionButton icon={<UserPlus size={15} />} label={r.assigned_agent_id ? t(lc, "changeAgent") : "Alocar agente"} onClick={() => openAllocate(r)} />
               {r.assigned_agent_id && (
-                <TableActionButton icon={<KeyRound size={15} />} label="Gerar novo codigo" onClick={() => regenerateCode(r)} />
+                <TableActionButton icon={<KeyRound size={15} />} label={t(lc, "newCode")} onClick={() => regenerateCode(r)} />
               )}
-              <TableActionButton icon={<Check size={15} />} label="Activar agora" onClick={() => approve(r)} />
-              <TableActionButton icon={<X size={15} />} label="Rejeitar" onClick={() => reject(r)} tone="danger" />
+              <TableActionButton icon={<Check size={15} />} label={t(lc, "activateNow")} onClick={() => approve(r)} />
+              <TableActionButton icon={<X size={15} />} label={t(lc, "reject")} onClick={() => reject(r)} tone="danger" />
             </>
           )}
           {r.status === "active" && (
             <>
-              <TableActionButton icon={<User size={15} />} label="Mudar agente" onClick={() => openAllocate(r)} />
-              <TableActionButton icon={<KeyRound size={15} />} label="Gerar novo codigo" onClick={() => regenerateCode(r)} />
-              <TableActionButton icon={<Lock size={15} />} label="Bloquear" onClick={() => block(r)} tone="danger" />
+              <TableActionButton icon={<User size={15} />} label={t(lc, "changeAgent")} onClick={() => openAllocate(r)} />
+              <TableActionButton icon={<KeyRound size={15} />} label={t(lc, "newCode")} onClick={() => regenerateCode(r)} />
+              <TableActionButton icon={<Lock size={15} />} label={t(lc, "block")} onClick={() => block(r)} tone="danger" />
             </>
           )}
           {r.status === "blocked" && (
-            <TableActionButton icon={<RotateCcw size={15} />} label="Desbloquear" onClick={() => block(r)} />
+            <TableActionButton icon={<RotateCcw size={15} />} label={t(lc, "unblock")} onClick={() => block(r)} />
           )}
-          <TableActionButton icon={<Trash2 size={15} />} label="Eliminar" onClick={() => remove(r)} tone="danger" />
+          <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={() => remove(r)} tone="danger" />
         </div>
       )},
     ]} rows={rows} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noDevices")} />
@@ -185,43 +186,43 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String(counts.total)} />
         <MetricCard label={t(lc, "active")} value={String(counts.active)} />
-        <MetricCard label="Pendentes" value={String(counts.pending)} />
-        <MetricCard label="Bloqueados" value={String(counts.blocked)} />
+        <MetricCard label={t(lc, "pendingPl")} value={String(counts.pending)} />
+        <MetricCard label={t(lc, "blockedPl")} value={String(counts.blocked)} />
       </div>
 
       <TabBar items={[
-        { key: "all", label: "Todos", count: counts.total },
-        { key: "pending", label: "Pendentes", count: counts.pending },
-        { key: "active", label: "Activos", count: counts.active },
-        { key: "blocked", label: "Bloqueados", count: counts.blocked },
+        { key: "all", label: t(lc, "all"), count: counts.total },
+        { key: "pending", label: t(lc, "pendingPl"), count: counts.pending },
+        { key: "active", label: t(lc, "activePl"), count: counts.active },
+        { key: "blocked", label: t(lc, "blockedPl"), count: counts.blocked },
       ]} value={tab} onChange={(k) => setTab(k as "all" | "pending" | "active" | "blocked")} />
 
-      <SectionCard title="Terminais">
+      <SectionCard title={t(lc, "devices")}>
         {renderRow(filterRows(tab))}
       </SectionCard>
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.serial_number || ""} fields={viewing ? [
-        { label: "Serial", value: viewing.serial_number },
-        { label: "Tipo", value: viewing.device_type },
-        { label: "Fabricante", value: viewing.manufacturer || "-" },
-        { label: "Modelo", value: viewing.model_name || "-" },
-        { label: "Versao", value: viewing.app_version || "-" },
-        { label: "Estado", value: <StatusBadge value={viewing.status} /> },
-        { label: "Agente alocado", value: viewing.assigned_agent_name || "—" },
-        { label: "Activado em", value: viewing.activated_at ? formatDateTime(viewing.activated_at) : "—" },
-        { label: "Ultimo contacto", value: formatDateTime(viewing.last_seen_at) },
-        { label: "Registado em", value: formatDateTime(viewing.created_at) },
+        { label: t(lc, "serial"), value: viewing.serial_number },
+        { label: t(lc, "type"), value: viewing.device_type },
+        { label: t(lc, "manufacturer"), value: viewing.manufacturer || "-" },
+        { label: t(lc, "model"), value: viewing.model_name || "-" },
+        { label: t(lc, "version"), value: viewing.app_version || "-" },
+        { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
+        { label: t(lc, "assignedAgent"), value: viewing.assigned_agent_name || "—" },
+        { label: t(lc, "activatedAt"), value: viewing.activated_at ? formatDateTime(viewing.activated_at) : "—" },
+        { label: t(lc, "lastSeen"), value: formatDateTime(viewing.last_seen_at) },
+        { label: t(lc, "registeredAt"), value: formatDateTime(viewing.created_at) },
       ] : []} />
 
       <AdminModal open={!!allocateDevice} onClose={closeAllocate} title={`Alocar agente · ${allocateDevice?.serial_number || ""}`}>
         <form className="admin-form" onSubmit={submitAllocate}>
           <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>
-            Ao alocar, o sistema gera um <strong>novo codigo de activacao</strong> para entregar ao agente.
+            {t(lc, "onAssignGenerates")} <strong>novo codigo de activacao</strong> para entregar ao agente.
             O codigo aparece na proxima janela.
           </p>
           <div className="admin-form-grid">
             <label className="field admin-field-span-full">
-              <span>Agente</span>
+              <span>{t(lc, "agent")}</span>
               <select required value={allocateAgentId} onChange={(e) => setAllocateAgentId(e.target.value)}>
                 <option value="">{t(lc, "select")}</option>
                 {(agents || []).filter((a) => a.status === "active" && a.user_id).map((a) => (
@@ -242,12 +243,12 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
       <AdminModal
         open={!!generatedCode}
         onClose={() => setGeneratedCode(null)}
-        title="Codigo de Activacao Gerado"
+        title={t(lc, "activationCodeReady")}
       >
         {generatedCode && (
           <div className="admin-form">
             <p style={{ marginBottom: 8 }}>
-              Entregue este codigo ao agente <strong>{generatedCode.agent || "—"}</strong> para activar
+              {t(lc, "giveCodeToAgent")} <strong>{generatedCode.agent || "—"}</strong> para activar
               o dispositivo <strong>{generatedCode.device.serial_number}</strong>.
             </p>
             <div style={{
@@ -259,7 +260,7 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
               margin: "12px 0",
             }}>
               <div style={{ fontSize: 11, color: "var(--app-text-muted)", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
-                CODIGO DE ACTIVACAO
+                {t(lc, "activationCodeCaps")}
               </div>
               <div style={{
                 fontSize: 40,
@@ -277,15 +278,15 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
                 type="button"
                 style={{ marginTop: 8 }}
               >
-                <Copy size={14} /> Copiar
+                <Copy size={14} /> {t(lc, "copy")}
               </button>
             </div>
             <p style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
               O agente deve introduzir este codigo no ecra de activacao do POS.
-              Para gerar um novo codigo (caso este seja comprometido) use a accao "Gerar novo codigo" na tabela.
+              Para gerar um novo codigo (caso este seja comprometido) use a accao t(lc, "newCode") na tabela.
             </p>
             <div className="admin-form-actions">
-              <button className="primary-button" onClick={() => setGeneratedCode(null)} type="button">Concluido</button>
+              <button className="primary-button" onClick={() => setGeneratedCode(null)} type="button">{t(lc, "done")}</button>
             </div>
           </div>
         )}

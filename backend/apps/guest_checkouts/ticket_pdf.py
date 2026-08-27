@@ -189,12 +189,12 @@ def _draw_dynamic_fields(c: canvas.Canvas, tp: DigitalTravelPass, ref: str) -> N
     tamanho_valor = _fit_size(c, valor, "Helvetica-Bold", 245, 45, 31)
     _text(c, 282, 901, valor, size=tamanho_valor, font="Helvetica-Bold", color=NAVY)
 
+    # A forma de pagamento vai ao lado da etiqueta "VALOR" — que faz parte da
+    # imagem de fundo — e nao ao lado do numero. Ali ha espaco livre; a seguir
+    # ao valor nao havia, e o texto encavalitava-se no separador.
     forma = _forma_de_pagamento(tp)
     if forma:
-        largura = c.stringWidth(valor, "Helvetica-Bold", tamanho_valor)
-        # 14 pontos de folga, e nunca depois de onde comeca o estado (689).
-        x_forma = min(282 + largura + 14, 640)
-        _text(c, x_forma, 901, forma, size=22, font="Helvetica", color=MUTED)
+        _text(c, 372, 876, forma, size=21, font="Helvetica-Bold", color=MUTED)
     if tp.status == DigitalTravelPass.Status.ACTIVE:
         status_color = ORANGE
     elif tp.status == DigitalTravelPass.Status.USED:
@@ -409,11 +409,17 @@ def _money(value: Decimal | None) -> str:
 #:
 #: A chave e o `PaymentIntent.provider`. `wallet` e a carteira do passageiro
 #: (cartao/QR); `MOCK` so aparece em ambientes de teste e nao se imprime.
+#: Abreviado de proposito.
+#:
+#: Por extenso ("Numerario") o texto ia parar em cima do separador e do escudo
+#: que ficam entre o VALOR e o ESTADO — o bilhete tem ali um espaco estreito
+#: que a imagem de fundo ja ocupa. Tres letras cabem ao lado da etiqueta sem
+#: tocar em nada.
 FORMAS_DE_PAGAMENTO = {
-    "MPESA": "M-Pesa",
-    "EMOLA": "e-Mola",
-    "CASH": "Numerario",
-    "wallet": "Cartao",
+    "MPESA": "(MP)",
+    "EMOLA": "(EM)",
+    "CASH": "(NUM)",
+    "wallet": "(CTP)",
 }
 
 

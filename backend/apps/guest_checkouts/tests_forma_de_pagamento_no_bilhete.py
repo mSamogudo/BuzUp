@@ -1,5 +1,9 @@
 """O bilhete diz COMO foi pago, e nao so quanto custou.
 
+Abreviado — (NUM), (MP), (EM), (CTP) — e ao lado da etiqueta "VALOR", nao do
+numero. Por extenso e a seguir ao valor, o texto ia parar em cima do separador
+e do escudo que a imagem de fundo ja tem naquele espaco.
+
 Ao balcao isso importa: numa reclamacao ou numa devolucao a primeira pergunta e
 "pagou como?", e a resposta andava a ser procurada no sistema em vez de estar
 no papel que o passageiro tem na mao.
@@ -40,17 +44,27 @@ class FormaDePagamentoNoBilheteTests(TestCase):
             fare_amount=Decimal("100.00"), token=raw, token_hash=h,
             status=DigitalTravelPass.Status.ACTIVE)
 
+    # Abreviado de proposito: por extenso o texto ia parar em cima do
+    # separador e do escudo que o bilhete tem entre o VALOR e o ESTADO.
     def test_mpesa(self):
-        self.assertEqual(_forma_de_pagamento(self._bilhete("MPESA")), "M-Pesa")
+        self.assertEqual(_forma_de_pagamento(self._bilhete("MPESA")), "(MP)")
 
     def test_emola(self):
-        self.assertEqual(_forma_de_pagamento(self._bilhete("EMOLA")), "e-Mola")
+        self.assertEqual(_forma_de_pagamento(self._bilhete("EMOLA")), "(EM)")
 
     def test_numerario(self):
-        self.assertEqual(_forma_de_pagamento(self._bilhete("CASH")), "Numerario")
+        self.assertEqual(_forma_de_pagamento(self._bilhete("CASH")), "(NUM)")
 
     def test_cartao(self):
-        self.assertEqual(_forma_de_pagamento(self._bilhete("wallet")), "Cartao")
+        self.assertEqual(_forma_de_pagamento(self._bilhete("wallet")), "(CTP)")
+
+    def test_nenhuma_abreviatura_e_longa(self):
+        """O espaco ali e estreito; se alguem acrescentar um provedor novo com
+        um nome por extenso, volta a encavalitar-se no separador."""
+        from apps.guest_checkouts.ticket_pdf import FORMAS_DE_PAGAMENTO
+
+        for provedor, texto in FORMAS_DE_PAGAMENTO.items():
+            self.assertLessEqual(len(texto), 5, f"{provedor}: {texto!r} nao cabe")
 
     # --- melhor nao dizer nada do que dizer errado ------------------------
 

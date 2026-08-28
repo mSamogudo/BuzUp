@@ -160,11 +160,46 @@ class MotoristaVeAsSuasTests(TestCase):
         self.assertIn(self.t1.id, ids)
         self.assertIn(self.t2.id, ids)
 
-    def test_o_superuser_ve_todas(self):
-        """Precisa de ver tudo para diagnosticar."""
+    def test_o_superuser_sem_autocarro_ve_todas(self):
+        """Precisa de ver tudo para diagnosticar — e nao conduz nada."""
         User = get_user_model()
         u = User.objects.create_superuser(username="root", email="r@x.mz", password="x")
         Agent.objects.create(user=u, full_name="Root", status=Agent.Status.ACTIVE)
+        self.assertIn(self.t2.id, self._lista(u))
+
+    def test_o_superuser_que_conduz_ve_so_as_suas(self):
+        """O cargo nao anula o autocarro.
+
+        Enquanto o superuser era isento sem excepcao, bastava dar a conta de
+        administracao a alguem que tambem conduz para o limite desaparecer para
+        ele. E o limite nao e sobre o cargo: um bilhete emitido na viagem
+        errada poe o passageiro no autocarro errado, seja quem for que o venda.
+
+        A saida existe e e explicita — tirar-lhe o registo de Motorista.
+        """
+        User = get_user_model()
+        u = User.objects.create_superuser(username="chefe", email="c@x.mz", password="x")
+        Agent.objects.create(user=u, full_name="Chefe", status=Agent.Status.ACTIVE)
+        carro = Vehicle.objects.create(registration="CHF-01-MP", seated_capacity=30)
+        d = Driver.objects.create(user=u, full_name="Chefe", status=Driver.Status.ACTIVE)
+        sua = Trip.objects.create(
+            route=self.rota, vehicle=carro, driver=d,
+            status=Trip.Status.BOARDING,
+            planned_departure_at=timezone.now() + timedelta(minutes=30),
+        )
+        ids = self._lista(u)
+        self.assertIn(sua.id, ids)
+        self.assertNotIn(self.t1.id, ids)
+        self.assertNotIn(self.t2.id, ids)
+
+    def test_tirar_o_registo_de_motorista_devolve_a_vista_completa(self):
+        """A saida de diagnostico, e que tem de ser deliberada."""
+        User = get_user_model()
+        u = User.objects.create_superuser(username="chefe2", email="c2@x.mz", password="x")
+        Agent.objects.create(user=u, full_name="Chefe", status=Agent.Status.ACTIVE)
+        d = Driver.objects.create(user=u, full_name="Chefe", status=Driver.Status.ACTIVE)
+        self.assertNotIn(self.t2.id, self._lista(u))
+        d.delete()
         self.assertIn(self.t2.id, self._lista(u))
 
     # --- um motorista desactivado deixa de ser motorista -------------------

@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   Area, Bar, BarChart, CartesianGrid, Cell, ComposedChart, LabelList, Legend,
   Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -8,31 +7,11 @@ import type { ChartTheme } from "./theme";
 import { compact, num, providerLabel, shortDate } from "./theme";
 import type { HourlyPoint, PaymentMethodRow, RevenuePoint, TopRouteRow } from "./types";
 
+export { ChartCard } from "./ChartCard";
+
 /* ------------------------------------------------------------------ */
 /* Casca comum                                                         */
 /* ------------------------------------------------------------------ */
-
-export function ChartCard({ title, subtitle, icon, action, children }: {
-  title: string; subtitle?: string; icon: ReactNode; action?: ReactNode; children: ReactNode;
-}) {
-  return (
-    <div className="dashboard-chart-card">
-      <div className="dashboard-chart-header">
-        {icon}
-        <div style={{ minWidth: 0 }}>
-          <h3>{title}</h3>
-          {subtitle ? (
-            <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "var(--app-text-muted)", fontWeight: 500 }}>
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-        {action ? <div style={{ marginLeft: "auto" }}>{action}</div> : null}
-      </div>
-      <div className="dashboard-chart-body" style={{ flexDirection: "column" }}>{children}</div>
-    </div>
-  );
-}
 
 function Empty({ message }: { message: string }) {
   return <p className="dashboard-empty">{message}</p>;

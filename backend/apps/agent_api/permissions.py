@@ -64,16 +64,27 @@ def driver_only_scope(user):
     se aplicava a ninguem. O codigo estava certo; morria por causa de uma
     permissao concedida noutro sitio.
 
-    Passa a depender do facto operacional — ter um registo de Motorista activo —
-    que nao se liga nem desliga por engano numa caixa de permissoes. Quem nao
-    conduz (agente de balcao) continua a escolher qualquer viagem; o superuser
-    tambem, porque precisa de ver tudo para diagnosticar.
+    Passa a depender do facto operacional — ter um registo de Motorista — que
+    nao se liga nem desliga por engano numa caixa de permissoes. Quem nao
+    conduz (agente de balcao) continua a escolher qualquer viagem.
+
+    **O superuser tambem conta, se conduzir.** Um superuser SEM registo de
+    motorista continua a ver tudo, porque precisa disso para diagnosticar. Mas
+    a partir do momento em que existe um registo de Motorista com o nome dele,
+    ele conduz um autocarro — e quem conduz vende so nas suas viagens. A regra
+    do operador e sobre o autocarro, nao sobre o cargo: um bilhete emitido na
+    viagem errada continua a por o passageiro no autocarro errado, quem quer
+    que o tenha vendido.
+
+    Quem precisar da conta de diagnostico sem limite tira-lhe o registo de
+    Motorista — que e uma decisao explicita, e nao um efeito lateral.
     """
     from apps.trips.models import Driver
 
     if not user or not getattr(user, "is_authenticated", False):
         return None
-    if getattr(user, "is_superuser", False):
+    conduz = Driver.objects.filter(user=user).order_by("-status", "id").first()
+    if getattr(user, "is_superuser", False) and conduz is None:
         return None
     # QUALQUER registo de motorista, activo ou nao.
     #
@@ -84,7 +95,7 @@ def driver_only_scope(user):
     #
     # Quem conduz vende so nas suas. Sem viagens alocadas, o filtro devolve
     # lista vazia e ele nao vende nada — que e a regra do operador.
-    return Driver.objects.filter(user=user).order_by("-status", "id").first()
+    return conduz
 
 
 class DeviceBlocked(Exception):

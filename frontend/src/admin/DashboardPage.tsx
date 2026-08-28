@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import {
   Activity, BarChart3, Clock, CreditCard, Route as RouteIcon, RefreshCw, TrendingUp,
 } from "lucide-react";
@@ -9,9 +9,15 @@ import { useUi } from "../ui/UiPreferences";
 import { PageFrame, SectionCard, useAsyncData } from "../ui/common";
 import { SkeletonCard } from "../ui/Skeleton";
 import FilterBar, { countActive, defaultFilters } from "./dashboard/FilterBar";
-import {
-  ChartCard, HourlyChart, PaymentDonut, RevenueChart, TopRoutesChart,
-} from "./dashboard/Charts";
+import { ChartCard } from "./dashboard/ChartCard";
+// Os graficos sao 430 kB de recharts — mais do que todo o resto do portal
+// junto. O painel e o primeiro ecra depois de entrar, e os numeros que
+// interessam (entradas, receita, bilhetes) sao cartoes de texto: aparecem
+// de imediato, e os graficos chegam a seguir sem ninguem esperar por eles.
+const RevenueChart = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.RevenueChart })));
+const HourlyChart = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.HourlyChart })));
+const PaymentDonut = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.PaymentDonut })));
+const TopRoutesChart = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.TopRoutesChart })));
 import {
   AutoRefreshToggle, KpiStrip, PackagesTable, RecentActivity,
   TopAgentsTable, TopDriversTable, TopTripsTable,
@@ -192,7 +198,7 @@ export default function DashboardPage() {
               subtitle={t(lc, "revenueChartHint")}
               title={t(lc, "revenuePerDay")}
             >
-              <RevenueChart c={c} data={data.revenue_series} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><RevenueChart c={c} data={data.revenue_series} /></Suspense>
             </ChartCard>
 
             <ChartCard
@@ -200,7 +206,7 @@ export default function DashboardPage() {
               subtitle={t(lc, "confirmedByChannel")}
               title={t(lc, "paymentMethods")}
             >
-              <PaymentDonut c={c} data={data.payment_methods} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><PaymentDonut c={c} data={data.payment_methods} /></Suspense>
             </ChartCard>
           </div>
 
@@ -210,7 +216,7 @@ export default function DashboardPage() {
               subtitle={t(lc, "hourlyHint")}
               title={t(lc, "hourlySpread")}
             >
-              <HourlyChart c={c} data={data.hourly} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><HourlyChart c={c} data={data.hourly} /></Suspense>
             </ChartCard>
 
             <ChartCard
@@ -218,7 +224,7 @@ export default function DashboardPage() {
               subtitle={t(lc, "revenuePerRoute")}
               title={t(lc, "topRoutes")}
             >
-              <TopRoutesChart c={c} data={data.top_routes} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><TopRoutesChart c={c} data={data.top_routes} /></Suspense>
             </ChartCard>
           </div>
 

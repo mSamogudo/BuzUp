@@ -3,42 +3,51 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import LoginPage from "./auth/LoginPage";
 import AdminLayout from "./admin/AdminLayout";
-import DashboardPage from "./admin/DashboardPage";
-import RoutesPage from "./admin/RoutesPage";
-import RouteStopsPage from "./admin/RouteStopsPage";
-import StopsPage from "./admin/StopsPage";
-import OperationPage from "./admin/OperationPage";
-import VehiclesPage from "./admin/VehiclesPage";
-import DriversPage from "./admin/DriversPage";
-import FaresPage from "./admin/FaresPage";
-import PackagesPage from "./admin/PackagesPage";
-import PassengersPage from "./admin/PassengersPage";
-import PhysicalCardsPage from "./admin/PhysicalCardsPage";
-import DigitalCardsPage from "./admin/DigitalCardsPage";
-import FinancialPage from "./admin/FinancialPage";
-import WalletsPage from "./admin/WalletsPage";
-import GuestCheckoutsPage from "./admin/GuestCheckoutsPage";
-import PosSessionsPage from "./admin/PosSessionsPage";
-import DevicesPage from "./admin/DevicesPage";
-import MapPage from "./admin/MapPage";
-import ReleasesPage from "./admin/ReleasesPage";
-import UsersPage from "./admin/SystemPage";
-import ReportsPage from "./admin/ReportsPage";
-import AgentRevenuePage from "./admin/AgentRevenuePage";
-import AuditPage from "./admin/AuditPage";
-import BrandingPage from "./admin/BrandingPage";
-import CheckoutPage from "./public/CheckoutPage";
-import BusPaymentPage from "./public/BusPaymentPage";
-// Lazy: o visitante anónimo da landing não deve descarregar o portal inteiro.
+// Cada ecra chega quando alguem la vai, e nao antes.
+//
+// Estava tudo num ficheiro so de 1,2 MB. Com os 420 ms de ida e volta que
+// medimos ate ao servidor, isso sao segundos a olhar para um ecra vazio — e
+// paga-os quem abre a pagina de entrada para escrever a senha, que nao precisa
+// de nenhum destes ecras. O portal inteiro descarregava para mostrar um
+// formulario de login.
+//
+// O que fica ansioso e so o que se ve sempre: o login, a moldura do portal e
+// o arranque.
 const LandingPage = lazy(() => import("./public/LandingPage"));
 const BookingPage = lazy(() => import("./public/booking/BookingPage"));
-import DownloadPage from "./public/DownloadPage";
-import PassengerPortalPage from "./passenger/PassengerPortalPage";
-import DriverPortalPage from "./driver/DriverPortalPage";
-import ProfilePage from "./profile/ProfilePage";
-import TripDetailPage from "./admin/TripDetailPage";
-import TripSchedulerPage from "./admin/TripSchedulerPage";
-import TermsPage from "./admin/TermsPage";
+const DashboardPage = lazy(() => import("./admin/DashboardPage"));
+const RoutesPage = lazy(() => import("./admin/RoutesPage"));
+const RouteStopsPage = lazy(() => import("./admin/RouteStopsPage"));
+const StopsPage = lazy(() => import("./admin/StopsPage"));
+const OperationPage = lazy(() => import("./admin/OperationPage"));
+const VehiclesPage = lazy(() => import("./admin/VehiclesPage"));
+const DriversPage = lazy(() => import("./admin/DriversPage"));
+const FaresPage = lazy(() => import("./admin/FaresPage"));
+const PackagesPage = lazy(() => import("./admin/PackagesPage"));
+const PassengersPage = lazy(() => import("./admin/PassengersPage"));
+const PhysicalCardsPage = lazy(() => import("./admin/PhysicalCardsPage"));
+const DigitalCardsPage = lazy(() => import("./admin/DigitalCardsPage"));
+const FinancialPage = lazy(() => import("./admin/FinancialPage"));
+const WalletsPage = lazy(() => import("./admin/WalletsPage"));
+const GuestCheckoutsPage = lazy(() => import("./admin/GuestCheckoutsPage"));
+const PosSessionsPage = lazy(() => import("./admin/PosSessionsPage"));
+const DevicesPage = lazy(() => import("./admin/DevicesPage"));
+const MapPage = lazy(() => import("./admin/MapPage"));
+const ReleasesPage = lazy(() => import("./admin/ReleasesPage"));
+const UsersPage = lazy(() => import("./admin/SystemPage"));
+const ReportsPage = lazy(() => import("./admin/ReportsPage"));
+const AgentRevenuePage = lazy(() => import("./admin/AgentRevenuePage"));
+const AuditPage = lazy(() => import("./admin/AuditPage"));
+const BrandingPage = lazy(() => import("./admin/BrandingPage"));
+const TripDetailPage = lazy(() => import("./admin/TripDetailPage"));
+const TripSchedulerPage = lazy(() => import("./admin/TripSchedulerPage"));
+const TermsPage = lazy(() => import("./admin/TermsPage"));
+const CheckoutPage = lazy(() => import("./public/CheckoutPage"));
+const BusPaymentPage = lazy(() => import("./public/BusPaymentPage"));
+const DownloadPage = lazy(() => import("./public/DownloadPage"));
+const PassengerPortalPage = lazy(() => import("./passenger/PassengerPortalPage"));
+const DriverPortalPage = lazy(() => import("./driver/DriverPortalPage"));
+const ProfilePage = lazy(() => import("./profile/ProfilePage"));
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { BrandingProvider } from "./lib/branding";
 import SplashScreen from "./ui/SplashScreen";
@@ -71,11 +80,13 @@ function AppContent() {
     <>
       <Toaster position="top-right" richColors />
       <PwaInstallPrompt />
+      {/* Uma so fronteira de espera: o ecra que falta e sempre o proximo. */}
+      <Suspense fallback={<SplashScreen />}>
       <Routes>
-        <Route path="/" element={<Suspense fallback={null}><LandingPage /></Suspense>} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/comprar" element={<Suspense fallback={null}><BookingPage /></Suspense>} />
+        <Route path="/comprar" element={<BookingPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/bus/:vehicleUuid" element={<BusPaymentPage />} />
         <Route path="/portal" element={<ProtectedRoute><PassengerPortalPage /></ProtectedRoute>} />
@@ -116,6 +127,7 @@ function AppContent() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </>
   );
 }

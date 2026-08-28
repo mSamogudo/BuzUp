@@ -17,6 +17,17 @@ pessoa.
 Estes testes correm em fios a serio contra o Postgres — `TransactionTestCase`,
 porque o `TestCase` embrulha tudo numa transaccao e esconde justamente aquilo
 que se quer observar. Mesma forma dos testes do balcao, mesma razao.
+
+**O que aqui se afirma e o que o bloqueio GARANTE — nunca que a corrida
+acontece.** Cheguei a escrever um teste que reproduzia a sequencia antiga e
+exigia ver os dois pedidos passarem a guarda. Provou o que tinha a provar (o
+defeito era real, e nao teoria), mas como teste permanente nao presta: passou
+sozinho e falhou com a suite toda a correr, porque afirmar que duas coisas se
+cruzam depende do momento em que se cruzam. Um teste intermitente e pior do
+que nenhum — ensina a ignorar falhas.
+
+Os que ficam sao deterministas: com a linha travada, ha exactamente um
+vencedor, corram os fios como correrem.
 """
 
 from __future__ import annotations

@@ -99,7 +99,7 @@ Troca por tema: as imagens de logótipo aparecem em par, uma com
 | `Contactos BusUp.dc.html` | Página de contactos. |
 | `Apps BusUp.dc.html` | Fluxos das apps mobile e POS. |
 | `Compra de Bilhetes BusUp.dc.html` | Fluxo de compra, 6 passos + 2 estados de erro. |
-| `Ecra Compra.dc.html` | Ecrã de compra isolado (componente do fluxo acima). |
+| `Ecra Compra.dc.html` | Ecrã de compra isolado (componente do fluxo acima). **O indicador de passos que traz está desactualizado** — mostra cinco, e são seis. Manda o `Compra de Bilhetes BusUp.dc.html`; confirmado pelo operador em 2026-08-31. |
 | `Acesso BusUp.dc.html` | Login, recuperação de senha, OTP de passageiro, sessão a validar. |
 | `Erros BusUp.dc.html` | 404, 401, 403, 500, 503 e sem-ligação, em desktop e mobile. |
 | `mapa-terminais.html` | Mapa Leaflet de Maputo com sete terminais reais. |

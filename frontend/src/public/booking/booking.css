@@ -440,3 +440,40 @@
    dentro de uma frase e a norma isenta esses). */
 .bzbk-foot .bzbk-terms-link{display:inline-flex;align-items:center;
   min-height:34px;padding:0 6px}
+
+/* --------------------------------------------------------------------------
+   Estados de excepção: esgotado (E1) e falha no pagamento (E2)
+   --------------------------------------------------------------------------
+   Ocupam o painel inteiro em vez de serem uma tira de aviso. Os dois momentos
+   têm a mesma forma porque pedem a mesma coisa ao passageiro: ler o que
+   aconteceu e escolher entre duas saídas — nunca ficar sem nenhuma. */
+
+.bzbk-soldout,
+.bzbk-payfail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card, 14px);
+  background: var(--surface2);
+}
+
+.bzbk-soldout h3,
+.bzbk-payfail h2 { margin: 0; }
+
+.bzbk-soldout p,
+.bzbk-payfail p { margin: 0; }
+
+/* A garantia de que não houve cobrança lê-se antes do motivo técnico. */
+.bzbk-payfail-safe {
+  font-weight: 600;
+  color: var(--tone-ok-fg, inherit);
+}
+
+.bzbk-soldout-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}

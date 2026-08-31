@@ -295,11 +295,33 @@ próprio, e entradas em `design/portal/nav.ts`.
 O pacote passou de 2368 para 2404 módulos: a diferença é exactamente o que
 antes era eliminado por não ter quem lhe chegasse.
 
-### Por fazer — as outras páginas públicas
+### Comparadas ecrã a ecrã em 2026-08-31
 
-Comparação e implementação exactas ainda por fazer para: `Precos BusUp`,
-`Contactos BusUp`, `Apps BusUp`, `Compra de Bilhetes BusUp` + `Ecra Compra`,
-`Acesso BusUp` e `Erros BusUp`.
+Cada `.dc.html` foi aberto no browser ao lado da rota que o implementa e o
+conteúdo renderizado dos dois foi comparado.
+
+| Desenho | Estado |
+|---|---|
+| `Landing BusUp - Ceu` | fiel |
+| `Precos BusUp` | fiel |
+| `Erros BusUp` | fiel — corrigida a referência técnica, que vinha fixa do protótipo |
+| `Acesso BusUp` | corrigido: cópia, três provas, cabeçalho do painel, ajuda e manter-sessão |
+| `Contactos BusUp` | corrigido: os oito campos e as pílulas "O que quer ver" |
+| `Compra de Bilhetes BusUp` | corrigido: seis passos e os dois estados de excepção |
+| `Portal BusUp v2` | cartões fiéis; título e sobretítulo corrigidos |
+| `Apps BusUp` | fora de âmbito — é a especificação das apps móveis e POS, não uma página web |
+
+**O fluxo de compra tem seis passos**, decidido pelo operador em 2026-08-31.
+`Ecra Compra.dc.html` mostra um indicador de cinco e está desactualizado; o
+`Compra de Bilhetes BusUp.dc.html` é que manda. Os dois estados de excepção
+existem agora no ecrã:
+
+- **E1 Esgotado** — só quando TODAS as partidas do dia estão sem lugar para o
+  número de bilhetes pedido. Uma partida fechada por outro motivo (embarque por
+  abrir) mantém a sua própria razão; chamar-lhe "esgotado" seria mentir.
+- **E2 Falha no pagamento** — a primeira linha diz que nada foi cobrado, antes
+  do motivo técnico. Quem viu o pagamento falhar a meio quer saber isso antes
+  de tudo o resto. A tentativa fica retomável com o que já preencheu.
 
 ---
 

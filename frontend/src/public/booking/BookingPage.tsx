@@ -22,6 +22,9 @@ const CHAVES_IDA: { key: Step; label: BookingKey }[] = [
   { key: "seats", label: "stepSeats" },
   { key: "pax", label: "stepPax" },
   { key: "pay", label: "stepPay" },
+  // O bilhete emitido e um passo, e nao um depois-do-fim: o desenho conta seis,
+  // e quem esta a pagar tem de ver que ainda falta receber alguma coisa.
+  { key: "done", label: "stepTicket" },
 ];
 
 /** Com regresso, as etapas do caminho de volta entram na barra de progresso.
@@ -35,6 +38,7 @@ const CHAVES_IDA_E_VOLTA: { key: Step; label: BookingKey }[] = [
   { key: "rseats", label: "stepSeats" },
   { key: "pax", label: "stepPax" },
   { key: "pay", label: "stepPay" },
+  { key: "done", label: "stepTicket" },
 ];
 
 interface StopOpt { id: number; code: string; name: string }
@@ -178,6 +182,7 @@ export default function BookingPage() {
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState("");
   const [qty, setQty] = useState(1);
+  const [falhaPagamento, setFalhaPagamento] = useState<string | null>(null);
   // Só ida ou ida e volta. É uma escolha do passageiro e não um campo que se
   // deixa em branco: mostrar sempre a data de regresso pedia uma resposta a
   // quem só quer ir, e obrigava a adivinhar o que "vazio" queria dizer.
@@ -586,7 +591,13 @@ export default function BookingPage() {
       setResult(body);
       setStep("done");
     } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : tr("errPayment"));
+      // Falha no pagamento (E2) tem estado proprio, e nao a tira de aviso dos
+      // outros erros. Quem viu o pagamento falhar a meio nao sabe se o dinheiro
+      // saiu, e essa duvida vale mais do que a mensagem do servidor: por isso a
+      // primeira coisa que le e que NADA foi cobrado. A tentativa fica retomavel
+      // com tudo o que ja preencheu — recomecar do zero era castigar o
+      // passageiro por uma falha que nao foi dele.
+      setFalhaPagamento(err instanceof Error && err.message ? err.message : tr("errPayment"));
     } finally { setBusy(false); }
   };
 
@@ -601,6 +612,20 @@ export default function BookingPage() {
     ...(branding.contact_phones || []),
     branding.support_phone,
   ].filter(Boolean))];
+  /** Ha partidas no dia, mas nenhuma com lugar para os bilhetes pedidos.
+   *
+   *  Distinto de `trips.length === 0`, que e "nao ha partidas nenhumas": aqui
+   *  os autocarros existem e estao cheios, e a saida e outra — menos bilhetes,
+   *  ou outro dia.
+   *
+   *  So conta a falta de LUGAR. Uma partida fechada por outro motivo (embarque
+   *  ainda por abrir, por exemplo) traz a sua propria razao em
+   *  `sale_unavailable_reason`, e dizer-lhe "esgotado" seria mentir ao
+   *  passageiro sobre o que se passa. */
+  const todasEsgotadas =
+    trips.length > 0 &&
+    trips.every((t) => t.seats_available !== null && t.seats_available < qty);
+
   const passos = idaEVolta ? CHAVES_IDA_E_VOLTA : CHAVES_IDA;
   const stepIndex = passos.findIndex((s) => s.key === step);
 
@@ -728,6 +753,29 @@ export default function BookingPage() {
                 {trips.length === 0 && (
                   <div className="bzbk-notice warn">
                     {tr("noTrips")}
+                  </div>
+                )}
+                {/* Esgotado (E1) — todas as partidas do dia sem lugar para o
+                    numero de bilhetes pedido.
+                    Sem este estado, o passageiro via a lista cheia de partidas
+                    com "Esgotado" ao lado e tinha de somar sozinho que nao
+                    havia nada para ele; e nada lhe dizia o que fazer a seguir.
+                    Ficar na data e reduzir os bilhetes costuma resolver, e e
+                    a saida mais barata de todas. */}
+                {todasEsgotadas && (
+                  <div className="bzbk-soldout" role="status">
+                    <h3>{tr("soldOutTitle")}</h3>
+                    <p>{tr("soldOutLead", { n: qty })}</p>
+                    <div className="bzbk-soldout-acts">
+                      {qty > 1 && (
+                        <button className="bzbk-btn" onClick={() => { setQty(qty - 1); setStep("search"); }} type="button">
+                          {qty - 1 === 1 ? tr("soldOutFewerOne") : tr("soldOutFewer", { n: qty - 1 })}
+                        </button>
+                      )}
+                      <button className="bzbk-btn ghost" onClick={() => setStep("search")} type="button">
+                        {tr("soldOutOtherDay")}
+                      </button>
+                    </div>
                   </div>
                 )}
                 {trips.map((t) => {
@@ -1001,7 +1049,25 @@ export default function BookingPage() {
               </div>
             )}
 
-            {step === "pay" && trip && (
+            {step === "pay" && trip && falhaPagamento && (
+              <div className="bzbk-payfail" role="alert">
+                <h2 className="bzbk-h2">{tr("payFailTitle")}</h2>
+                {/* Primeiro o dinheiro, depois o motivo. Quem chega aqui quer
+                    saber se foi debitado antes de querer saber porque falhou. */}
+                <p className="bzbk-payfail-safe">{tr("payFailSafe")}</p>
+                <p className="bzbk-lead">{falhaPagamento}</p>
+                <div className="bzbk-soldout-acts">
+                  <button className="bzbk-btn" onClick={() => setFalhaPagamento(null)} type="button">
+                    {tr("payFailRetry")}
+                  </button>
+                  <button className="bzbk-btn ghost" onClick={() => { setFalhaPagamento(null); setStep("search"); }} type="button">
+                    {tr("payFailRestart")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "pay" && trip && !falhaPagamento && (
               <form onSubmit={pay}>
                 <div className="bzbk-h2-row">
                   <h2 className="bzbk-h2">Pagamento</h2>

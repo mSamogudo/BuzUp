@@ -260,6 +260,9 @@ class AgentApi {
     List<String> seats = const [],
     String emergencyName = '',
     String emergencyPhone = '',
+    /// Nome e documento de quem viaja, um por bilhete. Obrigatório nas rotas
+    /// com manifesto de bordo — ver `requires_passenger_identity`.
+    List<Map<String, String>> passengers = const [],
   }) async {
     final res = await _http.post<Map<String, dynamic>>(
       '/api/agent/sales/',
@@ -278,6 +281,7 @@ class AgentApi {
         if (seats.isNotEmpty) 'seats': seats,
         if (emergencyName.isNotEmpty) 'emergency_contact_name': emergencyName,
         if (emergencyPhone.isNotEmpty) 'emergency_contact_phone': emergencyPhone,
+        if (passengers.isNotEmpty) 'passengers': passengers,
       },
       options: _idempotent(idempotencyKey),
     );

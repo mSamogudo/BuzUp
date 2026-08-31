@@ -6,11 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/api_client.dart';
-import '../../core/feedback.dart';
-import '../../core/location.dart';
 import '../../core/providers.dart';
 import '../../core/labels.dart';
 import '../../core/theme.dart';
+import 'driver_trip_actions.dart';
 import 'manifest_screen.dart';
 
 /// Cinzento de apoio. O tema do POS nao define um `muted`; este e o
@@ -47,46 +46,11 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
 
   Future<void> _run(int tripId, String action) async {
     setState(() => _busyTripId = tripId);
-    try {
-      // No arranque, o terminal identifica-se: passa a ser a fonte da posicao
-      // do autocarro no mapa dos passageiros.
-      final serial = action == 'start'
-          ? await ref.read(secureStoreProvider).getDeviceSerial()
-          : null;
-      // Iniciar viagem e o momento em que o rastreio passa a valer: se a
-      // permissao ainda nao foi dada, pede-se agora, e avisa-se se for
-      // recusada — senao a viagem arranca e o autocarro fica invisivel no
-      // mapa dos passageiros sem ninguem dar por isso.
-      if (action == 'start') {
-        final readiness = await DeviceLocation.ensurePermission();
-        if (readiness != LocationReadiness.ok && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(DeviceLocation.describe(readiness)),
-              backgroundColor: const Color(0xFFB45309),
-              action: SnackBarAction(
-                label: 'Corrigir',
-                textColor: Colors.white,
-                onPressed: () => DeviceLocation.openSettingsFor(readiness),
-              ),
-            ),
-          );
-        }
-      }
-      final res = await ref.read(agentApiProvider).driverTripAction(tripId, action, deviceSerial: serial);
-      await AppFeedback.success();
-      ref.invalidate(driverTripsProvider);
-      if (action == 'close' && mounted) _showCloseSummary(res);
-    } on DioException catch (e) {
-      await AppFeedback.error();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ApiClient.extractError(e)), backgroundColor: BuzUpColors.danger),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busyTripId = null);
-    }
+    // A logica vive em `DriverTripActions`: a pagina inicial faz o mesmo, e
+    // duas copias divergiam na primeira alteracao.
+    final res = await DriverTripActions.run(ref, context, tripId, action);
+    if (res != null && action == 'close' && mounted) _showCloseSummary(res);
+    if (mounted) setState(() => _busyTripId = null);
   }
 
   Future<void> _openManifest(Map<String, dynamic> t) {
@@ -301,7 +265,17 @@ class _DriverTripsScreenState extends ConsumerState<DriverTripsScreen> {
         ]),
         const SizedBox(height: 6),
         Text(
-          hasVehicle ? 'Partida $depLabel · Viatura $vehicle' : 'Partida $depLabel',
+          [
+            // O sentido separa a ida da volta: a mesma rota aparecia duas
+            // vezes no mesmo dia, escrita exactamente igual.
+            switch ((t['direction'] ?? '').toString()) {
+              'outbound' => 'Ida',
+              'inbound' => 'Volta',
+              _ => '',
+            },
+            'Partida $depLabel',
+            if (hasVehicle) 'Viatura $vehicle',
+          ].where((e) => e.isNotEmpty).join(' · '),
           style: TextStyle(color: txtMuted, fontSize: 12),
         ),
         if (!hasVehicle && status == 'scheduled')

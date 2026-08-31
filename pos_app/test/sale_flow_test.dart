@@ -47,6 +47,18 @@ const _seatMapRows = [
 
 /// API falsa: nao ha rede nos testes. Herda de `AgentApi` para as assinaturas
 /// ficarem presas as reais.
+const _bilhetesEmitidos = [
+  {
+    'uuid': 'uuid-bilhete-1',
+    'reference': 'S-1',
+    'route_code': 'R-XX',
+    'origin_stop': 'Maputo Junta',
+    'destination_stop': 'Xai-Xai Terminal',
+    'fare_amount': '250.00',
+    'status': 'active',
+  },
+];
+
 class _FakeApi extends AgentApi {
   _FakeApi({required this.seated}) : super(ApiClient(SecureStore()));
 
@@ -91,6 +103,20 @@ class _FakeApi extends AgentApi {
   /// chega ao servidor é o DESTA venda e não o da anterior.
   final vendas = <Map<String, dynamic>>[];
 
+  /// Bilhetes validados a bordo, para o teste conferir o que foi pedido.
+  final validados = <String>[];
+  bool recusarValidacao = false;
+
+  @override
+  Future<Map<String, dynamic>> verifyTicketByUuid(String passUuid,
+      {bool consume = true}) async {
+    if (recusarValidacao) {
+      return {'valid': false, 'reason': 'Bilhete ja utilizado.'};
+    }
+    validados.add(passUuid);
+    return {'valid': true, 'consumed': consume};
+  }
+
   @override
   Future<Map<String, dynamic>> createSale({
     required int tripId,
@@ -108,8 +134,10 @@ class _FakeApi extends AgentApi {
     List<String> seats = const [],
     String emergencyName = '',
     String emergencyPhone = '',
+    List<Map<String, String>> passengers = const [],
   }) async {
     vendas.add({
+      'passengers': passengers,
       'seats': seats,
       'emergency_name': emergencyName,
       'emergency_phone': emergencyPhone,
@@ -120,13 +148,13 @@ class _FakeApi extends AgentApi {
     return {
       'sale_reference': 'S-1',
       'payment': {'reference': 'P-1', 'status': 'confirmed'},
-      'tickets': const [],
+      'tickets': _bilhetesEmitidos,
     };
   }
 
   @override
   Future<Map<String, dynamic>> paymentStatus(String reference) async =>
-      {'status': 'confirmed', 'tickets': const []};
+      {'status': 'confirmed', 'tickets': _bilhetesEmitidos};
 }
 
 /// O armazenamento seguro assenta em canais de plataforma que não existem num
@@ -163,6 +191,21 @@ Future<void> _ateTrajecto(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('Xai-Xai Terminal').last);
   await tester.pumpAndSettle();
+}
+
+/// Vende ate ao ecra de sucesso, numa carreira urbana (sem lugares).
+Future<void> _venderAteAoFim(WidgetTester tester) async {
+  await _ateTrajecto(tester);
+  await tester.tap(find.byType(FilledButton).last);
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField).last, '841234567');
+  await tester.pumpAndSettle();
+  await tester.tap(find.byType(FilledButton).last);
+  // `pumpAndSettle` nao serve aqui: o ecra de espera do pagamento tem um
+  // indicador que roda para sempre e nunca "assenta". Avanca-se por frames.
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 120));
+  }
 }
 
 String _actionLabel(WidgetTester tester) {
@@ -203,26 +246,25 @@ void main() {
     expect(_actionButton(tester).onPressed, isNotNull);
   });
 
-  testWidgets('rota com lugar marcado vende em quatro passos', (tester) async {
+  testWidgets('rota com lugar marcado vende em cinco passos', (tester) async {
+    // Viagem -> trajecto -> lugares -> PASSAGEIROS -> pagamento.
+    //
+    // O passo dos passageiros nasceu quando o contacto de emergencia saiu do
+    // trajecto: pedir a quem viaja o nome, o documento e o contacto de
+    // emergencia sao a MESMA conversa com o passageiro, e estavam partidas
+    // entre dois ecras com a escolha dos lugares pelo meio.
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
 
-    expect(find.text('PASSO 2 DE 4'), findsOneWidget);
-    expect(find.text('Contacto de emergencia'), findsOneWidget);
-    // Sem contacto de emergencia o servidor recusaria a venda: o botao diz-lo
-    // antes, em vez de deixar o agente descobrir depois de cobrar.
-    expect(find.text('Indique o contacto de emergencia (9 digitos).'),
-        findsOneWidget);
-    expect(_actionButton(tester).onPressed, isNull);
-
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
+    expect(find.text('PASSO 2 DE 5'), findsOneWidget);
+    // O trajecto trata do PERCURSO. O contacto de emergencia ja nao vive aqui.
+    expect(find.text('Contacto de emergencia'), findsNothing);
     expect(_actionLabel(tester), 'ESCOLHER LUGARES');
 
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
 
-    expect(find.text('PASSO 3 DE 4'), findsOneWidget);
+    expect(find.text('PASSO 3 DE 5'), findsOneWidget);
     expect(find.text('1A'), findsOneWidget);
     expect(find.text('Escolha mais 1 lugar.'), findsOneWidget);
     expect(_actionButton(tester).onPressed, isNull);
@@ -233,8 +275,22 @@ void main() {
 
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
-    expect(find.text('PASSO 4 DE 4'), findsOneWidget);
-    // O lugar tem de estar a vista no pagamento: veio de um ecra atras.
+
+    // Agora sim: tudo o que ha para perguntar ao passageiro, junto.
+    expect(find.text('PASSO 4 DE 5'), findsOneWidget);
+    expect(find.text('Contacto de emergencia'), findsOneWidget);
+    expect(find.text('Indique o contacto de emergencia (9 digitos).'),
+        findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField).last, '849999999');
+    await tester.pumpAndSettle();
+    expect(_actionButton(tester).onPressed, isNotNull);
+
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    expect(find.text('PASSO 5 DE 5'), findsOneWidget);
+    // O lugar tem de estar a vista no pagamento: veio de dois ecras atras.
     expect(find.text('2C'), findsOneWidget);
   });
 
@@ -242,7 +298,8 @@ void main() {
       (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
+    // O contacto de emergencia deixou de viver no trajecto: pergunta-se no
+    // passo dos passageiros, junto com o nome e o documento.
     await tester.pumpAndSettle();
 
     // Tres bilhetes: tres lugares.
@@ -266,7 +323,8 @@ void main() {
   testWidgets('baixar a quantidade larga os lugares a mais', (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
+    // O contacto de emergencia deixou de viver no trajecto: pergunta-se no
+    // passo dos passageiros, junto com o nome e o documento.
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.add_circle_outline));
     await tester.pumpAndSettle();
@@ -294,7 +352,8 @@ void main() {
   testWidgets('lugar ocupado nao pode ser vendido', (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
+    // O contacto de emergencia deixou de viver no trajecto: pergunta-se no
+    // passo dos passageiros, junto com o nome e o documento.
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
@@ -310,16 +369,20 @@ void main() {
     final api = _FakeApi(seated: true);
     await _pump(tester, api);
 
-    // Venda 1, completa.
+    // Venda 1, completa: trajecto -> lugares -> passageiros -> pagamento.
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '840000001');
-    await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('2C'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
+    // Passo dos passageiros: o contacto de emergencia vive aqui.
+    await tester.enterText(find.byType(TextField).last, '840000001');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    // Pagamento.
     await tester.enterText(find.byType(TextField).last, '841111111');
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
@@ -339,6 +402,14 @@ void main() {
     // a rota marca lugar — so se sabe depois de escolhida a viagem.
     expect(find.text('PASSO 1 DE 3'), findsOneWidget);
     await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1A'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    // Passo dos passageiros da venda 2: tem de estar VAZIO.
     expect(find.text('840000001'), findsNothing,
         reason: 'o contacto de emergencia da venda anterior ficou no ecra');
     expect(find.text('Indique o contacto de emergencia (9 digitos).'),
@@ -347,10 +418,6 @@ void main() {
 
     // E o que chega ao servidor na venda 2 e o contacto DESTA venda.
     await tester.enterText(find.byType(TextField).last, '840000002');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(FilledButton).last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('1A'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
@@ -366,29 +433,147 @@ void main() {
     expect(api.vendas.last['currency'], 'MZN');
   });
 
+  testWidgets('o ecra de pagamento desenha-se sem erros de layout', (tester) async {
+    // O defeito que este teste fixa: dois widgets do ecra de pagamento pediam
+    // ALTURA INFINITA — um `Row` com `CrossAxisAlignment.stretch` e um scroll
+    // horizontal — ambos dentro do scroll vertical do passo, onde nao ha
+    // altura para esticar.
+    //
+    // Em debug isso lanca `BoxConstraints forces an infinite height`. Em
+    // RELEASE nao estoira: desenha torto. E com o layout torto o hit-test
+    // aterra no sitio errado — o campo do telefone ficava por dispor
+    // (`RenderEditable NEEDS-LAYOUT`) e o agente escrevia sem que nada
+    // acontecesse.
+    //
+    // Passei tres rondas a corrigir sintomas (Expanded, controlador, tema)
+    // porque olhei sempre para o codigo e nunca corri isto. O teste ja existia
+    // e nem sequer compilava.
+    await _pump(tester, _FakeApi(seated: false));
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('SOLICITAR PAGAMENTO'), findsOneWidget);
+    // `pumpAndSettle` sem excepcoes ja prova que o layout fechou; isto garante
+    // que o campo existe MESMO e recebe texto.
+    await tester.enterText(find.byType(TextField).last, '849876543');
+    await tester.pumpAndSettle();
+    expect(find.text('849876543'), findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('o campo do telefone aceita escrita tambem a numerario',
+      (tester) async {
+    await _pump(tester, _FakeApi(seated: false));
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Numerário'));
+    await tester.pumpAndSettle();
+    expect(find.text('RECEBI O DINHEIRO'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, '841112223');
+    await tester.pumpAndSettle();
+    expect(find.text('841112223'), findsOneWidget);
+    expect(_actionButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('o pagamento oferece so M-Pesa/e-Mola e numerario', (tester) async {
+    // O cartao NFC esta escondido a pedido do operador: a TPM-TUR ainda nao
+    // usa cartoes, e um metodo que ninguem pode concluir e um toque em falso.
+    // Se um dia voltar, e este teste que muda — de proposito, para que a
+    // decisao seja tomada e nao acontecer por descuido.
+    await _pump(tester, _FakeApi(seated: false));
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('M-Pesa / e-Mola'), findsOneWidget);
+    expect(find.text('Numerário'), findsOneWidget);
+    expect(find.text('Cartão NFC'), findsNothing);
+  });
+
+  testWidgets('o bilhete pode ser validado ali mesmo, sem ler o QR',
+      (tester) async {
+    // Muitos bilhetes sao comprados JA DENTRO do autocarro. Nesses casos,
+    // mandar o agente sair da venda, abrir o leitor e apontar ao telemovel do
+    // passageiro — que ainda nem recebeu o SMS — e um passo sem ganho: ele
+    // acabou de emitir o bilhete e sabe qual e.
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    await _venderAteAoFim(tester);
+
+    expect(find.text('VENDA CONFIRMADA'), findsOneWidget);
+    expect(find.text('VALIDAR A BORDO'), findsOneWidget);
+
+    await tester.tap(find.text('VALIDAR A BORDO'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+
+    expect(api.validados, ['uuid-bilhete-1']);
+    expect(find.text('Validado — passageiro a bordo'), findsOneWidget);
+    // Ja nao ha nada para tocar: nao se valida duas vezes.
+    expect(find.text('VALIDAR A BORDO'), findsNothing);
+  });
+
+  testWidgets('validar continua a ser uma escolha, nao automatico',
+      (tester) async {
+    // Um bilhete vendido ao balcao para daqui a duas horas nao pode entrar no
+    // manifesto como se ja tivesse embarcado.
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    await _venderAteAoFim(tester);
+
+    expect(api.validados, isEmpty, reason: 'validou sem ninguem pedir');
+    expect(find.text('VALIDAR A BORDO'), findsOneWidget);
+  });
+
+  testWidgets('uma validacao recusada diz porque e nao marca a bordo',
+      (tester) async {
+    final api = _FakeApi(seated: false)..recusarValidacao = true;
+    await _pump(tester, api);
+    await _venderAteAoFim(tester);
+
+    await tester.tap(find.text('VALIDAR A BORDO'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 120));
+    }
+
+    expect(find.text('Validado — passageiro a bordo'), findsNothing);
+    expect(find.textContaining('ja utilizado'), findsOneWidget);
+  });
+
   testWidgets('recuar do pagamento volta aos lugares, nao ao inicio',
       (tester) async {
     await _pump(tester, _FakeApi(seated: true));
     await _ateTrajecto(tester);
-    await tester.enterText(find.byType(TextField).last, '849999999');
-    await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('2C'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(FilledButton).last);
     await tester.pumpAndSettle();
-    expect(find.text('PASSO 4 DE 4'), findsOneWidget);
 
+    // Passo dos passageiros.
+    expect(find.text('PASSO 4 DE 5'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, '849999999');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+    expect(find.text('PASSO 5 DE 5'), findsOneWidget);
+
+    // Recuar devolve ao passo anterior, um de cada vez — e nao ao inicio.
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
-    expect(find.text('PASSO 3 DE 4'), findsOneWidget);
-    expect(_actionLabel(tester), 'AVANCAR COM 2C');
-
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await tester.pumpAndSettle();
-    expect(find.text('PASSO 2 DE 4'), findsOneWidget);
-    // O contacto de emergencia escrito nao se perde ao recuar.
+    expect(find.text('PASSO 4 DE 5'), findsOneWidget);
+    // O que foi escrito nao se perde ao recuar.
     expect(find.text('849999999'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.text('PASSO 3 DE 5'), findsOneWidget);
+    expect(_actionLabel(tester), 'AVANCAR COM 2C');
   });
 }

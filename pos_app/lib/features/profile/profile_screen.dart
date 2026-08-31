@@ -49,6 +49,7 @@ class ProfileScreen extends ConsumerWidget {
             return RefreshIndicator(
               onRefresh: () => ref.refresh(agentMeProvider.future),
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
                 children: [
                   _Identity(

@@ -51,6 +51,22 @@ def run_together(fn, n=2):
     return results
 
 
+
+def _identidade(route, i: int, nome: str = "") -> dict:
+    """Nome e documento de um passageiro, no formato que a rota aceita.
+
+    Numa internacional so passa passaporte; nas outras serve o BI. Escrito a
+    partir de `allowed_document_types` e nao a mao para o teste nao passar a
+    afirmar uma regra que o servidor ja nao tem.
+    """
+    from apps.guest_checkouts.documents import allowed_document_types
+
+    tipo = allowed_document_types(route.service_type)[0]
+    numero = f"AB{i:06d}" if tipo == "passport" else f"11010010010{i}A"
+    return {"name": nome or f"Passageiro {i + 1}",
+            "document_type": tipo, "document_number": numero}
+
+
 class ConcurrencyBase(TransactionTestCase):
     reset_sequences = True
 
@@ -386,18 +402,28 @@ class PosSeatSaleTests(ConcurrencyBase):
     def _sell(self, seats, phone="841000001", quantity=None):
         from apps.agent_api.sales import create_pos_sale
 
+        n = quantity or max(len(seats), 1)
         return create_pos_sale(
             agent=self.agent, device=None, trip_id=self.trip.id, route_id=None,
             origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
-            passenger_phone=phone, quantity=quantity or max(len(seats), 1),
+            passenger_phone=phone, quantity=n,
             seats=seats,
             emergency_contact_name="Familiar",
             emergency_contact_phone="848111222",
+            # Rota com manifesto de bordo: o bilhete e nominal, e o POS
+            # actualizado manda o nome e o documento. Ver
+            # `apps.agent_api.tests_identidade_do_passageiro`.
+            passengers=[_identidade(self.route, i) for i in range(n)],
         )
 
     def test_seat_is_recorded_on_the_ticket(self):
         gc, _pi = self._sell(["3B"])
-        self.assertEqual(gc.passengers, [{"seat": "3B"}])
+        self.assertEqual(len(gc.passengers), 1)
+        self.assertEqual(gc.passengers[0]["seat"], "3B")
+        # O bilhete e nominal nesta rota: sai com nome e documento.
+        self.assertEqual(gc.passengers[0]["name"], "Passageiro 1")
+        self.assertEqual(gc.passengers[0]["document_number"],
+                         _identidade(self.route, 0)["document_number"])
 
     def test_two_agents_cannot_sell_the_same_seat(self):
         from apps.agent_api.sales import SaleError
@@ -508,6 +534,7 @@ class AppSeatPurchaseTests(ConcurrencyBase):
             origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
             passenger_phone="841999999", quantity=1, seats=["6B"],
             emergency_contact_name="Familiar", emergency_contact_phone="848111222",
+            passengers=[_identidade(self.route, 0, "Passageiro Balcao")],
         )
 
         with self.assertRaises(PurchaseError) as ctx:
@@ -532,6 +559,7 @@ class AppSeatPurchaseTests(ConcurrencyBase):
                     origin_stop_id=self.origin.id, destination_stop_id=self.destination.id,
                     passenger_phone="841000010", quantity=1, seats=["8C"],
                     emergency_contact_name="Familiar", emergency_contact_phone="848111222",
+                    passengers=[_identidade(self.route, 0, "Passageiro Balcao")],
                 )
                 return f"levou:balcao:{gc.reference}"
             except (PurchaseError, SaleError) as e:

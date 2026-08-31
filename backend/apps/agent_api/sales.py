@@ -20,7 +20,7 @@ from apps.guest_checkouts.capacity import SeatsUnavailable, lock_trip_for_sale
 from apps.guest_checkouts.models import GuestCheckout
 from apps.notifications.services import notify_by_phone
 from apps.packages.services import consume_package_trip, find_active_package_for_route
-from apps.payments.models import PaymentIntent
+from apps.payments.models import CASH_PROVIDER, PaymentIntent
 from apps.payments.services.gateway import get_payment_gateway
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.routes.models import Route, Stop
@@ -33,12 +33,156 @@ class SaleError(Exception):
     pass
 
 
-def _seat_payload(seats: list[str] | None, quantity: int) -> list[dict]:
-    """Lugares no formato que `issue_guest_pass` ja consome (um por bilhete)."""
+def _seat_payload(seats: list[str] | None, quantity: int,
+                  passengers: list[dict] | None = None) -> list[dict]:
+    """Um registo por bilhete: lugar e identificacao de quem viaja.
+
+    `issue_guest_pass` le daqui `seat`, `name`, `document_type` e
+    `document_number`. Antes so se enchia o lugar, e por isso os bilhetes
+    vendidos ao balcao saiam sem nome nem documento — inclusive nas rotas
+    internacionais, onde e o documento que a fronteira confere.
+    """
     chosen = [s for s in (seats or []) if s]
-    if not chosen:
+    gente = passengers or []
+    if not chosen and not gente:
         return []
-    return [{"seat": chosen[i] if i < len(chosen) else ""} for i in range(quantity)]
+    saida = []
+    for i in range(quantity):
+        pessoa = gente[i] if i < len(gente) else {}
+        saida.append({
+            "seat": chosen[i] if i < len(chosen) else "",
+            "name": (pessoa.get("name") or "").strip()[:255],
+            "document_type": (pessoa.get("document_type") or "").strip(),
+            "document_number": (pessoa.get("document_number") or "").strip()[:64],
+        })
+    return saida
+
+
+# Primeira versao do POS que recolhe nome e documento do passageiro.
+#
+# A exigencia so vale para terminais que a conseguem cumprir. Os que ainda
+# correm uma versao anterior nao tem os campos no ecra: exigi-lo deles nao
+# tornava um bilhete nominal — parava a venda, com o passageiro a frente do
+# agente e nada que ele pudesse fazer. Havia 7 terminais em servico quando
+# isto foi escrito.
+#
+# Nao e um controlo de seguranca; e a pergunta "este cliente consegue
+# responder?". Cada terminal passa a exigir a identificacao no dia em que
+# actualiza, e quando o ultimo actualizar este ramo deixa de ser usado.
+POS_MIN_VERSION_IDENTIDADE = (1, 8, 0)
+
+
+def _versao(texto: str) -> tuple:
+    """"1.8.0" -> (1, 8, 0). Lixo -> (0, 0, 0), que nunca exige nada."""
+    partes = []
+    for pedaco in str(texto or "").split(".")[:3]:
+        digitos = "".join(c for c in pedaco if c.isdigit())
+        partes.append(int(digitos) if digitos else 0)
+    while len(partes) < 3:
+        partes.append(0)
+    return tuple(partes)
+
+
+def _terminal_recolhe_identidade(device: Device | None) -> bool:
+    """O terminal ja tem os campos de nome e documento no ecra?
+
+    Sem terminal identificado (venda pelo portal do agente, testes) assume-se
+    que sim: nao ha app velha do outro lado.
+    """
+    if device is None:
+        return True
+    return _versao(device.app_version) >= POS_MIN_VERSION_IDENTIDADE
+
+
+def _identidades_para(route, passengers: list[dict] | None, quantity: int,
+                      device: Device | None = None) -> list[dict]:
+    """Valida o nome e o documento de cada passageiro contra a regra da rota.
+
+    Nas rotas com manifesto de bordo o bilhete e nominal: sem nome nao ha
+    manifesto, e numa internacional sem documento o passageiro nao passa a
+    fronteira com o bilhete que acabou de comprar. O agente tem a pessoa a
+    frente — e o unico momento em que da para perguntar.
+
+    Numa carreira urbana nao se pede nada: guardar o documento de quem apanha
+    o autocarro do bairro seria recolher dados pessoais sem necessidade.
+
+    O que vier de um terminal antigo e gravado na mesma se vier — so nao e
+    exigido. Ver `POS_MIN_VERSION_IDENTIDADE`.
+    """
+    from apps.guest_checkouts.documents import DocumentError, validate_document_for
+
+    gente = list(passengers or [])
+    if not getattr(route, "requires_manifest", False):
+        return gente
+    if not gente and not _terminal_recolhe_identidade(device):
+        return gente
+
+    servico = getattr(route, "service_type", "")
+    limpos = []
+    for i in range(quantity):
+        pessoa = dict(gente[i]) if i < len(gente) else {}
+        nome = (pessoa.get("name") or "").strip()
+        if not nome:
+            raise SaleError(
+                f"Indique o nome do passageiro {i + 1}. Nesta rota o bilhete e "
+                f"nominal e entra no manifesto de bordo."
+            )
+        tipo = (pessoa.get("document_type") or "").strip()
+        numero = (pessoa.get("document_number") or "").strip()
+        if not tipo or not numero:
+            raise SaleError(
+                f"Indique o documento do passageiro {i + 1} ({nome})."
+            )
+        try:
+            numero = validate_document_for(servico, tipo, numero)
+        except DocumentError as e:
+            raise SaleError(f"Passageiro {i + 1} ({nome}): {e}") from e
+        pessoa.update({"name": nome, "document_type": tipo, "document_number": numero})
+        limpos.append(pessoa)
+    return limpos
+
+
+def abrir_embarque_se_preciso(trip, agent, user=None) -> None:
+    """A primeira venda ABRE o embarque, se ainda estiver por abrir.
+
+    O motorista tinha de carregar em "abrir embarque" antes de poder vender.
+    Era um toque a mais para uma coisa que a propria venda ja prova: se ha
+    passageiros a comprar, o autocarro esta a receber gente.
+
+    E o registo fica MAIS fiel, nao menos. O `activity_started_at` passa a
+    marcar o instante em que o embarque comecou de facto — a primeira venda —
+    em vez de depender de alguem se lembrar de carregar num botao, o que numa
+    fila cheia acontece tarde ou nao acontece.
+
+    O que NAO muda: `actual_departure_at` continua a ser marcado so por
+    "iniciar viagem". Juntar as duas coisas foi um defeito ja corrigido, e a
+    hora de saida e o unico registo que diz se o autocarro se atrasou.
+
+    Falhar aqui nao pode travar a venda: o dinheiro do passageiro nao depende
+    de um estado de viagem. Se nao conseguir abrir, a venda segue e o embarque
+    fica como estava.
+    """
+    if trip is None or trip.status != Trip.Status.SCHEDULED:
+        return
+    try:
+        from apps.trips.activity import start_trip_activity
+
+        if trip.driver_id:
+            start_trip_activity(trip, trip.driver, user or getattr(agent, "user", None))
+        else:
+            # Venda ao balcao numa partida sem motorista atribuido: nao ha
+            # ciclo de motorista para abrir, mas a viagem tem de ficar
+            # vendavel. Muda-se so o estado.
+            from django.utils import timezone as _tz
+
+            Trip.objects.filter(pk=trip.pk, status=Trip.Status.SCHEDULED).update(
+                status=Trip.Status.BOARDING,
+                activity_started_at=trip.activity_started_at or _tz.now(),
+            )
+        trip.refresh_from_db()
+    except Exception:
+        # Telemetria de estado nao pode custar uma venda.
+        pass
 
 
 def _assert_seats_free(trip, seats: list[str] | None) -> None:
@@ -88,10 +232,21 @@ def create_pos_sale(
     seats: list[str] | None = None,
     emergency_contact_name: str = "",
     emergency_contact_phone: str = "",
+    passengers: list[dict] | None = None,
+    payment_method: str = "mobile_money",
 ) -> tuple[GuestCheckout, PaymentIntent]:
     """Create a sale + initiate payment for an agent's POS terminal.
 
     Backend computes the fare. Returns (GuestCheckout, PaymentIntent).
+
+    `payment_method="cash"` e a mesma venda sem gateway: o passageiro paga em
+    dinheiro ao agente e o pagamento nasce ja liquidado — nao ha carteira a
+    debitar nem PIN a esperar. Tudo o resto (tarifa, lotacao, lugar,
+    identificacao, bilhete por SMS) e igual, e por isso vive aqui em vez de
+    numa segunda funcao que ia divergir desta a primeira alteracao.
+
+    O telefone continua a ser pedido, mas ja nao e uma carteira: e para onde
+    o bilhete vai por SMS.
     """
     if device and device.status == Device.Status.BLOCKED:
         raise SaleError("Dispositivo bloqueado. Contacte o administrador.")
@@ -166,6 +321,13 @@ def create_pos_sale(
 
     emerg_name, emerg_phone = _emergency_for(
         route, emergency_contact_name, emergency_contact_phone)
+    # Validar ANTES do lock: recusar depois de reservar lugar deixava a
+    # lotacao presa por uma venda que nunca ia acontecer.
+    identidades = _identidades_para(route, passengers, quantity, device)
+
+    # A primeira venda abre o embarque. Antes do lock, para o estado ja estar
+    # certo quando a lotacao for contada.
+    abrir_embarque_se_preciso(trip, agent)
 
     with transaction.atomic():
         # Lotacao: sem este lock, um agente e um comprador web vendiam o mesmo
@@ -181,7 +343,7 @@ def create_pos_sale(
             reference=ref,
             payer_phone=phone,
             buyer_name="",
-            passengers=_seat_payload(seats, quantity),
+            passengers=_seat_payload(seats, quantity, identidades),
             route_code=route.code,
             route_name=route.name,
             origin_stop=origin.name,
@@ -202,6 +364,7 @@ def create_pos_sale(
             emergency_contact_phone=emerg_phone,
         )
 
+        a_dinheiro = payment_method == "cash"
         pi = PaymentIntent.objects.create(
             reference=f"PAY-{ref}",
             idempotency_key=idempotency_key or f"agent-sale-{ref}",
@@ -210,15 +373,36 @@ def create_pos_sale(
             payer_phone=phone,
             guest_checkout=gc,
             status=PaymentIntent.Status.PENDING,
+            # `provider` marca de onde veio o dinheiro, e no numerario isso
+            # nao e um detalhe tecnico: e o unico sitio onde fica escrito que
+            # ha notas na mao do agente para entregar no fecho de caixa. Sem
+            # esta marca, a venda a dinheiro somava-se as de M-Pesa e ninguem
+            # conseguia dizer quanto cobrar a quem.
+            provider=CASH_PROVIDER if a_dinheiro else "",
+            channel="POS_CASH" if a_dinheiro else "",
             expires_at=gc.expires_at,
             metadata={
                 "agent_id": getattr(agent, "id", None),
                 "agent_user_id": getattr(agent, "user_id", None),
                 "device_id": device.id if device else None,
                 "device_serial": device.serial_number if device else "",
+                "payment_method": payment_method,
             },
             created_by=getattr(agent, "user", None),
         )
+
+        if a_dinheiro:
+            # Dentro da mesma transaccao que reservou o lugar: se a emissao
+            # falhar, o lugar volta a ficar livre em vez de ficar preso por
+            # uma venda que nunca chegou a existir.
+            confirm_payment_immediately(pi, provider_reference=f"CASH-{ref}")
+
+    if payment_method == "cash":
+        # A liquidacao aconteceu dentro da transaccao acima e mudou a linha na
+        # base de dados, nao este objecto. Sem isto quem chama recebia um
+        # pagamento "pendente" que ja estava pago.
+        pi.refresh_from_db()
+        gc.refresh_from_db()
 
     audit(
         "SALE_CREATED",
@@ -231,6 +415,7 @@ def create_pos_sale(
             "quantity": quantity,
             "trip_id": trip.id if trip else None,
             "device_serial": device.serial_number if device else "",
+            "method": payment_method,
         },
     )
 
@@ -253,6 +438,7 @@ def create_card_sale(
     seats: list[str] | None = None,
     emergency_contact_name: str = "",
     emergency_contact_phone: str = "",
+    passengers: list[dict] | None = None,
 ) -> tuple[GuestCheckout, PaymentIntent, list]:
     """Card-based POS sale: lookup card -> debit wallet -> confirm + issue.
 
@@ -395,13 +581,14 @@ def create_card_sale(
         # the gross fare.
         net_unit = (charged_total / quantity).quantize(Decimal("0.01")) if quantity else charged_total
         _card_emerg = _emergency_for(route, emergency_contact_name, emergency_contact_phone)
+        identidades = _identidades_para(route, passengers, quantity, device)
         from apps.fares.services import display_snapshot
         disp_ccy, disp_total, disp_rate = display_snapshot(charged_total, display_currency)
         gc = GuestCheckout.objects.create(
             reference=ref,
             payer_phone=phone,
             buyer_name=pa.full_name or "",
-            passengers=_seat_payload(seats, quantity),
+            passengers=_seat_payload(seats, quantity, identidades),
             route_code=route.code,
             route_name=route.name,
             origin_stop=origin.name,

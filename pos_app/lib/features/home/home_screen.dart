@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/app_version.dart';
 import '../../core/app_update.dart';
 import '../../core/config.dart';
+import '../../core/api_client.dart';
 import '../../core/feedback.dart';
+import '../trips/driver_trip_actions.dart';
 import '../../core/location.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
@@ -120,6 +123,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// O que se mostra quando o perfil nao carrega.
+  ///
+  /// So chega aqui depois de a segunda tentativa tambem falhar (ver
+  /// `agentMeProvider`): nao e um solucao, e algo que precisa de accao.
+  Widget _erroAoAbrir(Object e) {
+    final msg = e is DioException
+        ? ApiClient.extractError(e)
+        : 'Nao foi possivel carregar o seu perfil.';
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.cloud_off, size: 46, color: Color(0xFF6B7A8F)),
+          const SizedBox(height: 12),
+          Text(msg,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14.5, height: 1.4)),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => ref.invalidate(agentMeProvider),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('TENTAR DE NOVO'),
+          ),
+        ]),
+      ),
+    );
+  }
+
   Future<void> _loadSummary() async {
     try {
       final res = await ref.read(agentApiProvider).salesSummary();
@@ -177,7 +208,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         body: SafeArea(
           child: meAsync.when(
             loading: () => _loadingState(),
-            error: (e, _) => Center(child: Text('Erro: $e')),
+            // A excepcao em bruto nunca vai ao ecra: "DioException [connection
+            // timeout]" nao diz nada a quem esta ao balcao. E um erro sem
+            // saida e pior ainda — daqui da para tentar outra vez.
+            error: (e, _) => _erroAoAbrir(e),
             data: (me) {
               final agent = (me['agent'] as Map?) ?? {};
               return RefreshIndicator(
@@ -274,10 +308,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
                   ),
-                  // Secondary actions grid — 3 colunas e cartoes mais baixos.
-                  // Com 2 colunas a 1.6, as 7 accoes ocupavam 4 linhas e a
-                  // ultima ficava fora do ecra num terminal de 5"; assim
-                  // cabem em 3 linhas sem rolagem.
+                  // Accoes secundarias — 3 colunas e cartoes mais baixos.
+                  //
+                  // As 3 colunas vem de quando eram 7 accoes: com 2 colunas a
+                  // 1.6 ocupavam 4 linhas e a ultima ficava fora do ecra num
+                  // terminal de 5". Agora sao 4 (5 com "Minhas viagens") e
+                  // cabem numa linha e meia — mantem-se a 3 porque cartoes
+                  // enormes numa grelha meia vazia nao ajudam ninguem, e
+                  // porque as escondidas podem voltar.
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                     sliver: SliverGrid.count(
@@ -286,9 +324,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisSpacing: 8,
                       childAspectRatio: 1.02,
                       children: [
-                        FadeIn(delay: const Duration(milliseconds: 200), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.nfc, 'TOP UP', () async { AppFeedback.click(); await context.push('/cards'); _loadSummary(); })),
-                        FadeIn(delay: const Duration(milliseconds: 210), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.person_add_alt, 'Novo passageiro', () async { AppFeedback.click(); await context.push('/passengers/onboard'); _loadSummary(); })),
-                        FadeIn(delay: const Duration(milliseconds: 220), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.replay, 'Recuperar cartao', () async { AppFeedback.click(); await context.push('/passengers/recover'); _loadSummary(); })),
+                        // ESCONDIDOS a pedido do operador (2026-08-26): TOP UP,
+                        // Novo passageiro e Recuperar cartao.
+                        //
+                        // Sao as funcoes de CARTAO/CARTEIRA, que a TPM-TUR nao
+                        // usa: vende bilhete de percurso, nao passes por
+                        // carteira. Ocupavam metade da grelha e cada uma era um
+                        // toque em falso a espera de acontecer.
+                        //
+                        // Escondidos, e nao apagados: os ecras e as rotas
+                        // continuam la (`/cards`, `/passengers/onboard`,
+                        // `/passengers/recover`) e o backend tambem. Um
+                        // operador que use cartoes volta a te-los descomentando
+                        // estas tres linhas.
                         FadeIn(delay: const Duration(milliseconds: 240), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.qr_code_scanner, 'Validar bilhete', () async { AppFeedback.click(); await context.push('/verify'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 280), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.list_alt, 'Historico', () async { AppFeedback.click(); await context.push('/history'); _loadSummary(); })),
                         FadeIn(delay: const Duration(milliseconds: 360), child: _tile(cardBg, txtMain, txtMuted, borderColor, Icons.lock_clock, 'Fecho do dia', () async { AppFeedback.click(); await context.push('/day-close'); _loadSummary(); })),
@@ -357,6 +405,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Cartao "viagem em mao" do motorista: mostra a viagem activa (ou a
   /// proxima) e leva ao ecra de viagens. As accoes vivem la — aqui e so o
   /// estado, sempre visivel mal se entra na app.
+  /// Impede o duplo toque enquanto a acção está a decorrer — no terminal, um
+  /// segundo toque impaciente chegava para enviar a mesma acção duas vezes.
+  bool _tripBusy = false;
+
   Widget _driverTripCard(Color cardBg, Color txtMain, Color txtMuted, Color border) {
     final activeAsync = ref.watch(activeDriverTripProvider);
     final nextAsync = ref.watch(nextDriverTripProvider);
@@ -384,7 +436,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       accent = BuzUpColors.blue;
     }
 
-    return Material(
+    return Column(children: [
+      Material(
       color: cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
@@ -423,6 +476,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             Icon(Icons.arrow_forward, color: txtMuted, size: 20),
           ]),
+        ),
+      ),
+      ),
+      if (trip != null) _driverQuickAction(trip, accent),
+    ]);
+  }
+
+  /// Botão que faz o passo seguinte da viagem sem sair da página inicial.
+  ///
+  /// Para abrir o embarque o motorista tinha de tocar no cartão, esperar pelo
+  /// ecrã de viagens e só aí carregar — três toques para uma decisão que já
+  /// tinha tomado antes de pegar no terminal. O toque que sobrava era o de
+  /// NAVEGAR, e é esse que sai.
+  ///
+  /// Os dois passos do ciclo mantêm-se separados de propósito: abrir o
+  /// embarque não é partir, e juntá-los punha na hora de saída o instante em
+  /// que o primeiro passageiro subiu. Ver [DriverTripActions.next].
+  Widget _driverQuickAction(Map<String, dynamic> trip, Color accent) {
+    final passo = DriverTripActions.next((trip['status'] ?? '').toString());
+    if (passo == null) return const SizedBox.shrink();
+    final id = trip['id'] as int?;
+    if (id == null) return const SizedBox.shrink();
+    // Sem viatura não há embarque a abrir — o botão morto só confundia.
+    final semViatura = (trip['vehicle_registration'] ?? '').toString().isEmpty
+        && passo.action == 'start';
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: (_tripBusy || semViatura)
+              ? null
+              : () async {
+                  AppFeedback.click();
+                  setState(() => _tripBusy = true);
+                  await DriverTripActions.run(ref, context, id, passo.action);
+                  if (mounted) setState(() => _tripBusy = false);
+                },
+          style: FilledButton.styleFrom(
+            backgroundColor: accent,
+            padding: const EdgeInsets.symmetric(vertical: 13),
+          ),
+          child: _tripBusy
+              ? const SizedBox(
+                  height: 18, width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : Text(semViatura ? 'SEM VIATURA ATRIBUIDA' : passo.label,
+                  style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.8)),
         ),
       ),
     );

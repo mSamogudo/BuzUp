@@ -105,6 +105,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         : RefreshIndicator(
                             onRefresh: _load,
                             child: ListView.separated(
+                              // Rola sempre: sem isto o gesto de arrastar
+                              // nao pega quando a lista e curta ou vazia —
+                              // que e exactamente quando se quer confirmar
+                              // se ja chegou alguma coisa.
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
                               itemCount: _filtered.length,
                               separatorBuilder: (_, __) => const SizedBox(height: 6),

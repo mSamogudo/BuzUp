@@ -27,7 +27,7 @@ import '../../core/theme.dart';
 ///
 /// `processing` e `done` nao sao escolhas do agente: sao o que acontece depois
 /// de cobrar. Por isso nao contam na barra de progresso.
-enum _Step { trip, route, seats, payment, processing, done }
+enum _Step { trip, route, seats, passengers, payment, processing, done }
 
 class SaleFlowScreen extends ConsumerStatefulWidget {
   const SaleFlowScreen({super.key});
@@ -41,6 +41,19 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   List<dynamic> _trips = [];
   bool _loadingTrips = true;
   String? _error;
+
+  /// Bilhetes ja validados a bordo, por uuid — ver [_validarABordo].
+  final Set<String> _validados = {};
+
+  /// Validacao em curso, por uuid: impede o duplo toque.
+  final Set<String> _aValidar = {};
+
+  /// O agente pediu a lista de propósito ("Trocar de viagem").
+  ///
+  /// Enquanto for falso, a venda salta o passo de escolher: se há uma viagem
+  /// a decorrer, é nessa que se vende. Ver [_viagemEmCurso].
+  bool _escolhaManual = false;
+
 
   Map<String, dynamic>? _selectedTrip;
   List<dynamic> _stops = [];
@@ -79,6 +92,43 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   final _emergNameCtrl = TextEditingController();
   final _emergPhoneCtrl = TextEditingController();
 
+  /// Telefone do passageiro — com controlador, como todos os outros campos.
+  ///
+  /// Era um `TextField` sem controlador cujo valor era espelhado em `_phone`
+  /// por `setState` a cada tecla. Cada tecla reconstruía o passo inteiro, e o
+  /// campo — sem `key` e sem controlador — perdia o texto pelo caminho: o
+  /// agente escrevia e não aparecia nada. O controlador sobrevive aos
+  /// rebuilds; é a mesma razão pela qual o contacto de emergência sempre teve
+  /// um.
+  final _phoneCtrl = TextEditingController();
+
+  /// Identificação de quem viaja, um registo por bilhete.
+  ///
+  /// Nas rotas com manifesto de bordo o bilhete é nominal, e numa
+  /// internacional é o documento que a fronteira confere. A venda ao balcão
+  /// não pedia nada — o bilhete saía anónimo e o manifesto sem nomes — apesar
+  /// de ser aqui, com o passageiro à frente, que dá para perguntar.
+  final List<_Passageiro> _passageiros = [];
+
+  /// Regras do documento nesta rota, vindas do servidor.
+  ///
+  /// Numa internacional só passaporte. A regra não se escreve aqui: viria a
+  /// discordar da do servidor, e o campo passaria a aceitar o que a venda
+  /// recusa.
+  List<dynamic> _documentTypes = [];
+  bool _pedeIdentidade = false;
+
+  /// A rota leva manifesto de bordo e por isso pede contacto de emergência.
+  ///
+  /// Hoje coincide com [_pedeIdentidade] — as duas nascem do mesmo tipo de
+  /// rota — mas dependem de coisas diferentes no servidor e podem separar-se.
+  /// Escrito a parte para que, se um dia se separarem, o passo continue a
+  /// aparecer por qualquer uma delas.
+  bool get _pedeContactoEmergencia => _seatsRequired;
+
+  /// Há alguma coisa a perguntar sobre o passageiro nesta venda?
+  bool get _temPassoDePassageiros => _pedeIdentidade || _pedeContactoEmergencia;
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +161,10 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     NfcCardReader.stop();
     _emergNameCtrl.dispose();
     _emergPhoneCtrl.dispose();
+    _phoneCtrl.dispose();
+    for (final p in _passageiros) {
+      p.dispose();
+    }
     super.dispose();
   }
 
@@ -127,8 +181,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   void _resetSale() {
     _emergNameCtrl.clear();
     _emergPhoneCtrl.clear();
+    _phoneCtrl.clear();
+    // O passageiro seguinte é outra pessoa: o nome e o documento do anterior
+    // não podem ficar no ecrã à espera de irem parar ao bilhete errado.
+    for (final p in _passageiros) {
+      p.dispose();
+    }
+    _passageiros.clear();
     setState(() {
       _step = _Step.trip;
+      _validados.clear();
+      _aValidar.clear();
       _selectedTrip = null;
       _stops = [];
       _originId = null;
@@ -155,6 +218,28 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     _loadTrips();
   }
 
+  /// Estados em que o autocarro já está a operar — embarque aberto, a
+  /// caminho, ou parado a meio do percurso.
+  static const _emCurso = {'boarding', 'departed', 'paused'};
+
+  /// A viagem que está a decorrer, quando é só uma.
+  ///
+  /// O motorista abria o embarque na página inicial e, ao voltar para vender,
+  /// voltava a receber a lista de viagens. Já tinha escolhido — mostrar-lhe as
+  /// outras não acrescenta nada e abre a porta a vender para o autocarro
+  /// errado, o que só se descobre com o passageiro já a bordo.
+  ///
+  /// Só vale quando há UMA a decorrer. Num terminal com três autocarros em
+  /// embarque ao mesmo tempo não há nada a adivinhar, e a lista volta.
+  Map<String, dynamic>? get _viagemEmCurso {
+    final activas = _trips
+        .whereType<Map>()
+        .map((t) => t.cast<String, dynamic>())
+        .where((t) => _emCurso.contains((t['status'] ?? '').toString()))
+        .toList();
+    return activas.length == 1 ? activas.first : null;
+  }
+
   Future<void> _loadTrips() async {
     setState(() {
       _loadingTrips = true;
@@ -164,6 +249,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       final api = ref.read(agentApiProvider);
       final trips = await api.trips();
       setState(() => _trips = trips);
+      // Uma só a decorrer: é essa. Vende-se nela sem passar pela lista.
+      final activa = _viagemEmCurso;
+      if (activa != null && !_escolhaManual && _step == _Step.trip) {
+        await _selectTrip(activa);
+      }
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
     } finally {
@@ -181,9 +271,12 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       setState(() {
         _stops = (detail['stops'] as List?) ?? [];
         _seatMap = (detail['seat_map'] as Map?)?.cast<String, dynamic>();
+        _documentTypes = (detail['document_types'] as List?) ?? [];
+        _pedeIdentidade = detail['requires_passenger_identity'] == true;
         _pickedSeats.clear();
         _step = _Step.route;
       });
+      _ajustarPassageiros();
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
     }
@@ -211,9 +304,10 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       );
       setState(() {
         _fare = fare;
-        // Numa rota com lugar marcado o passo seguinte e a planta; numa
-        // carreira urbana passa-se directo ao pagamento.
-        _step = _seatsRequired ? _Step.seats : _Step.payment;
+        // O passo seguinte sai de `_proximo`, que salta o que esta venda nao
+        // precisa: sem lugar marcado nao ha planta, sem manifesto de bordo
+        // nao ha ficha de passageiro.
+        _step = _proximo(_Step.route);
       });
     } on DioException catch (e) {
       setState(() => _error = ApiClient.extractError(e));
@@ -221,9 +315,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   }
 
   Future<void> _requestPayment() async {
-    if (_paymentMethod == 'mobile_money') {
+    if (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') {
       if (!RegExp(r'^[0-9]{9}$').hasMatch(_phone)) {
-        setState(() => _error = 'Telefone deve ter 9 digitos.');
+        // Em numerário o número não é uma carteira, mas continua a ser
+        // obrigatório: sem ele o passageiro paga e não leva bilhete nenhum.
+        setState(() => _error = _paymentMethod == 'cash'
+            ? 'Indique o telefone do passageiro (9 dígitos) — o bilhete vai por SMS.'
+            : 'Telefone deve ter 9 digitos.');
         return;
       }
     } else if (_paymentMethod == 'card') {
@@ -248,7 +346,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         originStopId: _originId!,
         destinationStopId: _destinationId!,
         paymentMethod: _paymentMethod,
-        passengerPhone: _paymentMethod == 'mobile_money' ? _phone : null,
+        // Em numerário o telefone também vai — não como carteira a debitar,
+        // mas como destino do bilhete por SMS. Sem isto o servidor recusava a
+        // venda com 400 depois de o agente já ter recebido o dinheiro.
+        passengerPhone:
+            (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ? _phone : null,
         cardUid: _paymentMethod == 'card' ? _cardUid : null,
         qrToken: _paymentMethod == 'card' ? _qrToken : null,
         quantity: _quantity,
@@ -257,13 +359,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         seats: _seatsRequired ? List<String>.from(_pickedSeats) : const [],
         emergencyName: _seatsRequired ? _emergNameCtrl.text.trim() : '',
         emergencyPhone: _seatsRequired ? _emergPhoneCtrl.text.trim() : '',
+        passengers: _pedeIdentidade
+            ? [for (final p in _passageiros) p.toJson()]
+            : const [],
         // A assinatura inclui tudo o que define a venda: se o agente voltar
         // atras e corrigir o destino ou a quantidade, a chave roda sozinha e a
         // venda seguinte nao e confundida com a anterior.
         idempotencyKey: _idem.keyFor(
           'sale:${_selectedTrip!['id']}:$_originId:$_destinationId:$_quantity'
           ':$_paymentMethod:$_phone:${_cardUid ?? _qrToken ?? ''}:$_currency'
-          ':${_pickedSeats.join(",")}',
+          ':${_pickedSeats.join(",")}'
+          ':${_passageiros.map((p) => p.numero.text.trim()).join(",")}',
         ),
       );
       // O servidor respondeu: a venda seguinte e nova e leva chave nova.
@@ -382,16 +488,51 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
 
   /// Os passos de escolha desta venda, por ordem. Sem `processing`/`done`:
   /// esses acontecem, nao se escolhem.
-  List<String> get _stepLabels => _seatsRequired
-      ? const ['Viagem', 'Trajecto', 'Lugares', 'Pagamento']
-      : const ['Viagem', 'Trajecto', 'Pagamento'];
+  /// Os passos desta venda, montados a partir do que ELA precisa.
+  ///
+  /// `Lugares` so nas rotas que marcam lugar; `Passageiros` so nas que levam
+  /// manifesto de bordo. Numa carreira urbana a venda continua a ser
+  /// viagem -> trajecto -> pagamento, como sempre foi.
+  List<String> get _stepLabels => [
+        'Viagem',
+        'Trajecto',
+        if (_seatsRequired) 'Lugares',
+        if (_temPassoDePassageiros) 'Passageiros',
+        'Pagamento',
+      ];
 
-  int get _stepIndex => switch (_step) {
-        _Step.trip => 0,
-        _Step.route => 1,
-        _Step.seats => 2,
-        _Step.payment => _seatsRequired ? 3 : 2,
-        _ => _stepLabels.length - 1,
+  int get _stepIndex {
+    final ordem = [
+      _Step.trip,
+      _Step.route,
+      if (_seatsRequired) _Step.seats,
+      if (_temPassoDePassageiros) _Step.passengers,
+      _Step.payment,
+    ];
+    final i = ordem.indexOf(_step);
+    return i < 0 ? _stepLabels.length - 1 : i;
+  }
+
+  /// O passo a seguir a este, saltando os que esta venda nao precisa.
+  _Step _proximo(_Step actual) => switch (actual) {
+        _Step.route when _seatsRequired => _Step.seats,
+        _Step.route when _temPassoDePassageiros => _Step.passengers,
+        _Step.route => _Step.payment,
+        _Step.seats when _temPassoDePassageiros => _Step.passengers,
+        _Step.seats => _Step.payment,
+        _Step.passengers => _Step.payment,
+        _ => _Step.payment,
+      };
+
+  /// O passo anterior a este, pelo mesmo caminho.
+  _Step _anterior(_Step actual) => switch (actual) {
+        _Step.payment when _temPassoDePassageiros => _Step.passengers,
+        _Step.payment when _seatsRequired => _Step.seats,
+        _Step.payment => _Step.route,
+        _Step.passengers when _seatsRequired => _Step.seats,
+        _Step.passengers => _Step.route,
+        _Step.seats => _Step.route,
+        _ => _Step.trip,
       };
 
   bool get _showsProgress => _step != _Step.processing && _step != _Step.done;
@@ -410,13 +551,15 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       case _Step.trip:
         return false;
       case _Step.route:
+        // Recuar até à lista é um acto deliberado: a partir daqui é o agente
+        // que escolhe, e a viagem em curso deixa de ser imposta.
+        _escolhaManual = true;
         _goTo(_Step.trip);
         return true;
       case _Step.seats:
-        _goTo(_Step.route);
-        return true;
+      case _Step.passengers:
       case _Step.payment:
-        _goTo(_seatsRequired ? _Step.seats : _Step.route);
+        _goTo(_anterior(_step));
         return true;
       case _Step.processing:
       case _Step.done:
@@ -432,7 +575,23 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
-      child: Scaffold(
+      // ESTE ECRA E CLARO, sempre.
+      //
+      // Estava escrito com 26 cores fixas claras — o cartao do resumo em
+      // creme, os chips em branco, os cartoes de pagamento em branco — mas o
+      // TEXTO vinha do tema. O tema da app segue o Android (`ThemeMode.system`)
+      // e, num terminal em modo escuro, saia texto branco sobre creme e chips
+      // brancos com letra branca. Ao agente isso nao aparece como "cores
+      // trocadas": aparece como texto sobreposto, opcoes que nao se veem, e um
+      // campo de telefone onde ele escreve e nao vê aparecer nada.
+      //
+      // Declarar o tema aqui faz com que TUDO — chips, campos, texto — se
+      // resolva contra as mesmas cores claras que os fundos ja usavam. E
+      // tambem a escolha certa para o uso: vende-se de pe, muitas vezes ao
+      // sol, e o contraste alto le-se melhor.
+      child: Theme(
+        data: BuzUpTheme.light(),
+        child: Scaffold(
         appBar: AppBar(
           title: Text(_appBarTitle()),
           backgroundColor: const Color(0xFF071E49),
@@ -465,6 +624,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
           ]),
         ),
       ),
+      ),
     );
   }
 
@@ -472,6 +632,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _Step.trip => 'Nova venda',
         _Step.route => 'Trajecto',
         _Step.seats => 'Escolha dos lugares',
+        _Step.passengers => _quantity == 1 ? 'Dados do passageiro' : 'Dados dos passageiros',
         _Step.payment => 'Pagamento',
         _Step.processing => 'A processar',
         _Step.done => 'Venda concluida',
@@ -524,6 +685,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         return _stepSelectStops();
       case _Step.seats:
         return _stepSeats();
+      case _Step.passengers:
+        return _stepPassageiros();
       case _Step.payment:
         return _stepPhoneAndConfirm();
       case _Step.processing:
@@ -543,14 +706,18 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         if (_originId == null) return 'Escolha a origem.';
         if (_destinationId == null) return 'Escolha o destino.';
         if (_originId == _destinationId) return 'Origem e destino devem ser diferentes.';
-        if (_seatsRequired && _emergPhoneCtrl.text.trim().length != 9) {
-          return 'Indique o contacto de emergencia (9 digitos).';
-        }
         return '';
       case _Step.seats:
         final f = _quantity - _pickedSeats.length;
         if (f > 0) return 'Escolha mais $f lugar${f == 1 ? '' : 'es'}.';
         if (f < 0) return 'Escolheu lugares a mais.';
+        return '';
+      case _Step.passengers:
+        final falta = _faltaIdentidade();
+        if (falta.isNotEmpty) return falta;
+        if (_pedeContactoEmergencia && _emergPhoneCtrl.text.trim().length != 9) {
+          return 'Indique o contacto de emergencia (9 digitos).';
+        }
         return '';
       case _Step.payment:
         // Rede de seguranca: chegado aqui os lugares e o contacto ja estao
@@ -558,9 +725,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         // do que a venda ser recusada pelo servidor com o passageiro a frente.
         final falta = _missingForSale();
         if (falta.isNotEmpty) return falta;
-        if (_paymentMethod == 'mobile_money' &&
+        if ((_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') &&
             !RegExp(r'^[0-9]{9}$').hasMatch(_phone)) {
-          return 'Indique o telefone do passageiro (9 digitos).';
+          return _paymentMethod == 'cash'
+              ? 'Indique o telefone do passageiro — o bilhete vai por SMS.'
+              : 'Indique o telefone do passageiro (9 digitos).';
         }
         if (_paymentMethod == 'card' &&
             (_cardUid ?? '').isEmpty &&
@@ -581,8 +750,15 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         return _pickedSeats.length == _quantity
             ? 'AVANCAR COM ${_pickedSeats.join(", ")}'
             : 'ESCOLHA OS LUGARES';
+      case _Step.passengers:
+        return 'CONTINUAR';
       case _Step.payment:
-        return _paymentMethod == 'card' ? 'COBRAR DO CARTAO' : 'SOLICITAR PAGAMENTO';
+        return switch (_paymentMethod) {
+          'card' => 'COBRAR DO CARTAO',
+          // Não é um pedido a ninguém: o dinheiro já está na mão do agente.
+          'cash' => 'RECEBI O DINHEIRO',
+          _ => 'SOLICITAR PAGAMENTO',
+        };
       default:
         return '';
     }
@@ -593,7 +769,8 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       case _Step.route:
         _calculateFare();
       case _Step.seats:
-        _goTo(_Step.payment);
+      case _Step.passengers:
+        _goTo(_proximo(_step));
       case _Step.payment:
         _requestPayment();
       default:
@@ -669,6 +846,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     );
   }
 
+  /// "Ida"/"Volta" — vazio quando a partida não o declara (as criadas antes
+  /// de o campo existir; ver `Trip.Direction` no servidor).
+  static String _sentidoLabel(String d) => switch (d) {
+        'outbound' => 'Ida',
+        'inbound' => 'Volta',
+        _ => '',
+      };
+
   Widget _stepSelectTrip() {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _errorBanner(),
@@ -678,12 +863,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         child: _loadingTrips
             ? const Center(child: CircularProgressIndicator())
             : _trips.isEmpty
-                ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Icon(Icons.no_transfer, size: 48, color: Colors.grey),
-                    const SizedBox(height: 8),
-                    const Text('Nenhuma viagem disponivel.'),
-                    TextButton(onPressed: _loadTrips, child: const Text('Actualizar')),
-                  ]))
+                ? _semViagens()
                 : ListView.separated(
                     itemCount: _trips.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -693,8 +873,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                         child: ListTile(
                           leading: const Icon(Icons.directions_bus, color: Color(0xFF1D5FA7)),
                           title: Text('${t['route_code']} - ${t['route_name']}'),
-                          subtitle: Text('${t['vehicle']} · motorista: ${t['driver']}'),
-                          trailing: Chip(label: Text(tripStatusLabel((t['status'] ?? '').toString()), style: const TextStyle(fontSize: 10))),
+                          // O sentido distingue a ida da volta: a mesma rota
+                          // aparecia duas vezes no mesmo dia, escrita igual.
+                          subtitle: Text([
+                            _sentidoLabel((t['direction'] ?? '').toString()),
+                            '${t['vehicle']}',
+                            'motorista: ${t['driver']}',
+                          ].where((e) => e.isNotEmpty).join(' · ')),
+                          trailing: Chip(
+                            label: Text(tripStatusLabel((t['status'] ?? '').toString()),
+                                style: const TextStyle(fontSize: 10)),
+                          ),
                           onTap: () => _selectTrip(t),
                         ),
                       );
@@ -702,6 +891,47 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   ),
       ),
     ]);
+  }
+
+  /// Lista vazia — e o que fazer a seguir.
+  ///
+  /// A venda mostra só o que está a circular: as partidas agendadas deixaram
+  /// de aparecer aqui (não se vende antecipado ao balcão). A consequência é
+  /// que, enquanto o embarque não abrir, não há nada para vender — e um
+  /// "Nenhuma viagem disponivel." seco deixava o agente sem perceber porquê,
+  /// com o passageiro à frente. Diz-se o que falta e quem o faz.
+  Widget _semViagens() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.no_transfer, size: 48, color: Colors.grey),
+          const SizedBox(height: 10),
+          const Text('Nenhuma viagem a decorrer',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          const Text(
+            'A venda só está disponível depois de o motorista abrir o embarque.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF6B7A8F)),
+          ),
+          const SizedBox(height: 14),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            OutlinedButton.icon(
+              onPressed: _loadTrips,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Actualizar'),
+            ),
+            const SizedBox(width: 10),
+            FilledButton.icon(
+              onPressed: () => context.push('/driver/trips'),
+              icon: const Icon(Icons.departure_board, size: 18),
+              label: const Text('Minhas viagens'),
+            ),
+          ]),
+        ]),
+      ),
+    );
   }
 
   /// Passo 2: de onde para onde, quantos bilhetes e — nas rotas longas — o
@@ -715,8 +945,23 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _errorBanner(),
         if (_selectedTrip != null)
-          Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Row(children: [
+            Expanded(
+              child: Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ),
+            // A viagem em curso é imposta, mas não é uma prisão: um agente de
+            // terminal também vende bilhete antecipado para outra partida.
+            if (_trips.length > 1)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() => _escolhaManual = true);
+                  _goTo(_Step.trip);
+                },
+                icon: const Icon(Icons.swap_horiz, size: 18),
+                label: const Text('Trocar'),
+              ),
+          ]),
         const SizedBox(height: 12),
         StopPickerField(
           label: 'Origem',
@@ -739,7 +984,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         _quantityCard(),
         if (_seatsRequired) ...[
           const SizedBox(height: 12),
-          _emergencyFields(),
+
         ],
       ]),
     );
@@ -762,21 +1007,29 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         IconButton(
           icon: const Icon(Icons.remove_circle_outline),
           onPressed: _quantity > 1
-              ? () => setState(() {
+              ? () {
+                  setState(() {
                     _quantity--;
                     // Baixar a quantidade tem de largar os lugares a mais,
                     // senao ficavam escolhidos mais lugares do que bilhetes.
                     while (_pickedSeats.length > _quantity) {
                       _pickedSeats.removeLast();
                     }
-                  })
+                  });
+                  _ajustarPassageiros();
+                }
               : null,
         ),
         Text('$_quantity',
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
         IconButton(
           icon: const Icon(Icons.add_circle_outline),
-          onPressed: _quantity < 10 ? () => setState(() => _quantity++) : null,
+          onPressed: _quantity < 10
+              ? () {
+                  setState(() => _quantity++);
+                  _ajustarPassageiros();
+                }
+              : null,
         ),
       ]),
     );
@@ -824,13 +1077,39 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     });
   }
 
+  /// Uma linha "etiqueta ... valor" que não se atropela.
+  ///
+  /// Eram `Row`s com dois `Text` soltos. Quando a etiqueta cresce — "Em ZAR
+  /// (1 ZAR = 4.10 MZN)" — não havia nada a dizer a nenhum dos dois quem cede
+  /// espaço, e os textos passavam por cima um do outro. A etiqueta cede (pode
+  /// truncar); o valor nunca, porque é o número que o agente vai cobrar.
+  Widget _linhaResumo(String etiqueta, String valor,
+      {TextStyle? estiloEtiqueta, TextStyle? estiloValor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic, children: [
+        Expanded(
+          child: Text(etiqueta,
+              style: estiloEtiqueta, maxLines: 2, overflow: TextOverflow.ellipsis),
+        ),
+        const SizedBox(width: 10),
+        Text(valor, textAlign: TextAlign.right, style: estiloValor),
+      ]),
+    );
+  }
+
   Widget _stepPhoneAndConfirm() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _errorBanner(),
         Card(
           color: const Color(0xFFFFF8E1),
-          child: Padding(
+          // Fundo creme fixo => texto escuro fixo. Um sem o outro foi
+          // exactamente o que tornou este cartao ilegivel.
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: Color(0xFF15191E)),
+            child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${_selectedTrip!['route_code']} - ${_selectedTrip!['route_name']}'),
@@ -840,51 +1119,83 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 Row(children: [
                   const Text('Mostrar em', style: TextStyle(fontSize: 12)),
                   const SizedBox(width: 8),
-                  for (final c in ['MZN', ..._rates.keys.toList()..sort()])
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ChoiceChip(
-                        label: Text(c, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
-                        selected: _currency == c,
-                        visualDensity: VisualDensity.compact,
-                        onSelected: (_) => setState(() => _currency = c),
-                      ),
+                  // MUDA DE LINHA em vez de rolar.
+                  //
+                  // Tentei primeiro um scroll horizontal aqui dentro. Um
+                  // scroll horizontal dentro do scroll vertical do passo dá ao
+                  // filho altura INFINITA — `BoxConstraints forces an infinite
+                  // height` — e o layout do ecrã inteiro rebenta. Em release
+                  // não estoira: desenha torto. E com o layout torto o
+                  // hit-test aterra no sítio errado, o que faz um campo de
+                  // texto perfeitamente funcional parecer que "não aceita
+                  // escrever nada".
+                  //
+                  // `Wrap` resolve o transbordo sem pedir altura nenhuma.
+                  Expanded(
+                    child: Wrap(
+                      spacing: 0,
+                      runSpacing: 4,
+                      children: [
+                        for (final c in ['MZN', ..._rates.keys.toList()..sort()])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: ChoiceChip(
+                              label: Text(c,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    // Seleccionado = branco sobre azul. Antes
+                                    // ficava com a cor por omissão do tema
+                                    // sobre o realce, e mal se lia qual estava
+                                    // escolhida.
+                                    color: _currency == c ? Colors.white : const Color(0xFF15191E),
+                                  )),
+                              selected: _currency == c,
+                              selectedColor: const Color(0xFF1D5FA7),
+                              backgroundColor: Colors.white,
+                              side: BorderSide(
+                                  color: _currency == c
+                                      ? const Color(0xFF1D5FA7)
+                                      : const Color(0xFFCBD5E1)),
+                              showCheckmark: false,
+                              visualDensity: VisualDensity.compact,
+                              onSelected: (_) => setState(() => _currency = c),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ]),
               ],
               const Divider(),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Preco unit.'),
-                Text('${_fare!['fare_amount']} MZN', style: const TextStyle(fontWeight: FontWeight.bold)),
-              ]),
+              _linhaResumo('Preco unit.', '${_fare!['fare_amount']} MZN',
+                  estiloValor: const TextStyle(fontWeight: FontWeight.bold)),
               if (_rate != null)
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Em $_currency (1 $_currency = ${_rate!.toStringAsFixed(2)} MZN)',
-                      style: const TextStyle(fontSize: 12)),
-                  Text(_inDisplay(_unitFare()),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                ]),
+                _linhaResumo(
+                    'Em $_currency (1 $_currency = ${_rate!.toStringAsFixed(2)} MZN)',
+                    _inDisplay(_unitFare()),
+                    estiloEtiqueta: const TextStyle(fontSize: 12),
+                    estiloValor: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               // A quantidade e os lugares foram escolhidos nos passos
               // anteriores: aqui so se confirmam.
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Quantidade'),
-                Text('x$_quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ]),
+              _linhaResumo('Quantidade', 'x$_quantity',
+                  estiloValor: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               if (_seatsRequired && _pickedSeats.isNotEmpty)
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Text('Lugares'),
-                  Text(_pickedSeats.join(', '),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                ]),
+                _linhaResumo('Lugares', _pickedSeats.join(', '),
+                    estiloValor: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold)),
                 // A moeda ESCOLHIDA aparece em grande; a outra na linha
                 // pequena. A cobranca e sempre em MZN.
-                Text(
-                  _rate != null
-                      ? _inDisplay(_unitFare() * _quantity)
-                      : '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
+                Flexible(
+                  child: Text(
+                    _rate != null
+                        ? _inDisplay(_unitFare() * _quantity)
+                        : '${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1D5FA7)),
+                  ),
                 ),
               ]),
               if (_rate != null)
@@ -892,30 +1203,57 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   alignment: Alignment.centerRight,
                   child: Text(
                     '≈ ${(double.parse(_fare!['fare_amount'].toString()) * _quantity).toStringAsFixed(2)} MZN · cobranca em MZN',
+                    textAlign: TextAlign.right,
                     style: const TextStyle(fontSize: 11.5),
                   ),
                 ),
             ]),
           ),
+          ),
         ),
         const SizedBox(height: 12),
         _methodPicker(),
         const SizedBox(height: 10),
-        if (_paymentMethod == 'mobile_money')
+        if (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ...[
           TextField(
+            controller: _phoneCtrl,
             keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.done,
+            // O que se escreve tem de se ver. Sem isto a cor vinha do tema, e
+            // era essa a razao por que o agente dizia que "o campo não
+            // funciona": funcionava, mas os dígitos saíam invisíveis.
+            style: const TextStyle(
+                color: Color(0xFF15191E), fontSize: 17, fontWeight: FontWeight.w600),
+            cursorColor: const Color(0xFF1D5FA7),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(9)],
-            decoration: const InputDecoration(
-              labelText: 'Telefone (9 digitos)',
-              prefixIcon: Icon(Icons.phone),
+            decoration: InputDecoration(
+              // Em numerário o telefone já não é uma carteira a debitar: é
+              // para onde o bilhete vai. Dizê-lo evita o agente pedir o número
+              // do M-Pesa a quem está a pagar em notas.
+              labelText: _paymentMethod == 'cash'
+                  ? 'Telefone do passageiro (9 dígitos)'
+                  : 'Telefone (9 dígitos)',
+              helperText: _paymentMethod == 'cash'
+                  ? 'É para aqui que o bilhete vai por SMS.'
+                  : null,
+              prefixIcon: const Icon(Icons.phone, color: Color(0xFF6B7A8F)),
               hintText: '84/85/86/87...',
+              labelStyle: const TextStyle(color: Color(0xFF6B7A8F)),
+              hintStyle: const TextStyle(color: Color(0xFF9AA7B8)),
+              helperStyle: const TextStyle(color: Color(0xFF6B7A8F)),
+              filled: true,
+              fillColor: Colors.white,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
             // setState para a linha "indique o telefone..." por cima do botao
             // acompanhar o que esta a ser escrito.
             onChanged: (v) => setState(() => _phone = v),
-          )
-        else
+          ),
+        ] else
           _cardCapturePanel(),
+        // Fôlego no fim: com o teclado aberto, sem isto o último campo ficava
+        // colado à barra fixa do fundo e parecia estar por baixo dela.
+        const SizedBox(height: 24),
         // O botao de cobrar vive na barra fixa do fundo, sempre a vista.
       ]),
     );
@@ -1131,6 +1469,186 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     );
   }
 
+  /// Uma ficha por bilhete — nem mais, nem menos.
+  ///
+  /// Chamado quando a quantidade muda e quando se escolhe a viagem. Descartar
+  /// as fichas a mais liberta os controladores; sem isso, subir e baixar a
+  /// quantidade ia acumulando campos de texto vivos.
+  void _ajustarPassageiros() {
+    if (!_pedeIdentidade) {
+      for (final p in _passageiros) {
+        p.dispose();
+      }
+      _passageiros.clear();
+      setState(() {});
+      return;
+    }
+    while (_passageiros.length < _quantity) {
+      final p = _Passageiro();
+      // Rota com um único documento aceite (internacional: passaporte): já vem
+      // escolhido, porque não há escolha nenhuma a fazer.
+      if (_documentTypes.length == 1) {
+        p.tipo = (_documentTypes.first as Map)['value']?.toString() ?? '';
+      }
+      _passageiros.add(p);
+    }
+    while (_passageiros.length > _quantity) {
+      _passageiros.removeLast().dispose();
+    }
+    setState(() {});
+  }
+
+  /// Passo próprio para os dados de quem viaja.
+  ///
+  /// Estes campos viviam no passo do trajecto, empilhados por baixo da origem,
+  /// do destino, da quantidade e do contacto de emergência. Com dois ou três
+  /// bilhetes aquilo era uma coluna interminável, e o agente perdia-se a rolar
+  /// com o passageiro à frente. Sozinhos num passo, cabem no ecrã e a barra de
+  /// progresso diz quantos faltam.
+  Widget _stepPassageiros() {
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _errorBanner(),
+        if (_selectedTrip != null)
+          Text('${_selectedTrip!['route_code']} · ${_fare?['origin'] ?? ''} → ${_fare?['destination'] ?? ''}',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7A8F))),
+        _identityFields(),
+        // O contacto de emergencia vem A SEGUIR aos dados de quem viaja.
+        //
+        // Estava no passo do trajecto, entre a escolha das paragens e a
+        // quantidade — no meio de decisoes sobre o PERCURSO, quando e uma
+        // pergunta sobre a PESSOA. Perguntada aqui, o agente faz de uma so vez
+        // tudo o que tem de pedir ao passageiro: nome, documento e a quem
+        // telefonar se algo correr mal.
+        _emergencyFields(),
+        const SizedBox(height: 12),
+      ]),
+    );
+  }
+
+  /// Ficha de cada passageiro: nome e documento.
+  ///
+  /// Só aparece nas rotas com manifesto de bordo. Numa carreira urbana pedir o
+  /// documento seria guardar dados pessoais sem necessidade e atrasar uma
+  /// compra que tem de ser rápida.
+  Widget _identityFields() {
+    if (!_pedeIdentidade || _passageiros.isEmpty) return const SizedBox.shrink();
+    final internacional =
+        (_selectedTrip?['service_type'] ?? '').toString() == 'international';
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const SizedBox(height: 14),
+      Row(children: [
+        const Icon(Icons.badge_outlined, size: 18, color: Color(0xFF1D5FA7)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            _quantity == 1 ? 'Passageiro' : 'Passageiros ($_quantity)',
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ]),
+      const SizedBox(height: 4),
+      Text(
+        internacional
+            ? 'O bilhete é nominal e o documento é conferido na fronteira.'
+            : 'O bilhete é nominal e entra no manifesto de bordo.',
+        style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7A8F)),
+      ),
+      for (var i = 0; i < _passageiros.length; i++) ...[
+        const SizedBox(height: 10),
+        _fichaPassageiro(i),
+      ],
+    ]);
+  }
+
+  Widget _fichaPassageiro(int i) {
+    final p = _passageiros[i];
+    final regra = _documentTypes.cast<Map>().firstWhere(
+          (r) => r['value']?.toString() == p.tipo,
+          orElse: () => const {},
+        );
+    final maxLen = (regra['max_length'] as num?)?.toInt();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE4EBF3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (_quantity > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text('Bilhete ${i + 1}',
+                style: const TextStyle(
+                    fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF6B7A8F))),
+          ),
+        TextField(
+          controller: p.nome,
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(
+            labelText: 'Nome completo',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: 'Como está no documento',
+            prefixIcon: Icon(Icons.person_outline),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 10),
+        // Um só tipo aceite (internacional) não é uma escolha: mostra-se o
+        // nome do documento em vez de uma lista com uma linha.
+        if (_documentTypes.length > 1)
+          DropdownButtonFormField<String>(
+            value: p.tipo.isEmpty ? null : p.tipo,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Tipo de documento',
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              prefixIcon: Icon(Icons.badge_outlined),
+            ),
+            items: [
+              for (final r in _documentTypes.cast<Map>())
+                DropdownMenuItem(
+                  value: r['value']?.toString(),
+                  child: Text(r['label']?.toString() ?? '', overflow: TextOverflow.ellipsis),
+                ),
+            ],
+            onChanged: (v) => setState(() {
+              p.tipo = v ?? '';
+              // Formato diferente: o que estava escrito já não serve.
+              p.numero.clear();
+            }),
+          )
+        else if (_documentTypes.isNotEmpty)
+          Row(children: [
+            const Icon(Icons.badge_outlined, size: 18, color: Color(0xFF6B7A8F)),
+            const SizedBox(width: 8),
+            Text(_documentTypes.first is Map
+                ? ((_documentTypes.first as Map)['label']?.toString() ?? '')
+                : ''),
+          ]),
+        const SizedBox(height: 10),
+        TextField(
+          controller: p.numero,
+          textCapitalization: TextCapitalization.characters,
+          keyboardType: regra['digits_only'] == true ? TextInputType.number : TextInputType.text,
+          inputFormatters: [
+            if (regra['digits_only'] == true) FilteringTextInputFormatter.digitsOnly,
+            if (maxLen != null) LengthLimitingTextInputFormatter(maxLen),
+          ],
+          decoration: InputDecoration(
+            labelText: 'Número do documento',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: regra['placeholder']?.toString() ?? '',
+            helperText: regra['help']?.toString() ?? '',
+            helperMaxLines: 2,
+            prefixIcon: const Icon(Icons.numbers),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      ]),
+    );
+  }
+
   /// O que falta para poder cobrar, em palavras. Vazio quando nao falta nada.
   ///
   /// Um botao cinzento sem explicacao deixa o agente parado com o passageiro
@@ -1141,8 +1659,26 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       final f = _quantity - _pickedSeats.length;
       return f > 0 ? 'Escolha mais $f lugar(es).' : 'Escolheu lugares a mais.';
     }
+    final falta = _faltaIdentidade();
+    if (falta.isNotEmpty) return falta;
     if (_emergPhoneCtrl.text.trim().length != 9) {
       return 'Indique o contacto de emergencia (9 digitos).';
+    }
+    return '';
+  }
+
+  /// Qual a ficha por preencher, em palavras.
+  ///
+  /// O servidor recusa a venda sem isto; dizê-lo aqui evita que o agente
+  /// descubra o problema com o pagamento já pedido e o passageiro à espera.
+  String _faltaIdentidade() {
+    if (!_pedeIdentidade) return '';
+    for (var i = 0; i < _passageiros.length; i++) {
+      final p = _passageiros[i];
+      final quem = _quantity > 1 ? ' do bilhete ${i + 1}' : '';
+      if (p.nome.text.trim().isEmpty) return 'Indique o nome do passageiro$quem.';
+      if (p.tipo.isEmpty) return 'Escolha o tipo de documento$quem.';
+      if (p.numero.text.trim().isEmpty) return 'Indique o número do documento$quem.';
     }
     return '';
   }
@@ -1153,12 +1689,16 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
         final selected = _paymentMethod == key;
         return Expanded(
           child: GestureDetector(
-            onTap: () async {
-              if (key == 'card') {
-                await _startCardScan();
-              } else {
-                await NfcCardReader.stop();
-              }
+            onTap: () {
+              // A ESCOLHA PRIMEIRO, o hardware depois.
+              //
+              // Estava ao contrário: esperava-se pelo canal do NFC e só então
+              // se marcava a opção. Entre uma coisa e outra o ecrã não mudava
+              // nada — e num terminal onde o leitor demore a responder, tocar
+              // num método de pagamento parece simplesmente não fazer nada.
+              //
+              // Escolher o método é uma decisão do agente e não precisa de
+              // pedir licença ao leitor de cartões.
               setState(() {
                 _paymentMethod = key;
                 _error = null;
@@ -1167,33 +1707,73 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                   _scannedCard = null;
                 }
               });
+              if (key == 'card') {
+                _startCardScan();
+              } else {
+                NfcCardReader.stop();
+              }
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
               decoration: BoxDecoration(
-                color: selected ? BuzUpColors.orange : Colors.transparent,
+                color: selected ? BuzUpColors.orange : Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: selected ? BuzUpColors.orange : Colors.grey.shade400),
+                border: Border.all(
+                  color: selected ? BuzUpColors.orange : const Color(0xFFCBD5E1),
+                  // O seleccionado tem de se ver de relance, num ecrã ao sol e
+                  // com o passageiro à espera.
+                  width: selected ? 2 : 1,
+                ),
               ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(icon, color: selected ? Colors.white : Colors.grey, size: 18),
-                const SizedBox(width: 6),
+              // Ícone EM CIMA do rótulo, e não ao lado.
+              //
+              // Lado a lado cabiam dois; ao acrescentar o numerário passaram a
+              // ser três, cada um com um terço da largura do telemóvel, e os
+              // nomes ficavam cortados a meio. Empilhados, o rótulo tem a
+              // largura toda do cartão e ainda sobra para duas linhas.
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon, color: selected ? Colors.white : const Color(0xFF6B7A8F), size: 20),
+                const SizedBox(height: 5),
                 Text(label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: selected ? Colors.white : Colors.grey.shade700,
-                      fontWeight: FontWeight.w800, fontSize: 12.5, letterSpacing: 0.4,
+                      color: selected ? Colors.white : const Color(0xFF15191E),
+                      fontWeight: FontWeight.w800, fontSize: 11.5, height: 1.15,
                     )),
               ]),
             ),
           ),
         );
       }
-      return Row(children: [
-        tile('mobile_money', Icons.phone_iphone, 'M-Pesa / E-Mola'),
-        tile('card', Icons.credit_card, 'Cartao NFC'),
-      ]);
+      // SEM `CrossAxisAlignment.stretch`.
+      //
+      // Num `Row`, `stretch` estica os filhos até à ALTURA da linha — e aqui a
+      // linha vive dentro do scroll vertical do passo, onde a altura é
+      // infinita. Os cartões pediam altura infinita, o layout do ecrã rebentava
+      // e o campo de texto ficava por dispor (`RenderEditable NEEDS-LAYOUT`).
+      //
+      // Era esta a razão real por que o telefone "não aceitava escrever": o
+      // campo estava lá e funcionava, mas nunca chegava a ser desenhado no
+      // sítio onde o dedo tocava. `IntrinsicHeight` dá aos três a mesma altura
+      // sem exigir uma altura ao pai.
+      return IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        tile('mobile_money', Icons.phone_iphone, 'M-Pesa / e-Mola'),
+        tile('cash', Icons.payments_outlined, 'Numerário'),
+        // CARTAO NFC ESCONDIDO a pedido do operador (2026-08-26): a TPM-TUR
+        // ainda nao usa cartoes. Um metodo que ninguem pode concluir e um
+        // toque em falso — e este levava o agente a encostar o telemovel a um
+        // cartao que nao existe, com o passageiro a espera.
+        //
+        // Escondido, nao apagado: o painel de leitura (`_cardCapturePanel`), o
+        // leitor NFC e a venda por cartao no servidor continuam la. Volta
+        // descomentando esta linha.
+        // tile('card', Icons.credit_card, 'Cartão NFC'),
+      ]));
     });
   }
 
@@ -1369,29 +1949,152 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     return '-';
   }
 
+  /// Um bilhete acabado de emitir, com a opcao de o validar ali mesmo.
+  ///
+  /// Muitos bilhetes sao comprados JA DENTRO do autocarro. Nesses casos, pedir
+  /// ao agente que saia da venda, abra o leitor e aponte ao telemovel do
+  /// passageiro — que ainda nem recebeu o SMS — e um passo sem ganho nenhum:
+  /// ele acabou de emitir o bilhete e sabe exactamente qual e.
+  ///
+  /// Continua a ser uma ESCOLHA, e nao automatico: um bilhete vendido ao balcao
+  /// para daqui a duas horas nao pode entrar no manifesto como se ja tivesse
+  /// embarcado.
+  Widget _bilheteEmitido(Map<String, dynamic> tt) {
+    final uuid = (tt['uuid'] ?? '').toString();
+    final validado = _validados.contains(uuid);
+    final aValidar = _aValidar.contains(uuid);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Icon(Icons.confirmation_number,
+                color: validado ? const Color(0xFF1FB04A) : const Color(0xFF1D5FA7)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${tt['reference']}',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+                Text(
+                  '${tt['route_code']} · ${tt['origin_stop']} → ${tt['destination_stop']} · ${tt['fare_amount']} MZN',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7A8F)),
+                ),
+              ]),
+            ),
+            Text(validado ? 'A BORDO' : 'ACTIVO',
+                style: TextStyle(
+                    color: validado ? const Color(0xFF1FB04A) : Colors.green,
+                    fontWeight: FontWeight.bold, fontSize: 11)),
+          ]),
+          if (uuid.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: validado
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.check_circle, size: 18, color: Color(0xFF1FB04A)),
+                        SizedBox(width: 6),
+                        Text('Validado — passageiro a bordo',
+                            style: TextStyle(
+                                fontSize: 12.5, fontWeight: FontWeight.w700,
+                                color: Color(0xFF1FB04A))),
+                      ]),
+                    )
+                  : OutlinedButton.icon(
+                      onPressed: aValidar ? null : () => _validarABordo(uuid),
+                      icon: aValidar
+                          ? const SizedBox(
+                              height: 16, width: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.how_to_reg, size: 18),
+                      label: Text(aValidar ? 'A validar...' : 'VALIDAR A BORDO'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        foregroundColor: const Color(0xFF1D5FA7),
+                      ),
+                    ),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  /// Valida um bilhete acabado de vender, sem passar pelo leitor de QR.
+  Future<void> _validarABordo(String uuid) async {
+    setState(() => _aValidar.add(uuid));
+    try {
+      final res = await ref.read(agentApiProvider).verifyTicketByUuid(uuid);
+      // O ECRA PRIMEIRO, o som e a vibracao depois.
+      //
+      // `AppFeedback` espera pelo ficheiro de audio. Com o `setState` atras
+      // desse `await`, o resultado da validacao so aparecia quando o beep
+      // acabasse — e num terminal onde o audio demore, o agente ficava a olhar
+      // para um botao que parecia nao ter feito nada.
+      //
+      // O servidor responde `valid: true/false` com `reason` quando recusa.
+      if (res['valid'] != true) {
+        final motivo = (res['reason'] ?? res['detail'] ?? '').toString();
+        if (mounted) {
+          setState(() => _error = motivo.isEmpty
+              ? 'Nao foi possivel validar o bilhete.'
+              : motivo);
+        }
+        AppFeedback.error();
+        return;
+      }
+      if (mounted) setState(() => _validados.add(uuid));
+      AppFeedback.success();
+    } on DioException catch (e) {
+      if (mounted) setState(() => _error = ApiClient.extractError(e));
+      AppFeedback.error();
+    } finally {
+      if (mounted) setState(() => _aValidar.remove(uuid));
+    }
+  }
+
   Widget _stepDone() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        // A venda esta feita, mas ainda ha coisas que podem falhar aqui — a
+        // validacao a bordo, por exemplo. Sem este banner, uma recusa nao
+        // aparecia em lado nenhum e o agente deixava subir quem nao devia.
+        _errorBanner(),
         const Icon(Icons.check_circle, color: Colors.green, size: 64),
         const SizedBox(height: 8),
         const Center(child: Text('VENDA CONFIRMADA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green))),
         const SizedBox(height: 8),
         Center(child: Text('Ref: ${_saleRef ?? '-'}')),
         const SizedBox(height: 12),
+        // O bilhete não se imprime — segue por SMS, como na compra pelo site.
+        // Dizê-lo aqui evita o agente ficar à espera de papel que não vem, e
+        // dá-lhe o número para conferir com o passageiro antes de o deixar ir.
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(
+            color: const Color(0x141D5FA7),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0x331D5FA7)),
+          ),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.sms_outlined, size: 18, color: Color(0xFF1D5FA7)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _phone.isEmpty
+                    ? 'O bilhete foi enviado por SMS para o passageiro.'
+                    : 'Bilhete enviado por SMS para $_phone.',
+                style: const TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF17456F)),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 12),
         const Text('Bilhetes emitidos:', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        ..._tickets.map((t) {
-          final tt = t as Map<String, dynamic>;
-          return Card(
-            child: ListTile(
-              dense: true,
-              leading: const Icon(Icons.confirmation_number, color: Color(0xFF1D5FA7)),
-              title: Text('${tt['reference']}'),
-              subtitle: Text('${tt['route_code']} · ${tt['origin_stop']} → ${tt['destination_stop']} · ${tt['fare_amount']} MZN'),
-              trailing: const Text('ACTIVO', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-          );
-        }),
+        ..._tickets.map((t) => _bilheteEmitido(t as Map<String, dynamic>)),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(12),
@@ -1479,5 +2182,32 @@ class _QrScannerSheetState extends State<_QrScannerSheet> {
         ),
       ]),
     );
+  }
+}
+
+
+/// Nome e documento de um passageiro, um por bilhete.
+///
+/// Os controladores vivem aqui e não numa lista solta de strings porque
+/// sobrevivem aos rebuilds: escritos de outra forma, baixar a quantidade a
+/// meio do preenchimento deixava o texto do passageiro removido a aparecer no
+/// campo do seguinte.
+class _Passageiro {
+  final nome = TextEditingController();
+  final numero = TextEditingController();
+  String tipo = '';
+
+  bool get completo =>
+      nome.text.trim().isNotEmpty && tipo.isNotEmpty && numero.text.trim().isNotEmpty;
+
+  Map<String, String> toJson() => {
+        'name': nome.text.trim(),
+        'document_type': tipo,
+        'document_number': numero.text.trim().toUpperCase(),
+      };
+
+  void dispose() {
+    nome.dispose();
+    numero.dispose();
   }
 }

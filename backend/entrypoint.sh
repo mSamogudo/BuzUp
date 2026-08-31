@@ -57,6 +57,14 @@ main() {
   # sem roles ate alguem os correr a mao.
   if is_true "${AUTO_SEED:-true}"; then
     run_manage seed_roles
+
+    # Conteudo do site publico. `--if-empty` nao faz NADA se ja houver paginas:
+    # um deploy novo nasce com o site, e o que a equipa editou no CMS nunca e
+    # sobreposto por um reinicio do contentor.
+    #
+    # Sem isto, um deploy novo servia /, /precos e /contactos vazias ate alguem
+    # se lembrar de correr o comando a mao.
+    run_manage seed_cms --if-empty --publish
   fi
 
   # Superadmin: SO criado se explicitamente pedido E com password vinda do

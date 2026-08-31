@@ -30,8 +30,28 @@ from apps.cms.models import (
 from apps.cms.services import create_version, invalidate_all_cache
 
 SEED_FILE = Path(__file__).resolve().parents[3] / "cms" / "seeds" / "site_copy.json"
-# Os assets do handoff vivem no repositorio, fora do backend.
-ASSETS_DIR = Path(settings.BASE_DIR).resolve().parents[0] / "docs" / "design-handoff" / "design" / "assets"
+
+#: Os logotipos, empacotados com o seed.
+#:
+#: Estavam so em `docs/design-handoff/design/assets`, que e uma pasta do
+#: repositorio e NAO entra na imagem de producao — o Dockerfile constroi a
+#: partir de `backend/`. Enquanto o seed foi corrido a mao isso nao se notava;
+#: no arranque automatico notava-se logo, porque o site nascia sem um unico
+#: logotipo e ninguem estava la a ver o aviso a passar.
+#:
+#: Um comando que corre sozinho num deploy tem de ser auto-suficiente. A copia
+#: do handoff continua a servir de recurso para quem correr isto de um
+#: checkout com os desenhos mais recentes do que os empacotados.
+PACKAGED_ASSETS = Path(__file__).resolve().parents[3] / "cms" / "seeds" / "assets"
+HANDOFF_ASSETS = Path(settings.BASE_DIR).resolve().parents[0] / "docs" / "design-handoff" / "design" / "assets"
+
+
+def asset_path(name: str) -> Path:
+    """O ficheiro do logotipo, venha ele de onde vier."""
+    empacotado = PACKAGED_ASSETS / name
+    if empacotado.exists():
+        return empacotado
+    return HANDOFF_ASSETS / name
 
 
 def i18n(pt, en):
@@ -107,7 +127,7 @@ class Command(BaseCommand):
         ]
         out = {}
         for name in wanted:
-            source = ASSETS_DIR / name
+            source = asset_path(name)
             existing = MediaAsset.objects.filter(filename=name).first()
             if existing:
                 out[name] = existing

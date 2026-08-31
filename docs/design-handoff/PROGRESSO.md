@@ -321,13 +321,16 @@ Comparação e implementação exactas ainda por fazer para: `Precos BusUp`,
    linguagem visual — pinos de 30px coloridos por estado, filtro por estado e
    balão com identificador, estado, velocidade e último contacto.
 4. **`frontend/src/public/LandingPage.tsx`, `public/landing/` e
-   `admin/AdminLayout.tsx` deixaram de estar ligados a qualquer rota** — a
-   landing passa a vir do CMS e o shell do portal passa a ser
-   `design/portal/PortalShell.tsx`. Os ficheiros CONTINUAM no repositório: são
-   10 ficheiros e 1784 linhas com paleta e fonte próprias, hoje sem alvo
-   nenhum. Uma versão anterior deste documento dava-os como apagados e não
-   estavam — apagá-los é uma decisão à parte, e fica por tomar. O JS empacotado
-   não muda com eles lá (já eram eliminados por tree-shaking).
+   `admin/AdminLayout.tsx` foram apagados** — a landing passa a vir do CMS e o
+   shell do portal passa a ser `design/portal/PortalShell.tsx`. São 10
+   ficheiros e 1788 linhas, com paleta e fonte próprias.
+
+   Apagados em 2026-08-31, depois de confirmado ficheiro a ficheiro que ninguém
+   lhes chegava. O único que enganava era o `ServiceRequestForm`: existem duas
+   cópias, e quem o usa é a do CMS (`public/site/ServiceRequestForm.tsx`), não
+   a da landing. O pacote ficou nos mesmos 2404 módulos antes e depois — já
+   eram eliminados por tree-shaking, e é por isso que estiveram tanto tempo sem
+   dar nas vistas.
 
 ---
 

@@ -110,6 +110,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "carteiras", label: "Carteiras", path: "/app/wallets", caps: ["wallets.read"] },
       { key: "cartoes_fisicos", label: "Cartões Físicos", path: "/app/cards/physical", caps: ["cards.read"] },
       { key: "cartoes_digitais", label: "Carteiras Digitais", path: "/app/cards/digital", caps: ["cards.read"] },
+      { key: "recuperacoes", label: "Recuperações", path: "/app/cards/recoveries", caps: ["cards.read"] },
     ],
   },
   {
@@ -118,6 +119,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: "financeiro", label: "Pagamentos", path: "/app/financial", caps: ["payments.read"] },
       { key: "ocasionais", label: "Bilhetes Ocasionais", path: "/app/guest-checkouts", caps: ["payments.read"] },
       { key: "pos", label: "Sessões POS", path: "/app/pos-sessions", caps: ["devices.read"] },
+      { key: "webhooks", label: "Webhooks", path: "/app/financial/webhooks", caps: ["payments.read"] },
       { key: "receita", label: "Receita de Agentes", path: "/app/agent-revenue", caps: ["reports.read"] },
       { key: "relatorios", label: "Relatórios", path: "/app/reports", caps: ["reports.read"] },
     ],

@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import LoginPage from "./auth/LoginPage";
-import AdminLayout from "./admin/AdminLayout";
+import PortalShell from "./design/portal/PortalShell";
 // Cada ecra chega quando alguem la vai, e nao antes.
 //
 // Estava tudo num ficheiro so de 1,2 MB. Com os 420 ms de ida e volta que
@@ -13,7 +13,10 @@ import AdminLayout from "./admin/AdminLayout";
 //
 // O que fica ansioso e so o que se ve sempre: o login, a moldura do portal e
 // o arranque.
-const LandingPage = lazy(() => import("./public/LandingPage"));
+// As paginas publicas (/, /precos, /contactos) sao a mesma pagina: o que
+// muda e o `slug` que o CMS serve. Ver `public/site/SitePage`.
+const SitePage = lazy(() => import("./public/site/SitePage"));
+const AppsPage = lazy(() => import("./public/apps/AppsPage"));
 const BookingPage = lazy(() => import("./public/booking/BookingPage"));
 const DashboardPage = lazy(() => import("./admin/DashboardPage"));
 const RoutesPage = lazy(() => import("./admin/RoutesPage"));
@@ -42,6 +45,23 @@ const BrandingPage = lazy(() => import("./admin/BrandingPage"));
 const TripDetailPage = lazy(() => import("./admin/TripDetailPage"));
 const TripSchedulerPage = lazy(() => import("./admin/TripSchedulerPage"));
 const TermsPage = lazy(() => import("./admin/TermsPage"));
+const SettingsPage = lazy(() => import("./admin/SettingsPage"));
+const WebhookLogPage = lazy(() => import("./admin/WebhookLogPage"));
+const CardRecoveriesPage = lazy(() => import("./admin/CardRecoveriesTab"));
+const ShiftsProposalPage = lazy(() => import("./admin/ShiftsProposalPage"));
+// CMS do site publico. Cada ecra do editor entra so quando alguem la vai.
+const CmsPagesPage = lazy(() => import("./admin/cms/PagesPage"));
+const CmsPageEditorPage = lazy(() => import("./admin/cms/PageEditorPage"));
+const CmsMediaPage = lazy(() => import("./admin/cms/MediaPage"));
+const CmsMenusPage = lazy(() => import("./admin/cms/MenusPage"));
+const CmsSeoPage = lazy(() => import("./admin/cms/SeoPage"));
+const CmsPlansPage = lazy(() => import("./admin/cms/PlansPage"));
+const CmsEcoSystemsPage = lazy(() => import("./admin/cms/EcoSystemsPage"));
+const CmsRequestsPage = lazy(() => import("./admin/cms/RequestsPage"));
+const CmsSchedulesPage = lazy(() => import("./admin/cms/SchedulesPage"));
+const CmsVersionsPage = lazy(() => import("./admin/cms/VersionsPage"));
+const CmsUsersPage = lazy(() => import("./admin/cms/CmsUsersPage"));
+const ErrorScreen = lazy(() => import("./public/errors/ErrorScreen"));
 const CheckoutPage = lazy(() => import("./public/CheckoutPage"));
 const BusPaymentPage = lazy(() => import("./public/BusPaymentPage"));
 const DownloadPage = lazy(() => import("./public/DownloadPage"));
@@ -83,7 +103,10 @@ function AppContent() {
       {/* Uma so fronteira de espera: o ecra que falta e sempre o proximo. */}
       <Suspense fallback={<SplashScreen />}>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<SitePage />} />
+        <Route path="/precos" element={<SitePage slug="precos" />} />
+        <Route path="/contactos" element={<SitePage slug="contactos" />} />
+        <Route path="/apps" element={<AppsPage />} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/comprar" element={<BookingPage />} />
@@ -92,7 +115,7 @@ function AppContent() {
         <Route path="/portal" element={<ProtectedRoute><PassengerPortalPage /></ProtectedRoute>} />
         <Route path="/driver" element={<ProtectedRoute><DriverPortalPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-        <Route path="/app" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+        <Route path="/app" element={<ProtectedRoute><PortalShell /></ProtectedRoute>}>
           <Route index element={<DashboardPage />} />
           <Route path="routes" element={<RoutesPage />} />
           <Route path="routes/:routeId/stops" element={<RouteStopsPage />} />
@@ -124,8 +147,25 @@ function AppContent() {
           <Route path="agent-revenue" element={<AgentRevenuePage />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="branding" element={<BrandingPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="financial/webhooks" element={<WebhookLogPage />} />
+          <Route path="cards/recoveries" element={<CardRecoveriesPage />} />
+          <Route path="shifts" element={<ShiftsProposalPage />} />
+          <Route path="cms/pages" element={<CmsPagesPage />} />
+          <Route path="cms/pages/:pageId" element={<CmsPageEditorPage />} />
+          <Route path="cms/media" element={<CmsMediaPage />} />
+          <Route path="cms/menus" element={<CmsMenusPage />} />
+          <Route path="cms/seo" element={<CmsSeoPage />} />
+          <Route path="cms/plans" element={<CmsPlansPage />} />
+          <Route path="cms/eco-systems" element={<CmsEcoSystemsPage />} />
+          <Route path="cms/requests" element={<CmsRequestsPage />} />
+          <Route path="cms/schedules" element={<CmsSchedulesPage />} />
+          <Route path="cms/versions" element={<CmsVersionsPage />} />
+          <Route path="cms/users" element={<CmsUsersPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Um endereco errado passa a dizer o que aconteceu. Reencaminhar
+            tudo para a entrada escondia gralhas de URL e ligacoes partidas. */}
+        <Route path="*" element={<ErrorScreen code="404" />} />
       </Routes>
       </Suspense>
     </>

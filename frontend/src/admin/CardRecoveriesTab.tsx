@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { PageFrame } from "../ui/common";
 import { apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { DataTable, EnumPill, FilterPill, Pill, type Column } from "../design/ui";
@@ -106,6 +107,11 @@ export default function CardRecoveriesTab() {
   ];
 
   return (
+    <PageFrame
+      description="A taxa de recuperação já estava nas taxas administrativas; o processo que a gera passa a ter histórico."
+      kicker="Passageiros"
+      title="Recuperações de cartão"
+    >
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="bz-toolbar">
         {STATES.map(([key, label]) => (
@@ -128,5 +134,6 @@ export default function CardRecoveriesTab() {
         rows={items}
       />
     </div>
+    </PageFrame>
   );
 }

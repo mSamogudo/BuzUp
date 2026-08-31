@@ -266,6 +266,35 @@ ter variante por tema.
 
 Migração `cms.0002_alter_pageblock_type` acrescenta o tipo `passos`.
 
+### Estado da ligação de cada módulo — verificado em 2026-08-31
+
+Até esta data, tudo o que se segue existia escrito e **não estava ligado a rota
+nenhuma**: os ficheiros compilavam, passavam no typecheck, e o Vite
+eliminava-os do pacote porque ninguém lhes chegava. O mesmo defeito apanhado no
+backend (`apps.cms` fora do `INSTALLED_APPS`, `apps.notifications.api` fora das
+urls) repetia-se no frontend inteiro do desenho.
+
+Ligado em `App.tsx` e verificado no browser ecrã a ecrã:
+
+| rota | ecrã | antes |
+|---|---|---|
+| `/` `/precos` `/contactos` | `public/site/SitePage` (CMS) | `/` servia a landing antiga |
+| `/apps` | `public/apps/AppsPage` | sem rota |
+| `*` | `public/errors/ErrorScreen` (404) | reencaminhava tudo para `/` |
+| `/app` | `design/portal/PortalShell` | `admin/AdminLayout` |
+| `/app/settings` | `admin/SettingsPage` | sem rota |
+| `/app/financial/webhooks` | `admin/WebhookLogPage` | sem rota |
+| `/app/cards/recoveries` | `admin/CardRecoveriesTab` | sem rota |
+| `/app/shifts` | `admin/ShiftsProposalPage` | sem rota |
+| `/app/cms/*` (10 ecrãs) | `admin/cms/` | sem rota |
+
+`WebhookLogPage` e `CardRecoveriesTab` foram escritos sem cabeçalho — eram
+pensados como separadores; ganharam `PageFrame` para funcionarem como ecrã
+próprio, e entradas em `design/portal/nav.ts`.
+
+O pacote passou de 2368 para 2404 módulos: a diferença é exactamente o que
+antes era eliminado por não ter quem lhe chegasse.
+
 ### Por fazer — as outras páginas públicas
 
 Comparação e implementação exactas ainda por fazer para: `Precos BusUp`,
@@ -291,13 +320,14 @@ Comparação e implementação exactas ainda por fazer para: `Precos BusUp`,
    terminais fixos. O módulo Mapa mostra os terminais reais da API com a mesma
    linguagem visual — pinos de 30px coloridos por estado, filtro por estado e
    balão com identificador, estado, velocidade e último contacto.
-4. **`frontend/src/public/LandingPage.tsx` e `public/landing/`** deixaram de
-   estar ligados a qualquer rota (a landing passou a vir do CMS) e foram
-   apagados, junto com `admin/AdminLayout.tsx` — o shell antigo, substituído
-   pelo `design/portal/PortalShell.tsx`. São 10 ficheiros, 1784 linhas, com
-   paleta e fonte próprias. O JS empacotado não mudou de tamanho (já era
-   eliminado por tree-shaking); o CSS do arranque passou de 194,5 kB para
-   188 kB.
+4. **`frontend/src/public/LandingPage.tsx`, `public/landing/` e
+   `admin/AdminLayout.tsx` deixaram de estar ligados a qualquer rota** — a
+   landing passa a vir do CMS e o shell do portal passa a ser
+   `design/portal/PortalShell.tsx`. Os ficheiros CONTINUAM no repositório: são
+   10 ficheiros e 1784 linhas com paleta e fonte próprias, hoje sem alvo
+   nenhum. Uma versão anterior deste documento dava-os como apagados e não
+   estavam — apagá-los é uma decisão à parte, e fica por tomar. O JS empacotado
+   não muda com eles lá (já eram eliminados por tree-shaking).
 
 ---
 
@@ -313,5 +343,8 @@ python manage.py seed_cms --publish
 python manage.py cms_publish_scheduled
 ```
 
-O arranque do contentor já corre `seed_cms --if-empty --publish`, por isso um
-deploy novo nasce com o site — e nunca sobrepõe o que a equipa editou.
+**O arranque do contentor NÃO corre `seed_cms`.** `backend/entrypoint.sh` corre
+`migrate` e `seed_roles`, e mais nada — uma versão anterior deste documento
+dizia o contrário. Num deploy novo o site nasce vazio até alguém correr o
+comando à mão. Automatizá-lo (com `--if-empty`, para nunca sobrepor o que a
+equipa editou) fica por fazer.

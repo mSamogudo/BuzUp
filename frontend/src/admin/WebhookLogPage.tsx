@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { PageFrame } from "../ui/common";
 import { apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import {
@@ -110,6 +111,11 @@ export default function WebhookLogPage() {
   ];
 
   return (
+    <PageFrame
+      description="O que cada gateway enviou, tal como chegou. É o primeiro sítio onde se olha quando um pagamento fica pendente."
+      kicker="Financeiro"
+      title="Registo de webhooks"
+    >
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="bz-toolbar">
         {PROVIDERS.map(([key, label]) => (
@@ -188,5 +194,6 @@ export default function WebhookLogPage() {
         ) : null}
       </Modal>
     </div>
+    </PageFrame>
   );
 }

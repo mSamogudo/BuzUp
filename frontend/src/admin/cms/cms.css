@@ -1,0 +1,212 @@
+/* ==========================================================================
+   Ecrãs do CMS (03-cms-especificacao.md §3).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Editor de página: blocos · formulário · pré-visualização
+   -------------------------------------------------------------------------- */
+.bzc-editor {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) minmax(360px, 480px);
+  gap: 16px;
+  align-items: start;
+}
+.bzc-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bzc-colhead {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  font: 800 10.5px/1 var(--font-ui);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+.bzc-colbody { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.bzc-colbody-scroll { max-height: calc(100vh - 260px); overflow-y: auto; }
+
+/* Lista de blocos */
+.bzc-blocks { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+.bzc-block {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.bzc-block:hover { border-color: var(--border2); }
+.bzc-block-active { background: var(--sky2); border-color: transparent; }
+.bzc-block-off { opacity: .55; }
+.bzc-block-drag { cursor: grab; color: var(--faint); flex: none; }
+.bzc-block-name { flex: 1 1 auto; min-width: 0; font: 600 13px/1.3 var(--font-ui); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bzc-block-type { font: 500 10px/1 var(--font-mono); color: var(--faint); }
+.bzc-block-over { border-color: var(--blue); border-style: dashed; }
+
+/* Itens repetíveis dentro de um bloco */
+.bzc-item {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--surface3);
+}
+.bzc-item-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bzc-item-title { font: 800 10.5px/1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* Pré-visualização */
+.bzc-preview {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  position: sticky;
+  top: 96px;
+}
+.bzc-preview-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.bzc-preview-stage {
+  height: calc(100vh - 280px);
+  min-height: 420px;
+  overflow: auto;
+  background: var(--surface);
+}
+.bzc-preview-scale { transform-origin: 0 0; }
+.bzc-preview-phone {
+  width: 390px;
+  margin: 20px auto;
+  border: 1px solid var(--border2);
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  background: var(--surface);
+}
+
+/* Barra de acções do editor */
+.bzc-actionbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+}
+.bzc-dirty {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 600 12px/1 var(--font-ui);
+  color: var(--tone-warn-fg);
+}
+.bzc-dirty i { width: 7px; height: 7px; border-radius: 999px; background: currentColor; }
+
+/* --------------------------------------------------------------------------
+   Biblioteca de media
+   -------------------------------------------------------------------------- */
+.bzc-media { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.bzc-mediacard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  transition: border-color var(--t-fast);
+}
+.bzc-mediacard:hover { border-color: var(--blue); }
+.bzc-mediathumb {
+  height: 128px;
+  display: grid; place-items: center;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.bzc-mediathumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.bzc-mediameta { padding: 11px 12px; display: flex; flex-direction: column; gap: 4px; }
+.bzc-mediameta strong { font: 600 12.5px/1.3 var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bzc-mediameta small { font: 500 11px/1.3 var(--font-mono); color: var(--muted2); }
+
+.bzc-dropzone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--r-card);
+  padding: 26px;
+  text-align: center;
+  color: var(--muted);
+  font: 500 13.5px/1.5 var(--font-ui);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.bzc-dropzone-over { border-color: var(--blue); background: var(--sky2); }
+
+/* --------------------------------------------------------------------------
+   Menus, planos e ecossistema — listas ordenáveis
+   -------------------------------------------------------------------------- */
+.bzc-sortable { display: flex; flex-direction: column; gap: 8px; }
+.bzc-sortrow {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.bzc-sortrow-over { border-color: var(--blue); border-style: dashed; }
+.bzc-handle { cursor: grab; color: var(--faint); display: grid; place-items: center; }
+
+/* --------------------------------------------------------------------------
+   SEO — pré-visualização do resultado de pesquisa e do cartão social
+   -------------------------------------------------------------------------- */
+.bzc-serp {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 18px;
+  background: var(--surface);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.bzc-serp-url { font: 500 12.5px/1.4 var(--font-mono); color: var(--tone-ok-fg); }
+.bzc-serp-title { font: 400 19px/1.3 var(--font-ui); color: #1a0dab; }
+html[data-theme="dark"] .bzc-serp-title { color: #8ab4f8; }
+.bzc-serp-desc { font: 400 13.5px/1.55 var(--font-ui); color: var(--muted); }
+
+.bzc-ogcard {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--surface);
+}
+.bzc-ogcard-img { height: 160px; background: var(--surface2); display: grid; place-items: center; }
+.bzc-ogcard-img img { width: 100%; height: 100%; object-fit: cover; }
+.bzc-ogcard-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
+
+/* --------------------------------------------------------------------------
+   Diferenças entre versões
+   -------------------------------------------------------------------------- */
+.bzc-diff { display: flex; flex-direction: column; gap: 8px; }
+.bzc-diffrow {
+  display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr) minmax(0, 2fr);
+  gap: 10px; align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font: 500 12.5px/1.5 var(--font-ui);
+}
+.bzc-difffield { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted2); word-break: break-all; }
+.bzc-diff-a { color: var(--tone-bad-fg); }
+.bzc-diff-b { color: var(--tone-ok-fg); }
+
+@media (max-width: 1280px) {
+  .bzc-editor { grid-template-columns: 230px minmax(0, 1fr); }
+  .bzc-preview { display: none; }
+}
+@media (max-width: 900px) {
+  .bzc-editor { grid-template-columns: minmax(0, 1fr); }
+}

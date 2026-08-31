@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "apps.devices.apps.DevicesConfig",
     "apps.app_releases.apps.AppReleasesConfig",
     "apps.branding.apps.BrandingConfig",
+    "apps.cms.apps.CmsConfig",
     "apps.routes.apps.RoutesConfig",
     "apps.fares.apps.FaresConfig",
     "apps.trips.apps.TripsConfig",

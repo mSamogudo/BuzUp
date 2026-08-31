@@ -1,0 +1,282 @@
+/* ==========================================================================
+   Ponte entre os ecrãs de módulo já existentes (`admin-*`) e o vocabulário do
+   handoff (02-tokens-e-padroes.md).
+
+   Os 24 módulos do portal já estavam escritos com as classes `admin-*` de um
+   desenho anterior. Em vez de os reescrever um a um — e arriscar a lógica de
+   cada listagem — esta folha repõe as MEDIDAS e as FORMAS do desenho novo:
+   botões em pílula, tabelas de 54px com cabeçalho maiúsculo, pílulas TONE,
+   cartões de raio 16 e modais de 720px. A paleta já vem de `tokens.css`.
+
+   É carregada depois de `styles.css`, por isso ganha no cascade.
+   À medida que cada módulo for portado para os componentes `bz-*`, as regras
+   correspondentes aqui deixam de ter alvo e podem sair.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Tipografia dos títulos de ecrã e rótulos
+   -------------------------------------------------------------------------- */
+.admin-page-head h2,
+.admin-section-head h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--text);
+}
+.admin-page-head h2 { font-size: 27px; line-height: 1.15; }
+.admin-section-head h3 { font-size: 18px; line-height: 1.25; }
+
+.admin-page-head p,
+.admin-section-head p,
+.admin-helper-text {
+  font: 400 14px/1.55 var(--font-ui);
+  color: var(--muted);
+}
+
+.admin-kicker,
+.admin-topbar-kicker {
+  font: 800 10.5px/1 var(--font-ui);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* --------------------------------------------------------------------------
+   Botões — raio 999px, altura 44px, Inter 700, sem saltos no hover
+   -------------------------------------------------------------------------- */
+.primary-button,
+.secondary-button {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--r-pill);
+  font: 700 14px/1 var(--font-ui);
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+  box-shadow: none;
+}
+.primary-button {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.primary-button:hover,
+.primary-button:active {
+  background: var(--accent-dk);
+  border-color: var(--accent-dk);
+  transform: none;
+  box-shadow: none;
+}
+.secondary-button {
+  background: var(--surface);
+  border-color: var(--border2);
+  color: var(--text);
+}
+.secondary-button:hover {
+  background: var(--surface);
+  border-color: var(--blue);
+  color: var(--accent-dk);
+  transform: none;
+  box-shadow: none;
+}
+.primary-button-danger,
+.danger-button {
+  background: var(--tone-bad-bg);
+  border-color: transparent;
+  color: var(--tone-bad-fg);
+  box-shadow: none;
+}
+.primary-button-danger:hover,
+.danger-button:hover {
+  background: #F6DCD6;
+  border-color: transparent;
+  color: var(--tone-bad-fg);
+  transform: none;
+  box-shadow: none;
+}
+
+.icon-button,
+.admin-inline-button {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: none;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
+}
+.icon-button:hover,
+.admin-inline-button:hover {
+  border-color: var(--blue);
+  color: var(--accent-dk);
+  background: var(--surface);
+  transform: none;
+  box-shadow: none;
+}
+.admin-inline-button-danger:hover {
+  border-color: var(--tone-bad-fg);
+  color: var(--tone-bad-fg);
+}
+
+/* --------------------------------------------------------------------------
+   Campos — raio 12–13px, altura 44px, fundo `--surface3`
+   -------------------------------------------------------------------------- */
+.admin-page input:not([type="checkbox"]):not([type="radio"]),
+.admin-page select,
+.admin-page textarea,
+.admin-modal-card input:not([type="checkbox"]):not([type="radio"]),
+.admin-modal-card select,
+.admin-modal-card textarea {
+  min-height: 44px;
+  border-radius: var(--r-field);
+  border: 1px solid var(--border2);
+  background: var(--surface3);
+  color: var(--text);
+  font: 400 14px/1.4 var(--font-ui);
+  box-shadow: none;
+}
+.admin-page textarea,
+.admin-modal-card textarea { min-height: 108px; line-height: 1.55; }
+.admin-page input:focus,
+.admin-page select:focus,
+.admin-page textarea:focus,
+.admin-modal-card input:focus,
+.admin-modal-card select:focus,
+.admin-modal-card textarea:focus {
+  border-color: var(--blue);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   Cartões e secções — raio 16/20, borda de 1px, sem sombra difusa
+   -------------------------------------------------------------------------- */
+.admin-card,
+.admin-section {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: none;
+}
+.admin-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border2);
+}
+.admin-card span {
+  font: 800 10.5px/1 var(--font-ui);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.admin-card strong {
+  font: 800 30px/1 var(--font-display);
+  letter-spacing: -.02em;
+  color: var(--text);
+}
+.admin-card small { font: 400 12.5px/1.45 var(--font-ui); color: var(--muted2); }
+
+/* --------------------------------------------------------------------------
+   Tabelas — cabeçalho maiúsculo, linhas de 54px, hover `--sky2`
+   -------------------------------------------------------------------------- */
+.admin-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.admin-table th {
+  padding: 11px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font: 800 10.5px/1 var(--font-ui);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.admin-table td {
+  height: 54px;
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+  font: 500 13px/1.4 var(--font-ui);
+  color: var(--text);
+}
+.admin-table tbody tr:last-child td { border-bottom: 0; }
+.admin-table tbody tr { transition: background var(--t-fast); }
+.admin-table tbody tr:hover { background: var(--sky2); }
+.admin-table tbody tr:hover td { background: var(--sky2); }
+
+/* Primeira coluna: identificador em mono + nome em Inter 600 por baixo. */
+.admin-table-primary strong { font: 600 13.5px/1.35 var(--font-ui); color: var(--text); }
+.admin-table-primary small { font: 500 11.5px/1.35 var(--font-mono); color: var(--muted2); }
+
+.admin-table-meta,
+.admin-table-pagination {
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+  font: 500 12px/1 var(--font-ui);
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Pílulas de estado — paleta TONE, sem ponto nem contorno
+   -------------------------------------------------------------------------- */
+.admin-status {
+  height: 25px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font: 700 11px/1 var(--font-ui);
+}
+.admin-status::before { display: none; }
+.admin-status-neutral { background: var(--tone-mute-bg); color: var(--tone-mute-fg); }
+.admin-status-success { background: var(--tone-ok-bg); color: var(--tone-ok-fg); }
+.admin-status-danger { background: var(--tone-bad-bg); color: var(--tone-bad-fg); }
+.admin-status-warning { background: var(--tone-warn-bg); color: var(--tone-warn-fg); }
+.admin-status-info { background: var(--tone-info-bg); color: var(--tone-info-fg); }
+
+.admin-pill {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font: 600 12.5px/1 var(--font-ui);
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Modal — 720px, raio 20px, cabeçalho e rodapé separados por 1px
+   -------------------------------------------------------------------------- */
+.admin-modal-overlay {
+  background: rgba(13, 59, 102, .38);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.admin-modal-card {
+  width: min(720px, 100%);
+  border-radius: var(--r-card-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+}
+.admin-modal-head {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.admin-modal-head h3 {
+  font: 800 19px/1.25 var(--font-display);
+  letter-spacing: -.015em;
+  color: var(--text);
+}
+.admin-modal-head p { font: 400 13px/1.5 var(--font-ui); color: var(--muted); }
+.admin-modal-body { padding: 22px; }
+
+/* --------------------------------------------------------------------------
+   O antigo `.admin-shell` deixou de ser usado: o shell é o `bzp-*`. O que
+   sobra aqui é o conteúdo dos módulos, que já vive dentro de `.bzp-content`.
+   -------------------------------------------------------------------------- */
+.bzp-content .admin-page { gap: 18px; }
+.bzp-content .admin-content-inner { padding: 0; }

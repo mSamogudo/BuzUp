@@ -1,0 +1,1112 @@
+{
+  "landing": {
+    "PT": {
+      "portalLogin": "Entrar no portal",
+      "navContact": "Contactos",
+      "navProduct": "Produto",
+      "navFeatures": "Funcionalidades",
+      "navWhy": "Porquê BusUp",
+      "navCases": "Casos",
+      "navPricing": "Preços",
+      "talkSales": "Falar com vendas",
+      "buyTicket": "Comprar bilhete",
+      "heroBadge": "Bilhética digital · Moçambique",
+      "heroH1a": "Bilhetes, frota e receita",
+      "heroH1b": "numa só plataforma.",
+      "heroLead": "O BusUp digitaliza a venda e a validação de bilhetes no transporte de passageiros — do bairro à viagem internacional. O passageiro compra no telemóvel ou no agente; o operador vê cada viagem e cada metical, em tempo real.",
+      "heroLeadShort": "O passageiro compra no telemóvel ou no agente. O operador vê cada viagem e cada metical, em tempo real.",
+      "ctaPrimary": "Falar com vendas",
+      "ctaSecondary": "Ver a plataforma",
+      "chips": [
+        "QR no telemóvel",
+        "Cartão NFC",
+        "M-Pesa",
+        "e-Mola"
+      ],
+      "tag1": "Cobrador",
+      "tag2": "Direcção",
+      "tag3": "Motorista",
+      "tag4": "Passageiro",
+      "ecoStripTitle": "Ecossistemas UpDigital",
+      "logosLead": "Construído sobre o ecossistema UpDigital",
+      "featH2": "Tudo o que a operação precisa, num só sistema.",
+      "featLead": "Venda, validação, cartões, receita e frota — sem folhas de Excel pelo meio.",
+      "f1t": "Venda em três canais",
+      "f1p": "Site, app do passageiro e agente no terreno. Pago com M-Pesa ou e-Mola em menos de um minuto.",
+      "f2t": "Validação a bordo",
+      "f2p": "QR ou cartão NFC confirmados em segundos, com a decisão registada na hora.",
+      "f3t": "Cartões físicos e digitais",
+      "f3p": "Cartões NFC e passes digitais QR, criados um a um ou importados de Excel.",
+      "f4t": "Receita em tempo real",
+      "f4p": "Cada bilhete fica registado. A tesouraria reconcilia sem esperar pelo fecho do dia.",
+      "f5t": "Frota e rotas no mapa",
+      "f5p": "Viaturas, motoristas e viagens com posição GPS e ocupação por lugar.",
+      "f5a": "Programação diária automática",
+      "f5b": "Ocupação por viatura e por lugar",
+      "f5c": "Histórico e auditoria de tudo",
+      "statsH2": "Porque é que os operadores escolhem o BusUp",
+      "statsLead": "Números do produto, não de marketing.",
+      "stats": [
+        {
+          "v": "3",
+          "l": "canais de venda e validação"
+        },
+        {
+          "v": "2",
+          "l": "carteiras móveis integradas"
+        },
+        {
+          "v": "100%",
+          "l": "da receita registada"
+        },
+        {
+          "v": "0",
+          "l": "obras na frota actual"
+        }
+      ],
+      "stepsH2": "Começar em três passos",
+      "stepsLead": "Carregamos as suas rotas e horários; a operação arranca no mesmo dia.",
+      "stepsPanelTitle": "Portal de gestão",
+      "stepsPanelText": "Rotas, paragens, viaturas e tarifas configurados por nós, revistos por si.",
+      "steps": [
+        {
+          "n": "01",
+          "title": "Configuração das rotas",
+          "text": "Importamos rotas, paragens, horários e tarifas da sua operação actual.",
+          "m1": "Nova rota",
+          "m1cta": "Guardar",
+          "m2": "Paragens",
+          "m2a": "Baixa",
+          "m2b": "Aeroporto"
+        },
+        {
+          "n": "02",
+          "title": "Equipa e dispositivos",
+          "text": "Perfis por função, POS dos agentes activados e cartões emitidos.",
+          "m1": "Novo agente",
+          "m1cta": "Activar",
+          "m2": "Dispositivos",
+          "m2a": "POS-04 ligado",
+          "m2b": "POS-07 ligado"
+        },
+        {
+          "n": "03",
+          "title": "Vender e acompanhar",
+          "text": "A venda arranca e a direcção acompanha a receita em tempo real.",
+          "m1": "Relatório",
+          "m1cta": "Exportar",
+          "m2": "Receita",
+          "m2a": "Fecho conferido",
+          "m2b": "Auditoria activa"
+        }
+      ],
+      "casesH2": "Resultados reais, impacto real",
+      "casesLead": "Espaço reservado para depoimentos de operadores. Envie-nos as citações e atribuições reais e substituímos.",
+      "cases": [
+        {
+          "kind": "Urbano · Maputo",
+          "quote": "[Depoimento a preencher] Espaço para o que o operador diz sobre o fim do dinheiro vivo a bordo.",
+          "who": "Nome, cargo — operador urbano"
+        },
+        {
+          "kind": "Interurbano",
+          "quote": "[Depoimento a preencher] Espaço para o que muda no fecho de contas e na reconciliação diária.",
+          "who": "Nome, cargo — operador interurbano"
+        },
+        {
+          "kind": "Institucional",
+          "quote": "[Depoimento a preencher] Espaço para o que muda no controlo do embarque escolar ou de colaboradores.",
+          "who": "Nome, cargo — instituição"
+        }
+      ],
+      "priceH2": "Preços por operação, não por tabela",
+      "priceLead": "O valor depende da frota, dos canais de venda e do volume. Sem custo de licença por telemóvel do passageiro.",
+      "plans": [
+        {
+          "name": "Urbano",
+          "price": "Sob consulta",
+          "unit": "Frotas até 20 viaturas, venda no agente e QR no telemóvel.",
+          "cta": "Pedir proposta",
+          "items": [
+            "Portal de gestão",
+            "App POS para agentes",
+            "M-Pesa e e-Mola",
+            "Relatórios diários"
+          ]
+        },
+        {
+          "name": "Interurbano",
+          "price": "Sob consulta",
+          "unit": "Rotas longas com lugar marcado e bilhete em PDF.",
+          "featured": true,
+          "badge": "Mais procurado",
+          "cta": "Pedir proposta",
+          "items": [
+            "Tudo do plano Urbano",
+            "Lugar marcado e mapa de lugares",
+            "Bilhete PDF com QR",
+            "Cartões NFC e digitais"
+          ]
+        },
+        {
+          "name": "Institucional",
+          "price": "Sob consulta",
+          "unit": "Empresas, escolas e frotas com contrato próprio.",
+          "cta": "Falar com vendas",
+          "items": [
+            "Tudo do plano Interurbano",
+            "Pacotes e subsídios",
+            "Perfis e permissões por função",
+            "Suporte dedicado local"
+          ]
+        }
+      ],
+      "faqH2": "Perguntas que os operadores fazem",
+      "faqLead": "Se faltar alguma, escreva-nos — respondemos no mesmo dia útil.",
+      "faqs": [
+        {
+          "q": "É preciso instalar equipamento nas viaturas?",
+          "a": "Não. A validação corre na app POS do agente ou do motorista, num telemóvel Android comum. Cartões NFC e QR funcionam com o mesmo aparelho."
+        },
+        {
+          "q": "Funciona sem rede?",
+          "a": "A venda exige rede para o pagamento, mas a validação a bordo tolera falhas: o registo é guardado no dispositivo e sincroniza quando a ligação volta."
+        },
+        {
+          "q": "Que pagamentos são aceites?",
+          "a": "M-Pesa e e-Mola através da Payless, além de dinheiro no agente e saldo em carteira ou cartão."
+        },
+        {
+          "q": "O passageiro tem de criar conta?",
+          "a": "Não. A compra pública funciona sem registo — o bilhete chega em PDF com QR. Contas e cartões são opcionais para passageiros frequentes."
+        },
+        {
+          "q": "Quem tem acesso a quê?",
+          "a": "Perfis com permissões por função e registo de auditoria de quem fez o quê, em todo o portal."
+        }
+      ],
+      "formH2": "Vamos ver isto na sua operação.",
+      "formLead": "Preenchemos a plataforma com as suas rotas e horários e mostramos o fluxo completo — venda, embarque e fecho de contas.",
+      "formFacts": [
+        "A plataforma com os seus dados",
+        "Instalação sem obra na frota",
+        "Suporte local em Moçambique"
+      ],
+      "formTitle": "Pedido de contacto",
+      "fName": "Nome",
+      "fCompany": "Empresa",
+      "fPhone": "Telefone",
+      "fFleet": "Viaturas na frota",
+      "fMsg": "Mensagem",
+      "formCta": "Enviar pedido",
+      "formNote": "Respondemos em dias úteis, das 08h00 às 17h00 (CAT).",
+      "sentTitle": "Pedido enviado.",
+      "sentText": "A equipa comercial responde no próximo dia útil.",
+      "commercial": "Comercial",
+      "ctaH2": "Leve o BusUp para a sua frota.",
+      "ctaLead": "Mostramos a plataforma a operar com as suas rotas, os seus horários e os seus números.",
+      "ctaContact": "Falar com vendas",
+      "ctaPricing": "Ver preços",
+      "mapPanel": "Mapa da frota",
+      "mapPlaceholder": "Screenshot do mapa Leaflet/OpenStreetMap do portal a inserir",
+      "ecoLabel": "Desenvolvido por",
+      "ecoH2": "Quem constrói o BusUp",
+      "ecoLead": "O BusUp é desenvolvido pela UpDigital, Limitada — empresa moçambicana de software com sede na Matola. A mesma engenharia sustenta os outros produtos do grupo.",
+      "ecoNote": "Suporte local: quem escreve o software é quem atende o operador.",
+      "ecoItems": [
+        {
+          "logo": "assets/logo-payup.png",
+          "name": "PayUp",
+          "url": "https://payup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-cashup.png",
+          "name": "CashUp",
+          "url": "https://cashup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-gateup.png",
+          "name": "GateUp",
+          "url": "https://gateup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-vura.png",
+          "name": "Vura",
+          "url": "https://vura.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-ossoma.png",
+          "name": "Ossoma",
+          "url": "https://ossoma.updigital.co.mz"
+        }
+      ],
+      "footerAbout": "Plataforma de bilhética digital para o transporte de passageiros. Desenvolvido em Moçambique.",
+      "footerProduct": "Produto",
+      "footerAccess": "Acesso",
+      "footerContact": "Contacto",
+      "footerPortal": "Portal de gestão",
+      "footerApps": "Descarregar apps",
+      "poweredBy": "Desenvolvido por",
+      "footerEco": "Ecossistema",
+      "rights": "Todos os direitos reservados."
+    },
+    "EN": {
+      "portalLogin": "Sign in to the portal",
+      "navContact": "Contact",
+      "navProduct": "Product",
+      "navFeatures": "Features",
+      "navWhy": "Why BusUp",
+      "navCases": "Cases",
+      "navPricing": "Pricing",
+      "talkSales": "Talk to sales",
+      "buyTicket": "Buy a ticket",
+      "heroBadge": "Digital ticketing · Mozambique",
+      "heroH1a": "Tickets, fleet and revenue",
+      "heroH1b": "on a single platform.",
+      "heroLead": "BusUp digitises ticket sales and validation in passenger transport — from the neighbourhood route to the cross-border trip. Passengers buy on their phone or from an agent; the operator sees every trip and every metical, in real time.",
+      "heroLeadShort": "Passengers buy on their phone or from an agent. The operator sees every trip and every metical, in real time.",
+      "ctaPrimary": "Talk to sales",
+      "ctaSecondary": "See the platform",
+      "chips": [
+        "QR on the phone",
+        "NFC card",
+        "M-Pesa",
+        "e-Mola"
+      ],
+      "tag1": "Agent",
+      "tag2": "Management",
+      "tag3": "Driver",
+      "tag4": "Passenger",
+      "ecoStripTitle": "UpDigital ecosystems",
+      "logosLead": "Built on the UpDigital ecosystem",
+      "featH2": "Everything the operation needs, in one system.",
+      "featLead": "Sales, validation, cards, revenue and fleet — with no spreadsheets in between.",
+      "f1t": "Sales across three channels",
+      "f1p": "Website, passenger app and agent on the ground. Paid with M-Pesa or e-Mola in under a minute.",
+      "f2t": "Validation on board",
+      "f2p": "QR or NFC card confirmed in seconds, with the decision recorded on the spot.",
+      "f3t": "Physical and digital cards",
+      "f3p": "NFC cards and digital QR passes, created one by one or imported from Excel.",
+      "f4t": "Revenue in real time",
+      "f4p": "Every ticket is recorded. Treasury reconciles without waiting for the daily close.",
+      "f5t": "Fleet and routes on the map",
+      "f5p": "Vehicles, drivers and trips with GPS position and seat-level occupancy.",
+      "f5a": "Automatic daily scheduling",
+      "f5b": "Occupancy per vehicle and per seat",
+      "f5c": "Full history and audit trail",
+      "statsH2": "Why operators choose BusUp",
+      "statsLead": "Product numbers, not marketing ones.",
+      "stats": [
+        {
+          "v": "3",
+          "l": "sales and validation channels"
+        },
+        {
+          "v": "2",
+          "l": "mobile wallets integrated"
+        },
+        {
+          "v": "100%",
+          "l": "of revenue recorded"
+        },
+        {
+          "v": "0",
+          "l": "changes to your current fleet"
+        }
+      ],
+      "stepsH2": "Get started in three steps",
+      "stepsLead": "We load your routes and schedules; the operation starts the same day.",
+      "stepsPanelTitle": "Management portal",
+      "stepsPanelText": "Routes, stops, vehicles and fares configured by us, reviewed by you.",
+      "steps": [
+        {
+          "n": "01",
+          "title": "Route configuration",
+          "text": "We import routes, stops, schedules and fares from your current operation.",
+          "m1": "New route",
+          "m1cta": "Save",
+          "m2": "Stops",
+          "m2a": "Downtown",
+          "m2b": "Airport"
+        },
+        {
+          "n": "02",
+          "title": "Team and devices",
+          "text": "Roles per function, agent POS activated and cards issued.",
+          "m1": "New agent",
+          "m1cta": "Activate",
+          "m2": "Devices",
+          "m2a": "POS-04 online",
+          "m2b": "POS-07 online"
+        },
+        {
+          "n": "03",
+          "title": "Sell and follow through",
+          "text": "Selling starts and management follows revenue in real time.",
+          "m1": "Report",
+          "m1cta": "Export",
+          "m2": "Revenue",
+          "m2a": "Close checked",
+          "m2b": "Audit active"
+        }
+      ],
+      "casesH2": "Real results, real impact",
+      "casesLead": "Placeholder for operator testimonials. Send us the real quotes and attributions and we will swap them in.",
+      "cases": [
+        {
+          "kind": "Urban · Maputo",
+          "quote": "[Testimonial to be filled] Space for what the operator says about ending cash on board.",
+          "who": "Name, role — urban operator"
+        },
+        {
+          "kind": "Intercity",
+          "quote": "[Testimonial to be filled] Space for what changes in the daily close and reconciliation.",
+          "who": "Name, role — intercity operator"
+        },
+        {
+          "kind": "Institutional",
+          "quote": "[Testimonial to be filled] Space for what changes in school or staff boarding control.",
+          "who": "Name, role — institution"
+        }
+      ],
+      "priceH2": "Priced per operation, not per table",
+      "priceLead": "The figure depends on fleet size, sales channels and volume. No licence cost per passenger phone.",
+      "plans": [
+        {
+          "name": "Urban",
+          "price": "On request",
+          "unit": "Fleets up to 20 vehicles, agent sales and QR on the phone.",
+          "cta": "Request a quote",
+          "items": [
+            "Management portal",
+            "POS app for agents",
+            "M-Pesa and e-Mola",
+            "Daily reports"
+          ]
+        },
+        {
+          "name": "Intercity",
+          "price": "On request",
+          "unit": "Long routes with assigned seats and PDF tickets.",
+          "featured": true,
+          "badge": "Most requested",
+          "cta": "Request a quote",
+          "items": [
+            "Everything in Urban",
+            "Assigned seats and seat map",
+            "PDF ticket with QR",
+            "NFC and digital cards"
+          ]
+        },
+        {
+          "name": "Institutional",
+          "price": "On request",
+          "unit": "Companies, schools and fleets under contract.",
+          "cta": "Talk to sales",
+          "items": [
+            "Everything in Intercity",
+            "Packages and subsidies",
+            "Roles and permissions",
+            "Dedicated local support"
+          ]
+        }
+      ],
+      "faqH2": "Questions operators ask",
+      "faqLead": "If one is missing, write to us — we answer the same business day.",
+      "faqs": [
+        {
+          "q": "Do we need to install equipment on the vehicles?",
+          "a": "No. Validation runs in the agent or driver POS app on an ordinary Android phone. NFC cards and QR work on the same device."
+        },
+        {
+          "q": "Does it work without a connection?",
+          "a": "Sales need a connection for payment, but on-board validation tolerates outages: the record is kept on the device and syncs when the link returns."
+        },
+        {
+          "q": "Which payments are accepted?",
+          "a": "M-Pesa and e-Mola through Payless, plus cash with an agent and wallet or card balance."
+        },
+        {
+          "q": "Does the passenger need an account?",
+          "a": "No. Public purchase works without registration — the ticket arrives as a PDF with a QR code. Accounts and cards are optional for frequent passengers."
+        },
+        {
+          "q": "Who has access to what?",
+          "a": "Roles with permissions per function and an audit record of who did what, across the whole portal."
+        }
+      ],
+      "formH2": "Let us see this on your operation.",
+      "formLead": "We fill the platform with your routes and schedules and show the full flow — sale, boarding and daily close.",
+      "formFacts": [
+        "The platform with your own data",
+        "Installed with no fleet retrofit",
+        "Local support in Mozambique"
+      ],
+      "formTitle": "Contact request",
+      "fName": "Name",
+      "fCompany": "Company",
+      "fPhone": "Phone",
+      "fFleet": "Vehicles in fleet",
+      "fMsg": "Message",
+      "formCta": "Send request",
+      "formNote": "We reply on business days, 08:00 to 17:00 (CAT).",
+      "sentTitle": "Request sent.",
+      "sentText": "The sales team replies on the next business day.",
+      "commercial": "Sales",
+      "ctaH2": "Bring BusUp to your fleet.",
+      "ctaLead": "We show the platform running on your routes, your schedules and your numbers.",
+      "ctaContact": "Talk to sales",
+      "ctaPricing": "See pricing",
+      "mapPanel": "Fleet map",
+      "mapPlaceholder": "Screenshot of the portal's Leaflet/OpenStreetMap view to be added",
+      "ecoLabel": "Built by",
+      "ecoH2": "Who builds BusUp",
+      "ecoLead": "BusUp is built by UpDigital, Limitada — a Mozambican software company based in Matola. The same engineering supports the group's other products.",
+      "ecoNote": "Local support: the people who write the software are the people who answer the operator.",
+      "ecoItems": [
+        {
+          "logo": "assets/logo-payup.png",
+          "name": "PayUp",
+          "url": "https://payup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-cashup.png",
+          "name": "CashUp",
+          "url": "https://cashup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-gateup.png",
+          "name": "GateUp",
+          "url": "https://gateup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-vura.png",
+          "name": "Vura",
+          "url": "https://vura.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-ossoma.png",
+          "name": "Ossoma",
+          "url": "https://ossoma.updigital.co.mz"
+        }
+      ],
+      "footerAbout": "Digital ticketing platform for passenger transport. Built in Mozambique.",
+      "footerProduct": "Product",
+      "footerAccess": "Access",
+      "footerContact": "Contact",
+      "footerPortal": "Management portal",
+      "footerApps": "Download apps",
+      "poweredBy": "Powered by",
+      "footerEco": "Ecosystem",
+      "rights": "All rights reserved."
+    }
+  },
+  "precos": {
+    "PT": {
+      "portalLogin": "Entrar no portal",
+      "navProduct": "Produto",
+      "navPricing": "Preços",
+      "navContact": "Contactos",
+      "navFeatures": "Funcionalidades",
+      "navWhy": "Porquê",
+      "navCases": "Casos",
+      "talkSales": "Falar com vendas",
+      "badge": "Proposta em 2 dias úteis",
+      "h1a": "Preços por operação,",
+      "h1b": "não por tabela.",
+      "lead": "O valor depende da frota, dos canais de venda e do volume mensal. Não há licença por telemóvel de passageiro nem custo por bilhete emitido acima do combinado.",
+      "p1": "Urbano",
+      "p2": "Interurbano",
+      "p3": "Institucional",
+      "plans": [
+        {
+          "name": "Urbano",
+          "price": "Sob consulta",
+          "who": "Frotas urbanas até 20 viaturas, com venda no agente e QR no telemóvel.",
+          "unit": "Mensalidade por viatura activa, com mínimo de frota.",
+          "cta": "Pedir proposta",
+          "items": [
+            "Portal de gestão completo",
+            "App POS para agentes e motoristas",
+            "Pagamentos M-Pesa e e-Mola",
+            "Relatórios diários e fecho de contas",
+            "Suporte por telefone e email"
+          ]
+        },
+        {
+          "name": "Interurbano",
+          "featured": true,
+          "badge": "Mais procurado",
+          "price": "Sob consulta",
+          "who": "Rotas longas e internacionais, com lugar marcado e bilhete em PDF.",
+          "unit": "Mensalidade por viatura activa mais comissão por venda online.",
+          "cta": "Pedir proposta",
+          "items": [
+            "Tudo do plano Urbano",
+            "Lugar marcado e mapa de lugares",
+            "Bilhete PDF com QR e reimpressão",
+            "Cartões físicos NFC e digitais",
+            "Programação automática de viagens",
+            "Suporte prioritário"
+          ]
+        },
+        {
+          "name": "Institucional",
+          "price": "Sob consulta",
+          "who": "Empresas, escolas e frotas com contrato próprio ou transporte subsidiado.",
+          "unit": "Contrato anual, dimensionado ao número de utentes.",
+          "cta": "Falar com vendas",
+          "items": [
+            "Tudo do plano Interurbano",
+            "Pacotes, subsídios e viagens gratuitas",
+            "Perfis e permissões por função",
+            "Integração com sistemas internos",
+            "Gestor de conta dedicado"
+          ]
+        }
+      ],
+      "notes": [
+        {
+          "h": "Instalação sem obra",
+          "p": "Não há equipamento a instalar nas viaturas. A validação corre em telemóveis Android comuns."
+        },
+        {
+          "h": "Arranque incluído",
+          "p": "Importação de rotas, paragens, horários e tarifas, formação da equipa e acompanhamento na primeira semana."
+        },
+        {
+          "h": "Sem custo para o passageiro",
+          "p": "Comprar e validar não tem taxa de plataforma para quem viaja. As taxas das carteiras móveis são as do operador de pagamento."
+        }
+      ],
+      "tableH2": "O que entra em cada plano",
+      "tableLead": "A diferença entre planos está nos canais de venda e na complexidade da operação, não em limites artificiais.",
+      "tableCol": "Funcionalidade",
+      "tableFoot": "Proposta para a sua frota",
+      "quote": "Pedir",
+      "rows": [
+        {
+          "label": "Portal de gestão",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "App POS (agente e motorista)",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "M-Pesa e e-Mola",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Venda online ao passageiro",
+          "a": "QR",
+          "b": "QR + PDF",
+          "c": "QR + PDF"
+        },
+        {
+          "label": "Lugar marcado",
+          "a": "—",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Cartões NFC e digitais",
+          "a": "Digitais",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Pacotes e subsídios",
+          "a": "—",
+          "b": "Opcional",
+          "c": "✓"
+        },
+        {
+          "label": "GPS e mapa da frota",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Relatórios e auditoria",
+          "a": "Diários",
+          "b": "Completos",
+          "c": "Completos"
+        },
+        {
+          "label": "Suporte",
+          "a": "Email e telefone",
+          "b": "Prioritário",
+          "c": "Gestor dedicado"
+        }
+      ],
+      "faqH2": "Perguntas sobre preço",
+      "faqLead": "Se o seu caso não estiver aqui, diga-nos como funciona a sua operação e enviamos um número concreto.",
+      "faqs": [
+        {
+          "q": "Porque é que não há uma tabela pública?",
+          "a": "Porque o valor justo depende do número de viaturas activas, dos canais de venda e do volume mensal. Uma tabela fixa cobraria a mais a frotas pequenas e a menos a operações grandes."
+        },
+        {
+          "q": "O que é cobrado: viatura, bilhete ou passageiro?",
+          "a": "A base é a viatura activa por mês. Em rotas com venda online há uma comissão por bilhete vendido nesse canal, acordada por escrito."
+        },
+        {
+          "q": "Há custo de instalação?",
+          "a": "O arranque está incluído: importação de rotas e tarifas, formação e acompanhamento na primeira semana. Cartões físicos NFC são cobrados à unidade."
+        },
+        {
+          "q": "O que acontece se a frota crescer?",
+          "a": "O contrato acompanha o número de viaturas activas. Novas viaturas entram no mês seguinte, sem taxa de adesão."
+        },
+        {
+          "q": "É possível fazer um piloto?",
+          "a": "Sim. Um piloto numa rota ou num conjunto de viaturas, com prazo definido e critérios de sucesso acordados antes de começar."
+        }
+      ],
+      "ctaH2": "Diga-nos como opera e devolvemos um número.",
+      "ctaLead": "Frota, rotas e volume mensal são o suficiente para uma proposta concreta em dois dias úteis.",
+      "ctaContact": "Pedir proposta",
+      "ctaProduct": "Ver a plataforma",
+      "footerAbout": "Plataforma de bilhética digital para o transporte de passageiros. Desenvolvido em Moçambique.",
+      "footerProduct": "Produto",
+      "footerContact": "Contacto",
+      "ecoLabel": "Desenvolvido por",
+      "ecoH2": "Quem constrói o BusUp",
+      "ecoLead": "O BusUp é desenvolvido pela UpDigital, Limitada — empresa moçambicana de software com sede na Matola. A mesma engenharia sustenta os outros produtos do grupo.",
+      "ecoNote": "Suporte local: quem escreve o software é quem atende o operador.",
+      "ecoItems": [
+        {
+          "logo": "assets/logo-payup.png",
+          "name": "PayUp",
+          "url": "https://payup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-cashup.png",
+          "name": "CashUp",
+          "url": "https://cashup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-gateup.png",
+          "name": "GateUp",
+          "url": "https://gateup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-vura.png",
+          "name": "Vura",
+          "url": "https://vura.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-ossoma.png",
+          "name": "Ossoma",
+          "url": "https://ossoma.updigital.co.mz"
+        }
+      ],
+      "poweredBy": "Desenvolvido por",
+      "footerEco": "Ecossistema",
+      "rights": "Todos os direitos reservados."
+    },
+    "EN": {
+      "portalLogin": "Sign in to the portal",
+      "navProduct": "Product",
+      "navPricing": "Pricing",
+      "navContact": "Contact",
+      "navFeatures": "Features",
+      "navWhy": "Why BusUp",
+      "navCases": "Cases",
+      "talkSales": "Talk to sales",
+      "badge": "Quote in 2 business days",
+      "h1a": "Priced per operation,",
+      "h1b": "not per table.",
+      "lead": "The figure depends on fleet size, sales channels and monthly volume. There is no licence per passenger phone and no per-ticket cost beyond what is agreed.",
+      "p1": "Urban",
+      "p2": "Intercity",
+      "p3": "Institutional",
+      "plans": [
+        {
+          "name": "Urban",
+          "price": "On request",
+          "who": "Urban fleets up to 20 vehicles, with agent sales and QR on the phone.",
+          "unit": "Monthly fee per active vehicle, with a fleet minimum.",
+          "cta": "Request a quote",
+          "items": [
+            "Full management portal",
+            "POS app for agents and drivers",
+            "M-Pesa and e-Mola payments",
+            "Daily reports and cash close",
+            "Phone and email support"
+          ]
+        },
+        {
+          "name": "Intercity",
+          "featured": true,
+          "badge": "Most requested",
+          "price": "On request",
+          "who": "Long and cross-border routes, with assigned seats and PDF tickets.",
+          "unit": "Monthly fee per active vehicle plus commission on online sales.",
+          "cta": "Request a quote",
+          "items": [
+            "Everything in Urban",
+            "Assigned seats and seat map",
+            "PDF ticket with QR and reprint",
+            "Physical NFC and digital cards",
+            "Automatic trip scheduling",
+            "Priority support"
+          ]
+        },
+        {
+          "name": "Institutional",
+          "price": "On request",
+          "who": "Companies, schools and fleets under contract or subsidised transport.",
+          "unit": "Annual contract, sized to the number of users.",
+          "cta": "Talk to sales",
+          "items": [
+            "Everything in Intercity",
+            "Packages, subsidies and free trips",
+            "Roles and permissions per function",
+            "Integration with internal systems",
+            "Dedicated account manager"
+          ]
+        }
+      ],
+      "notes": [
+        {
+          "h": "No fleet retrofit",
+          "p": "Nothing is installed on the vehicles. Validation runs on ordinary Android phones."
+        },
+        {
+          "h": "Onboarding included",
+          "p": "Import of routes, stops, schedules and fares, team training and hands-on support in the first week."
+        },
+        {
+          "h": "No cost to the passenger",
+          "p": "Buying and validating carries no platform fee for travellers. Mobile wallet fees are the payment provider's own."
+        }
+      ],
+      "tableH2": "What each plan includes",
+      "tableLead": "The difference between plans is sales channels and operational complexity, not artificial limits.",
+      "tableCol": "Capability",
+      "tableFoot": "Quote for your fleet",
+      "quote": "Request",
+      "rows": [
+        {
+          "label": "Management portal",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "POS app (agent and driver)",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "M-Pesa and e-Mola",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Online sales to passengers",
+          "a": "QR",
+          "b": "QR + PDF",
+          "c": "QR + PDF"
+        },
+        {
+          "label": "Assigned seats",
+          "a": "—",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "NFC and digital cards",
+          "a": "Digital",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Packages and subsidies",
+          "a": "—",
+          "b": "Optional",
+          "c": "✓"
+        },
+        {
+          "label": "GPS and fleet map",
+          "a": "✓",
+          "b": "✓",
+          "c": "✓"
+        },
+        {
+          "label": "Reports and audit trail",
+          "a": "Daily",
+          "b": "Full",
+          "c": "Full"
+        },
+        {
+          "label": "Support",
+          "a": "Email and phone",
+          "b": "Priority",
+          "c": "Dedicated manager"
+        }
+      ],
+      "faqH2": "Questions about price",
+      "faqLead": "If your case is not here, tell us how your operation works and we will send a concrete figure.",
+      "faqs": [
+        {
+          "q": "Why is there no public price table?",
+          "a": "Because a fair figure depends on active vehicles, sales channels and monthly volume. A fixed table would overcharge small fleets and undercharge large operations."
+        },
+        {
+          "q": "What is charged: vehicle, ticket or passenger?",
+          "a": "The base is the active vehicle per month. On routes with online sales there is a commission per ticket sold through that channel, agreed in writing."
+        },
+        {
+          "q": "Is there an installation cost?",
+          "a": "Onboarding is included: import of routes and fares, training and hands-on support in the first week. Physical NFC cards are charged per unit."
+        },
+        {
+          "q": "What happens if the fleet grows?",
+          "a": "The contract follows the number of active vehicles. New vehicles join the following month, with no joining fee."
+        },
+        {
+          "q": "Can we run a pilot?",
+          "a": "Yes. A pilot on one route or a set of vehicles, with a defined period and success criteria agreed up front."
+        }
+      ],
+      "ctaH2": "Tell us how you operate and we will send a figure.",
+      "ctaLead": "Fleet, routes and monthly volume are enough for a concrete quote in two business days.",
+      "ctaContact": "Request a quote",
+      "ctaProduct": "See the platform",
+      "footerAbout": "Digital ticketing platform for passenger transport. Built in Mozambique.",
+      "footerProduct": "Product",
+      "footerContact": "Contact",
+      "ecoLabel": "Built by",
+      "ecoH2": "Who builds BusUp",
+      "ecoLead": "BusUp is built by UpDigital, Limitada — a Mozambican software company based in Matola. The same engineering supports the group's other products.",
+      "ecoNote": "Local support: the people who write the software are the people who answer the operator.",
+      "ecoItems": [
+        {
+          "logo": "assets/logo-payup.png",
+          "name": "PayUp",
+          "url": "https://payup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-cashup.png",
+          "name": "CashUp",
+          "url": "https://cashup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-gateup.png",
+          "name": "GateUp",
+          "url": "https://gateup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-vura.png",
+          "name": "Vura",
+          "url": "https://vura.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-ossoma.png",
+          "name": "Ossoma",
+          "url": "https://ossoma.updigital.co.mz"
+        }
+      ],
+      "poweredBy": "Powered by",
+      "footerEco": "Ecosystem",
+      "rights": "All rights reserved."
+    }
+  },
+  "contactos": {
+    "PT": {
+      "portalLogin": "Entrar no portal",
+      "navProduct": "Produto",
+      "navPricing": "Preços",
+      "navContact": "Contactos",
+      "navFeatures": "Funcionalidades",
+      "navWhy": "Porquê",
+      "navCases": "Casos",
+      "callNow": "Ligar agora",
+      "badge": "Resposta no mesmo dia útil",
+      "h1": "Fale connosco.",
+      "lead": "Respondemos a pedidos de proposta, dúvidas técnicas e suporte comercial. A equipa que constrói o BusUp é a mesma que atende.",
+      "formTitle": "Pedido de contacto",
+      "formSub": "Preenchemos a plataforma com as suas rotas e horários antes da reunião.",
+      "g1": "1 · Quem contacta",
+      "g2": "2 · A operação",
+      "g3": "3 · O que quer ver",
+      "fName": "Nome",
+      "fRole": "Cargo",
+      "fCompany": "Empresa",
+      "fPhone": "Telefone",
+      "fEmail": "Email",
+      "fFleet": "Viaturas na frota",
+      "fType": "Tipo de operação",
+      "fInterest": "O que quer ver",
+      "fMsg": "Mensagem",
+      "types": [
+        "Urbano",
+        "Interurbano",
+        "Internacional",
+        "Empresa ou escola"
+      ],
+      "interests": [
+        "Venda online",
+        "Validação a bordo",
+        "Cartões NFC",
+        "Relatórios",
+        "Pacotes e subsídios"
+      ],
+      "formCta": "Enviar pedido",
+      "formNote": "Respondemos em dias úteis, das 08h00 às 17h00 (CAT). Os dados servem apenas para o contacto comercial.",
+      "sentTitle": "Pedido enviado.",
+      "sentText": "A equipa comercial responde no próximo dia útil, pelo contacto que indicou.",
+      "sendAnother": "Enviar outro pedido",
+      "directTitle": "Directo",
+      "commercial": "Comercial",
+      "emailNote": "Propostas e suporte",
+      "hoursTitle": "Horário",
+      "hours": "Segunda a sexta, 08h00 – 17h00",
+      "addressTitle": "Endereço",
+      "mapNote": "Matola, Província de Maputo",
+      "mapPlaceholder": "Mapa incorporado a inserir",
+      "quickTitle": "Atalhos",
+      "apps": "Descarregar as aplicações",
+      "ecoLabel": "Desenvolvido por",
+      "ecoH2": "Quem constrói o BusUp",
+      "ecoLead": "O BusUp é desenvolvido pela UpDigital, Limitada — empresa moçambicana de software com sede na Matola. A mesma engenharia sustenta os outros produtos do grupo.",
+      "ecoNote": "Suporte local: quem escreve o software é quem atende o operador.",
+      "ecoItems": [
+        {
+          "logo": "assets/logo-payup.png",
+          "name": "PayUp",
+          "url": "https://payup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-cashup.png",
+          "name": "CashUp",
+          "url": "https://cashup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-gateup.png",
+          "name": "GateUp",
+          "url": "https://gateup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-vura.png",
+          "name": "Vura",
+          "url": "https://vura.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-ossoma.png",
+          "name": "Ossoma",
+          "url": "https://ossoma.updigital.co.mz"
+        }
+      ],
+      "footerAbout": "Plataforma de bilhética digital para o transporte de passageiros. Desenvolvido em Moçambique.",
+      "footerProduct": "Produto",
+      "footerContact": "Contacto",
+      "poweredBy": "Desenvolvido por",
+      "footerEco": "Ecossistema",
+      "rights": "Todos os direitos reservados."
+    },
+    "EN": {
+      "portalLogin": "Sign in to the portal",
+      "navProduct": "Product",
+      "navPricing": "Pricing",
+      "navContact": "Contact",
+      "navFeatures": "Features",
+      "navWhy": "Why BusUp",
+      "navCases": "Cases",
+      "callNow": "Call now",
+      "badge": "Answered the same business day",
+      "h1": "Talk to us.",
+      "lead": "We answer quote requests, technical questions and commercial support. The team that builds BusUp is the team that replies.",
+      "formTitle": "Contact request",
+      "formSub": "We load the platform with your routes and schedules before the meeting.",
+      "g1": "1 · Who is contacting",
+      "g2": "2 · The operation",
+      "g3": "3 · What you want to see",
+      "fName": "Name",
+      "fRole": "Role",
+      "fCompany": "Company",
+      "fPhone": "Phone",
+      "fEmail": "Email",
+      "fFleet": "Vehicles in fleet",
+      "fType": "Type of operation",
+      "fInterest": "What you want to see",
+      "fMsg": "Message",
+      "types": [
+        "Urban",
+        "Intercity",
+        "Cross-border",
+        "Company or school"
+      ],
+      "interests": [
+        "Online sales",
+        "On-board validation",
+        "NFC cards",
+        "Reports",
+        "Packages and subsidies"
+      ],
+      "formCta": "Send request",
+      "formNote": "We reply on business days, 08:00 to 17:00 (CAT). Your details are used only for commercial contact.",
+      "sentTitle": "Request sent.",
+      "sentText": "The sales team replies on the next business day, through the contact you gave.",
+      "sendAnother": "Send another request",
+      "directTitle": "Direct",
+      "commercial": "Sales",
+      "emailNote": "Quotes and support",
+      "hoursTitle": "Opening hours",
+      "hours": "Monday to Friday, 08:00 – 17:00",
+      "addressTitle": "Address",
+      "mapNote": "Matola, Maputo Province",
+      "mapPlaceholder": "Embedded map to be added",
+      "quickTitle": "Shortcuts",
+      "apps": "Download the apps",
+      "ecoLabel": "Built by",
+      "ecoH2": "Who builds BusUp",
+      "ecoLead": "BusUp is built by UpDigital, Limitada — a Mozambican software company based in Matola. The same engineering supports the group's other products.",
+      "ecoNote": "Local support: the people who write the software are the people who answer the operator.",
+      "ecoItems": [
+        {
+          "logo": "assets/logo-payup.png",
+          "name": "PayUp",
+          "url": "https://payup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-cashup.png",
+          "name": "CashUp",
+          "url": "https://cashup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-gateup.png",
+          "name": "GateUp",
+          "url": "https://gateup.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-vura.png",
+          "name": "Vura",
+          "url": "https://vura.updigital.co.mz"
+        },
+        {
+          "logo": "assets/logo-ossoma.png",
+          "name": "Ossoma",
+          "url": "https://ossoma.updigital.co.mz"
+        }
+      ],
+      "footerAbout": "Digital ticketing platform for passenger transport. Built in Mozambique.",
+      "footerProduct": "Product",
+      "footerContact": "Contact",
+      "poweredBy": "Powered by",
+      "footerEco": "Ecosystem",
+      "rights": "All rights reserved."
+    }
+  }
+}

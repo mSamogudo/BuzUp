@@ -23,6 +23,10 @@ ALL_CAPABILITIES = [
     "imports.manage",
     "settings.read", "settings.manage",
     "broadcasts.send",
+    # CMS do site publico (ver docs/design-handoff/03-cms-especificacao.md).
+    "content.read", "content.write", "content.publish",
+    "media.manage", "menus.manage", "seo.manage", "plans.manage",
+    "requests.read",
 ]
 
 DEFAULT_ROLES = {
@@ -60,6 +64,15 @@ DEFAULT_ROLES = {
     ]},
     "pos_agent": {"name": "Agente POS", "permissions": ["pos.operate"]},
     "auditor": {"name": "Auditor", "permissions": ["audit.read", "reports.read", "reconciliation.read"]},
+    # Quem escreve o site nao tem nada que ver a operacao, e o contrario
+    # tambem: sem este papel, mudar um preco na pagina publica exigia o papel
+    # de Administrador — e com ele vinham as tarifas, as financas e os
+    # utilizadores. A especificacao do CMS chama-lhe `conteudo`.
+    "conteudo": {"name": "Gestor de Conteudo", "permissions": [
+        "content.read", "content.write", "content.publish",
+        "media.manage", "menus.manage", "seo.manage", "plans.manage",
+        "requests.read",
+    ]},
 }
 
 

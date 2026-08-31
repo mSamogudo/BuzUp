@@ -35,6 +35,10 @@ services:
     working_dir: /app
     volumes:
       - ./backend:/app
+      # O seed do CMS le os logotipos de docs/design-handoff/design/assets.
+      # So o backend estava montado: os doze ficheiros davam "asset em
+      # falta" e o site nascia sem logotipo nenhum.
+      - ./docs:/docs:ro
     env_file:
       - ./backend/.env
     environment:

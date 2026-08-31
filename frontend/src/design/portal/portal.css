@@ -1,0 +1,266 @@
+/* ==========================================================================
+   Estrutura do Portal (02-tokens-e-padroes.md §6 e §12).
+   Barra lateral 84/264, cabeçalho fixo de 72px, conteúdo em --surface2.
+   ========================================================================== */
+
+.bzp-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-expanded) 1fr;
+  min-height: 100vh;
+  background: var(--surface2);
+}
+.bzp-shell-collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+
+/* --------------------------------------------------------------------------
+   Barra lateral
+   -------------------------------------------------------------------------- */
+.bzp-side {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+.bzp-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: var(--header-h);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.bzp-shell-collapsed .bzp-side-head { padding: 0; justify-content: center; }
+
+/* Colapsada, a marca é o botão de expandir. */
+.bzp-side-mark {
+  display: grid;
+  place-items: center;
+  width: 44px; height: 44px;
+  border: 0; border-radius: 13px;
+  background: var(--sky2);
+  cursor: pointer;
+  padding: 6px;
+  transition: background var(--t-fast);
+}
+.bzp-side-mark:hover { background: var(--sky1); }
+
+.bzp-nav {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 14px 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bzp-shell-collapsed .bzp-nav { padding: 14px 10px 6px; align-items: center; }
+
+.bzp-navgroup {
+  margin: 14px 0 6px;
+  padding: 0 10px;
+  font: 800 10px/1 var(--font-ui);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.bzp-navgroup:first-child { margin-top: 0; }
+.bzp-navgroup-rule { height: 1px; background: var(--border); margin: 12px 6px; }
+
+.bzp-navitem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  font: 500 13.5px/1 var(--font-ui);
+  transition: background var(--t-fast), color var(--t-fast);
+  white-space: nowrap;
+}
+.bzp-navitem:hover { background: var(--surface2); color: var(--text); }
+.bzp-navitem-active { background: var(--sky2); color: var(--navy-text); font-weight: 600; }
+.bzp-navitem-active::before {
+  content: "";
+  position: absolute; left: -12px; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 0 3px 3px 0;
+  background: var(--blue);
+}
+.bzp-shell-collapsed .bzp-navitem { width: 44px; justify-content: center; padding: 0; }
+.bzp-shell-collapsed .bzp-navitem-active::before { left: -10px; }
+
+.bzp-navicon {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border-radius: var(--r-icon);
+  background: var(--surface2);
+  color: inherit;
+  flex: none;
+}
+.bzp-navitem-active .bzp-navicon { background: var(--surface); color: var(--accent-dk); }
+.bzp-navlabel { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.bzp-navcount { font: 500 10.5px/1 var(--font-mono); color: var(--faint); }
+
+/* Tooltip da barra colapsada */
+.bzp-shell-collapsed .bzp-navitem[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute; left: calc(100% + 10px); top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  font: 600 12px/1 var(--font-ui);
+  white-space: nowrap;
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* Cartão de utilizador */
+.bzp-usercard {
+  flex: none;
+  border-top: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bzp-userrow { display: flex; align-items: center; gap: 10px; }
+.bzp-avatar {
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border-radius: 11px;
+  background: var(--sky2);
+  color: var(--navy-text);
+  font: 800 12.5px/1 var(--font-ui);
+  flex: none;
+}
+.bzp-userinfo { min-width: 0; display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
+.bzp-username { font: 700 13px/1.2 var(--font-ui); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bzp-userrole { font: 500 11.5px/1.2 var(--font-ui); color: var(--muted2); }
+.bzp-signature {
+  display: flex; align-items: center; gap: 7px;
+  font: 500 10px/1 var(--font-mono);
+  color: var(--faint);
+}
+.bzp-signature img { height: 13px; width: auto; opacity: .9; }
+
+/* --------------------------------------------------------------------------
+   Cabeçalho
+   -------------------------------------------------------------------------- */
+.bzp-main { display: flex; flex-direction: column; min-width: 0; }
+
+.bzp-header {
+  position: sticky; top: 0; z-index: 30;
+  display: flex; align-items: center; gap: 12px;
+  height: var(--header-h);
+  padding: 16px 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.bzp-header-spacer { flex: 1 1 auto; }
+
+.bzp-auto {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 13px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font: 600 11.5px/1 var(--font-ui);
+  color: var(--muted);
+  cursor: pointer;
+}
+.bzp-auto i {
+  width: 7px; height: 7px; border-radius: 999px;
+  background: var(--tone-ok-fg);
+  animation: bzpulse 2.4s ease-in-out infinite;
+}
+.bzp-auto-off i { background: var(--faint); animation: none; }
+
+.bzp-popover {
+  position: absolute; right: 0; top: calc(100% + 10px);
+  width: 340px; max-height: 420px;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-overlay);
+  z-index: 60;
+  overflow: hidden;
+}
+.bzp-popover-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  font: 700 13.5px/1 var(--font-ui);
+  color: var(--text);
+}
+.bzp-popover-body { overflow-y: auto; padding: 6px; }
+.bzp-popover-item {
+  display: flex; flex-direction: column; gap: 4px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0; border-radius: 11px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.bzp-popover-item:hover { background: var(--surface2); }
+.bzp-popover-item strong { font: 600 13px/1.35 var(--font-ui); color: var(--text); }
+.bzp-popover-item small { font: 400 11.5px/1.4 var(--font-ui); color: var(--muted2); }
+.bzp-popover-item-unread strong::after {
+  content: ""; display: inline-block; margin-left: 7px;
+  width: 6px; height: 6px; border-radius: 999px; background: var(--blue);
+}
+.bzp-popover-foot { padding: 10px 16px; border-top: 1px solid var(--border); background: var(--surface2); }
+
+.bzp-bellwrap { position: relative; }
+.bzp-belldot {
+  position: absolute; top: 6px; right: 7px;
+  width: 8px; height: 8px; border-radius: 999px;
+  background: var(--blue);
+  border: 2px solid var(--surface);
+}
+
+/* --------------------------------------------------------------------------
+   Conteúdo
+   -------------------------------------------------------------------------- */
+.bzp-content {
+  flex: 1 1 auto;
+  padding: 24px 28px 48px;
+  background: var(--surface2);
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Responsividade (§12)
+   -------------------------------------------------------------------------- */
+/* O botao da gaveta so existe abaixo de 900px. */
+.bzp-only-mobile { display: none !important; }
+
+@media (max-width: 900px) {
+  .bzp-only-mobile { display: inline-flex !important; }
+  .bzp-shell, .bzp-shell-collapsed { grid-template-columns: 1fr; }
+  .bzp-side {
+    position: fixed; inset: 0 auto 0 0; z-index: 80;
+    width: var(--sidebar-expanded);
+    transform: translateX(-100%);
+    transition: transform var(--t-base);
+    box-shadow: var(--shadow-overlay);
+  }
+  .bzp-side-open { transform: none; }
+  .bzp-scrim {
+    position: fixed; inset: 0; z-index: 79;
+    background: rgba(13, 59, 102, .38);
+    animation: bzfade-in var(--t-base);
+  }
+  .bzp-content { padding: 18px 16px 40px; }
+  .bzp-header { padding: 12px 16px; }
+}

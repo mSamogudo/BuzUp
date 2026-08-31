@@ -1,0 +1,57 @@
+/* Arranque do portal (B6.5) — barra `bzbar` do desenho. */
+
+.bzsp {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 46%, var(--surface) 92%);
+  font-family: var(--font-ui);
+}
+
+.bzsp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.bzsp-text {
+  margin: 0;
+  font: 500 14.5px/1 var(--font-ui);
+  color: var(--muted);
+}
+
+.bzsp-bar {
+  position: relative;
+  display: block;
+  width: 220px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.bzsp-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 32%;
+  border-radius: 999px;
+  background: var(--blue);
+  animation: bzbar 1.2s ease-in-out infinite;
+}
+
+@keyframes bzbar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+
+.bzsp-powered {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bzsp-powered img { height: 22px; width: auto; display: block; }

@@ -26,6 +26,7 @@ urlpatterns = [
     path("", include("apps.reports.api.urls")),
     path("", include("apps.packages.api.urls")),
     path("", include("apps.pos.api.urls")),
+    path("", include("apps.shifts.api.urls")),
     path("", include("apps.users.api.urls_admin")),
     path("", include("apps.sms.api.urls")),
     path("", include("apps.notifications.api.urls")),

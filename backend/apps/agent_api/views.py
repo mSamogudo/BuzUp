@@ -1650,7 +1650,14 @@ class AgentCardValidationView(APIView):
         # (retry idempotente devolve o evento original de outro agente).
         if event.validated_by_id is None:
             event.validated_by = request.user
-            event.save(update_fields=["validated_by", "updated_at"])
+            # O turno vai pelo mesmo caminho e pela mesma razao: e por aqui que
+            # a caixa do agente encontra o que ele validou. Sem turno aberto
+            # fica nulo — a validacao vale na mesma, so nao entra em caixa
+            # nenhuma.
+            from apps.shifts.services import turno_aberto_de
+
+            event.shift = turno_aberto_de(request.user)
+            event.save(update_fields=["validated_by", "shift", "updated_at"])
 
         approved = event.status == "approved"
 

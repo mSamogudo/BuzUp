@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "apps.reports.apps.ReportsConfig",
     "apps.packages.apps.PackagesConfig",
     "apps.pos.apps.PosConfig",
+    "apps.shifts.apps.ShiftsConfig",
     "apps.notifications.apps.NotificationsConfig",
     "apps.leads.apps.LeadsConfig",
     "apps.agent_api.apps.AgentApiConfig",

@@ -89,6 +89,12 @@ class GuestCheckout(BaseModel):
     # compra passariam a valer para tras. Numa disputa sobre um cancelamento ou
     # uma bagagem, e esta linha que diz o que estava escrito nesse dia.
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
+    # Turno em que a venda foi feita, quando veio do balcao. Nulo para tudo
+    # o que e comprado no site: nao ha caixa de agente nenhuma por tras.
+    shift = models.ForeignKey(
+        "shifts.Shift", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="checkouts", db_index=True,
+    )
     terms_version = models.CharField(max_length=32, blank=True)
 
     class Meta:

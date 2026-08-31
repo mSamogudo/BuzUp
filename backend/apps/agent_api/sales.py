@@ -142,6 +142,19 @@ def _identidades_para(route, passengers: list[dict] | None, quantity: int,
     return limpos
 
 
+def _turno_do(agent):
+    """O turno aberto do agente que esta a vender, se houver.
+
+    Sem turno aberto a venda faz-se na mesma e fica sem turno: obrigar a abrir
+    turno para vender parava o balcao no dia em que alguem se esquecesse, e o
+    passageiro nao tem culpa da caixa.
+    """
+    from apps.shifts.services import turno_aberto_de
+
+    user = getattr(agent, "user", None)
+    return turno_aberto_de(user) if user else None
+
+
 def abrir_embarque_se_preciso(trip, agent, user=None) -> None:
     """A primeira venda ABRE o embarque, se ainda estiver por abrir.
 
@@ -340,6 +353,7 @@ def create_pos_sale(
             _assert_seats_free(trip, seats)
 
         gc = GuestCheckout.objects.create(
+            shift=_turno_do(agent),
             reference=ref,
             payer_phone=phone,
             buyer_name="",
@@ -585,6 +599,7 @@ def create_card_sale(
         from apps.fares.services import display_snapshot
         disp_ccy, disp_total, disp_rate = display_snapshot(charged_total, display_currency)
         gc = GuestCheckout.objects.create(
+            shift=_turno_do(agent),
             reference=ref,
             payer_phone=phone,
             buyer_name=pa.full_name or "",

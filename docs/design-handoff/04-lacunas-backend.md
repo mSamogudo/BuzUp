@@ -63,11 +63,28 @@ desenho pede e a API não tem.
 Ver `03-cms-especificacao.md`. Nenhuma tabela nem endpoint existe hoje.
 É o maior bloco de trabalho de backend deste handoff.
 
-### 2.2 Turnos de agente (`shifts`)
+### 2.2 Turnos de agente (`shifts`) — CONSTRUÍDO em 2026-08-31
 Um turno prende um agente a uma viatura durante um período e fecha caixa: fundo de
 maneio, apurado esperado, contado e diferença.
-Precisa de: `/shifts` (listar, abrir, fechar, conferir, reabrir) e do campo
-`shift_id` em bilhetes e validações, para o apurado ser calculado no servidor.
+
+`/api/shifts/` tem listar, `open`, `close`, `verify` e `reopen`, mais `mine`
+para o POS mostrar ao agente o apurado corrente antes de fechar. O `shift_id`
+viaja em `guest_checkouts.GuestCheckout` e em `validations.ValidationEvent`,
+ambos anuláveis — uma venda do site ou uma validação sem turno aberto continuam
+a valer, só não entram em caixa nenhuma.
+
+Três regras que a implementação fixou e vale a pena não desfazer:
+
+- **O apurado esperado é do servidor.** Aceitá-lo do cliente deixava o agente
+  declarar a sua própria diferença, e ela dava sempre zero.
+- **Só o numerário conta para a caixa.** O que foi por M-Pesa ou e-Mola entra
+  directamente na conta da operadora e nunca passa pelas mãos do agente. As
+  validações contam-se para o histórico mas não para o que há a entregar.
+- **Conferir é da tesouraria** (`payments.manage`), não de quem faz a caixa
+  (`agents.manage`). Conferir não reescreve a diferença: um turno com falta
+  conferido continua com a falta.
+
+Reabrir exige motivo escrito, que fica nas notas com quem o fez e quando.
 
 ### 2.3 Complementos menores
 - Campo de "último contacto" agregado por dispositivo (hoje só heartbeat cru).

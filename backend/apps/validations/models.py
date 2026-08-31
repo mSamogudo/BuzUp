@@ -79,6 +79,13 @@ class ValidationEvent(BaseModel):
         null=True, blank=True, related_name="validations_performed",
     )
     amount_debited = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    # Turno em que a validacao aconteceu. Nulo quando o validador nao estava
+    # com turno aberto — a validacao continua a valer, so nao entra em caixa
+    # nenhuma.
+    shift = models.ForeignKey(
+        "shifts.Shift", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="validations", db_index=True,
+    )
     status = models.CharField(max_length=16, choices=Status.choices)
     failure_reason = models.CharField(max_length=32, choices=FailureReason.choices, blank=True, default="")
     idempotency_key = models.CharField(max_length=128, unique=True, db_index=True)

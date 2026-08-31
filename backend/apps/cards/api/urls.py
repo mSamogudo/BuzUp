@@ -7,6 +7,7 @@ from apps.cards.api.views import (
     CardBlockView,
     CardLookupView,
     CardQrPngView,
+    CardRecoveryListView,
     CardReplaceView,
     CardViewSet,
 )
@@ -15,6 +16,7 @@ router = DefaultRouter()
 router.register("cards", CardViewSet, basename="cards")
 
 urlpatterns = [
+    path("card-recoveries/", CardRecoveryListView.as_view(), name="card-recoveries"),
     path("card-actions/lookup/", CardLookupView.as_view(), name="card-lookup"),
     path("card-actions/activate/", CardActivateView.as_view(), name="card-activate"),
     path("card-actions/block/", CardBlockView.as_view(), name="card-block"),

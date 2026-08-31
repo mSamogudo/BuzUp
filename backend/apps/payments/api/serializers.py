@@ -149,6 +149,32 @@ class PaymentCallbackSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PaymentCallbackLogSerializer(serializers.ModelSerializer):
+    """O que o gateway enviou, tal como chegou.
+
+    E o primeiro sitio onde se olha quando um pagamento fica pendente: da-se a
+    referencia ao operador e ve-se se o webhook chegou, se vinha assinado e o
+    que trazia dentro.
+    """
+
+    reference = serializers.CharField(source="payment_intent.reference", read_only=True)
+    provider = serializers.CharField(source="payment_intent.provider", read_only=True)
+    intent_status = serializers.CharField(source="payment_intent.status", read_only=True)
+    amount = serializers.DecimalField(
+        source="payment_intent.amount", max_digits=12, decimal_places=2, read_only=True,
+    )
+    payer_phone = serializers.CharField(source="payment_intent.payer_phone", read_only=True)
+
+    class Meta:
+        model = PaymentCallback
+        fields = (
+            "id", "payment_intent_id", "reference", "provider", "intent_status",
+            "amount", "payer_phone", "provider_reference", "signature_valid",
+            "processing_status", "raw_payload", "received_at",
+        )
+        read_only_fields = fields
+
+
 class PaymentCallbackIngestSerializer(serializers.Serializer):
     reference = serializers.CharField()
     provider_reference = serializers.CharField(required=False, default="")

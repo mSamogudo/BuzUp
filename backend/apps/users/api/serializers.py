@@ -46,7 +46,11 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "uuid", "username", "email", "phone", "first_name", "last_name", "is_active", "is_superuser", "roles", "capabilities")
+        fields = (
+            "id", "uuid", "username", "email", "phone", "first_name", "last_name",
+            "is_active", "is_superuser", "is_2fa_enabled", "last_login",
+            "roles", "capabilities",
+        )
         read_only_fields = fields
 
     def get_roles(self, obj):
@@ -54,6 +58,37 @@ class MeSerializer(serializers.ModelSerializer):
 
     def get_capabilities(self, obj):
         return obj.get_capabilities()
+
+
+class TwoFactorSettingsSerializer(serializers.Serializer):
+    """Ligar ou desligar o segundo factor da propria conta.
+
+    A senha actual e sempre pedida: uma sessao roubada nao chega para mexer na
+    segunda barreira. Quem desliga tem ainda de ser superadministrador — a
+    mesma regra que o admin do Django ja aplica em `UserAdmin`.
+    """
+
+    enabled = serializers.BooleanField(required=True)
+    current_password = serializers.CharField(required=True, write_only=True)
+
+    def validate_current_password(self, value):
+        if not self.context["request"].user.check_password(value):
+            raise serializers.ValidationError("Senha actual incorrecta.")
+        return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        if attrs["enabled"] and not (user.phone or "").strip():
+            raise serializers.ValidationError(
+                {"phone": "Sem numero de telemovel nao ha por onde enviar o codigo."},
+            )
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.is_2fa_enabled = self.validated_data["enabled"]
+        user.save(update_fields=["is_2fa_enabled", "updated_at"])
+        return user
 
 
 class ChangePasswordSerializer(serializers.Serializer):

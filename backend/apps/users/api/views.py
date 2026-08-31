@@ -13,6 +13,7 @@ from apps.core.download_tokens import DEFAULT_MAX_AGE, make_download_ticket
 from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from django.utils.dateparse import parse_date
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -38,6 +39,7 @@ from apps.users.api.serializers import (
     MeSerializer,
     RoleCreateSerializer,
     RoleSerializer,
+    TwoFactorSettingsSerializer,
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
@@ -188,6 +190,23 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"detail": "Senha actualizada com sucesso."})
+
+
+class TwoFactorSettingsView(APIView):
+    """POST /api/auth/me/2fa/ — o utilizador liga ou desliga o seu 2FA.
+
+    Desligar e privilegio do superadministrador. A conta nasce com 2FA ligado
+    de proposito e quem entrou com uma sessao roubada nao pode baixar-lhe a
+    guarda; ligar de volta pode qualquer um, desde que tenha telemovel.
+    """
+
+    def post(self, request):
+        serializer = TwoFactorSettingsSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        if not serializer.validated_data["enabled"] and not request.user.is_superuser:
+            raise PermissionDenied("So um superadministrador desliga o segundo factor.")
+        user = serializer.save()
+        return Response({"is_2fa_enabled": user.is_2fa_enabled})
 
 
 class CapabilitiesListView(APIView):

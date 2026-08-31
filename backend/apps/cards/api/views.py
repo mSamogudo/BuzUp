@@ -1,9 +1,11 @@
 import io
 
 import qrcode
+from django.db.models import Q
 from django.http import HttpResponse as DjangoHttpResponse
 from rest_framework import status
 from rest_framework.authentication import BaseAuthentication
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,12 +13,50 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.core.download_auth import DownloadTicketAuthentication
 from apps.core.download_scopes import CARD_QR
-from apps.cards.api.serializers import CardAssignSerializer, CardLookupSerializer, CardReplaceSerializer, CardSerializer
+from apps.cards.api.serializers import (
+    CardAssignSerializer,
+    CardLookupSerializer,
+    CardRecoverySerializer,
+    CardReplaceSerializer,
+    CardSerializer,
+)
 from apps.cards.models import Card
 from apps.cards.services import activate_card, assign_card_to_passenger, block_card, replace_card, CardError
 from apps.core.permissions import HasCapabilities
 from apps.core.viewsets import BaseModelViewSet
 from apps.passengers.models import PassengerAccount
+from apps.payments.models import PaymentIntent
+
+
+class CardRecoveryListView(ListAPIView):
+    """GET /api/card-recoveries/ — historico de recuperacoes de cartao.
+
+    `?q=` filtra por referencia ou telemovel de quem pagou, `?status=` pelo
+    estado do pagamento e `?reason=` pelo motivo declarado no balcao.
+    """
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("cards.read",)
+    serializer_class = CardRecoverySerializer
+
+    def get_queryset(self):
+        qs = (
+            PaymentIntent.objects
+            .filter(metadata__kind="card_recovery")
+            .order_by("-created_at")
+        )
+        termo = (self.request.query_params.get("q") or "").strip()
+        if termo:
+            qs = qs.filter(
+                Q(reference__icontains=termo) | Q(payer_phone__icontains=termo),
+            )
+        estado = (self.request.query_params.get("status") or "").strip()
+        if estado:
+            qs = qs.filter(status__in=[e.strip() for e in estado.split(",") if e.strip()])
+        motivo = (self.request.query_params.get("reason") or "").strip()
+        if motivo:
+            qs = qs.filter(metadata__reason=motivo)
+        return qs
 
 
 class CardViewSet(BaseModelViewSet):

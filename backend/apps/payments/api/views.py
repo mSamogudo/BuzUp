@@ -5,16 +5,20 @@ import logging
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from django.db.models import Q
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.permissions import HasCapabilities
 from apps.core.viewsets import BaseModelViewSet
 from apps.payments.api.serializers import (
     PaymentCallbackIngestSerializer,
+    PaymentCallbackLogSerializer,
     PaymentIntentSerializer,
 )
-from apps.payments.models import PaymentIntent
+from apps.payments.models import PaymentCallback, PaymentIntent
 from apps.payments.services.gateway import _extract_value
 from apps.payments.services.processing import process_payment_callback
 from apps.payments.services.webhook_security import verify_webhook_signature
@@ -53,6 +57,38 @@ def _check_webhook_auth(request) -> tuple[bool, Response | None]:
 
     logger.warning("[PAY][webhook_auth] sem segredo configurado — callback aceite SEM verificacao (apenas dev/test).")
     return False, None
+
+
+class PaymentCallbackLogView(ListAPIView):
+    """GET /api/payments/callback-log/ — registo dos webhooks recebidos.
+
+    `?q=` filtra pela referencia do pagamento ou pela referencia do provedor;
+    `?provider=` e `?signature_valid=` estreitam a lista quando um gateway
+    comeca a mandar assinaturas invalidas.
+    """
+
+    permission_classes = [IsAuthenticated, HasCapabilities]
+    required_capabilities = ("payments.read",)
+    serializer_class = PaymentCallbackLogSerializer
+
+    def get_queryset(self):
+        qs = PaymentCallback.objects.select_related("payment_intent").all()
+        termo = (self.request.query_params.get("q") or "").strip()
+        if termo:
+            qs = qs.filter(
+                Q(payment_intent__reference__icontains=termo)
+                | Q(provider_reference__icontains=termo),
+            )
+        provider = (self.request.query_params.get("provider") or "").strip()
+        if provider:
+            qs = qs.filter(payment_intent__provider=provider)
+        assinatura = (self.request.query_params.get("signature_valid") or "").strip().lower()
+        if assinatura in {"true", "false"}:
+            qs = qs.filter(signature_valid=(assinatura == "true"))
+        estado = (self.request.query_params.get("processing_status") or "").strip()
+        if estado:
+            qs = qs.filter(processing_status=estado)
+        return qs
 
 
 class PaymentIntentViewSet(BaseModelViewSet):

@@ -48,21 +48,54 @@ def provision_pos_agent(user):
 
 
 def driver_only_scope(user):
-    """Devolve o Driver quando o utilizador e SO motorista.
+    """Devolve o Driver quando o utilizador conduz um autocarro.
 
-    Um motorista tem perfil de Agente (ver `provision_pos_agent`) para poder
-    entrar no POS, mas nao tem a liberdade comercial do agente: vende apenas
-    nas viagens que lhe estao alocadas. Quem tem `pos.operate` (agente) ou e
-    superuser fica fora deste ambito e continua a escolher qualquer viagem.
+    Um motorista vende apenas nas viagens que lhe estao alocadas: cada um tem o
+    seu terminal e o seu autocarro, e uma venda feita na viagem de outro so se
+    descobre com o passageiro ja a bordo do errado.
+
+    **A pergunta e "conduz?", e nao "que permissoes tem?".** Antes bastava ter
+    `pos.operate` para ficar isento do limite — e o papel "Motorista" em
+    producao tinha essa permissao, posta a mao no portal (a migracao que o cria
+    deixa-o SEM permissoes nenhumas). Provavelmente para dar acesso ao POS, sem
+    se saber que ser motorista activo ja bastava: ver `provision_pos_agent`.
+
+    O resultado e que TODOS os motoristas ficavam isentos, e este limite nunca
+    se aplicava a ninguem. O codigo estava certo; morria por causa de uma
+    permissao concedida noutro sitio.
+
+    Passa a depender do facto operacional — ter um registo de Motorista — que
+    nao se liga nem desliga por engano numa caixa de permissoes. Quem nao
+    conduz (agente de balcao) continua a escolher qualquer viagem.
+
+    **O superuser tambem conta, se conduzir.** Um superuser SEM registo de
+    motorista continua a ver tudo, porque precisa disso para diagnosticar. Mas
+    a partir do momento em que existe um registo de Motorista com o nome dele,
+    ele conduz um autocarro — e quem conduz vende so nas suas viagens. A regra
+    do operador e sobre o autocarro, nao sobre o cargo: um bilhete emitido na
+    viagem errada continua a por o passageiro no autocarro errado, quem quer
+    que o tenha vendido.
+
+    Quem precisar da conta de diagnostico sem limite tira-lhe o registo de
+    Motorista — que e uma decisao explicita, e nao um efeito lateral.
     """
-    from apps.core.permissions.base import has_capabilities
     from apps.trips.models import Driver
 
     if not user or not getattr(user, "is_authenticated", False):
         return None
-    if getattr(user, "is_superuser", False) or has_capabilities(user, ("pos.operate",)):
+    conduz = Driver.objects.filter(user=user).order_by("-status", "id").first()
+    if getattr(user, "is_superuser", False) and conduz is None:
         return None
-    return Driver.objects.filter(user=user, status=Driver.Status.ACTIVE).first()
+    # QUALQUER registo de motorista, activo ou nao.
+    #
+    # Filtrar por `status=ACTIVE` fazia com que DESACTIVAR um motorista lhe
+    # desse MAIS acesso: deixava de contar como motorista e passava a ver e a
+    # vender em todas as viagens. Uma desactivacao nunca pode alargar
+    # permissoes.
+    #
+    # Quem conduz vende so nas suas. Sem viagens alocadas, o filtro devolve
+    # lista vazia e ele nao vende nada — que e a regra do operador.
+    return conduz
 
 
 class DeviceBlocked(Exception):

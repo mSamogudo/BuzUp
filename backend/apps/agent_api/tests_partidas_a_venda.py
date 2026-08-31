@@ -6,14 +6,24 @@ que uma viagem nasce) e o POS so mostrava as que ja estavam em embarque. Ou
 seja: a unica maneira de vender era o motorista abrir o embarque primeiro, o
 que numa carreira internacional acontece horas depois de o bilhete ser vendido.
 
-A regra passou a ser uma so, em `Trip.sellable_statuses_for`: numa rota com
-lugar marcado vende-se com antecedencia; numa urbana vende-se o autocarro que
-esta ali.
+**A regra mudou em 2026-08-26, por decisao do operador.** O balcao passou a
+mostrar SO o que esta a circular: a TPM-TUR nao vende antecipado ao balcao, e
+abrir o embarque e o acto que poe o autocarro a venda.
+
+Isso repoe, de propósito, o comportamento que originou o incidente acima — com
+uma diferenca que e tudo: agora e a REGRA e nao um acidente, e o ecra vazio diz
+o que falta ("A venda so esta disponivel depois de o motorista abrir o
+embarque") com atalho para o ecra onde se abre.
+
+`Trip.sellable_statuses_for` continua a permitir a venda a uma partida agendada
+— o portal publico usa-a para a venda antecipada pelo site. O que mudou foi o
+que o BALCAO ve.
 """
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, time, timedelta
+from unittest import mock
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -53,11 +63,62 @@ class PartidasNoBalcaoTests(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         return {t["id"] for t in r.json()}
 
-    def test_partida_agendada_de_rota_internacional_aparece(self):
-        """O caso do cliente: viagem criada hoje para amanha, vendida hoje."""
+    def test_partida_agendada_de_hoje_aparece_no_balcao(self):
+        """A viagem criada no portal nasce `agendada` e tem de aparecer.
+
+        Era este o incidente original: o cliente criava a viagem no portal, ia
+        ao POS, e a lista estava vazia. Chegou a estar escondida outra vez, e
+        voltou quando a primeira venda passou a abrir o embarque — ver
+        `tests_lista_de_venda`, que conta a historia toda.
+        """
         rota = self._rota("R-INT", Route.ServiceType.INTERNATIONAL)
-        viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(days=1))
+        viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(minutes=90))
         self.assertIn(viagem.id, self.ids_listados())
+
+    def test_abrir_o_embarque_poe_a_viagem_a_venda(self):
+        """O outro lado da mesma regra — sem isto nao havia como vender nada."""
+        rota = self._rota("R-INT-B", Route.ServiceType.INTERNATIONAL)
+        viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now() + timedelta(minutes=90))
+        self.assertIn(viagem.id, self.ids_listados())
+
+    def test_partida_da_madrugada_aparece_as_onze_da_noite(self):
+        """A janela do dia sozinha escondia o autocarro que sai a seguir.
+
+        As 23h00 em Maputo, a carreira internacional das 00h30 ja caia em
+        "amanha" e desaparecia do balcao — a lista ficava vazia na hora em que
+        mais se vende. O teste fixa a hora porque o defeito so existe na ponta
+        da noite: a correr as 10h da manha, passava sempre.
+        """
+        tz = timezone.get_current_timezone()
+        onze_da_noite = timezone.make_aware(
+            datetime.combine(timezone.localdate(), time(23, 6)), tz)
+        rota = self._rota("R-INT-MAD", Route.ServiceType.INTERNATIONAL)
+        viagem = self._viagem(rota, Trip.Status.SCHEDULED, onze_da_noite + timedelta(minutes=90))
+
+        with mock.patch("django.utils.timezone.now", return_value=onze_da_noite):
+            listadas = self.ids_listados()
+        self.assertIn(viagem.id, listadas)
+
+    def test_partida_de_amanha_nao_aparece(self):
+        """REQUISITO CORRIGIDO PELO OPERADOR em 2026-08-26.
+
+        Este teste afirmava o contrario — "viagem criada hoje para amanha,
+        vendida hoje" — porque se assumira que o balcao vendia antecipado. O
+        operador (TPM-TUR) esclareceu que NAO vende: a venda antecipada faz-se
+        pelo site, onde a data se escolhe de proposito.
+
+        Com o prazo de sete dias, o balcao abria com 14 viagens das quais 3
+        estavam a acontecer — as outras eram a mesma rota repetida dia apos
+        dia, e bastava tocar na linha errada para o bilhete sair para o
+        autocarro de amanha.
+
+        Fica a janela do DIA. Se um dia voltarem a vender antecipado ao balcao,
+        e este teste que muda — e o de cima, que protege a viagem de hoje ainda
+        sem embarque, tem de continuar a passar.
+        """
+        rota = self._rota("R-INT-AM", Route.ServiceType.INTERNATIONAL)
+        viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(days=1))
+        self.assertNotIn(viagem.id, self.ids_listados())
 
     def test_partida_agendada_de_rota_urbana_nao_aparece(self):
         """Na urbana vende-se o autocarro que esta ali, nao o de amanha."""
@@ -70,10 +131,10 @@ class PartidasNoBalcaoTests(TestCase):
         viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now())
         self.assertIn(viagem.id, self.ids_listados())
 
-    def test_partida_atrasada_continua_a_venda(self):
-        """O autocarro atrasa-se; o balcao nao pode fechar a venda no minuto."""
+    def test_partida_atrasada_ja_em_embarque_continua_a_venda(self):
+        """O autocarro atrasa-se; enquanto o embarque estiver aberto, vende."""
         rota = self._rota("R-INT2", Route.ServiceType.INTERNATIONAL)
-        viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() - timedelta(hours=1))
+        viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now() - timedelta(hours=1))
         self.assertIn(viagem.id, self.ids_listados())
 
     def test_partida_de_daqui_a_um_mes_nao_enche_a_lista(self):

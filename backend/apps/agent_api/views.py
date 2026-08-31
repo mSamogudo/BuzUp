@@ -27,7 +27,7 @@ Endpoints provided:
 from __future__ import annotations
 
 import hashlib
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.db import IntegrityError, transaction
@@ -64,7 +64,7 @@ from apps.fares.services import NoFareFoundError, quote_fare
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.guest_checkouts.ticket_codes import ticket_reference
 from apps.guest_checkouts.ticket_pdf import generate_tickets_pdf
-from apps.payments.models import PaymentIntent
+from apps.payments.models import CASH_PROVIDER, PaymentIntent
 from apps.payments.services.idempotency import agent_scoped_key
 from apps.payments.services.processing import confirm_payment_immediately
 from apps.pos.models import PosSession
@@ -102,6 +102,13 @@ def _trip_payload(trip: Trip) -> dict:
         "status": trip.status,
         "service_type": trip.route.service_type,
         "seat_selection": trip.route.requires_seat_selection,
+        # Para que lado vai. O POS mostra-o na lista: numa rota com ida e volta
+        # no mesmo dia, "RT-MPM-NLS" aparecia duas vezes sem nada a distinguir.
+        "direction": trip.direction,
+        # O bilhete e nominal nesta rota? Nas interprovinciais e internacionais
+        # o passageiro entra no manifesto e, na fronteira, o documento e
+        # conferido — o POS tem de pedir nome e documento.
+        "requires_passenger_identity": trip.route.requires_manifest,
     }
 
 
@@ -556,32 +563,114 @@ class AgentDeviceHeartbeatView(APIView):
 # ----------------------------------------------------------------------------
 
 class AgentTripListView(APIView):
+    """As viagens que o balcao pode vender AGORA.
+
+    So as que estao a circular — embarque aberto, a caminho, ou paradas a meio
+    do percurso. As agendadas nao entram.
+
+    O que esta a circular, mais as partidas de HOJE.
+
+    O balcao abria com 14 viagens das quais 3 estavam a acontecer; as outras
+    eram a mesma rota repetida dia apos dia, com o mesmo nome e o mesmo
+    autocarro, distintas so pela data. Uma linha tocada por engano mandava o
+    bilhete para o autocarro de amanha.
+
+    **A TPM-TUR nao vende antecipado ao balcao** — decidido pelo operador em
+    2026-08-26. Amanha em diante nao aparece: a venda antecipada faz-se pelo
+    site, onde a data se escolhe de proposito e nao por engano.
+
+    Chegou a mostrar SO o que circulava, tambem a pedido. Voltou a incluir as
+    de hoje quando o embarque passou a abrir-se sozinho na primeira venda (ver
+    `abrir_embarque_se_preciso`): sem isto, a partida agendada nunca aparecia,
+    o agente nunca a podia escolher, e a primeira venda — que e o que abre o
+    embarque — nunca chegava a acontecer. As duas regras juntas nao funcionam.
+
+    A janela do DIA e o que concilia as duas: nao ha venda antecipada, e o
+    autocarro que o motorista vai trabalhar hoje esta la para ser vendido sem
+    ter de carregar em nada antes.
+
+    O ciclo do motorista vive noutro sitio (`DriverTripsView`), que mostra as
+    agendadas todas: e la que o embarque se abre.
+    """
+
     permission_classes = [IsAuthenticated, IsActiveAgent]
 
-    #: Ate quando o balcao mostra partidas por vender.
+    #: Ate quando uma viagem A CIRCULAR continua a ser vendavel.
     #:
-    #: Uma semana chega para a venda antecipada do interurbano sem encher a
-    #: lista com o mes inteiro gerado pelos horarios.
-    HORIZONTE = timedelta(days=7)
-    #: Quanto tempo uma partida agendada continua a aparecer depois da hora.
+    #: "A circular" nao tinha limite de tempo nenhum: uma viagem em embarque
+    #: ficava-o para sempre se o motorista se esquecesse de a encerrar. Em
+    #: producao havia uma em embarque desde 22/08 e outra em viagem desde
+    #: 25/08 — e o balcao vendia para as duas. O passageiro sairia com bilhete
+    #: para um autocarro que partiu ha quatro dias.
+    #:
+    #: 24h e folgado de proposito: o percurso mais longo (Maputo-Nelspruit) faz
+    #: -se em cerca de 8 horas, e o que passa disto e esquecimento, nao atraso.
+    #:
+    #: **Conta-se do ARRANQUE, e nao da hora prevista.** A primeira versao
+    #: media so `planned_departure_at`, e isso escondia viagens que o motorista
+    #: tinha acabado de arrancar: bastava a partida estar marcada para uma data
+    #: antiga — uma viagem de teste, um horario mal introduzido, uma reutilizada
+    #: — para o balcao deixar de a vender assim que ele carregava em iniciar.
+    #: Foi assim que apareceu, e o sintoma enganava: "depois de iniciar viagem
+    #: o POS nao vende mais".
+    #:
+    #: Uma viagem esta viva se QUALQUER um dos dois sinais for recente. As que
+    #: nao tem nenhum continuam a aparecer — nao ha por onde julga-las, e
+    #: escondê-las era pior.
+    VIDA_UTIL = timedelta(hours=24)
+
+    #: Quanto tempo uma partida atrasada continua a aparecer depois da hora.
     #:
     #: O autocarro atrasa-se e o agente continua a vender ate ele sair. Sem
     #: esta folga, a partida desaparecia do POS exactamente no minuto em que
     #: mais gente aparece a comprar.
     TOLERANCIA = timedelta(hours=6)
 
+    #: Quanto o balcao ve para a frente, mesmo que isso passe da meia-noite.
+    #:
+    #: A janela do DIA sozinha tinha um buraco na ponta: as 23h00, a partida
+    #: das 00h30 ja era "amanha" e desaparecia da lista — precisamente a
+    #: carreira internacional nocturna, que e a que se vende aquela hora. O
+    #: sintoma era o incidente original outra vez (lista vazia no POS), so que
+    #: so acontecia ao fim da noite, que e quando ninguem esta a testar.
+    #:
+    #: Seis horas, como a TOLERANCIA: a janela e simetrica e explica-se numa
+    #: frase — o balcao ve o que saiu ha menos de seis horas e o que sai nas
+    #: proximas seis. Nao reabre a venda antecipada: a partida de amanha a esta
+    #: hora continua a 24 horas de distancia e continua escondida.
+    HORIZONTE_MINIMO = timedelta(hours=6)
+
     def get(self, request):
         agora = timezone.now()
-        # Ja a circular: aparece sempre, a hora prevista nao interessa. Agendada:
-        # so nas rotas com lugar marcado (ver `Trip.sellable_statuses_for`) e
-        # dentro da janela de venda.
+        tz = timezone.get_current_timezone()
+        # Fim do dia em hora LOCAL: o balcao raciocina no dia dele, nao em UTC.
+        # Com o fuso de Maputo (+2) a diferenca sao duas partidas inteiras.
+        fim_do_dia = timezone.make_aware(
+            datetime.combine(agora.astimezone(tz).date(), time.max), tz)
+        # Ao fim da noite o dia acaba antes do autocarro sair: manda o que for
+        # mais longe dos dois.
+        limite = max(fim_do_dia, agora + self.HORIZONTE_MINIMO)
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
-            Q(status__in=Trip.RUNNING_STATUSES)
+            # Viva por qualquer um dos dois sinais: arrancada ha pouco, ou
+            # com partida prevista para ha pouco.
+            Q(
+                status__in=Trip.RUNNING_STATUSES,
+                activity_started_at__gte=agora - self.VIDA_UTIL,
+            )
+            | Q(
+                status__in=Trip.RUNNING_STATUSES,
+                planned_departure_at__gte=agora - self.VIDA_UTIL,
+            )
+            | Q(
+                status__in=Trip.RUNNING_STATUSES,
+                planned_departure_at__isnull=True,
+                activity_started_at__isnull=True,
+            )
             | Q(
                 status=Trip.Status.SCHEDULED,
                 route__service_type__in=Route.SEATED_SERVICE_TYPES,
                 planned_departure_at__gte=agora - self.TOLERANCIA,
-                planned_departure_at__lte=agora + self.HORIZONTE,
+                planned_departure_at__lte=limite,
             )
         )
         # Motorista ve apenas as viagens que conduz; o agente escolhe qualquer.
@@ -598,27 +687,29 @@ class AgentTripDetailView(APIView):
     permission_classes = [IsAuthenticated, IsActiveAgent]
 
     def get(self, request, trip_id: int):
-        from apps.routes.models import RouteStop
         trip = Trip.objects.select_related("route", "vehicle", "driver").filter(pk=trip_id).first()
         if not trip:
             return Response({"detail": "Viagem nao encontrada."}, status=404)
         if not _trip_in_scope(request.user, trip):
             return Response({"detail": "Esta viagem nao lhe esta alocada."}, status=403)
-        stops = list(
-            RouteStop.objects.select_related("stop").filter(route=trip.route, stop__status="active")
-            .order_by("direction", "sequence")
-        )
-        seen = {}
-        for rs in stops:
-            seen.setdefault(rs.stop_id, {"id": rs.stop_id, "code": rs.stop.code, "name": rs.stop.name})
+        from apps.routes.services import paragens_no_sentido
+
         payload = _trip_payload(trip)
-        payload["stops"] = list(seen.values())
+        # Pela ordem em que ESTA partida as vai encontrar, e nao sempre pela da
+        # volta como acontecia. Ver `paragens_no_sentido`.
+        payload["stops"] = paragens_no_sentido(trip.route, trip.direction)
         # Planta de lugares: o POS precisa dela para as rotas que marcam lugar
         # (interprovincial, internacional). Nas urbanas vem `has_seat_map`
         # falso e o agente vende sem passar por aqui.
         from apps.guest_checkouts.seatmap import seat_map
 
         payload["seat_map"] = seat_map(trip)
+        # Regras do documento nesta rota: numa internacional so passaporte, e
+        # e o servidor que o diz. O POS desenha o campo a partir daqui em vez
+        # de trazer a regra escrita em Dart, que um dia deixaria de concordar.
+        from apps.guest_checkouts.documents import public_rules
+
+        payload["document_types"] = public_rules(trip.route.service_type)
         return Response(payload)
 
 
@@ -738,6 +829,7 @@ class AgentSaleCreateView(APIView):
                     seats=data.get("seats") or [],
                     emergency_contact_name=data.get("emergency_contact_name") or "",
                     emergency_contact_phone=data.get("emergency_contact_phone") or "",
+                    passengers=data.get("passengers") or [],
                 )
                 # Card payment is confirmed synchronously; return final state.
                 return Response({
@@ -768,6 +860,8 @@ class AgentSaleCreateView(APIView):
                 seats=data.get("seats") or [],
                 emergency_contact_name=data.get("emergency_contact_name") or "",
                 emergency_contact_phone=data.get("emergency_contact_phone") or "",
+                passengers=data.get("passengers") or [],
+                payment_method=method,
             )
         except SaleError as e:
             return Response({"detail": str(e)}, status=400)
@@ -783,6 +877,29 @@ class AgentSaleCreateView(APIView):
             if vencedora is None:
                 raise
             return _venda_repetida(vencedora)
+
+        if method == "cash":
+            # Nao ha nada a pedir a ninguem: o dinheiro ja esta na mao do
+            # agente e a venda nasceu liquidada. Pedir confirmacao ao gateway
+            # aqui poria o passageiro a receber um pedido de PIN por um
+            # pagamento que ja fez em notas.
+            gc.refresh_from_db()
+            return Response({
+                "sale_reference": gc.reference,
+                "payment": {
+                    "status": pi.status,
+                    "reference": pi.reference,
+                    "provider": pi.provider,
+                    "detail": "Pagamento em numerario recebido.",
+                },
+                "amount": str(gc.total_amount),
+                "quantity": gc.quantity,
+                "status": gc.status,
+                # O bilhete nao se imprime: segue por SMS, como na compra
+                # publica. Vai tambem na resposta para o POS o poder mostrar
+                # no ecra enquanto o SMS nao chega.
+                "tickets": [_ticket_payload(tp) for tp in gc.travel_passes.all()],
+            }, status=201)
 
         if data.get("auto_request_payment", True):
             payment_status = request_payment(gc, pi)
@@ -1003,6 +1120,16 @@ class AgentDayCloseView(APIView):
         ).order_by("-created_at")
 
         sales_total = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        # NUMERARIO, em separado. E um recorte das vendas acima, nao uma
+        # parcela a somar — mas e o unico numero deste ecra que corresponde a
+        # notas que o agente tem mesmo no bolso e vai entregar. Tudo o resto
+        # (M-Pesa, carteira) entrou directamente na conta da operadora e nunca
+        # passou pelas maos de ninguem.
+        cash_total = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER,
+        ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        cash_count = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER).count()
         topup_total = topup_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
         # As validacoes aprovadas sao DUAS coisas diferentes, e somar tudo numa
         # linha so dava dinheiro a dobrar:
@@ -1034,6 +1161,9 @@ class AgentDayCloseView(APIView):
             "totals": {
                 "revenue": str(sales_total + topup_total),
                 "sales": str(sales_total),
+                # Recorte de `sales`: o dinheiro fisico a entregar.
+                "cash": str(cash_total),
+                "cash_count": cash_count,
                 "topups": str(topup_total),
                 # Movimento de hoje: so o que foi debitado na validacao.
                 "validations_revenue": str(valid_total),
@@ -1123,6 +1253,16 @@ class AgentSalesSummaryView(APIView):
         )
 
         sales_total = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        # NUMERARIO, em separado. E um recorte das vendas acima, nao uma
+        # parcela a somar — mas e o unico numero deste ecra que corresponde a
+        # notas que o agente tem mesmo no bolso e vai entregar. Tudo o resto
+        # (M-Pesa, carteira) entrou directamente na conta da operadora e nunca
+        # passou pelas maos de ninguem.
+        cash_total = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER,
+        ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        cash_count = sales_qs.filter(
+            status=PaymentIntent.Status.CONFIRMED, provider=CASH_PROVIDER).count()
         topups_total = topup_qs.filter(status=PaymentIntent.Status.CONFIRMED).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
 
         sales_confirmed = sales_qs.filter(status=PaymentIntent.Status.CONFIRMED).count()
@@ -1147,6 +1287,9 @@ class AgentSalesSummaryView(APIView):
             "total_revenue": str(sales_total + topups_total),
             "currency": "MZN",
             "sales_total": str(sales_total),
+            # Recorte de `sales_total`: o dinheiro fisico a entregar.
+            "cash_total": str(cash_total),
+            "cash_count": cash_count,
             "topups_total": str(topups_total),
             "tickets_issued": tickets,
             "topups_count": topups_confirmed,

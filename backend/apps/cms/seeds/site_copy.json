@@ -1014,7 +1014,13 @@
       "footerContact": "Contacto",
       "poweredBy": "Desenvolvido por",
       "footerEco": "Ecossistema",
-      "rights": "Todos os direitos reservados."
+      "rights": "Todos os direitos reservados.",
+      "fleets": [
+        "1 – 10",
+        "11 – 50",
+        "51 – 200",
+        "200+"
+      ]
     },
     "EN": {
       "portalLogin": "Sign in to the portal",
@@ -1106,7 +1112,13 @@
       "footerContact": "Contact",
       "poweredBy": "Powered by",
       "footerEco": "Ecosystem",
-      "rights": "All rights reserved."
+      "rights": "All rights reserved.",
+      "fleets": [
+        "1 – 10",
+        "11 – 50",
+        "51 – 200",
+        "200+"
+      ]
     }
   }
 }

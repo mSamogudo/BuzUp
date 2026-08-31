@@ -12,13 +12,27 @@ export interface FormFieldSpec {
   key: string;
   label: string;
   required?: boolean;
+  /** O que se mostra. Traduzido pelo CMS. */
   options?: string[];
+  /** O que se grava, a par de `options`. Sem isto o rótulo ia como valor. */
+  values?: string[];
+  /** Escolha múltipla: envia uma lista, não um valor. */
+  multi?: boolean;
 }
 
 /** Campos que a API aceita. Um campo declarado fora desta lista é ignorado. */
-const KNOWN = new Set(["name", "organization", "phone", "email", "interest", "fleet_size", "message", "role"]);
+const KNOWN = new Set([
+  "name", "role", "organization", "phone", "email",
+  "interest", "operation_type", "fleet_size", "topics", "message",
+]);
 
-const INTEREST_VALUES = ["operator", "company", "school", "other"];
+/** Campos que viajam como lista. */
+const LISTAS = new Set(["topics"]);
+
+/** O valor a gravar para a opção `i`; sem `values`, o próprio rótulo. */
+function valorDaOpcao(field: FormFieldSpec, i: number): string {
+  return field.values?.[i] ?? field.options?.[i] ?? "";
+}
 
 export function ServiceRequestForm({
   fields,
@@ -37,11 +51,21 @@ export function ServiceRequestForm({
 }) {
   const usable = useMemo(() => fields.filter((f) => KNOWN.has(f.key)), [fields]);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [listas, setListas] = useState<Record<string, string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
   const set = (key: string, value: string) => setValues((v) => ({ ...v, [key]: value }));
+
+  const alterna = (key: string, value: string) =>
+    setListas((l) => {
+      const actual = l[key] || [];
+      return {
+        ...l,
+        [key]: actual.includes(value) ? actual.filter((x) => x !== value) : [...actual, value],
+      };
+    });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,14 +89,18 @@ export function ServiceRequestForm({
         method: "POST",
         body: JSON.stringify({
           name: values.name || "",
+          // O cargo tem coluna propria. Ia colado ao inicio da mensagem
+          // ("Cargo: Director") porque nao havia onde o por — e assim nao dava
+          // para filtrar nem listar por ele.
+          role: values.role || "",
           organization: values.organization || "",
           phone: values.phone || "",
           email: values.email || "",
           interest: values.interest || "operator",
+          operation_type: values.operation_type || "",
           fleet_size: values.fleet_size || "",
-          message: [values.role ? `Cargo: ${values.role}` : "", values.message || ""]
-            .filter(Boolean)
-            .join("\n"),
+          topics: listas.topics || [],
+          message: values.message || "",
           source: window.location.pathname === "/contactos" ? "contactos" : "landing",
         }),
       });
@@ -126,7 +154,25 @@ export function ServiceRequestForm({
                 onChange={(e) => set(field.key, e.target.value)}
                 value={values[field.key] || ""}
               />
-            ) : field.key === "interest" && field.options?.length ? (
+            ) : field.multi && field.options?.length ? (
+              <div className="bzs-chips" role="group">
+                {field.options.map((option, i) => {
+                  const valor = valorDaOpcao(field, i);
+                  const activo = (listas[field.key] || []).includes(valor);
+                  return (
+                    <button
+                      aria-pressed={activo}
+                      className={`bzs-chip${activo ? " bzs-chip-on" : ""}`}
+                      key={valor || option}
+                      onClick={() => alterna(field.key, valor)}
+                      type="button"
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : field.options?.length ? (
               <span className="bz-selectwrap">
                 <select
                   className="bz-select"
@@ -136,7 +182,7 @@ export function ServiceRequestForm({
                 >
                   <option value="">—</option>
                   {field.options.map((option, i) => (
-                    <option key={option} value={INTEREST_VALUES[i] || "other"}>
+                    <option key={valorDaOpcao(field, i) || option} value={valorDaOpcao(field, i)}>
                       {option}
                     </option>
                   ))}

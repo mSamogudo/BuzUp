@@ -745,3 +745,32 @@ html[data-theme="dark"] .bzs { --wash: rgba(10, 46, 80, .55); }
   .bzs-ctaband h2 { font-size: 30px; }
   .bzs-ctafacts { gap: 12px; }
 }
+
+/* --------------------------------------------------------------------------
+   Pílulas de escolha múltipla no formulário ("O que quer ver")
+   --------------------------------------------------------------------------
+   As `.bzs-chips` do herói são decorativas e vêm centradas. Dentro do
+   formulário são controlos: alinham à esquerda com o resto dos campos, têm
+   estado carregado e alvo de toque a condizer com os outros campos. */
+.bzs-formcard .bzs-chips { justify-content: flex-start; margin-top: 0; }
+
+.bzs-formcard .bzs-chip {
+  height: 40px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.bzs-formcard .bzs-chip:hover { border-color: var(--blue); }
+.bzs-formcard .bzs-chip:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+.bzs-formcard .bzs-chip-on,
+.bzs-formcard .bzs-chip-on:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bzs-formcard .bzs-chip { transition: none; }
+}

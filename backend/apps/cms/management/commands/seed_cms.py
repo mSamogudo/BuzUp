@@ -440,9 +440,24 @@ class Command(BaseCommand):
                     {"key": "organization", "label": pair(pt, en, "fCompany"), "required": False},
                     {"key": "phone", "label": pair(pt, en, "fPhone"), "required": True},
                     {"key": "email", "label": pair(pt, en, "fEmail"), "required": False},
-                    {"key": "fleet_size", "label": pair(pt, en, "fFleet"), "required": False},
-                    {"key": "interest", "label": pair(pt, en, "fInterest"), "required": False,
-                     "options": i18n(pt["interests"], en["interests"])},
+                    # `values` anda a par de `options`: o que se mostra e
+                    # traduzido, o que se grava e a chave da API. Sem isto o
+                    # formulario mandava o rotulo e o campo escolhia o valor
+                    # pela POSICAO na lista — "Venda online" entrava como
+                    # `operator` e as duas ultimas opcoes caiam ambas em
+                    # `other`. Ninguem via erro nenhum; a lista comercial e que
+                    # dizia outra coisa do que a pessoa tinha pedido.
+                    {"key": "fleet_size", "label": pair(pt, en, "fFleet"), "required": False,
+                     "options": i18n(pt["fleets"], en["fleets"]),
+                     "values": ["1-10", "11-50", "51-200", "200+"]},
+                    {"key": "operation_type", "label": pair(pt, en, "fType"), "required": False,
+                     "options": i18n(pt["types"], en["types"]),
+                     "values": ["urban", "intercity", "international", "institutional"]},
+                    {"key": "topics", "label": pair(pt, en, "fInterest"), "required": False,
+                     "multi": True,
+                     "options": i18n(pt["interests"], en["interests"]),
+                     "values": ["online_sales", "onboard_validation", "nfc_cards",
+                                "reports", "packages"]},
                     {"key": "message", "label": pair(pt, en, "fMsg"), "required": False},
                 ],
                 "submit": pair(pt, en, "formCta"),

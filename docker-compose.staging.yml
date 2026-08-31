@@ -46,14 +46,19 @@ services:
     container_name: buzup_backend_staging
     restart: unless-stopped
     logging: *buzup-logging
-    # Host is RAM-constrained (shared with other stacks): 2 workers is plenty
-    # for this traffic, and --max-requests recycles workers to cap memory creep.
+    # UM worker com 4 threads. Nao e para poupar por poupar: com 2 workers, o
+    # segundo ficava paginado para SWAP entre pedidos e a primeira chamada
+    # depois de uma pausa tinha de o ler do disco. Medido de fora, o trabalho
+    # do servidor levava 0,26 s mas a ligacao demorava ate 1,6 s, e o terminal
+    # chegou a receber "connection timeout" ao abrir a app.
     #
-    # As threads sao o que falta va: 2 workers *sync* significa que dois
-    # pedidos demorados ao mesmo tempo — um relatorio pesado, uma chamada ao
-    # gateway de pagamento — deixavam a API sem capacidade nenhuma. Com
-    # threads, um pedido preso deixa de bloquear o worker inteiro. A producao
-    # ja corria assim (3x4); o staging tinha ficado para tras.
+    # As THREADS sao o que importa aqui e ficam: um pedido demorado — um
+    # relatorio pesado, uma chamada ao gateway — deixa de bloquear tudo. O que
+    # o staging nao precisa e de dois processos Python inteiros a competir por
+    # memoria que a maquina nao tem.
+    #
+    # Producao continua com 3x4 e nao se toca: la ha dinheiro em jogo e o
+    # trafego e outro.
     mem_limit: 400m
     command:
       [
@@ -62,7 +67,7 @@ services:
         "--bind",
         "0.0.0.0:8000",
         "--workers",
-        "2",
+        "1",
         "--threads",
         "4",
         "--max-requests",

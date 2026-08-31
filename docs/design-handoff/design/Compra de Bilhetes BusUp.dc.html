@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  :root {
+    --bg: #E7EDF5; --surface: #FFFFFF; --surface2: #F6F9FD; --surface3: #FBFDFF;
+    --border: #E4EBF3; --border2: #D7E2EF;
+    --text: #0F1B2D; --muted: #5B6B7F; --muted2: #8A9AAD; --faint: #A8B7C8;
+    --navy-text: #0D3B66; --accent: #2D8CF0; --accent-dk: #1D5FA7;
+    --sky1: #CFE6FB; --sky2: #E8F2FC;
+  }
+  html[data-theme="dark"] {
+    --bg: #06203A; --surface: #0A2E50; --surface2: #0C3557; --surface3: #0E3A5E;
+    --border: #1A4368; --border2: #22527A;
+    --text: #EAF1F8; --muted: #A9C2DC; --muted2: #8AA6C2; --faint: #6F8CAA;
+    --navy-text: #CFE6FB; --accent: #2D8CF0; --accent-dk: #5BA3F5;
+    --sky1: #0C3557; --sky2: #10406A;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  img[data-logo="dark"] { display: none !important; }
+  html[data-theme="dark"] img[data-logo="dark"] { display: block !important; }
+  html[data-theme="dark"] img[data-logo="light"] { display: none !important; }
+
+  * { box-sizing: border-box; }
+  a { color: var(--accent-dk); text-decoration: none; }
+  a:hover { color: #2D8CF0; }
+</style>
+</helmet>
+
+<section style="display: flex; flex-direction: column; gap: 22px; padding: 48px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px;">
+    <div>
+      <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Workflow de compra · protótipo clicável</span>
+      <h2 style="margin: 0; font: 800 30px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Comprar bilhete</h2>
+      <p style="margin: 8px 0 0; max-width: 62ch; font: 400 14.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">Seis passos: viagem, partida, lugares, passageiros, pagamento e bilhete. Clique nos botões — os dois ecrãs avançam em conjunto. Variações do passo de pesquisa em <a href="#1a">1a</a> / <a href="#1b">1b</a>; estados de erro na grelha em baixo.</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="display: flex; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 4px;">
+        <sc-for list="{{ langBtns }}" as="l" hint-placeholder-count="2">
+          <button type="button" onClick="{{ l.onClick }}" style="height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: {{ l.bg }}; color: {{ l.fg }}; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif;">{{ l.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; max-width: 420px;">
+        <sc-for list="{{ jump }}" as="j" hint-placeholder-count="6">
+          <button type="button" onClick="{{ j.onClick }}" style="height: 34px; padding: 0 12px; border: 1px solid {{ j.bd }}; border-radius: 999px; background: {{ j.bg }}; color: {{ j.fg }}; cursor: pointer; font: 600 12px/1 Inter, sans-serif;">{{ j.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 48px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Desktop · 1440</span>
+      <div style="width: 1440px; background: var(--surface); border-radius: 28px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16);">
+        <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; background: var(--surface2); border-bottom: 1px solid var(--border);">
+          <i style="width: 10px; height: 10px; border-radius: 999px; background: #D7E2EF;"></i>
+          <i style="width: 10px; height: 10px; border-radius: 999px; background: #D7E2EF;"></i>
+          <i style="width: 10px; height: 10px; border-radius: 999px; background: #D7E2EF;"></i>
+          <span style="margin-left: 12px; padding: 0 14px; height: 26px; display: flex; align-items: center; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 500 12px/1 Inter, sans-serif; color: var(--muted);">busup.updigital.co.mz/comprar</span>
+        </div>
+        <dc-import name="Ecra Compra" step="{{ step }}" lang="{{ lang }}" on-step="{{ setStep }}" hint-size="100%,940px"></dc-import>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Mobile · 390</span>
+      <div style="width: 390px; background: var(--surface); border-radius: 34px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16);">
+        <div style="display: flex; align-items: flex-end; justify-content: center; height: 40px; padding-bottom: 5px; background: var(--sky1); font: 700 12px/1 Inter, sans-serif; color: var(--text);">09:41</div>
+        <dc-import name="Ecra Compra" step="{{ step }}" lang="{{ lang }}" on-step="{{ setStep }}" hint-size="100%,1100px"></dc-import>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 22px; padding: 0 48px 48px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div>
+    <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Passo 1 · duas variações</span>
+    <h2 style="margin: 0; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Pesquisa</h2>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 32px;">
+    <div id="1a" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: flex; align-items: center; justify-content: center; height: 26px; padding: 0 11px; border-radius: 999px; background: #0D3B66; font: 800 12px/1 Inter, sans-serif; color: #FFFFFF;">1a</span>
+        <b style="font: 700 14px/1 Manrope, sans-serif;">Formulário em grelha</b>
+        <span style="font: 400 13px/1 Inter, sans-serif; color: var(--muted);">quatro campos com rótulo, o padrão actual</span>
+      </div>
+      <div style="width: 820px; border-radius: 24px; overflow: hidden; border: 1px solid var(--border2); background: var(--surface); box-shadow: 0 24px 60px rgba(13,59,102,.10);">
+        <dc-import name="Ecra Compra" step="search" variant="a" lang="{{ lang }}" hint-size="100%,620px"></dc-import>
+      </div>
+    </div>
+    <div id="1b" style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: flex; align-items: center; justify-content: center; height: 26px; padding: 0 11px; border-radius: 999px; background: #0D3B66; font: 800 12px/1 Inter, sans-serif; color: #FFFFFF;">1b</span>
+        <b style="font: 700 14px/1 Manrope, sans-serif;">Barra única</b>
+        <span style="font: 400 13px/1 Inter, sans-serif; color: var(--muted);">uma linha de pesquisa e percursos frequentes</span>
+      </div>
+      <div style="width: 820px; border-radius: 24px; overflow: hidden; border: 1px solid var(--border2); background: var(--surface); box-shadow: 0 24px 60px rgba(13,59,102,.10);">
+        <dc-import name="Ecra Compra" step="search" variant="b" lang="{{ lang }}" hint-size="100%,620px"></dc-import>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 22px; padding: 0 48px 64px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div>
+    <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Grelha de ecrãs</span>
+    <h2 style="margin: 0; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Os seis passos e os dois estados de excepção</h2>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 32px; max-width: 2600px;">
+    <sc-for list="{{ screens }}" as="s" hint-placeholder-count="8">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 10px;">
+          <span style="font: 800 12px/1 Inter, sans-serif; letter-spacing: .1em; color: #2D8CF0;">{{ s.n }}</span>
+          <b style="font: 700 14px/1 Manrope, sans-serif;">{{ s.title }}</b>
+          <span style="font: 400 12.5px/1.4 Inter, sans-serif; color: var(--muted);">{{ s.note }}</span>
+        </div>
+        <div style="width: 820px; border-radius: 24px; overflow: hidden; border: 1px solid var(--border2); background: var(--surface); box-shadow: 0 24px 60px rgba(13,59,102,.10);">
+          <dc-import name="Ecra Compra" step="{{ s.step }}" lang="{{ lang }}" hint-size="100%,780px"></dc-import>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const LABELS = {
+  pt: [
+    { step: "search", n: "01", title: "Pesquisa", note: "percurso, data e nº de bilhetes" },
+    { step: "trips", n: "02", title: "Partidas", note: "hora, viatura, lugares e preço" },
+    { step: "seats", n: "03", title: "Lugares", note: "planta 2+2 com fila corrida no fundo" },
+    { step: "pax", n: "04", title: "Passageiros", note: "bilhete nominal, um cartão por lugar" },
+    { step: "pay", n: "05", title: "Pagamento", note: "M-Pesa, e-Mola, carteira ou agente" },
+    { step: "done", n: "06", title: "Bilhete emitido", note: "referência, QR e PDF" },
+    { step: "full", n: "E1", title: "Esgotado", note: "sem lugares na data escolhida" },
+    { step: "err", n: "E2", title: "Falha no pagamento", note: "nada foi cobrado, retomar" },
+  ],
+  en: [
+    { step: "search", n: "01", title: "Search", note: "route, date and ticket count" },
+    { step: "trips", n: "02", title: "Departures", note: "time, vehicle, seats and price" },
+    { step: "seats", n: "03", title: "Seats", note: "2+2 layout, full back row" },
+    { step: "pax", n: "04", title: "Passengers", note: "named ticket, one card per seat" },
+    { step: "pay", n: "05", title: "Payment", note: "M-Pesa, e-Mola, wallet or agent" },
+    { step: "done", n: "06", title: "Ticket issued", note: "reference, QR and PDF" },
+    { step: "full", n: "E1", title: "Sold out", note: "no seats on the chosen date" },
+    { step: "err", n: "E2", title: "Payment failed", note: "nothing charged, resume" },
+  ],
+};
+
+const JUMP = {
+  pt: [["search", "1 Pesquisa"], ["trips", "2 Partidas"], ["seats", "3 Lugares"], ["pax", "4 Passageiros"], ["pay", "5 Pagamento"], ["done", "6 Bilhete"]],
+  en: [["search", "1 Search"], ["trips", "2 Departures"], ["seats", "3 Seats"], ["pax", "4 Passengers"], ["pay", "5 Payment"], ["done", "6 Ticket"]],
+};
+
+class Component extends DCLogic {
+  state = { step: "search", lang: "pt" };
+
+  renderVals() {
+    const lang = this.state.lang;
+    return {
+      step: this.state.step,
+      lang,
+      setStep: (s) => this.setState({ step: s }),
+      screens: LABELS[lang],
+      langBtns: ["pt", "en"].map((l) => ({
+        label: l.toUpperCase(),
+        bg: lang === l ? "#0D3B66" : "transparent",
+        fg: lang === l ? "#FFFFFF" : "#5B6B7F",
+        onClick: () => this.setState({ lang: l }),
+      })),
+      jump: JUMP[lang].map(([key, label]) => ({
+        label,
+        bg: this.state.step === key ? "#0D3B66" : "#FFFFFF",
+        bd: this.state.step === key ? "#0D3B66" : "#D7E2EF",
+        fg: this.state.step === key ? "#FFFFFF" : "#5B6B7F",
+        onClick: () => this.setState({ step: key }),
+      })),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

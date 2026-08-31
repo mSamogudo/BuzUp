@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  :root {
+    --bg: #E7EDF5; --surface: #FFFFFF; --surface2: #F6F9FD; --surface3: #FBFDFF;
+    --border: #E4EBF3; --border2: #D7E2EF;
+    --text: #0F1B2D; --muted: #5B6B7F; --muted2: #8A9AAD; --faint: #A8B7C8;
+    --navy-text: #0D3B66; --accent: #2D8CF0; --accent-dk: #1D5FA7;
+    --sky1: #CFE6FB; --sky2: #E8F2FC;
+  }
+  html[data-theme="dark"] {
+    --bg: #06203A; --surface: #0A2E50; --surface2: #0C3557; --surface3: #0E3A5E;
+    --border: #1A4368; --border2: #22527A;
+    --text: #EAF1F8; --muted: #A9C2DC; --muted2: #8AA6C2; --faint: #6F8CAA;
+    --navy-text: #CFE6FB; --accent: #2D8CF0; --accent-dk: #5BA3F5;
+    --sky1: #0C3557; --sky2: #10406A;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  * { box-sizing: border-box; }
+  a { color: var(--accent-dk); text-decoration: none; }
+  a:hover { color: #2D8CF0; }
+  img[data-logo="dark"] { display: none !important; }
+  html[data-theme="dark"] img[data-logo="dark"] { display: block !important; }
+  html[data-theme="dark"] img[data-logo="light"] { display: none !important; }
+  @keyframes bzspin { to { transform: rotate(360deg); } }
+</style>
+</helmet>
+
+<div style="background: var(--surface); font-family: Inter, system-ui, sans-serif; color: var(--text); min-height: 100%;">
+
+  <div style="position: relative; background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 44%, var(--surface) 92%); padding: 26px 24px 62px;">
+    <div style="max-width: 900px; margin: 0 auto;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px;">
+        <span style="display: flex; align-items: center;"><img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 24px; width: auto; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 24px; width: auto; display: block;"></span>
+        <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted);">{{ t.back }}</span>
+      </div>
+      <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-dk); margin-bottom: 10px;">{{ t.kicker }}</span>
+      <h1 style="margin: 0 0 8px; font: 800 30px/1.12 Manrope, sans-serif; letter-spacing: -.025em; color: var(--text);">{{ t.title }}</h1>
+      <p style="margin: 0; font: 400 14.5px/1.55 Inter, sans-serif; color: var(--muted); max-width: 46ch;">{{ t.sub }}</p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px;">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+          <span style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 13px 0 6px; border-radius: 999px; background: {{ s.bg }}; border: 1px solid {{ s.bd }}; font: 600 12.5px/1 Inter, sans-serif; color: {{ s.fg }}; white-space: nowrap;">
+            <b style="display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; background: {{ s.dotBg }}; color: {{ s.dotFg }}; font: 700 11px/1 Inter, sans-serif;">{{ s.mark }}</b>{{ s.label }}
+          </span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width: 900px; margin: -40px auto 0; padding: 0 24px 26px;">
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 24px 60px rgba(13,59,102,.10); padding: 26px 24px 24px; position: relative;">
+
+      <sc-if value="{{ showSummaryBar }}">
+        <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px dashed var(--border);">
+          <span style="font: 700 14px/1.3 Manrope, sans-serif;">{{ d.routeName }}</span>
+          <span style="flex: 1; min-width: 140px; font: 400 12.5px/1.4 Inter, sans-serif; color: var(--muted);">{{ d.whenLabel }}</span>
+          <span style="display: flex; flex-direction: column; align-items: flex-end;">
+            <small style="font: 400 11.5px/1.3 Inter, sans-serif; color: var(--muted);">{{ d.unitLabel }}</small>
+            <b style="font: 800 15px/1.2 Manrope, sans-serif; color: var(--navy-text);">{{ d.totalLabel }}</b>
+          </span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSearch }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.searchH }}</h2>
+          <p style="margin: 0 0 20px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ t.searchLead }}</p>
+
+          <sc-if value="{{ isVariantA }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.origin }}</span>
+                  <input value="Praça dos Combatentes" readonly style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.destination }}</span>
+                  <input value="Matola Rio" readonly style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.date }}</span>
+                  <input value="2026-08-06" readonly style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.pax }}</span>
+                  <select style="height: 48px; padding: 0 12px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                    <option>{{ t.paxTwo }}</option>
+                  </select>
+                </label>
+              </div>
+              <div style="display: flex; justify-content: flex-end; margin-top: 22px;">
+                <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; gap: 9px; height: 50px; padding: 0 22px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 14.5px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.searchBtn }}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isVariantB }}">
+            <div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: #D7E2EF; border: 1px solid var(--border2); border-radius: 16px; overflow: hidden;">
+                <label style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface);">
+                  <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.origin }}</span>
+                  <b style="font: 600 15px/1.3 Inter, sans-serif;">Combatentes</b>
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface);">
+                  <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.destination }}</span>
+                  <b style="font: 600 15px/1.3 Inter, sans-serif;">Matola Rio</b>
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface);">
+                  <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.date }}</span>
+                  <b style="font: 600 15px/1.3 Inter, sans-serif;">06 Ago 2026</b>
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: var(--surface);">
+                  <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.pax }}</span>
+                  <b style="font: 600 15px/1.3 Inter, sans-serif;">2</b>
+                </label>
+                <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 66px; padding: 0 20px; border: 0; background: #0D3B66; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.searchBtn }}</button>
+              </div>
+              <span style="display: block; margin: 18px 0 9px; font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.popular }}</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <sc-for list="{{ popularRoutes }}" as="r" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface2); cursor: pointer; font: 500 13px/1 Inter, sans-serif; color: var(--text);" style-hover="border-color: #2D8CF0; background: var(--sky2);">{{ r.label }}<b style="font: 700 12.5px/1 Inter, sans-serif; color: var(--accent-dk);">{{ r.price }}</b></button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTrips }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.tripsH }}</h2>
+          <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted);">{{ d.dateLong }} · {{ t.twoTickets }}</p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ trips }}" as="tr" hint-placeholder-count="4">
+              <button type="button" onClick="{{ tr.onClick }}" style="display: grid; grid-template-columns: 62px 1fr auto; align-items: center; gap: 14px; width: 100%; padding: 15px 16px; border: 1px solid {{ tr.bd }}; border-radius: 16px; background: {{ tr.bg }}; cursor: {{ tr.cursor }}; text-align: left;" style-hover="border-color: #2D8CF0;">
+                <span style="font: 800 19px/1 Manrope, sans-serif; color: var(--navy-text);">{{ tr.time }}</span>
+                <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                  <b style="font: 700 14.5px/1.3 Manrope, sans-serif;">{{ tr.route }}</b>
+                  <small style="font: 400 12.5px/1.4 Inter, sans-serif; color: {{ tr.seatsFg }};">{{ tr.meta }}</small>
+                </span>
+                <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+                  <b style="font: 800 16px/1 Manrope, sans-serif; color: var(--text);">{{ tr.price }}</b>
+                  <small style="font: 400 11.5px/1 Inter, sans-serif; color: var(--muted);">{{ t.perPerson }}</small>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display: flex; margin-top: 20px;">
+            <button type="button" onClick="{{ back }}" style="display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.changeSearch }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isFull }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.tripsH }}</h2>
+          <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted);">{{ d.dateLong }} · {{ t.twoTickets }}</p>
+          <div style="display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid #F5D9B0; border-radius: 16px; background: #FDF6EA; margin-bottom: 14px;">
+            <i style="flex: none; width: 8px; height: 8px; margin-top: 7px; border-radius: 999px; background: #C8821A;"></i>
+            <span style="font: 400 13.5px/1.6 Inter, sans-serif; color: #6B4E14;">{{ t.fullNotice }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ soldOutTrips }}" as="tr" hint-placeholder-count="3">
+              <div style="display: grid; grid-template-columns: 62px 1fr auto; align-items: center; gap: 14px; padding: 15px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface2); opacity: .72;">
+                <span style="font: 800 19px/1 Manrope, sans-serif; color: var(--muted);">{{ tr.time }}</span>
+                <span style="display: flex; flex-direction: column; gap: 4px;">
+                  <b style="font: 700 14.5px/1.3 Manrope, sans-serif; color: var(--muted);">{{ tr.route }}</b>
+                  <small style="font: 600 12.5px/1.4 Inter, sans-serif; color: #B0331F;">{{ tr.meta }}</small>
+                </span>
+                <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted);">{{ tr.price }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;">
+            <button type="button" onClick="{{ back }}" style="display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.otherDay }}</button>
+            <button type="button" style="display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 14px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.notifyMe }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSeats }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.seatsH }}</h2>
+          <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted);">{{ d.tripLine }}</p>
+          <div style="border: 1px solid var(--border2); border-radius: 20px; overflow: hidden; background: var(--surface3);">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; background: var(--sky2); border-bottom: 1px solid #D7E9FB; font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-dk);">
+              <span>{{ t.busFront }}</span><span>{{ d.vehicle }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; max-width: 380px; margin: 0 auto;">
+              <sc-for list="{{ seatRows }}" as="row" hint-placeholder-count="9">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 26px 1fr 1fr; gap: 8px; align-items: center;">
+                  <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="5">
+                    <button type="button" onClick="{{ c.onClick }}" aria-label="{{ c.label }}" style="height: 40px; border: 1px solid {{ c.bd }}; border-radius: 10px; background: {{ c.bg }}; color: {{ c.fg }}; cursor: {{ c.cursor }}; font: 700 12.5px/1 Inter, sans-serif; grid-column: {{ c.col }};">{{ c.text }}</button>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px;">
+            <sc-for list="{{ legend }}" as="l" hint-placeholder-count="3">
+              <span style="display: flex; align-items: center; gap: 7px; font: 400 12.5px/1 Inter, sans-serif; color: var(--muted);"><i style="width: 14px; height: 14px; border-radius: 4px; border: 1px solid {{ l.bd }}; background: {{ l.bg }};"></i>{{ l.label }}</span>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 22px;">
+            <button type="button" onClick="{{ back }}" style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.otherTrip }}</button>
+            <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; gap: 9px; height: 48px; padding: 0 22px; border: 0; border-radius: 999px; background: {{ d.seatBtnBg }}; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif; color: #FFFFFF;">{{ d.seatBtnLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPax }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.paxH }}</h2>
+          <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ t.paxLead }}</p>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #CFE6D6; border-radius: 16px; background: #F1FAF3; margin-bottom: 10px;">
+            <span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #0D3B66; font: 700 12.5px/1 Inter, sans-serif; color: #FFFFFF;">12A</span>
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+              <b style="font: 700 14px/1.3 Manrope, sans-serif;">Aida Come</b>
+              <small style="font: 400 12.5px/1.3 Inter, sans-serif; color: var(--muted);">Bilhete de Identidade 110300456789L</small>
+            </span>
+            <span style="font: 700 12px/1 Inter, sans-serif; color: #2E7D4F;">{{ t.filled }}</span>
+          </div>
+
+          <div style="border: 1px solid var(--border2); border-radius: 16px; background: var(--surface3); padding: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+              <span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; background: #0D3B66; font: 700 12.5px/1 Inter, sans-serif; color: #FFFFFF;">12B</span>
+              <b style="font: 700 14px/1.3 Manrope, sans-serif;">{{ t.passengerTwo }}</b>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 7px;">
+              <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.fullName }}</span>
+              <input placeholder="{{ t.namePlaceholder }}" style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+            </label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 12px;">
+              <label style="display: flex; flex-direction: column; gap: 7px;">
+                <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.document }}</span>
+                <select style="height: 48px; padding: 0 12px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                  <sc-for list="{{ docTypes }}" as="doc" hint-placeholder-count="5">
+                    <option>{{ doc.label }}</option>
+                  </sc-for>
+                </select>
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 7px;">
+                <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.number }}</span>
+                <input style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+              </label>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 22px;">
+            <button type="button" onClick="{{ back }}" style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.backBtn }}</button>
+            <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; gap: 9px; height: 48px; padding: 0 22px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 14.5px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.continueBtn }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPay }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.payH }}</h2>
+          <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.payLead }}</p>
+
+          <div style="border: 1px solid var(--border2); border-radius: 16px; background: var(--surface3); padding: 4px 16px; margin-bottom: 20px;">
+            <sc-for list="{{ summaryRows }}" as="r" hint-placeholder-count="4">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 0; border-bottom: 1px solid #EAF0F7;">
+                <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">{{ r.k }}</span>
+                <b style="font: 600 13.5px/1.4 Inter, sans-serif; text-align: right;">{{ r.v }}</b>
+              </div>
+            </sc-for>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 14px 0;">
+              <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);">{{ t.totalDue }}</span>
+              <b style="font: 800 24px/1 Manrope, sans-serif; color: var(--navy-text);">500,00 MZN</b>
+            </div>
+          </div>
+
+          <span style="display: block; margin-bottom: 10px; font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.method }}</span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;">
+            <sc-for list="{{ methods }}" as="m" hint-placeholder-count="4">
+              <button type="button" onClick="{{ m.onClick }}" style="display: flex; align-items: center; gap: 12px; padding: 14px; border: 1.5px solid {{ m.bd }}; border-radius: 14px; background: {{ m.bg }}; cursor: pointer; text-align: left;" style-hover="border-color: #2D8CF0;">
+                <span style="flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); overflow: hidden;">
+                  <img src="{{ m.logo }}" alt="{{ m.name }}" style="max-width: 30px; max-height: 26px; object-fit: contain; display: block;">
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                  <b style="font: 700 13.5px/1.2 Manrope, sans-serif;">{{ m.name }}</b>
+                  <small style="font: 400 11.5px/1.35 Inter, sans-serif; color: var(--muted);">{{ m.note }}</small>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 18px;">
+            <label style="display: flex; flex-direction: column; gap: 7px;">
+              <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.payPhone }}</span>
+              <input value="84 123 4567" style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 7px;">
+              <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.emailOpt }}</span>
+              <input placeholder="{{ t.emailPlaceholder }}" style="height: 48px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+            </label>
+          </div>
+          <p style="margin: 10px 0 0; display: flex; align-items: flex-start; gap: 8px; font: 400 12.5px/1.55 Inter, sans-serif; color: var(--accent-dk);">
+            <i style="flex: none; width: 7px; height: 7px; margin-top: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ d.walletNote }}
+          </p>
+
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 22px;">
+            <button type="button" onClick="{{ back }}" style="display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.backBtn }}</button>
+            <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; gap: 9px; height: 50px; padding: 0 24px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.payBtn }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isErr }}">
+        <div>
+          <h2 style="margin: 0 0 6px; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.payH }}</h2>
+          <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.payLead }}</p>
+          <div style="display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid #F0C9C1; border-radius: 16px; background: #FDF1EF; margin-bottom: 18px;">
+            <i style="flex: none; width: 8px; height: 8px; margin-top: 7px; border-radius: 999px; background: #B0331F;"></i>
+            <span style="display: flex; flex-direction: column; gap: 5px;">
+              <b style="font: 700 13.5px/1.4 Manrope, sans-serif; color: #8E2A19;">{{ t.errTitle }}</b>
+              <span style="font: 400 13px/1.6 Inter, sans-serif; color: #8E2A19;">{{ t.errBody }}</span>
+            </span>
+          </div>
+          <div style="border: 1px solid var(--border2); border-radius: 16px; background: var(--surface3); padding: 4px 16px; margin-bottom: 18px;">
+            <sc-for list="{{ summaryRows }}" as="r" hint-placeholder-count="4">
+              <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 12px 0; border-bottom: 1px solid #EAF0F7;">
+                <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">{{ r.k }}</span>
+                <b style="font: 600 13.5px/1.4 Inter, sans-serif; text-align: right;">{{ r.v }}</b>
+              </div>
+            </sc-for>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 14px 0;">
+              <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);">{{ t.totalDue }}</span>
+              <b style="font: 800 24px/1 Manrope, sans-serif; color: var(--navy-text);">500,00 MZN</b>
+            </div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <button type="button" onClick="{{ next }}" style="display: flex; align-items: center; gap: 9px; height: 50px; padding: 0 22px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.retry }}</button>
+            <button type="button" style="display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.changeMethod }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isDone }}">
+        <div style="text-align: center; padding: 8px 0 4px;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 62px; height: 62px; border-radius: 999px; background: #F1FAF3; border: 1px solid #CFE6D6; font: 700 26px/1 Manrope, sans-serif; color: #2E7D4F; margin-bottom: 16px;">✓</span>
+          <h2 style="margin: 0 0 8px; font: 800 24px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ t.doneH }}</h2>
+          <p style="margin: 0 auto 20px; max-width: 44ch; font: 400 14px/1.65 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ t.doneBody }}</p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; text-align: left; margin-bottom: 18px;">
+            <div style="border: 1px solid var(--border2); border-radius: 18px; background: var(--surface3); padding: 16px;">
+              <sc-for list="{{ ticketRows }}" as="r" hint-placeholder-count="4">
+                <div style="display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EAF0F7;">
+                  <span style="font: 400 12.5px/1.4 Inter, sans-serif; color: var(--muted);">{{ r.k }}</span>
+                  <b style="font: 600 12.5px/1.4 Inter, sans-serif; text-align: right;">{{ r.v }}</b>
+                </div>
+              </sc-for>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-top: 12px;">
+                <span style="font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);">{{ t.charged }}</span>
+                <b style="font: 800 18px/1 Manrope, sans-serif; color: var(--navy-text);">500,00 MZN</b>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1px dashed var(--border2); border-radius: 18px; background: repeating-linear-gradient(135deg, var(--surface2) 0 8px, var(--surface3) 8px 16px); padding: 20px; min-height: 180px;">
+              <span style="font: 500 11px/1.5 'IBM Plex Mono', monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: center;">{{ t.qrSlot }}</span>
+              <span style="font: 500 13px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">BZ-20260804-7F3K</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+            <button type="button" style="display: flex; align-items: center; gap: 9px; height: 50px; padding: 0 22px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 14.5px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.downloadTicket }}</button>
+            <button type="button" onClick="{{ restart }}" style="display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 18px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 14px/1 Inter, sans-serif; color: var(--navy-text);" style-hover="border-color: #2D8CF0;">{{ t.newPurchase }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 18px; margin-top: 18px;">
+      <span style="font: 400 12.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.help }} <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a> · <a href="Acesso BusUp.dc.html">{{ t.portalLogin }}</a></span>
+      <span style="display: flex; align-items: center; gap: 10px;">
+        <span style="font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2); white-space: nowrap;">{{ t.poweredBy }}</span>
+        <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 26px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 26px; width: auto; display: block;">
+      </span>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 900, &quot;height&quot;: 900}, &quot;step&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;search&quot;, &quot;trips&quot;, &quot;seats&quot;, &quot;pax&quot;, &quot;pay&quot;, &quot;done&quot;, &quot;err&quot;, &quot;full&quot;], &quot;default&quot;: &quot;search&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;lang&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;pt&quot;, &quot;en&quot;], &quot;default&quot;: &quot;pt&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;variant&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;a&quot;, &quot;b&quot;], &quot;default&quot;: &quot;a&quot;, &quot;tsType&quot;: &quot;string&quot;}, &quot;onStep&quot;: {&quot;editor&quot;: null, &quot;tsType&quot;: &quot;(step: string) =&gt; void&quot;}}">
+const PT = {
+  back: "Voltar ao site", kicker: "Bilhetes interurbanos",
+  title: "Compre a sua viagem",
+  sub: "Escolha a data, o lugar e receba o bilhete no telemóvel.",
+  steps: ["Viagem", "Partida", "Lugares", "Passageiros", "Pagamento"],
+  searchH: "Para onde vai?",
+  searchLead: "Indique o percurso, a data da viagem e quantos bilhetes precisa.",
+  origin: "Origem", destination: "Destino", date: "Data da viagem", pax: "Passageiros",
+  paxTwo: "2 passageiros", searchBtn: "Procurar partidas", popular: "Percursos frequentes",
+  tripsH: "Partidas disponíveis", twoTickets: "2 bilhetes", perPerson: "por pessoa",
+  changeSearch: "Alterar pesquisa", otherDay: "Escolher outro dia",
+  notifyMe: "Avisar-me se abrir lugar",
+  fullNotice: "Todas as partidas desta data estão esgotadas. Há lugares em 07 de Agosto a partir das 06:30.",
+  seatsH: "Escolha os 2 lugares",
+  busFront: "Frente do autocarro", otherTrip: "Outra partida",
+  seatFree: "Livre", seatPicked: "Seleccionado", seatTaken: "Ocupado",
+  paxH: "Quem viaja?",
+  paxLead: "O bilhete é nominal. Em viagens internacionais o documento é conferido na fronteira.",
+  filled: "Preenchido", passengerTwo: "Passageiro 2",
+  fullName: "Nome completo", namePlaceholder: "Como está no documento",
+  document: "Documento", number: "Número",
+  backBtn: "Voltar", continueBtn: "Continuar",
+  payH: "Pagamento", payLead: "Confirme os dados e escolha como quer pagar.",
+  totalDue: "Total a pagar", method: "Forma de pagamento",
+  payPhone: "Telemóvel para pagamento", emailOpt: "Email (opcional)",
+  emailPlaceholder: "para receber o bilhete",
+  payBtn: "Pagar 500,00 MZN",
+  errTitle: "Não foi possível concluir a compra",
+  errBody: "Não conseguimos falar com o serviço de pagamento. Nada foi cobrado. Tente de novo dentro de instantes.",
+  retry: "Tentar de novo", changeMethod: "Mudar forma de pagamento",
+  doneH: "Bilhete emitido",
+  doneBody: "Pagamento confirmado. Enviámos o link do bilhete por SMS para o 84 123 4567 — guarde o PDF no telemóvel e apresente o QR ao embarcar.",
+  charged: "Valor cobrado", qrSlot: "QR do bilhete\n(gerado no servidor)",
+  downloadTicket: "Descarregar bilhete", newPurchase: "Nova compra",
+  help: "Precisa de ajuda?", portalLogin: "Entrar no portal", poweredBy: "Desenvolvido por",
+  fewSeats: (n) => `Só ${n} lugares`, seatsLeft: (n) => `${n} lugares livres`,
+  soldOut: "Esgotado", vehicle: (r) => `Viatura ${r}`,
+  dateLong: "quinta-feira, 6 de Agosto de 2026",
+  needMore: (n) => `Falta escolher ${n}`,
+  walletNote: "Vamos cobrar via M-Pesa no 84 123 4567. Vai receber um pedido de PIN neste número.",
+  sumRoute: "Percurso", sumDeparture: "Partida", sumPax: "Passageiros", sumUnit: "2 × 250,00 MZN",
+  tRef: "Referência", tSeats: "Lugares", tWhen: "Partida", tRouteK: "Percurso",
+};
+
+const EN = {
+  back: "Back to site", kicker: "Intercity tickets",
+  title: "Buy your trip",
+  sub: "Pick the date and seat, and get the ticket on your phone.",
+  steps: ["Trip", "Departure", "Seats", "Passengers", "Payment"],
+  searchH: "Where are you going?",
+  searchLead: "Tell us the route, the travel date and how many tickets you need.",
+  origin: "From", destination: "To", date: "Travel date", pax: "Passengers",
+  paxTwo: "2 passengers", searchBtn: "Find departures", popular: "Frequent routes",
+  tripsH: "Available departures", twoTickets: "2 tickets", perPerson: "per person",
+  changeSearch: "Change search", otherDay: "Pick another day",
+  notifyMe: "Notify me if a seat opens",
+  fullNotice: "Every departure on this date is sold out. Seats are available on 7 August from 06:30.",
+  seatsH: "Choose your 2 seats",
+  busFront: "Front of the bus", otherTrip: "Another departure",
+  seatFree: "Free", seatPicked: "Selected", seatTaken: "Taken",
+  paxH: "Who is travelling?",
+  paxLead: "Tickets are personal. On international trips the document is checked at the border.",
+  filled: "Complete", passengerTwo: "Passenger 2",
+  fullName: "Full name", namePlaceholder: "As printed on the document",
+  document: "Document", number: "Number",
+  backBtn: "Back", continueBtn: "Continue",
+  payH: "Payment", payLead: "Check the details and choose how you want to pay.",
+  totalDue: "Total due", method: "Payment method",
+  payPhone: "Phone for payment", emailOpt: "Email (optional)",
+  emailPlaceholder: "to receive the ticket",
+  payBtn: "Pay 500.00 MZN",
+  errTitle: "We could not complete the purchase",
+  errBody: "We could not reach the payment service. Nothing was charged. Please try again in a moment.",
+  retry: "Try again", changeMethod: "Change payment method",
+  doneH: "Ticket issued",
+  doneBody: "Payment confirmed. We sent the ticket link by SMS to 84 123 4567 — keep the PDF on your phone and show the QR when boarding.",
+  charged: "Amount charged", qrSlot: "Ticket QR\n(generated server-side)",
+  downloadTicket: "Download ticket", newPurchase: "New purchase",
+  help: "Need help?", portalLogin: "Sign in to the portal", poweredBy: "Powered by",
+  fewSeats: (n) => `Only ${n} seats`, seatsLeft: (n) => `${n} seats free`,
+  soldOut: "Sold out", vehicle: (r) => `Vehicle ${r}`,
+  dateLong: "Thursday, 6 August 2026",
+  needMore: (n) => `Choose ${n} more`,
+  walletNote: "We will charge M-Pesa on 84 123 4567. You will get a PIN request on this number.",
+  sumRoute: "Route", sumDeparture: "Departure", sumPax: "Passengers", sumUnit: "2 × 250.00 MZN",
+  tRef: "Reference", tSeats: "Seats", tWhen: "Departure", tRouteK: "Route",
+};
+
+const ORDER = ["search", "trips", "seats", "pax", "pay", "done"];
+const TAKEN = ["1A", "1B", "2C", "3B", "4A", "4C", "5D", "6B", "7A", "7D", "9C", "10B", "11D", "13A", "13B"];
+
+class Component extends DCLogic {
+  state = { picked: ["12A", "12B"], method: "mpesa" };
+
+  step() {
+    const s = this.props.step ?? "search";
+    return s;
+  }
+
+  go(target) {
+    const fn = this.props.onStep;
+    if (typeof fn === "function") fn(target);
+  }
+
+  renderVals() {
+    const lang = this.props.lang ?? "pt";
+    const t = lang === "en" ? EN : PT;
+    const step = this.step();
+    const variant = this.props.variant ?? "a";
+    const idx = ORDER.indexOf(step);
+    const activeIdx = step === "full" ? 1 : step === "err" ? 4 : idx;
+
+    const steps = t.steps.map((label, i) => {
+      const done = i < activeIdx;
+      const active = i === activeIdx;
+      return {
+        label, mark: done ? "✓" : String(i + 1),
+        bg: active ? "#2D8CF0" : "#FFFFFF",
+        bd: active ? "#2D8CF0" : done ? "#CFE6FB" : "#E4EBF3",
+        fg: active ? "#FFFFFF" : done ? "#1D5FA7" : "#8A9AAD",
+        dotBg: active ? "#FFFFFF" : done ? "#2D8CF0" : "#EAF1F8",
+        dotFg: active ? "#2D8CF0" : done ? "#FFFFFF" : "#5B6B7F",
+      };
+    });
+
+    const tripsData = [
+      { time: "06:30", route: "L3 · Combatentes – Matola", reg: "AAB-14-MP", left: 32, price: "250,00 MZN" },
+      { time: "09:00", route: "L3 · Combatentes – Matola", reg: "ABC-27-MC", left: 4, price: "250,00 MZN" },
+      { time: "13:15", route: "L3 · Combatentes – Matola", reg: "AAD-56-MP", left: 0, price: "250,00 MZN" },
+      { time: "17:45", route: "L3 · Combatentes – Matola", reg: "AGT-09-MC", left: 18, price: "250,00 MZN" },
+    ];
+    const trips = tripsData.map((tr) => {
+      const out = tr.left === 0;
+      const few = tr.left > 0 && tr.left <= 5;
+      return {
+        time: tr.time, route: tr.route, price: tr.price,
+        meta: `${t.vehicle(tr.reg)} · ${out ? t.soldOut : few ? t.fewSeats(tr.left) : t.seatsLeft(tr.left)}`,
+        seatsFg: out ? "#B0331F" : few ? "#C8821A" : "#2E7D4F",
+        bg: out ? "#F6F9FD" : "#FFFFFF",
+        bd: out ? "#E4EBF3" : "#D7E2EF",
+        cursor: out ? "not-allowed" : "pointer",
+        onClick: out ? undefined : () => this.go("seats"),
+      };
+    });
+    const soldOutTrips = tripsData.map((tr) => ({
+      time: tr.time, route: tr.route, price: tr.price,
+      meta: `${t.vehicle(tr.reg)} · ${t.soldOut}`,
+    }));
+
+    const picked = this.state.picked;
+    const cell = (label, col) => {
+      const isTaken = TAKEN.includes(label);
+      const on = picked.includes(label);
+      return {
+        label, col: String(col), text: label,
+        bg: isTaken ? "#E7EDF5" : on ? "#0D3B66" : "#FFFFFF",
+        bd: isTaken ? "#D7E2EF" : on ? "#0D3B66" : "#C7D8EA",
+        fg: isTaken ? "#A8B7C8" : on ? "#FFFFFF" : "#0F1B2D",
+        cursor: isTaken ? "not-allowed" : "pointer",
+        onClick: isTaken ? undefined : () => this.setState((s) => ({
+          picked: s.picked.includes(label)
+            ? s.picked.filter((x) => x !== label)
+            : (s.picked.length >= 2 ? [s.picked[1], label] : [...s.picked, label]),
+        })),
+      };
+    };
+    const seatRows = [];
+    for (let r = 1; r <= 12; r += 1) {
+      seatRows.push({
+        cells: [cell(`${r}A`, 1), cell(`${r}B`, 2), cell(`${r}C`, 4), cell(`${r}D`, 5)],
+      });
+    }
+    seatRows.push({ cells: [cell("13A", 1), cell("13B", 2), cell("13C", 3), cell("13D", 4), cell("13E", 5)] });
+
+    const legend = [
+      { label: t.seatFree, bg: "#FFFFFF", bd: "#C7D8EA" },
+      { label: t.seatPicked, bg: "#0D3B66", bd: "#0D3B66" },
+      { label: t.seatTaken, bg: "#E7EDF5", bd: "#D7E2EF" },
+    ];
+
+    const missing = 2 - picked.length;
+    const methods = [
+      { key: "mpesa", name: "M-Pesa", note: lang === "en" ? "Vodacom 84 / 85" : "Vodacom 84 / 85", logo: "assets/mpesa.png" },
+      { key: "emola", name: "e-Mola", note: lang === "en" ? "Movitel 86 / 87" : "Movitel 86 / 87", logo: "assets/emola.png" },
+      { key: "wallet", name: lang === "en" ? "BusUp wallet" : "Carteira BusUp", note: lang === "en" ? "Balance 1,250.00 MZN" : "Saldo 1.250,00 MZN", logo: "assets/busup-mark.png" },
+      { key: "pos", name: lang === "en" ? "Pay at an agent" : "Pagar no agente", note: lang === "en" ? "Reserved for 2 h" : "Reserva válida 2 h", logo: "assets/logo-payup.png" },
+    ].map((m) => ({
+      ...m,
+      bg: this.state.method === m.key ? "#EEF5FD" : "#FFFFFF",
+      bd: this.state.method === m.key ? "#2D8CF0" : "#D7E2EF",
+      onClick: () => this.setState({ method: m.key }),
+    }));
+
+    const summaryRows = [
+      { k: t.sumRoute, v: "L3 · Combatentes – Matola Rio" },
+      { k: t.sumDeparture, v: `${t.dateLong} · 09:00` },
+      { k: t.sumPax, v: "Aida Come (12A), Hélder Chaúque (12B)" },
+      { k: t.sumUnit, v: "500,00 MZN" },
+    ];
+    const ticketRows = [
+      { k: t.tRef, v: "BZ-20260804-7F3K" },
+      { k: t.tRouteK, v: "L3 · Combatentes – Matola Rio" },
+      { k: t.tWhen, v: "06 Ago 2026 · 09:00" },
+      { k: t.tSeats, v: "12A · 12B" },
+    ];
+
+    return {
+      t, steps, trips, soldOutTrips, seatRows, legend, methods, summaryRows, ticketRows,
+      docTypes: [
+        { label: lang === "en" ? "Identity card" : "Bilhete de Identidade" },
+        { label: lang === "en" ? "Passport" : "Passaporte" },
+        { label: "DIRE" },
+        { label: lang === "en" ? "Birth certificate" : "Cédula" },
+        { label: lang === "en" ? "Other" : "Outro" },
+      ],
+      popularRoutes: [
+        { label: "Combatentes → Matola Rio", price: "250,00" },
+        { label: "Baixa → Zimpeto", price: "180,00" },
+        { label: "Junta → Marracuene", price: "220,00" },
+        { label: "Baixa → Aeroporto", price: "150,00" },
+      ],
+      isSearch: step === "search", isTrips: step === "trips", isSeats: step === "seats",
+      isPax: step === "pax", isPay: step === "pay", isDone: step === "done",
+      isErr: step === "err", isFull: step === "full",
+      isVariantA: variant === "a", isVariantB: variant === "b",
+      showSummaryBar: ["seats", "pax", "pay", "err"].includes(step),
+      d: {
+        routeName: "L3 · Combatentes – Matola Rio",
+        whenLabel: `${t.dateLong} · 09:00`,
+        unitLabel: t.sumUnit, totalLabel: "500,00 MZN",
+        dateLong: t.dateLong,
+        tripLine: `L3 · Combatentes – Matola Rio · ${t.dateLong} · 09:00`,
+        vehicle: t.vehicle("ABC-27-MC"),
+        walletNote: t.walletNote,
+        seatBtnBg: missing === 0 ? "#2D8CF0" : "#9FB3C8",
+        seatBtnLabel: missing === 0 ? t.continueBtn : t.needMore(missing),
+      },
+      next: () => this.go(step === "err" ? "done" : ORDER[Math.min(idx + 1, ORDER.length - 1)]),
+      back: () => this.go(ORDER[Math.max(idx - 1, 0)]),
+      restart: () => this.go("search"),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

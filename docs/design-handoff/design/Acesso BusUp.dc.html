@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  :root {
+    --bg: #E7EDF5; --surface: #FFFFFF; --surface2: #F6F9FD; --surface3: #FBFDFF;
+    --border: #E4EBF3; --border2: #D7E2EF;
+    --text: #0F1B2D; --muted: #5B6B7F; --muted2: #8A9AAD; --faint: #A8B7C8;
+    --navy-text: #0D3B66; --accent: #2D8CF0; --accent-dk: #1D5FA7;
+    --sky1: #CFE6FB; --sky2: #E8F2FC; --wash: rgba(255,255,255,.85);
+  }
+  html[data-theme="dark"] {
+    --bg: #06203A; --surface: #0A2E50; --surface2: #0C3557; --surface3: #0E3A5E;
+    --border: #1A4368; --border2: #22527A;
+    --text: #EAF1F8; --muted: #A9C2DC; --muted2: #8AA6C2; --faint: #6F8CAA;
+    --navy-text: #CFE6FB; --accent: #2D8CF0; --accent-dk: #5BA3F5;
+    --sky1: #0C3557; --sky2: #10406A; --wash: rgba(10,46,80,.55);
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  * { box-sizing: border-box; }
+  a { color: var(--accent-dk); text-decoration: none; }
+  a:hover { color: #2D8CF0; }
+  @keyframes bzspin { to { transform: rotate(360deg); } }
+  @keyframes bzshimmer { from { background-position: -420px 0; } to { background-position: 420px 0; } }
+  @keyframes bzbar { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+  img[data-logo="dark"] { display: none !important; }
+  html[data-theme="dark"] img[data-logo="dark"] { display: block !important; }
+  html[data-theme="dark"] img[data-logo="light"] { display: none !important; }
+  @keyframes bzpulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+</style>
+</helmet>
+
+<section style="display: flex; flex-direction: column; gap: 22px; padding: 48px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px;">
+    <div>
+      <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Acesso ao portal</span>
+      <h2 style="margin: 0; font: 800 28px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Entrar</h2>
+      <p style="margin: 8px 0 0; max-width: 74ch; font: 400 14.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">Três formas de entrar: equipa (utilizador e senha), passageiro por SMS e conta nova. Clique nos separadores e no olho da senha; o acesso por SMS avança do telefone para o código.</p>
+    </div>
+    <div style="display: flex; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 4px;">
+      <sc-for list="{{ langBtns }}" as="l" hint-placeholder-count="2">
+        <button type="button" onClick="{{ l.onClick }}" style="height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: {{ l.bg }}; color: {{ l.fg }}; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif;">{{ l.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 48px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Login · Desktop 1440</span>
+      <div style="width: 1440px; height: 900px; background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 46%, var(--surface) 92%); border-radius: 28px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16); display: grid; grid-template-columns: 1.05fr 0.95fr;">
+
+        <div style="position: relative; padding: 44px 56px; display: flex; flex-direction: column;">
+          <div style="position: absolute; inset: 0; background: radial-gradient(50% 44% at 30% 0%, var(--wash) 0%, transparent 72%); pointer-events: none;"></div>
+          <div style="position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 68px;">
+          <span style="display: flex;"><img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 26px; width: auto; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 26px; width: auto; display: block;"></span><button type="button" data-bz-theme-toggle="" aria-label="Alternar tema" style="flex: none; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; font: 500 15px/1 Inter, sans-serif; display: flex; align-items: center; justify-content: center;">☾</button></div>
+          <div style="position: relative; max-width: 46ch;">
+            <span style="display: inline-flex; align-items: center; gap: 9px; height: 36px; padding: 0 16px; border-radius: 999px; white-space: nowrap; background: var(--surface); border: 1px solid var(--border); font: 600 12.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 22px;"><i style="width: 7px; height: 7px; border-radius: 999px; background: #2A9D8F; animation: bzpulse 2.4s ease-in-out infinite;"></i>{{ t.badge }}</span>
+            <h1 style="margin: 0 0 14px; font: 800 46px/1.08 Manrope, sans-serif; letter-spacing: -.03em; text-wrap: balance;">{{ t.h1 }}</h1>
+            <p style="margin: 0 0 30px; font: 400 16.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ t.lead }}</p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ t.facts }}" as="f" hint-placeholder-count="3">
+                <span style="display: flex; align-items: center; gap: 11px; font: 500 14px/1.5 Inter, sans-serif; color: var(--text);"><i style="flex: none; width: 7px; height: 7px; border-radius: 999px; background: #2D8CF0;"></i>{{ f }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="position: relative; margin-top: auto; display: flex; align-items: center; gap: 12px;">
+            <span style="font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2);">{{ t.poweredBy }}</span>
+            <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 26px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 26px; width: auto; display: block;">
+          </div>
+        </div>
+
+        <div style="padding: 44px 56px; display: flex; align-items: center;">
+          <div style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 26px; box-shadow: 0 30px 70px rgba(13,59,102,.12); padding: 30px;">
+
+            <div style="display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); margin-bottom: 24px;">
+              <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+                <button type="button" onClick="{{ m.onClick }}" style="flex: 1; height: 40px; border: 0; border-radius: 999px; background: {{ m.bg }}; color: {{ m.fg }}; cursor: pointer; font: {{ m.font }};">{{ m.label }}</button>
+              </sc-for>
+            </div>
+
+            <span style="display: block; font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-dk); margin-bottom: 8px;">{{ eyebrow }}</span>
+            <h2 style="margin: 0 0 6px; font: 800 24px/1.18 Manrope, sans-serif; letter-spacing: -.025em;">{{ formTitle }}</h2>
+            <p style="margin: 0 0 22px; font: 400 13.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ formLead }}</p>
+
+            <sc-if value="{{ isStaff }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.user }}</span>
+                  <input placeholder="{{ t.userPh }}" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.password }}</span>
+                  <span style="position: relative; display: block;">
+                    <input type="{{ pwType }}" value="Busup@2026" style="height: 50px; padding: 0 52px 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                    <button type="button" onClick="{{ togglePw }}" aria-label="{{ pwLabel }}" style="position: absolute; top: 5px; right: 5px; width: 40px; height: 40px; border: 0; border-radius: 10px; background: var(--surface2); cursor: pointer; font: 600 12px/1 Inter, sans-serif; color: var(--muted);">{{ pwIcon }}</button>
+                  </span>
+                </label>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                  <label style="display: flex; align-items: center; gap: 9px; font: 500 13px/1 Inter, sans-serif; color: var(--muted);"><input type="checkbox" style="width: 17px; height: 17px; accent-color: #2D8CF0;">{{ t.keep }}</label>
+                  <button type="button" onClick="{{ toggleReset }}" style="border: 0; background: transparent; cursor: pointer; font: 600 13px/1 Inter, sans-serif; color: var(--accent-dk);">{{ t.forgot }}</button>
+                </div>
+                <sc-if value="{{ resetOpen }}">
+                  <div style="border: 1px solid var(--sky1); border-radius: 16px; background: #F4F9FF; padding: 16px;">
+                    <b style="display: block; font: 700 13.5px/1.3 Manrope, sans-serif; margin-bottom: 4px;">{{ t.resetTitle }}</b>
+                    <p style="margin: 0 0 12px; font: 400 12.5px/1.5 Inter, sans-serif; color: var(--muted);">{{ t.resetLead }}</p>
+                    <div style="display: flex; gap: 8px;">
+                      <input placeholder="84 000 0000" style="flex: 1; height: 44px; padding: 0 13px; border: 1px solid var(--border2); border-radius: 12px; background: var(--surface); font: 500 13.5px/1 Inter, sans-serif; color: var(--text);">
+                      <button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #0D3B66; cursor: pointer; font: 700 13px/1 Inter, sans-serif; color: #FFFFFF;">{{ t.resetSubmit }}</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <button type="button" style="height: 52px; margin-top: 4px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.enter }}</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isOtpPhone }}">
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.phone }}</span>
+                  <input value="84 123 4567" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 15px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <p style="margin: 0; display: flex; align-items: flex-start; gap: 9px; font: 400 12.5px/1.55 Inter, sans-serif; color: var(--accent-dk);"><i style="flex: none; width: 7px; height: 7px; margin-top: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.otpNote }}</p>
+                <button type="button" onClick="{{ goCode }}" style="height: 52px; margin-top: 4px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.sendCode }}</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isOtpCode }}">
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;">
+                  <sc-for list="{{ otpCells }}" as="c" hint-placeholder-count="6">
+                    <span style="height: 62px; display: flex; align-items: center; justify-content: center; border: 1.5px solid {{ c.bd }}; border-radius: 14px; background: {{ c.bg }}; font: 700 24px/1 Manrope, sans-serif; color: var(--text);">{{ c.value }}</span>
+                  </sc-for>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                  <span style="font: 400 12.5px/1.5 Inter, sans-serif; color: var(--muted);">{{ t.resendIn }}</span>
+                  <button type="button" onClick="{{ backPhone }}" style="border: 0; background: transparent; cursor: pointer; font: 600 13px/1 Inter, sans-serif; color: var(--accent-dk);">{{ t.changeNumber }}</button>
+                </div>
+                <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.confirmCode }}</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isRegister }}">
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.fullName }}</span>
+                  <input placeholder="{{ t.fullNamePh }}" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <label style="display: flex; flex-direction: column; gap: 7px;">
+                  <span style="font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);">{{ t.phone }}</span>
+                  <input placeholder="84 000 0000" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                </label>
+                <label style="display: flex; align-items: flex-start; gap: 10px; font: 400 12.5px/1.55 Inter, sans-serif; color: var(--muted);"><input type="checkbox" style="width: 17px; height: 17px; margin-top: 2px; accent-color: #2D8CF0;">{{ t.terms }}</label>
+                <button type="button" onClick="{{ goCode }}" style="height: 52px; margin-top: 4px; border: 0; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;" style-hover="background: #1D5FA7;">{{ t.createAccount }}</button>
+              </div>
+            </sc-if>
+
+            <p style="margin: 20px 0 0; text-align: center; font: 400 12.5px/1.6 Inter, sans-serif; color: var(--muted2);">{{ t.help }} <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Login · Mobile 390</span>
+      <div style="width: 390px; min-height: 844px; background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 38%, var(--surface) 78%); border-radius: 34px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16); display: flex; flex-direction: column;">
+        <div style="height: 44px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font: 700 12px/1 Inter, sans-serif; color: var(--text);">09:41</div>
+        <div style="padding: 18px 20px 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;">
+          <span style="display: flex;"><img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 24px; width: auto; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 24px; width: auto; display: block;"></span>
+          <h1 style="margin: 6px 0 0; font: 800 26px/1.12 Manrope, sans-serif; letter-spacing: -.03em;">{{ t.h1 }}</h1>
+          <p style="margin: 0; font: 400 13.5px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.leadShort }}</p>
+        </div>
+        <div style="margin: 20px 16px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 24px 50px rgba(13,59,102,.10); padding: 20px;">
+          <div style="display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); margin-bottom: 18px;">
+            <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+              <button type="button" onClick="{{ m.onClick }}" style="flex: 1; height: 38px; border: 0; border-radius: 999px; background: {{ m.bg }}; color: {{ m.fg }}; cursor: pointer; font: {{ m.mfont }};">{{ m.short }}</button>
+            </sc-for>
+          </div>
+          <b style="display: block; font: 800 17px/1.2 Manrope, sans-serif; margin-bottom: 6px;">{{ formTitle }}</b>
+          <p style="margin: 0 0 16px; font: 400 12.5px/1.55 Inter, sans-serif; color: var(--muted);">{{ formLead }}</p>
+
+          <sc-if value="{{ isStaff }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <input placeholder="{{ t.userPh }}" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+              <span style="position: relative; display: block;">
+                <input type="{{ pwType }}" value="Busup@2026" style="height: 50px; padding: 0 52px 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+                <button type="button" onClick="{{ togglePw }}" aria-label="{{ pwLabel }}" style="position: absolute; top: 5px; right: 5px; width: 40px; height: 40px; border: 0; border-radius: 10px; background: var(--surface2); cursor: pointer; font: 600 12px/1 Inter, sans-serif; color: var(--muted);">{{ pwIcon }}</button>
+              </span>
+              <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: #2D8CF0; cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;">{{ t.enter }}</button>
+              <button type="button" onClick="{{ toggleReset }}" style="border: 0; background: transparent; cursor: pointer; font: 600 13px/1 Inter, sans-serif; color: var(--accent-dk);">{{ t.forgot }}</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isOtpPhone }}">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <input value="84 123 4567" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 15px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+              <span style="font: 400 12px/1.5 Inter, sans-serif; color: var(--muted);">{{ t.otpNote }}</span>
+              <button type="button" onClick="{{ goCode }}" style="height: 52px; border: 0; border-radius: 999px; background: #2D8CF0; cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;">{{ t.sendCode }}</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isOtpCode }}">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px;">
+                <sc-for list="{{ otpCells }}" as="c" hint-placeholder-count="6">
+                  <span style="height: 50px; display: flex; align-items: center; justify-content: center; border: 1.5px solid {{ c.bd }}; border-radius: 12px; background: {{ c.bg }}; font: 700 19px/1 Manrope, sans-serif; color: var(--text);">{{ c.value }}</span>
+                </sc-for>
+              </div>
+              <span style="font: 400 12px/1.5 Inter, sans-serif; color: var(--muted);">{{ t.resendIn }}</span>
+              <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: #2D8CF0; cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;">{{ t.confirmCode }}</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isRegister }}">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <input placeholder="{{ t.fullNamePh }}" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+              <input placeholder="84 000 0000" style="height: 50px; padding: 0 14px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif; color: var(--text); width: 100%;">
+              <label style="display: flex; align-items: flex-start; gap: 9px; font: 400 12px/1.5 Inter, sans-serif; color: var(--muted);"><input type="checkbox" style="width: 16px; height: 16px; margin-top: 2px; accent-color: #2D8CF0;">{{ t.terms }}</label>
+              <button type="button" onClick="{{ goCode }}" style="height: 52px; border: 0; border-radius: 999px; background: #2D8CF0; cursor: pointer; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;">{{ t.createAccount }}</button>
+            </div>
+          </sc-if>
+        </div>
+        <div style="margin-top: auto; padding: 22px 20px 26px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2);">{{ t.poweredBy }}</span>
+          <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 22px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 22px; width: auto; display: block;">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 22px; padding: 0 48px 64px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div>
+    <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Estados de carregamento</span>
+    <h2 style="margin: 0; font: 800 28px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Enquanto o portal arranca</h2>
+    <p style="margin: 8px 0 0; max-width: 74ch; font: 400 14.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">Arranque da aplicação, validação de sessão depois do login, e o esqueleto do portal enquanto os dados chegam.</p>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 40px;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Arranque · 1440</span>
+      <div style="width: 700px; height: 440px; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 70px rgba(13,59,102,.14); background: linear-gradient(168deg, #0D3B66 0%, #0A2E50 62%, #0A2E50 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; position: relative;">
+        <div style="position: absolute; inset: 0; background: radial-gradient(50% 44% at 50% 18%, rgba(91,163,245,.30) 0%, rgba(91,163,245,0) 72%); pointer-events: none;"></div>
+        <img src="assets/busup-logo-dark.png" alt="BusUp" style="position: relative; height: 34px; width: auto; display: block;">
+        <span style="position: relative; width: 190px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden;"><i style="display: block; width: 30%; height: 100%; border-radius: 999px; background: #5BA3F5; animation: bzbar 1.5s ease-in-out infinite;"></i></span>
+        <span style="position: relative; font: 500 12.5px/1 Inter, sans-serif; color: rgba(234,241,248,.66);">{{ t.booting }}</span>
+        <span style="position: absolute; bottom: 26px; display: flex; align-items: center; gap: 10px;">
+          <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5);">{{ t.poweredBy }}</span>
+          <img src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 24px; width: auto; display: block">
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Arranque · Mobile 390</span>
+      <div style="position: relative; width: 390px; height: 440px; border-radius: 34px; overflow: hidden; box-shadow: 0 30px 70px rgba(13,59,102,.14); background: linear-gradient(168deg, #0D3B66 0%, #0A2E50 70%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;">
+        <img src="assets/busup-mark.png" alt="BusUp" style="height: 46px; width: auto; display: block;">
+        <span style="width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.18); border-top-color: #5BA3F5; border-radius: 999px; animation: bzspin 900ms linear infinite;"></span>
+        <span style="font: 500 12.5px/1 Inter, sans-serif; color: rgba(234,241,248,.66);">{{ t.booting }}</span>
+        <span style="position: absolute; bottom: 26px; display: flex; align-items: center; gap: 10px;">
+          <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5);">{{ t.poweredBy }}</span>
+          <img src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 24px; width: auto; display: block">
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Sessão a validar</span>
+      <div style="width: 420px; height: 440px; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 70px rgba(13,59,102,.14); background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 46%, var(--surface) 92%); display: flex; align-items: center; justify-content: center; padding: 28px;">
+        <div style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; box-shadow: 0 20px 44px rgba(13,59,102,.10); padding: 26px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;">
+          <span style="width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: #2D8CF0; border-radius: 999px; animation: bzspin 900ms linear infinite;"></span>
+          <b style="font: 800 17px/1.2 Manrope, sans-serif;">{{ t.sessionTitle }}</b>
+          <span style="font: 400 13px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.sessionLead }}</span>
+          <div style="width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 8px;">
+            <sc-for list="{{ t.sessionSteps }}" as="s" hint-placeholder-count="3">
+              <span style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface3); font: 500 12.5px/1 Inter, sans-serif; color: var(--muted);"><i style="flex: none; width: 7px; height: 7px; border-radius: 999px; background: #2D8CF0; animation: bzpulse 1.6s ease-in-out infinite;"></i>{{ s }}</span>
+            </sc-for>
+          </div>
+          <span style="display: flex; align-items: center; gap: 9px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--border); width: 100%; justify-content: center;">
+            <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2);">{{ t.poweredBy }}</span>
+            <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 20px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 20px; width: auto; display: block;">
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Portal a carregar · esqueleto 1440</span>
+    <div style="width: 1440px; border-radius: 28px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16); display: grid; grid-template-columns: 264px 1fr; background: var(--surface);">
+      <aside style="background: #0A2E50; padding: 22px 20px; display: flex; flex-direction: column; gap: 12px; min-height: 560px;">
+        <img src="assets/busup-logo-dark.png" alt="BusUp" style="height: 22px; width: auto; display: block; margin-bottom: 16px; object-fit: contain">
+        <sc-for list="{{ skeletonNav }}" as="w" hint-placeholder-count="8">
+          <span style="height: 14px; width: {{ w }}; border-radius: 999px; background: rgba(255,255,255,.10);"></span>
+        </sc-for>
+      </aside>
+      <main style="background: #F2F6FB; padding: 22px 28px 30px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="height: 22px; width: 220px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+          <span style="margin-left: auto; height: 40px; width: 150px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+          <sc-for list="{{ skeletonCards }}" as="k" hint-placeholder-count="4">
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+              <span style="height: 11px; width: 60%; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+              <span style="height: 26px; width: 78%; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <span style="height: 14px; width: 180px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+          <sc-for list="{{ skeletonRows }}" as="r" hint-placeholder-count="6">
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 90px; gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border);">
+              <span style="height: 12px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+              <span style="height: 12px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+              <span style="height: 12px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+              <span style="height: 26px; border-radius: 999px; background: linear-gradient(90deg, #E9EFF7 0%, #F6FAFF 40%, #E9EFF7 80%); background-size: 420px 100%; animation: bzshimmer 1.4s linear infinite;"></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; padding-top: 6px;">
+          <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2);">{{ t.poweredBy }}</span>
+          <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 20px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 20px; width: auto; display: block;">
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;lang&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;pt&quot;, &quot;en&quot;], &quot;default&quot;: &quot;pt&quot;, &quot;tsType&quot;: &quot;string&quot;}}">
+const PT = {
+  badge: "Acesso seguro · portal BusUp",
+  h1: "Entre no portal da sua operação.",
+  lead: "Venda, validação, frota e receita no mesmo sítio. O acesso é por conta nominal — cada movimento fica registado com o nome de quem o fez.",
+  leadShort: "Venda, validação, frota e receita no mesmo sítio.",
+  facts: ["Sessão por conta nominal, com auditoria", "Acesso por SMS para passageiros", "Suporte local em Moçambique"],
+  modes: [["staff", "Equipa", "Equipa"], ["otp", "Acesso por SMS", "SMS"], ["register", "Nova conta", "Conta"]],
+  eyebrow: { staff: "Acesso seguro", otp: "Acesso por SMS", register: "Nova conta" },
+  titles: {
+    staff: "Utilizador e senha",
+    otpPhone: "Receber código por SMS",
+    otpCode: "Introduza o código",
+    register: "Criar conta de passageiro",
+  },
+  leads: {
+    staff: "Para pessoal do operador: direcção, tesouraria, agentes e motoristas.",
+    otpPhone: "Para passageiros. Enviamos um código de 6 dígitos para o seu número.",
+    otpCode: "Enviámos um código de 6 dígitos para o 84 123 4567.",
+    register: "Precisa apenas do nome e de um número de telemóvel activo.",
+  },
+  user: "Utilizador", userPh: "nome de utilizador ou telefone",
+  password: "Senha", keep: "Manter sessão iniciada", forgot: "Esqueci a senha",
+  resetTitle: "Reposição de senha",
+  resetLead: "Indique o telefone associado à sua conta. Se existir, recebe uma SMS com a nova senha.",
+  resetSubmit: "Enviar",
+  enter: "Entrar",
+  phone: "Telemóvel", otpNote: "Vai receber um código de 6 dígitos por SMS. Não partilhe o código com ninguém.",
+  sendCode: "Enviar código",
+  resendIn: "Reenviar código em 00:42", changeNumber: "Mudar de número", confirmCode: "Confirmar e entrar",
+  fullName: "Nome completo", fullNamePh: "Como está no documento",
+  terms: "Aceito os termos de utilização e o tratamento dos meus dados para emissão de bilhetes.",
+  createAccount: "Criar conta",
+  help: "Problemas a entrar?",
+  poweredBy: "Desenvolvido por",
+  booting: "A preparar o portal…",
+  sessionTitle: "A validar a sua sessão",
+  sessionLead: "Estamos a confirmar as permissões da conta e a carregar a operação.",
+  sessionSteps: ["Credenciais confirmadas", "A carregar permissões", "A preparar o painel"],
+};
+
+const EN = {
+  badge: "Secure access · BusUp portal",
+  h1: "Sign in to your operation.",
+  lead: "Sales, validation, fleet and revenue in one place. Access is by named account — every action is recorded with the name behind it.",
+  leadShort: "Sales, validation, fleet and revenue in one place.",
+  facts: ["Named accounts with full audit trail", "SMS access for passengers", "Local support in Mozambique"],
+  modes: [["staff", "Staff", "Staff"], ["otp", "SMS access", "SMS"], ["register", "New account", "Account"]],
+  eyebrow: { staff: "Secure sign in", otp: "SMS access", register: "New account" },
+  titles: {
+    staff: "Username and password",
+    otpPhone: "Get a code by SMS",
+    otpCode: "Enter the code",
+    register: "Create a passenger account",
+  },
+  leads: {
+    staff: "For operator staff: management, treasury, agents and drivers.",
+    otpPhone: "For passengers. We send a 6-digit code to your number.",
+    otpCode: "We sent a 6-digit code to 84 123 4567.",
+    register: "All you need is a name and an active mobile number.",
+  },
+  user: "Username", userPh: "username or phone",
+  password: "Password", keep: "Keep me signed in", forgot: "Forgot password",
+  resetTitle: "Password reset",
+  resetLead: "Enter the phone linked to your account. If it exists, you get an SMS with the new password.",
+  resetSubmit: "Send",
+  enter: "Sign in",
+  phone: "Mobile", otpNote: "You will get a 6-digit code by SMS. Never share the code with anyone.",
+  sendCode: "Send code",
+  resendIn: "Resend code in 00:42", changeNumber: "Change number", confirmCode: "Confirm and sign in",
+  fullName: "Full name", fullNamePh: "As printed on the document",
+  terms: "I accept the terms of use and the processing of my data to issue tickets.",
+  createAccount: "Create account",
+  help: "Trouble signing in?",
+  poweredBy: "Powered by",
+  booting: "Preparing the portal…",
+  sessionTitle: "Checking your session",
+  sessionLead: "We are confirming the account permissions and loading the operation.",
+  sessionSteps: ["Credentials confirmed", "Loading permissions", "Preparing the dashboard"],
+};
+
+class Component extends DCLogic {
+  state = { lang: "pt", mode: "staff", otpStep: "phone", showPw: false, reset: false };
+
+  renderVals() {
+    const lang = this.props.lang ?? this.state.lang;
+    const t = lang === "en" ? EN : PT;
+    const { mode, otpStep } = this.state;
+    const key = mode === "otp" ? (otpStep === "phone" ? "otpPhone" : "otpCode") : mode;
+
+    return {
+      t,
+      langBtns: ["pt", "en"].map((l) => ({
+        label: l.toUpperCase(),
+        bg: lang === l ? "#0D3B66" : "transparent",
+        fg: lang === l ? "#FFFFFF" : "#5B6B7F",
+        onClick: () => this.setState({ lang: l }),
+      })),
+      modes: t.modes.map(([k, label, short]) => {
+        const on = k === mode;
+        return {
+          label, short,
+          bg: on ? "#0D3B66" : "transparent",
+          fg: on ? "#FFFFFF" : "#5B6B7F",
+          font: on ? "700 13.5px/1 Inter, sans-serif" : "500 13.5px/1 Inter, sans-serif",
+          mfont: on ? "700 12.5px/1 Inter, sans-serif" : "500 12.5px/1 Inter, sans-serif",
+          onClick: () => this.setState({ mode: k, otpStep: "phone" }),
+        };
+      }),
+      eyebrow: t.eyebrow[mode],
+      formTitle: t.titles[key],
+      formLead: t.leads[key],
+      isStaff: mode === "staff",
+      isOtpPhone: mode === "otp" && otpStep === "phone",
+      isOtpCode: mode === "otp" && otpStep === "code",
+      isRegister: mode === "register",
+      goCode: () => this.setState({ mode: "otp", otpStep: "code" }),
+      backPhone: () => this.setState({ otpStep: "phone" }),
+      otpCells: ["4", "7", "2", "9", "", ""].map((value, i) => ({
+        value,
+        bd: value ? "#0D3B66" : i === 4 ? "#2D8CF0" : "#D7E2EF",
+        bg: value ? "#F6F9FD" : "#FBFDFF",
+      })),
+      pwType: this.state.showPw ? "text" : "password",
+      pwIcon: this.state.showPw ? "ocultar" : "ver",
+      pwLabel: this.state.showPw ? "Ocultar senha" : "Mostrar senha",
+      togglePw: () => this.setState((s) => ({ showPw: !s.showPw })),
+      resetOpen: this.state.reset,
+      toggleReset: () => this.setState((s) => ({ reset: !s.reset })),
+      skeletonNav: ["70%", "56%", "82%", "48%", "64%", "76%", "52%", "60%"],
+      skeletonCards: [1, 2, 3, 4],
+      skeletonRows: [1, 2, 3, 4, 5, 6],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

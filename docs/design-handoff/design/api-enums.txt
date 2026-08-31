@@ -1,0 +1,40 @@
+AdminPosSessionStatusEnum: active, closed
+AppReleaseStatusEnum: draft, published, suspended, retired
+AppTypeEnum: pos, passenger
+BlankEnum: ''
+CalculationMethodEnum: fixed, origin_destination, distance, zone
+CardStatusEnum: inactive, active, blocked, lost, replaced, retired
+CardTechnologyEnum: nfc_uid, mifare_classic, mifare_desfire, qr_code, other
+CardTypeEnum: physical, digital
+DeviceActivationRequestStatusEnum: pending, approved, rejected, expired
+DeviceAppUpdateStatusEnum: pending, prompted, deferred, downloading, installed, failed, forced
+DeviceStatusEnum: self_onboarded, pending_activation, pending_configuration, active, rejected, blocked, retired
+DeviceTypeEnum: urovo_i9100_pos, sunmi_v2s_pos, mobile_app, admin_browser
+Direction264Enum: outbound, inbound
+DiscountTypeEnum: percentage, fixed_amount, free_trips
+DocumentTypeEnum: bi, passport, driving_license
+FailureReasonEnum: insufficient_balance, card_blocked, account_blocked, pass_already_used, pass_expired, invalid_token, route_not_allowed, device_blocked, no_fare_found, no_ticket_for_route
+GuestCheckoutStatusEnum: draft, payment_pending, paid, issued, expired, cancelled, refunded
+InterestEnum: operator, company, school, other
+KindEnum: card_issuance, card_recovery, fine, other
+PassengerClassEnum: standard, student, senior, child
+PassengerPackageStatusEnum: active, expired, cancelled, exhausted
+PaymentIntentStatusEnum: created, pending, confirmed, failed, expired, reversed
+ProductTypeEnum: single_trip, daily_pass, weekly_pass, monthly_pass
+PurposeEnum: mobile_wallet_topup, pos_card_topup, guest_travel_pass_purchase, app_travel_pass_purchase, direct_trip_payment, refund
+SeatLayoutEnum: 1+1, 1+2, 2+1, 2+2, 2+3, 3+2
+ServiceRequestStatusEnum: new, contacted, qualified, closed
+ServiceTypeEnum: urban, interprovincial, international
+Status18fEnum: scheduled, boarding, departed, paused, completed, cancelled
+Status21aEnum: active, inactive, suspended
+Status241Enum: active, inactive, suspended
+Status722Enum: active, inactive
+StatusF3eEnum: active, blocked, suspended, closed
+StatusFfeEnum: active, inactive
+TypeEnum: topup, fare_debit, refund, reversal, adjustment, card_transfer, fee
+ValidationEventStatusEnum: approved, denied
+ValidationTypeEnum: card_pay_as_you_go, qr_pay_as_you_go, digital_travel_pass, guest_digital_travel_pass
+VehicleStatusEnum: active, maintenance, retired
+WalletStatusEnum: active, blocked, closed
+WalletTransactionDirectionEnum: credit, debit
+WalletTransactionStatusEnum: pending, confirmed, failed, reversed

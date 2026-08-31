@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  :root {
+    --bg: #E7EDF5; --surface: #FFFFFF; --surface2: #F6F9FD; --surface3: #FBFDFF;
+    --border: #E4EBF3; --border2: #D7E2EF;
+    --text: #0F1B2D; --muted: #5B6B7F; --muted2: #8A9AAD; --faint: #A8B7C8;
+    --navy-text: #0D3B66; --accent: #2D8CF0; --accent-dk: #1D5FA7;
+    --sky1: #CFE6FB; --sky2: #E8F2FC;
+  }
+  html[data-theme="dark"] {
+    --bg: #06203A; --surface: #0A2E50; --surface2: #0C3557; --surface3: #0E3A5E;
+    --border: #1A4368; --border2: #22527A;
+    --text: #EAF1F8; --muted: #A9C2DC; --muted2: #8AA6C2; --faint: #6F8CAA;
+    --navy-text: #CFE6FB; --accent: #2D8CF0; --accent-dk: #5BA3F5;
+    --sky1: #0C3557; --sky2: #10406A;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  * { box-sizing: border-box; }
+  a { color: var(--accent-dk); text-decoration: none; }
+  a:hover { color: #2D8CF0; }
+  img[data-logo="dark"] { display: none !important; }
+  html[data-theme="dark"] img[data-logo="dark"] { display: block !important; }
+  html[data-theme="dark"] img[data-logo="light"] { display: none !important; }
+  @keyframes bzpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+</style>
+</helmet>
+
+<section style="display: flex; flex-direction: column; gap: 58px; padding: 48px; width: max-content; font-family: Inter, system-ui, sans-serif; color: var(--text);">
+
+  <div style="display: flex; flex-direction: column; gap: 10px; max-width: 92ch;">
+    <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);">App mobile e POS · fluxos completos</span>
+    <h2 style="margin: 0; font: 800 30px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Os cinco produtos, com o vocabulário do Portal</h2>
+    <p style="margin: 0; font: 400 14.5px/1.65 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">Mesmos tipos, mesma paleta, mesmas pílulas de estado e as mesmas traduções dos enums da API. O que muda é a densidade: alvos de toque de 52px, corpo a 15px e um passo por ecrã. Telemóvel a 390×844, POS num terminal Android de mão de 5,5″, validador de bordo em ecrã fixo horizontal.</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <h3 style="margin: 0; font: 800 21px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">App do passageiro</h3>
+      <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Entrar · escolher rota · horário · lugar · pagar · bilhete com QR</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">01 · Entrar</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 18px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+          </div>
+          <div style="flex: 1; padding: 34px 22px; display: flex; flex-direction: column; gap: 18px;">
+            <img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 26px; width: auto;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 26px; width: auto;">
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 12px;">
+              <h4 style="margin: 0; font: 800 24px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">Entrar</h4>
+              <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">Enviamos um código por SMS para confirmar o número.</p>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Número de telemóvel</span>
+              <span style="display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3);">
+                <span style="font: 500 15px/1 'IBM Plex Mono', monospace; color: var(--muted);">+258</span>
+                <span style="width: 1px; height: 22px; background: var(--border);"></span>
+                <span style="font: 500 15px/1 'IBM Plex Mono', monospace; color: var(--text);">84 312 5580</span>
+              </span>
+            </label>
+            <button type="button" style="height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Continuar</button>
+            <p style="margin: 0; font: 400 12.5px/1.6 Inter, sans-serif; color: var(--muted2); text-wrap: pretty;">Ao continuar aceita os termos de utilização e a política de privacidade da BusUp.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">02 · Código</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 18px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+          </div>
+          <div style="flex: 1; padding: 30px 22px; display: flex; flex-direction: column; gap: 18px;">
+            <button type="button" aria-label="Voltar" style="width: 44px; height: 44px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 500 17px/1 Inter, sans-serif; color: var(--navy-text);">‹</button>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <h4 style="margin: 0; font: 800 24px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">Código de confirmação</h4>
+              <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">Enviado para <b style="font: 500 14px/1.55 'IBM Plex Mono', monospace; color: var(--text);">+258 84 312 5580</b>.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 6px;">
+              <span style="height: 68px; display: flex; align-items: center; justify-content: center; border: 1px solid #2D8CF0; border-radius: 14px; background: var(--sky2); font: 700 24px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">4</span>
+              <span style="height: 68px; display: flex; align-items: center; justify-content: center; border: 1px solid #2D8CF0; border-radius: 14px; background: var(--sky2); font: 700 24px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">1</span>
+              <span style="height: 68px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 700 24px/1 'IBM Plex Mono', monospace; color: var(--faint);">–</span>
+              <span style="height: 68px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 700 24px/1 'IBM Plex Mono', monospace; color: var(--faint);">–</span>
+            </div>
+            <span style="display: flex; align-items: center; gap: 9px; font: 400 13px/1.5 Inter, sans-serif; color: var(--muted2);">Reenviar código em <b style="font: 500 13px/1 'IBM Plex Mono', monospace; color: var(--muted);">00:42</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">03 · Rota</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Para onde vai?</b>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 15px; border-radius: 13px; background: rgba(255,255,255,.10); font: 500 14.5px/1 Inter, sans-serif; color: #FFFFFF;"><i style="width: 8px; height: 8px; border-radius: 999px; background: #2D8CF0;"></i>Praça dos Combatentes</span>
+              <span style="display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 15px; border-radius: 13px; background: rgba(255,255,255,.10); font: 500 14.5px/1 Inter, sans-serif; color: rgba(255,255,255,.62);"><i style="width: 8px; height: 8px; border-radius: 999px; background: #E4572E;"></i>Destino</span>
+            </div>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <span style="font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);">Rotas a partir daqui</span>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
+                <b style="font: 700 15px/1.3 Manrope, sans-serif;">L3 — Combatentes – Matola</b>
+                <small style="font: 400 12.5px/1.4 Inter, sans-serif; color: var(--muted2);">6 paragens · 18,4 km · 65 min</small>
+              </span>
+              <b style="font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">90,00</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
+                <b style="font: 700 15px/1.3 Manrope, sans-serif;">L1 — Baixa – Zimpeto</b>
+                <small style="font: 400 12.5px/1.4 Inter, sans-serif; color: var(--muted2);">5 paragens · 14,2 km · 45 min</small>
+              </span>
+              <b style="font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">75,00</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 15px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0;">
+                <b style="font: 700 15px/1.3 Manrope, sans-serif;">L6 — Junta – Marracuene</b>
+                <small style="font: 400 12.5px/1.4 Inter, sans-serif; color: var(--muted2);">7 paragens · 24,0 km · 75 min</small>
+              </span>
+              <b style="font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">120,00</b>
+            </div>
+          </div>
+          <div style="border-top: 1px solid var(--border); background: var(--surface); padding: 10px 12px 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+            <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; border-radius: 12px; background: var(--sky2); font: 700 11px/1 Inter, sans-serif; color: var(--navy-text);"><i style="width: 20px; height: 20px; border-radius: 7px; background: #2D8CF0;"></i>Viajar</span>
+            <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; font: 500 11px/1 Inter, sans-serif; color: var(--muted2);"><i style="width: 20px; height: 20px; border-radius: 7px; background: var(--surface2);"></i>Bilhetes</span>
+            <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; font: 500 11px/1 Inter, sans-serif; color: var(--muted2);"><i style="width: 20px; height: 20px; border-radius: 7px; background: var(--surface2);"></i>Carteira</span>
+            <span style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; font: 500 11px/1 Inter, sans-serif; color: var(--muted2);"><i style="width: 20px; height: 20px; border-radius: 7px; background: var(--surface2);"></i>Perfil</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">04 · Horário</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">L3 — Combatentes – Matola</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">Terça, 4 de Agosto · 12 partidas</span>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid #2D8CF0; border-radius: 16px; background: var(--sky2);">
+              <b style="font: 700 19px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">10:00</b>
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                <span style="font: 600 13px/1.3 Inter, sans-serif; color: var(--navy-text);">Chega 11:05</span>
+                <small style="font: 400 12px/1.3 Inter, sans-serif; color: var(--accent-dk);">14 lugares livres · ABC-27-MC</small>
+              </span>
+              <b style="font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">90,00</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <b style="font: 700 19px/1 'IBM Plex Mono', monospace; color: var(--text);">11:00</b>
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                <span style="font: 600 13px/1.3 Inter, sans-serif;">Chega 12:05</span>
+                <small style="font: 400 12px/1.3 Inter, sans-serif; color: var(--muted2);">32 lugares livres</small>
+              </span>
+              <b style="font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">90,00</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface2);">
+              <b style="font: 700 19px/1 'IBM Plex Mono', monospace; color: var(--faint);">12:00</b>
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+                <span style="font: 600 13px/1.3 Inter, sans-serif; color: var(--muted2);">Chega 13:05</span>
+                <small style="font: 400 12px/1.3 Inter, sans-serif; color: var(--muted2);">sem lugares</small>
+              </span>
+              <span style="display: flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: #EEF3F9; font: 700 11px/1 Inter, sans-serif; color: #5B6B7F;">Esgotada</span>
+            </div>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Escolher lugar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">05 · Lugar</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Escolher lugar</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">Partida 10:00 · ABC-27-MC · 14 livres</span>
+          </div>
+          <div style="flex: 1; padding: 20px 18px; display: flex; flex-direction: column; gap: 16px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 16px; font: 500 12px/1 Inter, sans-serif; color: var(--muted2);">
+              <span style="display: flex; align-items: center; gap: 7px;"><i style="width: 14px; height: 14px; border-radius: 5px; border: 1px solid var(--border2); background: var(--surface);"></i>Livre</span>
+              <span style="display: flex; align-items: center; gap: 7px;"><i style="width: 14px; height: 14px; border-radius: 5px; background: #2D8CF0;"></i>Seleccionado</span>
+              <span style="display: flex; align-items: center; gap: 7px;"><i style="width: 14px; height: 14px; border-radius: 5px; background: #EEF3F9;"></i>Ocupado</span>
+            </div>
+            <div style="border: 1px solid var(--border); border-radius: 18px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+              <span style="align-self: flex-end; font: 600 11px/1 Inter, sans-serif; color: var(--faint);">frente</span>
+              <div style="display: grid; grid-template-columns: repeat(2, 44px) 22px repeat(2, 44px); gap: 10px; justify-content: center;">
+                <span style="height: 44px; border-radius: 10px; background: #EEF3F9; display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--faint);">1A</span>
+                <span style="height: 44px; border-radius: 10px; background: #EEF3F9; display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--faint);">1B</span>
+                <span></span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">1C</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">1D</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">2A</span>
+                <span style="height: 44px; border-radius: 10px; background: #2D8CF0; display: flex; align-items: center; justify-content: center; font: 700 12px/1 'IBM Plex Mono', monospace; color: #FFFFFF;">2B</span>
+                <span></span>
+                <span style="height: 44px; border-radius: 10px; background: #EEF3F9; display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--faint);">2C</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">2D</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">3A</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">3B</span>
+                <span></span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">3C</span>
+                <span style="height: 44px; border-radius: 10px; background: #EEF3F9; display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--faint);">3D</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">4A</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">4B</span>
+                <span></span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">4C</span>
+                <span style="height: 44px; border-radius: 10px; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font: 600 12px/1 'IBM Plex Mono', monospace; color: var(--muted);">4D</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 14px;">
+            <span style="display: flex; flex-direction: column; gap: 3px;">
+              <small style="font: 600 11.5px/1 Inter, sans-serif; color: var(--muted2);">Lugar 2B</small>
+              <b style="font: 800 19px/1 Manrope, sans-serif;">90,00 MZN</b>
+            </span>
+            <button type="button" style="flex: 1; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Pagar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">06 · Pagamento</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Como quer pagar?</b>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 9px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">L3 · lugar 2B · 10:00<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">90,00</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Taxa administrativa<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">5,00</b></span>
+              <span style="height: 1px; background: var(--border);"></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><b style="font: 700 14px/1 Inter, sans-serif;">Total</b><b style="font: 800 20px/1 Manrope, sans-serif;">95,00 MZN</b></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 13px; padding: 17px 16px; border: 1px solid #2D8CF0; border-radius: 16px; background: var(--sky2);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 6px solid #2D8CF0; background: var(--surface);"></i>
+              <span style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
+                <b style="font: 700 14.5px/1.3 Manrope, sans-serif; color: var(--navy-text);">Cartão BusUp</b>
+                <small style="font: 400 12.5px/1.3 Inter, sans-serif; color: var(--accent-dk);">Saldo 340,00 MZN · fica 245,00</small>
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 13px; padding: 17px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--border2);"></i>
+              <span style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
+                <b style="font: 700 14.5px/1.3 Manrope, sans-serif;">M-Pesa</b>
+                <small style="font: 400 12.5px/1.3 Inter, sans-serif; color: var(--muted2);">Confirma no telemóvel +258 84 312 5580</small>
+              </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 13px; padding: 17px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--border2);"></i>
+              <span style="display: flex; flex-direction: column; gap: 3px; flex: 1;">
+                <b style="font: 700 14.5px/1.3 Manrope, sans-serif;">e-Mola</b>
+                <small style="font: 400 12.5px/1.3 Inter, sans-serif; color: var(--muted2);">Confirma no telemóvel</small>
+              </span>
+            </div>
+            <p style="margin: 4px 0 0; font: 400 12.5px/1.6 Inter, sans-serif; color: var(--muted2); text-wrap: pretty;">O lugar fica reservado 10 minutos enquanto o pagamento é confirmado.</p>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Pagar 95,00 MZN</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">07 · Bilhete</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Bilhete emitido</b>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+            <span style="display: flex; align-items: center; width: max-content; height: 30px; padding: 0 13px; border-radius: 999px; background: #E8F7EE; font: 700 12px/1 Inter, sans-serif; color: #2E7D4F;">Válido</span>
+            <div style="border: 1px solid var(--border); border-radius: 20px; background: var(--surface); padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+              <span role="img" aria-label="Código QR do bilhete" style="width: 190px; height: 190px; border-radius: 12px; background-color: #FFFFFF; background-image: repeating-conic-gradient(#0F1B2D 0% 25%, #FFFFFF 0% 50%); background-size: 16px 16px; border: 8px solid #FFFFFF; outline: 1px solid var(--border);"></span>
+              <b style="font: 500 14px/1 'IBM Plex Mono', monospace; color: var(--muted);">TKT-2026-0004182</b>
+            </div>
+            <div style="border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 16px; display: flex; flex-direction: column; gap: 11px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><small style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Rota</small><b style="font: 600 13px/1.3 Inter, sans-serif; text-align: right;">L3 — Combatentes – Matola</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><small style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Partida</small><b style="font: 500 13px/1 'IBM Plex Mono', monospace;">04/08/2026 10:00</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><small style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Lugar</small><b style="font: 500 13px/1 'IBM Plex Mono', monospace;">2B</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><small style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Viatura</small><b style="font: 500 13px/1 'IBM Plex Mono', monospace;">ABC-27-MC</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><small style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Pago com</small><b style="font: 600 13px/1.3 Inter, sans-serif;">Cartão BusUp · 95,00 MZN</b></span>
+            </div>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: 10px;">
+            <button type="button" style="flex: 1; height: 56px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface); color: var(--navy-text); cursor: pointer; font: 600 14.5px/1 Inter, sans-serif;">Guardar</button>
+            <button type="button" style="flex: 1; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif;">Ver bilhetes</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <h3 style="margin: 0; font: 800 21px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">App do agente</h3>
+      <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Entrar · abrir turno · vender a bordo · cobrar · validar · fechar caixa</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">01 · Entrar</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 18px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">05:12</div>
+          </div>
+          <div style="flex: 1; padding: 34px 22px; display: flex; flex-direction: column; gap: 18px;">
+            <img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 24px; width: auto;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 24px; width: auto;">
+            <span style="display: flex; align-items: center; width: max-content; height: 28px; padding: 0 13px; border-radius: 999px; background: var(--sky2); font: 700 11.5px/1 Inter, sans-serif; color: var(--navy-text);">Agente</span>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <h4 style="margin: 0; font: 800 24px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">Entrar no serviço</h4>
+              <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">Use o código que lhe foi atribuído e o PIN de quatro dígitos.</p>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Código do agente</span>
+              <span style="display: flex; align-items: center; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 500 15px/1 'IBM Plex Mono', monospace;">AGT-0041</span>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">PIN</span>
+              <span style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 700 18px/1 'IBM Plex Mono', monospace; letter-spacing: .4em; color: var(--text);">••••</span>
+            </label>
+            <button type="button" style="height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Entrar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">02 · Abrir turno</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">05:28</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Abrir turno</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">Lúcia Mondlane · terça, 4 de Agosto</span>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Viatura</span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 500 15px/1 'IBM Plex Mono', monospace;">AAB-14-MP<span style="font: 500 12px/1 Inter, sans-serif; color: var(--muted2);">▾</span></span>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Rotas do turno</span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif;">L1, L3<span style="font: 500 12px/1 Inter, sans-serif; color: var(--muted2);">▾</span></span>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Fundo de maneio (MZN)</span>
+              <span style="display: flex; align-items: center; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 700 17px/1 'IBM Plex Mono', monospace;">500,00</span>
+            </label>
+            <p style="margin: 0; display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface2); font: 400 12.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;"><i style="flex: none; margin-top: 6px; width: 6px; height: 6px; border-radius: 999px; background: #C8821A;"></i>O turno fica aberto até fechar caixa. Todas as vendas e validações que fizer ficam ligadas a ele.</p>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Abrir turno</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">03 · Turno a decorrer</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 18px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:41</div>
+            <span style="display: flex; align-items: center; gap: 10px;">
+              <span style="display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,.14); font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;"><i style="width: 7px; height: 7px; border-radius: 999px; background: #7FD1A0; animation: bzpulse 1.6s ease-in-out infinite;"></i>Turno aberto</span>
+              <span style="font: 500 12px/1 'IBM Plex Mono', monospace; color: rgba(255,255,255,.6);">#TRN-0141 · 4h 11m</span>
+            </span>
+            <div style="display: flex; gap: 22px;">
+              <span style="display: flex; flex-direction: column; gap: 5px;"><small style="font: 600 11px/1 Inter, sans-serif; color: rgba(255,255,255,.6);">Apurado</small><b style="font: 800 22px/1 Manrope, sans-serif; color: #FFFFFF;">6 480,00</b></span>
+              <span style="display: flex; flex-direction: column; gap: 5px;"><small style="font: 600 11px/1 Inter, sans-serif; color: rgba(255,255,255,.6);">Bilhetes</small><b style="font: 800 22px/1 Manrope, sans-serif; color: #FFFFFF;">72</b></span>
+              <span style="display: flex; flex-direction: column; gap: 5px;"><small style="font: 600 11px/1 Inter, sans-serif; color: rgba(255,255,255,.6);">Validações</small><b style="font: 800 22px/1 Manrope, sans-serif; color: #FFFFFF;">38</b></span>
+            </div>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="display: flex; gap: 10px;">
+              <button type="button" style="flex: 1; height: 62px; border: 0; border-radius: 16px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Vender bilhete</button>
+              <button type="button" style="flex: 1; height: 62px; border: 1px solid var(--border2); border-radius: 16px; background: var(--surface); color: var(--navy-text); cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Validar</button>
+            </div>
+            <span style="font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 4px;">Últimos movimentos</span>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;"><b style="font: 700 14px/1.3 Manrope, sans-serif;">Bilhete L3 · Matola</b><small style="font: 400 12px/1.3 'IBM Plex Mono', monospace; color: var(--muted2);">09:38 · numerário</small></span>
+              <b style="font: 700 14px/1 'IBM Plex Mono', monospace;">90,00</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;"><b style="font: 700 14px/1.3 Manrope, sans-serif;">Validação · cartão</b><small style="font: 400 12px/1.3 'IBM Plex Mono', monospace; color: var(--muted2);">09:36 · CRD-004182</small></span>
+              <b style="font: 700 14px/1 'IBM Plex Mono', monospace;">75,00</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;"><b style="font: 700 14px/1.3 Manrope, sans-serif;">Bilhete L1 · Zimpeto</b><small style="font: 400 12px/1.3 'IBM Plex Mono', monospace; color: var(--muted2);">09:31 · M-Pesa</small></span>
+              <b style="font: 700 14px/1 'IBM Plex Mono', monospace;">75,00</b>
+            </div>
+          </div>
+          <div style="padding: 14px 18px 26px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 52px; border: 1px solid #F0D3CE; border-radius: 14px; background: var(--surface); color: #8E2A19; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif;">Fechar caixa</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">04 · Vender</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:42</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Vender bilhete</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">Viagem #4179 · L1 — Baixa – Zimpeto</span>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Destino</span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif;">Zimpeto — Mercado<span style="font: 500 12px/1 Inter, sans-serif; color: var(--muted2);">▾</span></span>
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Produto tarifário</span>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span style="display: flex; align-items: center; height: 46px; padding: 0 17px; border-radius: 999px; background: #0D3B66; font: 700 13.5px/1 Inter, sans-serif; color: #FFFFFF;">Normal</span>
+                <span style="display: flex; align-items: center; height: 46px; padding: 0 17px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); font: 600 13.5px/1 Inter, sans-serif; color: var(--muted);">Estudante</span>
+                <span style="display: flex; align-items: center; height: 46px; padding: 0 17px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); font: 600 13.5px/1 Inter, sans-serif; color: var(--muted);">Sénior</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);">
+              <span style="font: 600 13.5px/1 Inter, sans-serif; color: var(--muted);">Quantidade</span>
+              <span style="display: flex; align-items: center; gap: 14px;">
+                <button type="button" aria-label="Menos um" style="width: 46px; height: 46px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 19px/1 Inter, sans-serif; color: var(--navy-text);">–</button>
+                <b style="min-width: 26px; text-align: center; font: 800 21px/1 Manrope, sans-serif;">2</b>
+                <button type="button" aria-label="Mais um" style="width: 46px; height: 46px; border: 0; border-radius: 999px; background: #0D3B66; cursor: pointer; font: 600 19px/1 Inter, sans-serif; color: #FFFFFF;">+</button>
+              </span>
+            </div>
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 9px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">2 × Normal<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">150,00</b></span>
+              <span style="height: 1px; background: var(--border);"></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><b style="font: 700 14px/1 Inter, sans-serif;">Total</b><b style="font: 800 20px/1 Manrope, sans-serif;">150,00 MZN</b></span>
+            </div>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Cobrar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">05 · Validar</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:44</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Validar</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">Cartão por NFC ou bilhete por QR</span>
+          </div>
+          <div style="flex: 1; padding: 24px 18px; display: flex; flex-direction: column; gap: 18px; align-items: center; justify-content: center; overflow: hidden;">
+            <i style="width: 128px; height: 128px; border-radius: 999px; border: 3px dashed var(--border2); background: var(--sky2); animation: bzpulse 1.8s ease-in-out infinite;"></i>
+            <b style="font: 800 20px/1.25 Manrope, sans-serif; text-align: center;">Encoste o cartão</b>
+            <p style="margin: 0; max-width: 34ch; text-align: center; font: 400 13.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">Ou toque em ler QR para validar um bilhete comprado na aplicação.</p>
+            <button type="button" style="height: 52px; padding: 0 22px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface); color: var(--navy-text); cursor: pointer; font: 700 14.5px/1 Inter, sans-serif;">Ler QR</button>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid #BFE3CD; border-radius: 16px; background: #E8F7EE;">
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;"><b style="font: 700 14px/1.3 Manrope, sans-serif; color: #2E7D4F;">Aceite · Marta Sitoe</b><small style="font: 400 12px/1.3 'IBM Plex Mono', monospace; color: #2E7D4F;">CRD-004182 · saldo 245,00 MZN</small></span>
+              <b style="font: 700 14px/1 'IBM Plex Mono', monospace; color: #2E7D4F;">−75,00</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">06 · Fechar caixa</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">14:05</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">Fechar caixa</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">#TRN-0141 · aberto às 05:30</span>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 11px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Fundo de maneio<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">500,00</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Bilhetes (72)<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">4 620,00</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Validações (38)<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">1 860,00</b></span>
+              <span style="height: 1px; background: var(--border);"></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><b style="font: 700 14px/1 Inter, sans-serif;">Esperado</b><b style="font: 800 20px/1 Manrope, sans-serif;">6 980,00 MZN</b></span>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Contado (MZN)</span>
+              <span style="display: flex; align-items: center; height: 60px; padding: 0 16px; border: 1px solid #2D8CF0; border-radius: 14px; background: var(--sky2); font: 700 20px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">6 900,00</span>
+            </label>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border: 1px solid #F0C4BC; border-radius: 16px; background: #FDF1EF;">
+              <span style="display: flex; flex-direction: column; gap: 4px;"><b style="font: 700 13.5px/1.3 Inter, sans-serif; color: #8E2A19;">Diferença</b><small style="font: 400 12px/1.4 Inter, sans-serif; color: #8E2A19;">Fica marcado como divergente até ser conferido.</small></span>
+              <b style="font: 800 20px/1 Manrope, sans-serif; color: #8E2A19;">−80,00</b>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Notas do fecho</span>
+              <span style="display: block; min-height: 84px; padding: 14px 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 400 13.5px/1.5 Inter, sans-serif; color: var(--muted2);">Troco em falta no último bilhete.</span>
+            </label>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Fechar turno</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <h3 style="margin: 0; font: 800 21px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">App do motorista</h3>
+      <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Entrar · viagens do dia · partir, pausar, retomar e fechar</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">01 · Entrar</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 18px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">05:02</div>
+          </div>
+          <div style="flex: 1; padding: 34px 22px; display: flex; flex-direction: column; gap: 18px;">
+            <img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 24px; width: auto;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 24px; width: auto;">
+            <span style="display: flex; align-items: center; width: max-content; height: 28px; padding: 0 13px; border-radius: 999px; background: var(--sky2); font: 700 11.5px/1 Inter, sans-serif; color: var(--navy-text);">Motorista</span>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <h4 style="margin: 0; font: 800 24px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">Entrar no serviço</h4>
+              <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">Confirme a viatura que vai conduzir hoje.</p>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Carta de condução</span>
+              <span style="display: flex; align-items: center; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 500 15px/1 'IBM Plex Mono', monospace;">MZ-1104-887</span>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">PIN</span>
+              <span style="display: flex; align-items: center; height: 56px; padding: 0 16px; border: 1px solid var(--border2); border-radius: 14px; background: var(--surface3); font: 700 18px/1 'IBM Plex Mono', monospace; letter-spacing: .4em;">••••</span>
+            </label>
+            <button type="button" style="height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Entrar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">02 · Viagens do dia</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">05:20</div>
+            <b style="font: 800 19px/1.2 Manrope, sans-serif; color: #FFFFFF;">As suas viagens</b>
+            <span style="font: 400 13px/1.4 Inter, sans-serif; color: rgba(255,255,255,.68);">Fernando Chissano · AAB-14-MP · 4 hoje</span>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+            <div style="padding: 16px; border: 1px solid #2D8CF0; border-radius: 16px; background: var(--sky2); display: flex; flex-direction: column; gap: 10px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <b style="font: 700 15px/1.3 Manrope, sans-serif; color: var(--navy-text);">L1 — Baixa – Zimpeto</b>
+                <span style="display: flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: #EEF3F9; font: 700 11px/1 Inter, sans-serif; color: #5B6B7F;">Agendada</span>
+              </span>
+              <span style="font: 500 13px/1 'IBM Plex Mono', monospace; color: var(--accent-dk);">05:45 → 06:30 · #4166</span>
+              <button type="button" style="height: 52px; border: 0; border-radius: 13px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif;">Partir</button>
+            </div>
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <b style="font: 700 15px/1.3 Manrope, sans-serif;">L1 — Baixa – Zimpeto</b>
+                <span style="display: flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: #EEF3F9; font: 700 11px/1 Inter, sans-serif; color: #5B6B7F;">Agendada</span>
+              </span>
+              <span style="font: 500 13px/1 'IBM Plex Mono', monospace; color: var(--muted2);">09:15 → 10:00 · #4179</span>
+            </div>
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <b style="font: 700 15px/1.3 Manrope, sans-serif;">L1 — Baixa – Zimpeto</b>
+                <span style="display: flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: #EEF3F9; font: 700 11px/1 Inter, sans-serif; color: #5B6B7F;">Agendada</span>
+              </span>
+              <span style="font: 500 13px/1 'IBM Plex Mono', monospace; color: var(--muted2);">13:15 → 14:00 · #4191</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">03 · Viagem em curso</span>
+        <div style="width: 390px; height: 844px; border-radius: 34px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 12px 18px 20px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="height: 22px; display: flex; align-items: center; font: 700 12px/1 Inter, sans-serif; color: #FFFFFF;">09:22</div>
+            <span style="display: flex; align-items: center; gap: 7px; width: max-content; height: 28px; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,.14); font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;"><i style="width: 7px; height: 7px; border-radius: 999px; background: #7FD1A0; animation: bzpulse 1.6s ease-in-out infinite;"></i>Em viagem</span>
+            <b style="font: 800 22px/1.2 Manrope, sans-serif; color: #FFFFFF;">L1 — Baixa – Zimpeto</b>
+            <span style="font: 500 13px/1 'IBM Plex Mono', monospace; color: rgba(255,255,255,.66);">#4179 · partiu 09:15 · chega 10:00</span>
+          </div>
+          <div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="display: flex; gap: 10px;">
+              <div style="flex: 1; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);"><small style="display: block; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted2); margin-bottom: 8px;">A bordo</small><b style="font: 800 24px/1 Manrope, sans-serif;">28</b></div>
+              <div style="flex: 1; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface);"><small style="display: block; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted2); margin-bottom: 8px;">Próxima paragem</small><b style="font: 700 15px/1.2 Manrope, sans-serif;">Junta</b></div>
+            </div>
+            <span style="font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 4px;">Paragens</span>
+            <div style="display: flex; flex-direction: column; gap: 0;">
+              <span style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border);"><i style="width: 11px; height: 11px; border-radius: 999px; background: #2E7D4F;"></i><b style="flex: 1; font: 600 13.5px/1.3 Inter, sans-serif; color: var(--muted2);">Baixa — Praça 25 de Junho</b><small style="font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--muted2);">09:15</small></span>
+              <span style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border);"><i style="width: 11px; height: 11px; border-radius: 999px; background: #2E7D4F;"></i><b style="flex: 1; font: 600 13.5px/1.3 Inter, sans-serif; color: var(--muted2);">Praça dos Combatentes</b><small style="font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--muted2);">09:24</small></span>
+              <span style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border);"><i style="width: 11px; height: 11px; border-radius: 999px; background: #2D8CF0;"></i><b style="flex: 1; font: 700 13.5px/1.3 Inter, sans-serif; color: var(--text);">Junta — Terminal Rodoviário</b><small style="font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--accent-dk);">09:36</small></span>
+              <span style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border);"><i style="width: 11px; height: 11px; border-radius: 999px; border: 1.5px solid var(--border2);"></i><b style="flex: 1; font: 500 13.5px/1.3 Inter, sans-serif; color: var(--muted);">Magoanine — Bairro C</b><small style="font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--muted2);">09:48</small></span>
+              <span style="display: flex; align-items: center; gap: 12px; padding: 13px 0;"><i style="width: 11px; height: 11px; border-radius: 999px; border: 1.5px solid var(--border2);"></i><b style="flex: 1; font: 500 13.5px/1.3 Inter, sans-serif; color: var(--muted);">Zimpeto — Mercado</b><small style="font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--muted2);">10:00</small></span>
+            </div>
+          </div>
+          <div style="padding: 16px 18px 26px; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: 10px;">
+            <button type="button" style="flex: 1; height: 56px; border: 1px solid #E6C89A; border-radius: 14px; background: #FDF6EA; color: #8A6111; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif;">Pausar</button>
+            <button type="button" style="flex: 1; height: 56px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 14.5px/1 Inter, sans-serif;">Fechar viagem</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <h3 style="margin: 0; font: 800 21px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">POS de balcão</h3>
+      <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Terminal Android de mão 5,5″ com impressora térmica e NFC</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">01 · Entrar</span>
+        <div style="width: 360px; height: 740px; border-radius: 26px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 10px 16px 14px;">
+            <div style="height: 20px; display: flex; align-items: center; justify-content: space-between; font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;">07:58<span style="font: 500 11px/1 'IBM Plex Mono', monospace; color: rgba(255,255,255,.6);">POS-004</span></div>
+          </div>
+          <div style="flex: 1; padding: 28px 20px; display: flex; flex-direction: column; gap: 16px;">
+            <img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 22px; width: auto;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 22px; width: auto;">
+            <span style="display: flex; align-items: center; width: max-content; height: 28px; padding: 0 13px; border-radius: 999px; background: var(--sky2); font: 700 11.5px/1 Inter, sans-serif; color: var(--navy-text);">Balcão · Junta</span>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <h4 style="margin: 0; font: 800 22px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">Abrir sessão</h4>
+              <p style="margin: 0; font: 400 13.5px/1.55 Inter, sans-serif; color: var(--muted);">A sessão prende as vendas a este terminal e a este operador.</p>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Operador</span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 54px; padding: 0 15px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14.5px/1 Inter, sans-serif;">Ana Come<span style="font: 500 12px/1 Inter, sans-serif; color: var(--muted2);">▾</span></span>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">PIN</span>
+              <span style="display: flex; align-items: center; height: 54px; padding: 0 15px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 700 18px/1 'IBM Plex Mono', monospace; letter-spacing: .4em;">••••</span>
+            </label>
+            <button type="button" style="height: 54px; border: 0; border-radius: 13px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 15px/1 Inter, sans-serif;">Abrir sessão</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">02 · Venda rápida</span>
+        <div style="width: 360px; height: 740px; border-radius: 26px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="height: 20px; display: flex; align-items: center; justify-content: space-between; font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;">08:14<span style="font: 500 11px/1 'IBM Plex Mono', monospace; color: rgba(255,255,255,.6);">Sessão #POS-0221</span></div>
+            <b style="font: 800 17px/1.2 Manrope, sans-serif; color: #FFFFFF;">Venda rápida</b>
+          </div>
+          <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <span style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid #2D8CF0; border-radius: 14px; background: var(--sky2);"><b style="font: 700 14px/1.2 Manrope, sans-serif; color: var(--navy-text);">L1 · Zimpeto</b><small style="font: 500 12.5px/1 'IBM Plex Mono', monospace; color: var(--accent-dk);">75,00</small></span>
+              <span style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);"><b style="font: 700 14px/1.2 Manrope, sans-serif;">L3 · Matola</b><small style="font: 500 12.5px/1 'IBM Plex Mono', monospace; color: var(--muted);">90,00</small></span>
+              <span style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);"><b style="font: 700 14px/1.2 Manrope, sans-serif;">L5 · Aeroporto</b><small style="font: 500 12.5px/1 'IBM Plex Mono', monospace; color: var(--muted);">150,00</small></span>
+              <span style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);"><b style="font: 700 14px/1.2 Manrope, sans-serif;">L6 · Marracuene</b><small style="font: 500 12.5px/1 'IBM Plex Mono', monospace; color: var(--muted);">120,00</small></span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);">
+              <span style="font: 600 13px/1 Inter, sans-serif; color: var(--muted);">Quantidade</span>
+              <span style="display: flex; align-items: center; gap: 12px;">
+                <button type="button" aria-label="Menos um" style="width: 46px; height: 46px; border: 1px solid var(--border2); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 19px/1 Inter, sans-serif; color: var(--navy-text);">–</button>
+                <b style="min-width: 24px; text-align: center; font: 800 20px/1 Manrope, sans-serif;">3</b>
+                <button type="button" aria-label="Mais um" style="width: 46px; height: 46px; border: 0; border-radius: 999px; background: #0D3B66; cursor: pointer; font: 600 19px/1 Inter, sans-serif; color: #FFFFFF;">+</button>
+              </span>
+            </div>
+            <div style="margin-top: auto; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+              <span style="display: flex; flex-direction: column; gap: 4px;"><small style="font: 600 11.5px/1 Inter, sans-serif; color: var(--muted2);">3 × L1 · Zimpeto</small><b style="font: 800 24px/1 Manrope, sans-serif;">225,00 MZN</b></span>
+            </div>
+          </div>
+          <div style="padding: 14px 16px 22px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 58px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 16px/1 Inter, sans-serif;">Cobrar 225,00</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">03 · Pagamento</span>
+        <div style="width: 360px; height: 740px; border-radius: 26px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="height: 20px; display: flex; align-items: center; font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;">08:15</div>
+            <b style="font: 800 17px/1.2 Manrope, sans-serif; color: #FFFFFF;">Receber 225,00 MZN</b>
+          </div>
+          <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 18px 16px; border: 1px solid #2D8CF0; border-radius: 14px; background: var(--sky2);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 6px solid #2D8CF0; background: var(--surface);"></i>
+              <b style="font: 700 15px/1.2 Manrope, sans-serif; color: var(--navy-text);">Numerário</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 18px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--border2);"></i>
+              <b style="font: 700 15px/1.2 Manrope, sans-serif;">M-Pesa</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 18px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--border2);"></i>
+              <b style="font: 700 15px/1.2 Manrope, sans-serif;">e-Mola</b>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 18px 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);">
+              <i style="width: 20px; height: 20px; border-radius: 999px; border: 1.5px solid var(--border2);"></i>
+              <b style="font: 700 15px/1.2 Manrope, sans-serif;">Cartão BusUp</b>
+            </div>
+            <div style="margin-top: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 12px;">
+              <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><span style="font: 600 12.5px/1 Inter, sans-serif; color: var(--muted2);">Recebido</span><span style="display: flex; align-items: center; height: 52px; padding: 0 15px; border: 1px solid #2D8CF0; border-radius: 13px; background: var(--sky2); font: 700 19px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">300,00</span></label>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px;"><b style="font: 700 13.5px/1 Inter, sans-serif;">Troco</b><b style="font: 800 22px/1 Manrope, sans-serif; color: #2E7D4F;">75,00</b></span>
+            </div>
+          </div>
+          <div style="padding: 14px 16px 22px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 58px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 16px/1 Inter, sans-serif;">Confirmar e imprimir</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">04 · Talão</span>
+        <div style="width: 360px; height: 740px; border-radius: 26px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="height: 20px; display: flex; align-items: center; font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;">08:15</div>
+            <b style="font: 800 17px/1.2 Manrope, sans-serif; color: #FFFFFF;">Venda concluída</b>
+          </div>
+          <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 11px; padding: 13px 15px; border: 1px solid #BFE3CD; border-radius: 14px; background: #E8F7EE;">
+              <i style="width: 9px; height: 9px; border-radius: 999px; background: #2E7D4F;"></i>
+              <b style="font: 700 13px/1.3 Inter, sans-serif; color: #2E7D4F;">3 bilhetes emitidos · a imprimir</b>
+            </div>
+            <div style="flex: 1; overflow: hidden; border-radius: 12px; background: #FFFFFF; border: 1px solid var(--border); padding: 20px 22px; display: flex; flex-direction: column; gap: 9px; font-family: 'IBM Plex Mono', monospace;">
+              <b style="align-self: center; font: 700 14px/1.3 'IBM Plex Mono', monospace; color: #0F1B2D;">BUSUP</b>
+              <span style="align-self: center; font: 400 11px/1.4 'IBM Plex Mono', monospace; color: #5B6B7F;">Balcão Junta · POS-004</span>
+              <span style="height: 1px; background: repeating-linear-gradient(90deg, #D7E2EF 0 4px, transparent 4px 8px); margin: 6px 0;"></span>
+              <span style="display: flex; justify-content: space-between; font: 400 11.5px/1.6 'IBM Plex Mono', monospace; color: #0F1B2D;">Data<span>04/08/2026 08:15</span></span>
+              <span style="display: flex; justify-content: space-between; font: 400 11.5px/1.6 'IBM Plex Mono', monospace; color: #0F1B2D;">Rota<span>L1 Baixa–Zimpeto</span></span>
+              <span style="display: flex; justify-content: space-between; font: 400 11.5px/1.6 'IBM Plex Mono', monospace; color: #0F1B2D;">Bilhetes<span>3 × 75,00</span></span>
+              <span style="height: 1px; background: repeating-linear-gradient(90deg, #D7E2EF 0 4px, transparent 4px 8px); margin: 6px 0;"></span>
+              <span style="display: flex; justify-content: space-between; font: 700 13px/1.5 'IBM Plex Mono', monospace; color: #0F1B2D;">TOTAL<span>225,00 MZN</span></span>
+              <span style="display: flex; justify-content: space-between; font: 400 11.5px/1.6 'IBM Plex Mono', monospace; color: #0F1B2D;">Numerário<span>300,00</span></span>
+              <span style="display: flex; justify-content: space-between; font: 400 11.5px/1.6 'IBM Plex Mono', monospace; color: #0F1B2D;">Troco<span>75,00</span></span>
+              <span style="height: 1px; background: repeating-linear-gradient(90deg, #D7E2EF 0 4px, transparent 4px 8px); margin: 6px 0;"></span>
+              <span role="img" aria-label="Código QR do talão" style="align-self: center; width: 92px; height: 92px; background-color: #FFFFFF; background-image: repeating-conic-gradient(#0F1B2D 0% 25%, #FFFFFF 0% 50%); background-size: 11px 11px;"></span>
+              <span style="align-self: center; font: 400 10.5px/1.5 'IBM Plex Mono', monospace; color: #5B6B7F;">TKT-2026-0004201..0004203</span>
+            </div>
+          </div>
+          <div style="padding: 14px 16px 22px; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: 10px;">
+            <button type="button" style="flex: 1; height: 54px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface); color: var(--navy-text); cursor: pointer; font: 600 14px/1 Inter, sans-serif;">Reimprimir</button>
+            <button type="button" style="flex: 1; height: 54px; border: 0; border-radius: 13px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 14px/1 Inter, sans-serif;">Nova venda</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">05 · Recarga</span>
+        <div style="width: 360px; height: 740px; border-radius: 26px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="height: 20px; display: flex; align-items: center; font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;">08:22</div>
+            <b style="font: 800 17px/1.2 Manrope, sans-serif; color: #FFFFFF;">Recarregar cartão</b>
+          </div>
+          <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 13px; padding: 15px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface);">
+              <i style="width: 42px; height: 42px; border-radius: 12px; background: var(--sky2);"></i>
+              <span style="display: flex; flex-direction: column; gap: 4px; flex: 1;"><b style="font: 700 14.5px/1.2 Manrope, sans-serif;">Marta Sitoe</b><small style="font: 500 12px/1 'IBM Plex Mono', monospace; color: var(--muted2);">CRD-004182 · saldo 245,00</small></span>
+            </div>
+            <span style="font: 600 12px/1 Inter, sans-serif; color: var(--muted2);">Valor a carregar</span>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+              <span style="height: 54px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface); font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--muted);">100</span>
+              <span style="height: 54px; display: flex; align-items: center; justify-content: center; border: 1px solid #2D8CF0; border-radius: 13px; background: var(--sky2); font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--navy-text);">250</span>
+              <span style="height: 54px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface); font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--muted);">500</span>
+              <span style="height: 54px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface); font: 700 15px/1 'IBM Plex Mono', monospace; color: var(--muted);">1000</span>
+              <span style="grid-column: span 2; height: 54px; display: flex; align-items: center; padding: 0 15px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface3); font: 500 14px/1 Inter, sans-serif; color: var(--muted2);">Outro valor</span>
+            </div>
+            <div style="margin-top: auto; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 9px;">
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Saldo depois<b style="font: 700 13px/1 'IBM Plex Mono', monospace; color: var(--text);">495,00</b></span>
+              <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px;"><b style="font: 700 13.5px/1 Inter, sans-serif;">A cobrar</b><b style="font: 800 22px/1 Manrope, sans-serif;">250,00 MZN</b></span>
+            </div>
+          </div>
+          <div style="padding: 14px 16px 22px; border-top: 1px solid var(--border); background: var(--surface);">
+            <button type="button" style="width: 100%; height: 58px; border: 0; border-radius: 14px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 16px/1 Inter, sans-serif;">Cobrar e carregar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">06 · Consultar saldo</span>
+        <div style="width: 360px; height: 740px; border-radius: 26px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column;">
+          <div style="background: #0A2E50; padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="height: 20px; display: flex; align-items: center; font: 700 11.5px/1 Inter, sans-serif; color: #FFFFFF;">08:26</div>
+            <b style="font: 800 17px/1.2 Manrope, sans-serif; color: #FFFFFF;">Saldo do cartão</b>
+          </div>
+          <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+            <div style="padding: 22px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;">
+              <small style="font: 600 11.5px/1 Inter, sans-serif; color: var(--muted2);">Marta Sitoe · CRD-004182</small>
+              <b style="font: 800 38px/1 Manrope, sans-serif; letter-spacing: -.02em;">495,00</b>
+              <span style="font: 500 12.5px/1 Inter, sans-serif; color: var(--muted);">MZN disponíveis · cartão activo</span>
+            </div>
+            <span style="font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 4px;">Últimos movimentos</span>
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border);"><span style="display: flex; flex-direction: column; gap: 3px;"><b style="font: 600 13.5px/1.3 Inter, sans-serif;">Recarga · balcão Junta</b><small style="font: 400 11.5px/1 'IBM Plex Mono', monospace; color: var(--muted2);">04/08/2026 08:22</small></span><b style="font: 700 13.5px/1 'IBM Plex Mono', monospace; color: #2E7D4F;">+250,00</b></span>
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--border);"><span style="display: flex; flex-direction: column; gap: 3px;"><b style="font: 600 13.5px/1.3 Inter, sans-serif;">Validação · L1</b><small style="font: 400 11.5px/1 'IBM Plex Mono', monospace; color: var(--muted2);">03/08/2026 17:44</small></span><b style="font: 700 13.5px/1 'IBM Plex Mono', monospace;">−75,00</b></span>
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0;"><span style="display: flex; flex-direction: column; gap: 3px;"><b style="font: 600 13.5px/1.3 Inter, sans-serif;">Validação · L3</b><small style="font: 400 11.5px/1 'IBM Plex Mono', monospace; color: var(--muted2);">03/08/2026 07:12</small></span><b style="font: 700 13.5px/1 'IBM Plex Mono', monospace;">−90,00</b></span>
+          </div>
+          <div style="padding: 14px 16px 22px; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: 10px;">
+            <button type="button" style="flex: 1; height: 54px; border: 1px solid var(--border2); border-radius: 13px; background: var(--surface); color: var(--navy-text); cursor: pointer; font: 600 14px/1 Inter, sans-serif;">Imprimir</button>
+            <button type="button" style="flex: 1; height: 54px; border: 0; border-radius: 13px; background: #0D3B66; color: #FFFFFF; cursor: pointer; font: 700 14px/1 Inter, sans-serif;">Recarregar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <h3 style="margin: 0; font: 800 21px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">Validador de bordo</h3>
+      <span style="font: 400 13px/1.4 Inter, sans-serif; color: var(--muted);">Ecrã fixo, sem toque — lê cartão por NFC e bilhete por QR</span>
+    </div>
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">01 · À espera</span>
+        <div style="width: 480px; height: 320px; border-radius: 20px; overflow: hidden; background: #0A2E50; border: 1px solid var(--border); box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 30px;">
+          <img src="assets/busup-logo-dark.png" alt="BusUp" style="height: 20px; width: auto;">
+          <i style="width: 78px; height: 78px; border-radius: 999px; border: 3px dashed rgba(255,255,255,.34); animation: bzpulse 1.8s ease-in-out infinite;"></i>
+          <b style="font: 800 26px/1.2 Manrope, sans-serif; color: #FFFFFF;">Encoste o cartão</b>
+          <span style="font: 400 14px/1.4 Inter, sans-serif; color: rgba(255,255,255,.62);">ou mostre o QR do bilhete</span>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">02 · Aceite</span>
+        <div style="width: 480px; height: 320px; border-radius: 20px; overflow: hidden; background: #E8F7EE; border: 1px solid #BFE3CD; box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px;">
+          <i style="width: 62px; height: 62px; border-radius: 999px; background: #2E7D4F;"></i>
+          <b style="font: 800 32px/1.15 Manrope, sans-serif; color: #2E7D4F;">Pode passar</b>
+          <span style="font: 700 17px/1.3 Manrope, sans-serif; color: #2E7D4F;">Marta Sitoe</span>
+          <span style="font: 500 14px/1.4 'IBM Plex Mono', monospace; color: #2E7D4F;">−75,00 MZN · saldo 420,00</span>
+        </div>
+      </div>
+
+      <div style="flex: none; display: flex; flex-direction: column; gap: 9px;">
+        <span style="font: 700 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); padding-left: 4px;">03 · Recusado</span>
+        <div style="width: 480px; height: 320px; border-radius: 20px; overflow: hidden; background: #FDF1EF; border: 1px solid #F0C4BC; box-shadow: 0 30px 70px rgba(13,59,102,.14); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 30px;">
+          <i style="width: 62px; height: 62px; border-radius: 999px; background: #8E2A19;"></i>
+          <b style="font: 800 32px/1.15 Manrope, sans-serif; color: #8E2A19;">Saldo insuficiente</b>
+          <span style="font: 700 17px/1.3 Manrope, sans-serif; color: #8E2A19;">João Nhamirre</span>
+          <span style="font: 500 14px/1.4 'IBM Plex Mono', monospace; color: #8E2A19;">Faltam 35,00 MZN · saldo 40,00</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</section>
+
+</x-dc>
+</body>
+</html>

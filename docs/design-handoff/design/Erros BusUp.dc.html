@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  :root {
+    --bg: #E7EDF5; --surface: #FFFFFF; --surface2: #F6F9FD; --surface3: #FBFDFF;
+    --border: #E4EBF3; --border2: #D7E2EF;
+    --text: #0F1B2D; --muted: #5B6B7F; --muted2: #8A9AAD; --faint: #A8B7C8;
+    --navy-text: #0D3B66; --accent: #2D8CF0; --accent-dk: #1D5FA7;
+    --sky1: #CFE6FB; --sky2: #E8F2FC;
+  }
+  html[data-theme="dark"] {
+    --bg: #06203A; --surface: #0A2E50; --surface2: #0C3557; --surface3: #0E3A5E;
+    --border: #1A4368; --border2: #22527A;
+    --text: #EAF1F8; --muted: #A9C2DC; --muted2: #8AA6C2; --faint: #6F8CAA;
+    --navy-text: #CFE6FB; --accent: #2D8CF0; --accent-dk: #5BA3F5;
+    --sky1: #0C3557; --sky2: #10406A;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  * { box-sizing: border-box; }
+  a { color: var(--accent-dk); text-decoration: none; }
+  a:hover { color: #2D8CF0; }
+  img[data-logo="dark"] { display: none !important; }
+  html[data-theme="dark"] img[data-logo="dark"] { display: block !important; }
+  html[data-theme="dark"] img[data-logo="light"] { display: none !important; }
+  @keyframes bzpulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+</style>
+</helmet>
+
+<section style="display: flex; flex-direction: column; gap: 22px; padding: 48px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px;">
+    <div>
+      <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Páginas de erro</span>
+      <h2 style="margin: 0; font: 800 28px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Quando alguma coisa falha</h2>
+      <p style="margin: 8px 0 0; max-width: 76ch; font: 400 14.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">Cada erro diz o que aconteceu, se houve cobrança e o que fazer a seguir. Escolha o estado nos separadores; a referência técnica fica no fundo para o suporte.</p>
+    </div>
+    <div style="display: flex; background: var(--surface); border: 1px solid var(--border2); border-radius: 999px; padding: 4px;">
+      <sc-for list="{{ langBtns }}" as="l" hint-placeholder-count="2">
+        <button type="button" onClick="{{ l.onClick }}" style="height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: {{ l.bg }}; color: {{ l.fg }}; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif;">{{ l.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+    <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="6">
+      <button type="button" onClick="{{ tb.onClick }}" style="display: flex; align-items: center; gap: 9px; height: 40px; padding: 0 16px; border: 1px solid {{ tb.bd }}; border-radius: 999px; background: {{ tb.bg }}; color: {{ tb.fg }}; cursor: pointer; font: 600 13px/1 Inter, sans-serif;"><b style="font: 500 12px/1 'IBM Plex Mono', monospace; color: {{ tb.codeFg }};">{{ tb.code }}</b>{{ tb.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 48px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Desktop · 1440</span>
+      <div style="width: 1440px; height: 820px; border-radius: 28px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16); background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 44%, var(--surface) 92%); display: flex; flex-direction: column;">
+        <header style="max-width: 1280px; width: 100%; margin: 0 auto; height: 88px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px;">
+          <span style="display: flex; align-self: center;"><img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 26px; width: auto; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 26px; width: auto; display: block;"></span>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button type="button" data-bz-theme-toggle="" aria-label="Alternar tema" style="flex: none; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; font: 500 15px/1 Inter, sans-serif; display: flex; align-items: center; justify-content: center;">☾</button>
+            <span style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; background: var(--surface); border: 1px solid var(--border); font: 500 13.5px/1 Inter, sans-serif; color: var(--muted);">{{ t.help }}</span>
+            <span style="display: flex; align-items: center; height: 44px; padding: 0 20px; border-radius: 999px; white-space: nowrap; background: #0D3B66; font: 700 13.5px/1 Inter, sans-serif; color: #FFFFFF;">{{ t.statusPage }}</span>
+          </div>
+        </header>
+
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 32px 40px;">
+          <div style="max-width: 760px; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px;">
+            <span style="display: inline-flex; align-items: center; gap: 10px; height: 38px; padding: 0 18px; border-radius: 999px; white-space: nowrap; background: {{ e.pillBg }}; border: 1px solid {{ e.pillBd }}; font: 700 12.5px/1 Inter, sans-serif; color: {{ e.pillFg }};"><i style="width: 7px; height: 7px; border-radius: 999px; background: {{ e.dot }}; animation: bzpulse 2.2s ease-in-out infinite;"></i>{{ e.pill }}</span>
+            <span style="font: 800 96px/1 Manrope, sans-serif; letter-spacing: -.04em; color: {{ e.codeColor }};">{{ e.code }}</span>
+            <h1 style="margin: 0; font: 800 42px/1.08 Manrope, sans-serif; letter-spacing: -.03em; text-wrap: balance;">{{ e.title }}</h1>
+            <p style="margin: 0; max-width: 56ch; font: 400 16.5px/1.65 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ e.lead }}</p>
+
+            <div style="display: flex; gap: 12px; margin-top: 4px;">
+              <span style="display: flex; align-items: center; height: 52px; padding: 0 26px; border-radius: 999px; background: #2D8CF0; box-shadow: 0 12px 26px rgba(45,140,240,.30); font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;">{{ e.cta1 }}</span>
+              <span style="display: flex; align-items: center; height: 52px; padding: 0 26px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 700 15px/1 Inter, sans-serif; color: var(--text);">{{ e.cta2 }}</span>
+            </div>
+
+            <div style="margin-top: 18px; width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <sc-for list="{{ e.hints }}" as="h" hint-placeholder-count="3">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; text-align: left; display: flex; flex-direction: column; gap: 5px;">
+                  <b style="font: 700 12.5px/1.3 Manrope, sans-serif;">{{ h.k }}</b>
+                  <span style="font: 400 12px/1.5 Inter, sans-serif; color: var(--muted);">{{ h.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <span style="margin-top: 10px; font: 500 12px/1.6 'IBM Plex Mono', monospace; color: var(--muted2);">{{ e.ref }}</span>
+          </div>
+        </div>
+
+        <footer style="border-top: 1px solid var(--border); background: var(--surface); padding: 18px 32px; display: flex; align-items: center; justify-content: center; gap: 12px;">
+          <span style="font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2);">{{ t.poweredBy }}</span>
+          <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 24px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 24px; width: auto; display: block;">
+        </footer>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Mobile · 390</span>
+      <div style="width: 390px; min-height: 780px; border-radius: 34px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16); background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 38%, var(--surface) 80%); display: flex; flex-direction: column;">
+        <div style="height: 44px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px; font: 700 12px/1 Inter, sans-serif; color: var(--text);">09:41</div>
+        <div style="padding: 12px 20px 0; display: flex; align-items: center; justify-content: space-between;">
+          <span style="display: flex;"><img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 22px; width: auto; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 22px; width: auto; display: block;"></span>
+          <span style="display: flex; align-items: center; height: 32px; padding: 0 13px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 600 11.5px/1 Inter, sans-serif; color: var(--muted);">{{ t.help }}</span>
+        </div>
+        <div style="flex: 1; padding: 30px 20px 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;">
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 999px; white-space: nowrap; background: {{ e.pillBg }}; border: 1px solid {{ e.pillBd }}; font: 700 11.5px/1 Inter, sans-serif; color: {{ e.pillFg }};"><i style="width: 6px; height: 6px; border-radius: 999px; background: {{ e.dot }};"></i>{{ e.pill }}</span>
+          <span style="font: 800 62px/1 Manrope, sans-serif; letter-spacing: -.04em; color: {{ e.codeColor }};">{{ e.code }}</span>
+          <h1 style="margin: 0; font: 800 26px/1.14 Manrope, sans-serif; letter-spacing: -.03em; text-wrap: balance;">{{ e.title }}</h1>
+          <p style="margin: 0; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ e.lead }}</p>
+          <div style="width: 100%; margin-top: 6px; display: flex; flex-direction: column; gap: 9px;">
+            <sc-for list="{{ e.hints }}" as="h" hint-placeholder-count="3">
+              <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; text-align: left; display: flex; flex-direction: column; gap: 4px;">
+                <b style="font: 700 12px/1.3 Manrope, sans-serif;">{{ h.k }}</b>
+                <span style="font: 400 11.5px/1.5 Inter, sans-serif; color: var(--muted);">{{ h.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="margin-top: 4px; font: 500 11px/1.6 'IBM Plex Mono', monospace; color: var(--muted2);">{{ e.ref }}</span>
+        </div>
+        <div style="padding: 18px 20px 26px; display: flex; flex-direction: column; gap: 10px;">
+          <span style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: #2D8CF0; font: 700 15px/1 Inter, sans-serif; color: #FFFFFF;">{{ e.cta1 }}</span>
+          <span style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 700 15px/1 Inter, sans-serif; color: var(--text);">{{ e.cta2 }}</span>
+          <span style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--border);">
+            <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2);">{{ t.poweredBy }}</span>
+            <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 22px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 22px; width: auto; display: block;">
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 20px; padding: 0 48px 64px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+  <div>
+    <span style="display: block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Grelha</span>
+    <h2 style="margin: 0; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em;">Todos os estados</h2>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, 560px); gap: 20px;">
+    <sc-for list="{{ all }}" as="a" hint-placeholder-count="6">
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; overflow: hidden; box-shadow: 0 20px 44px rgba(13,59,102,.08);">
+        <div style="background: linear-gradient(180deg, var(--sky2) 0%, var(--surface) 90%); padding: 26px 24px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;">
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 14px; border-radius: 999px; white-space: nowrap; background: {{ a.pillBg }}; border: 1px solid {{ a.pillBd }}; font: 700 11.5px/1 Inter, sans-serif; color: {{ a.pillFg }};">{{ a.pill }}</span>
+          <span style="font: 800 44px/1 Manrope, sans-serif; letter-spacing: -.04em; color: {{ a.codeColor }};">{{ a.code }}</span>
+          <b style="font: 800 19px/1.2 Manrope, sans-serif; letter-spacing: -.02em;">{{ a.title }}</b>
+          <span style="max-width: 44ch; font: 400 13px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ a.lead }}</span>
+          <div style="display: flex; gap: 9px; margin-top: 6px;">
+            <span style="display: flex; align-items: center; height: 42px; padding: 0 18px; border-radius: 999px; background: #2D8CF0; font: 700 13px/1 Inter, sans-serif; color: #FFFFFF;">{{ a.cta1 }}</span>
+            <span style="display: flex; align-items: center; height: 42px; padding: 0 18px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 700 13px/1 Inter, sans-serif; color: var(--text);">{{ a.cta2 }}</span>
+          </div>
+        </div>
+        <div style="padding: 14px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span style="font: 500 11px/1.5 'IBM Plex Mono', monospace; color: var(--muted2);">{{ a.ref }}</span>
+          <span style="display: flex; align-items: center; gap: 9px;">
+            <span style="font: 800 9px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--faint);">{{ t.poweredBy }}</span>
+            <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 18px; width: auto; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 18px; width: auto; display: block;">
+          </span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;lang&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;pt&quot;, &quot;en&quot;], &quot;default&quot;: &quot;pt&quot;, &quot;tsType&quot;: &quot;string&quot;}}">
+const TONE = {
+  info: { pillBg: "#E8F2FC", pillBd: "#CFE6FB", pillFg: "#1D5FA7", dot: "#2D8CF0", codeColor: "#0D3B66" },
+  warn: { pillBg: "#FDF6EA", pillBd: "#F5E3C0", pillFg: "#8A6111", dot: "#C8821A", codeColor: "#C8821A" },
+  bad: { pillBg: "#FDF1EF", pillBd: "#F0C9C1", pillFg: "#8E2A19", dot: "#B0331F", codeColor: "#B0331F" },
+};
+
+const PT = {
+  help: "Ajuda", statusPage: "Estado dos serviços", poweredBy: "Desenvolvido por",
+  errors: [
+    { key: "404", code: "404", tone: "info", pill: "Página não encontrada", where: "Site público e portal",
+      title: "Esta página mudou de sítio.",
+      lead: "O endereço que abriu já não existe ou foi escrito com um erro. As páginas principais continuam todas disponíveis.",
+      cta1: "Voltar ao início", cta2: "Comprar bilhete",
+      hints: [["Percursos e horários", "Consulte as partidas do dia na página de compra."], ["Preços", "A tabela por tipo de operação está na página de preços."], ["Falar connosco", "sales@updigital.co.mz · dias úteis, 08h–17h."]],
+      ref: "ref. 404 · /rota-antiga · 04 Ago 2026, 10:12" },
+    { key: "401", code: "401", tone: "info", pill: "Sessão terminada", where: "Portal e app POS",
+      title: "A sua sessão expirou.",
+      lead: "Por segurança, terminamos a sessão depois de um período sem actividade. Volte a entrar para continuar de onde estava.",
+      cta1: "Entrar de novo", cta2: "Ir para o início",
+      hints: [["Nada se perdeu", "O trabalho por gravar fica no dispositivo até voltar a entrar."], ["Acesso por SMS", "Passageiros entram com o código enviado por SMS."], ["Senha esquecida", "Peça a reposição no ecrã de entrada."]],
+      ref: "ref. 401 · sessão 8f21c4 · 04 Ago 2026, 10:12" },
+    { key: "403", code: "403", tone: "warn", pill: "Sem permissão", where: "Portal",
+      title: "A sua conta não tem acesso a esta área.",
+      lead: "O acesso é definido pelo papel da conta. Se precisa desta área para o seu trabalho, peça ao administrador da operação.",
+      cta1: "Voltar ao painel", cta2: "Pedir acesso",
+      hints: [["O que vê", "Cada papel abre apenas as áreas do seu trabalho."], ["Quem autoriza", "O administrador da operação altera papéis no portal."], ["Registo", "Tentativas de acesso ficam na auditoria."]],
+      ref: "ref. 403 · conta agente-14 · /financeiro" },
+    { key: "500", code: "500", tone: "bad", pill: "Erro do servidor", where: "Site público e portal",
+      title: "Alguma coisa falhou do nosso lado.",
+      lead: "O pedido não chegou a ser concluído e nada foi cobrado. A equipa já recebeu o alerta com a referência abaixo.",
+      cta1: "Tentar de novo", cta2: "Falar com o suporte",
+      hints: [["Pagamentos", "Nenhum valor é cobrado quando o pedido falha."], ["Bilhetes emitidos", "Continuam válidos e disponíveis no telemóvel."], ["Referência", "Indique-a ao suporte para acelerar a resposta."]],
+      ref: "ref. 500 · incidente INC-2026-0804-17" },
+    { key: "503", code: "503", tone: "warn", pill: "Manutenção programada", where: "Portal",
+      title: "Estamos a actualizar a plataforma.",
+      lead: "A janela de manutenção termina às 06h00. A validação a bordo continua a funcionar sem ligação e sincroniza quando voltarmos.",
+      cta1: "Ver estado dos serviços", cta2: "Avisar-me quando voltar",
+      hints: [["Validação a bordo", "A app POS valida offline durante a janela."], ["Venda online", "Fica indisponível até às 06h00."], ["Duração prevista", "40 minutos · 05h20 às 06h00 (CAT)."]],
+      ref: "ref. 503 · janela 05h20–06h00 CAT" },
+    { key: "offline", code: "⚡", tone: "bad", pill: "Sem ligação", where: "App POS e telemóvel",
+      title: "O dispositivo está sem Internet.",
+      lead: "Continua a validar bilhetes offline: as leituras ficam guardadas no aparelho e sobem assim que houver rede.",
+      cta1: "Tentar ligar de novo", cta2: "Continuar offline",
+      hints: [["Validações guardadas", "18 leituras por sincronizar neste aparelho."], ["Venda", "A venda de bilhetes precisa de rede."], ["Última sincronização", "hoje, 09h41."]],
+      ref: "ref. net · 18 registos por sincronizar" },
+  ],
+};
+
+const EN = {
+  help: "Help", statusPage: "Service status", poweredBy: "Powered by",
+  errors: [
+    { key: "404", code: "404", tone: "info", pill: "Page not found", where: "Public site and portal",
+      title: "This page has moved.",
+      lead: "The address you opened no longer exists or was mistyped. Every main page is still available.",
+      cta1: "Back to home", cta2: "Buy a ticket",
+      hints: [["Routes and times", "Check today's departures on the purchase page."], ["Pricing", "The table by operation type is on the pricing page."], ["Talk to us", "sales@updigital.co.mz · weekdays, 08:00–17:00."]],
+      ref: "ref. 404 · /old-route · 4 Aug 2026, 10:12" },
+    { key: "401", code: "401", tone: "info", pill: "Session ended", where: "Portal and POS app",
+      title: "Your session has expired.",
+      lead: "For safety we end the session after a period without activity. Sign in again to pick up where you were.",
+      cta1: "Sign in again", cta2: "Go to home",
+      hints: [["Nothing was lost", "Unsaved work stays on the device until you sign in."], ["SMS access", "Passengers sign in with the code sent by SMS."], ["Forgot password", "Request a reset on the sign-in screen."]],
+      ref: "ref. 401 · session 8f21c4 · 4 Aug 2026, 10:12" },
+    { key: "403", code: "403", tone: "warn", pill: "No permission", where: "Portal",
+      title: "Your account cannot open this area.",
+      lead: "Access follows the account role. If you need this area for your work, ask the operation's administrator.",
+      cta1: "Back to dashboard", cta2: "Request access",
+      hints: [["What you see", "Each role opens only the areas of its work."], ["Who authorises", "The administrator changes roles in the portal."], ["Record", "Access attempts are kept in the audit log."]],
+      ref: "ref. 403 · account agent-14 · /finance" },
+    { key: "500", code: "500", tone: "bad", pill: "Server error", where: "Public site and portal",
+      title: "Something failed on our side.",
+      lead: "The request never completed and nothing was charged. The team already has the alert with the reference below.",
+      cta1: "Try again", cta2: "Contact support",
+      hints: [["Payments", "No amount is charged when a request fails."], ["Issued tickets", "Remain valid and available on the phone."], ["Reference", "Give it to support to speed up the answer."]],
+      ref: "ref. 500 · incident INC-2026-0804-17" },
+    { key: "503", code: "503", tone: "warn", pill: "Scheduled maintenance", where: "Portal",
+      title: "We are updating the platform.",
+      lead: "The maintenance window ends at 06:00. Onboard validation keeps working offline and syncs when we are back.",
+      cta1: "See service status", cta2: "Notify me when back",
+      hints: [["Onboard validation", "The POS app validates offline during the window."], ["Online sales", "Unavailable until 06:00."], ["Expected duration", "40 minutes · 05:20 to 06:00 (CAT)."]],
+      ref: "ref. 503 · window 05:20–06:00 CAT" },
+    { key: "offline", code: "⚡", tone: "bad", pill: "No connection", where: "POS app and phone",
+      title: "This device has no Internet.",
+      lead: "Keep validating offline: scans are stored on the device and upload as soon as there is a network.",
+      cta1: "Try to reconnect", cta2: "Continue offline",
+      hints: [["Stored validations", "18 scans waiting to sync on this device."], ["Sales", "Selling tickets needs a network."], ["Last sync", "today, 09:41."]],
+      ref: "ref. net · 18 records waiting to sync" },
+  ],
+};
+
+class Component extends DCLogic {
+  state = { lang: "pt", error: "404" };
+
+  renderVals() {
+    const lang = this.props.lang ?? this.state.lang;
+    const t = lang === "en" ? EN : PT;
+    const shape = (x) => ({
+      ...x, ...TONE[x.tone],
+      hints: x.hints.map(([k, v]) => ({ k, v })),
+    });
+    const all = t.errors.map(shape);
+    const e = all.find((x) => x.key === this.state.error) || all[0];
+
+    return {
+      t, e, all,
+      langBtns: ["pt", "en"].map((l) => ({
+        label: l.toUpperCase(),
+        bg: lang === l ? "#0D3B66" : "transparent",
+        fg: lang === l ? "#FFFFFF" : "#5B6B7F",
+        onClick: () => this.setState({ lang: l }),
+      })),
+      tabs: all.map((x) => {
+        const on = x.key === e.key;
+        return {
+          label: x.pill, code: x.code,
+          bg: on ? "#0D3B66" : "#FFFFFF",
+          bd: on ? "#0D3B66" : "#D7E2EF",
+          fg: on ? "#FFFFFF" : "#5B6B7F",
+          codeFg: on ? "rgba(255,255,255,.7)" : "#B0BECF",
+          onClick: () => this.setState({ error: x.key }),
+        };
+      }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

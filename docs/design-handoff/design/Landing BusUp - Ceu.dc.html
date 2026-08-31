@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script src="theme.js"></script>
+<style>
+  :root {
+    --bg: #E7EDF5; --surface: #FFFFFF; --surface2: #F6F9FD; --surface3: #FBFDFF;
+    --border: #E4EBF3; --border2: #D7E2EF;
+    --text: #0F1B2D; --muted: #5B6B7F; --muted2: #8A9AAD; --faint: #A8B7C8;
+    --navy-text: #0D3B66; --accent: #2D8CF0; --accent-dk: #1D5FA7;
+    --sky1: #CFE6FB; --sky2: #E8F2FC; --wash: rgba(255,255,255,.85);
+  }
+  html[data-theme="dark"] {
+    --bg: #06203A; --surface: #0A2E50; --surface2: #0C3557; --surface3: #0E3A5E;
+    --border: #1A4368; --border2: #22527A;
+    --text: #EAF1F8; --muted: #A9C2DC; --muted2: #8AA6C2; --faint: #6F8CAA;
+    --navy-text: #CFE6FB; --accent: #2D8CF0; --accent-dk: #5BA3F5;
+    --sky1: #0C3557; --sky2: #10406A; --wash: rgba(10,46,80,.55);
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  * { box-sizing: border-box; }
+  a { color: var(--accent-dk); text-decoration: none; }
+  a:hover { color: #2D8CF0; }
+  img[data-logo="dark"] { display: none !important; }
+  html[data-theme="dark"] img[data-logo="dark"] { display: block !important; }
+  html[data-theme="dark"] img[data-logo="light"] { display: none !important; }
+  @keyframes bzpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @keyframes bzmarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+</style>
+</helmet>
+
+<div style="display: flex; align-items: flex-start; gap: 56px; padding: 44px; font-family: Inter, system-ui, sans-serif; color: var(--text); width: max-content;">
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Desktop · 1440</span>
+
+    <div style="width: 1440px; background: var(--surface); border-radius: 28px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16);">
+
+      <section style="position: relative; background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 40%, var(--surface) 88%); padding-bottom: 0;">
+        <div style="position: absolute; inset: 0; background: radial-gradient(60% 50% at 50% 0%, var(--wash) 0%, transparent 70%), radial-gradient(38% 34% at 78% 12%, rgba(45,140,240,.18) 0%, rgba(45,140,240,0) 70%); pointer-events: none;"></div>
+
+        <header style="position: relative; max-width: 1280px; margin: 0 auto; height: 88px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px;">
+          <a href="Landing BusUp - Ceu.dc.html" style="display: flex; align-items: center;">
+            <img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 26px; width: auto; display: block;">
+            <img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 26px; width: auto; display: block;">
+          </a>
+          <nav style="display: flex; align-items: center; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px;">
+            <a href="#produto" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; font: 600 14.5px/1 Inter, sans-serif; color: var(--text); background: var(--surface2);" style-hover="background: var(--surface2); color: var(--accent-dk);">{{ t.navProduct }}</a>
+            <a href="#recursos" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; font: 500 14.5px/1 Inter, sans-serif; color: var(--muted);" style-hover="background: var(--surface2); color: var(--accent-dk);">{{ t.navFeatures }}</a>
+            <a href="#porque" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; font: 500 14.5px/1 Inter, sans-serif; color: var(--muted);" style-hover="background: var(--surface2); color: var(--accent-dk);">{{ t.navWhy }}</a>
+            <a href="#casos" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; font: 500 14.5px/1 Inter, sans-serif; color: var(--muted);" style-hover="background: var(--surface2); color: var(--accent-dk);">{{ t.navCases }}</a>
+            <a href="Precos BusUp.dc.html" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; font: 500 14.5px/1 Inter, sans-serif; color: var(--muted);" style-hover="background: var(--surface2); color: var(--accent-dk);">{{ t.navPricing }}</a>
+            <a href="Contactos BusUp.dc.html" style="display: flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; font: 500 14.5px/1 Inter, sans-serif; color: var(--muted);" style-hover="background: var(--surface2); color: var(--accent-dk);">{{ t.navContact }}</a>
+          </nav>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px;">
+              <sc-if value="{{ isPt }}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="true" onClick="{{ setPt }}" style="height: 32px; min-width: 40px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif; background: #0D3B66; color: #FFFFFF;">PT</button></sc-if><sc-if value="{{ isEn }}"><button type="button" aria-pressed="false" onClick="{{ setPt }}" style="height: 32px; min-width: 40px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif; background: transparent; color: var(--muted);">PT</button></sc-if>
+              <sc-if value="{{ isEn }}"><button type="button" aria-pressed="true" onClick="{{ setEn }}" style="height: 32px; min-width: 40px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif; background: #0D3B66; color: #FFFFFF;">EN</button></sc-if><sc-if value="{{ isPt }}"><button type="button" aria-pressed="false" onClick="{{ setEn }}" style="height: 32px; min-width: 40px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer; font: 700 12.5px/1 Inter, sans-serif; background: transparent; color: var(--muted);">EN</button></sc-if>
+            </div>
+            <button type="button" data-bz-theme-toggle="" aria-label="Alternar tema" style="width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; font: 500 16px/1 Inter, sans-serif; display: flex; align-items: center; justify-content: center;" style-hover="border-color: #2D8CF0; color: var(--accent-dk);">☾</button>
+            <a href="Contactos BusUp.dc.html" style="display: flex; align-items: center; height: 44px; padding: 0 22px; border-radius: 999px; white-space: nowrap; background: #0D3B66; color: #FFFFFF; font: 700 14.5px/1 Inter, sans-serif;" style-hover="background: #0A2E50; color: #FFFFFF;">{{ t.talkSales }}</a>
+          </div>
+        </header>
+
+        <div id="top" style="position: relative; max-width: 900px; margin: 0 auto; padding: 46px 32px 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <span style="display: inline-flex; align-items: center; gap: 9px; height: 38px; padding: 0 18px; border-radius: 999px; white-space: nowrap; background: var(--surface); border: 1px solid var(--border); font: 600 13px/1 Inter, sans-serif; color: var(--muted);">
+            <i style="width: 7px; height: 7px; border-radius: 999px; background: #2D8CF0; animation: bzpulse 2.4s ease-in-out infinite;"></i>{{ t.heroBadge }}
+          </span>
+          <h1 style="margin: 0; font: 800 60px/1.04 Manrope, sans-serif; letter-spacing: -.03em; color: var(--text); text-wrap: balance;">{{ t.heroH1a }}<span style="display: block; color: #2D8CF0;">{{ t.heroH1b }}</span></h1>
+          <p style="margin: 0; max-width: 54ch; font: 400 17.5px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ t.heroLead }}</p>
+          <div style="display: flex; gap: 12px; margin-top: 4px;">
+            <a href="Contactos BusUp.dc.html" style="display: inline-flex; align-items: center; gap: 9px; height: 52px; padding: 0 26px; border-radius: 999px; background: #2D8CF0; color: #FFFFFF; font: 700 15px/1 Inter, sans-serif; box-shadow: 0 12px 26px rgba(45,140,240,.32);" style-hover="background: #1D5FA7; color: #FFFFFF;">{{ t.ctaPrimary }}</a>
+            <a href="Compra de Bilhetes BusUp.dc.html" style="display: inline-flex; align-items: center; gap: 9px; height: 52px; padding: 0 26px; border-radius: 999px; background: var(--surface); border: 1px solid var(--sky1); color: var(--accent-dk); font: 700 15px/1 Inter, sans-serif;" style-hover="border-color: #2D8CF0; color: var(--accent-dk);">{{ t.buyTicket }}</a>
+            <a href="#produto" style="display: inline-flex; align-items: center; gap: 9px; height: 52px; padding: 0 26px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font: 700 15px/1 Inter, sans-serif;" style-hover="border-color: #2D8CF0; color: var(--accent-dk);">{{ t.ctaSecondary }}</a>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px;">
+            <sc-for list="{{ t.chips }}" as="chip" hint-placeholder-count="4">
+              <span style="display: inline-flex; align-items: center; height: 36px; padding: 0 15px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 500 13px/1 Inter, sans-serif; color: var(--text);">{{ chip }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position: relative; max-width: 1080px; margin: 40px auto 0; padding: 0 32px;">
+          <span style="position: absolute; left: -6px; top: 108px; z-index: 3; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; background: var(--surface); box-shadow: 0 10px 24px rgba(13,59,102,.14); font: 600 12.5px/1 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2A9D8F;"></i>{{ t.tag1 }}</span>
+          <span style="position: absolute; right: -8px; top: 62px; z-index: 3; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; background: var(--surface); box-shadow: 0 10px 24px rgba(13,59,102,.14); font: 600 12.5px/1 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.tag2 }}</span>
+          <span style="position: absolute; left: 60px; top: 300px; z-index: 3; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; background: var(--surface); box-shadow: 0 10px 24px rgba(13,59,102,.14); font: 600 12.5px/1 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #FFB703;"></i>{{ t.tag3 }}</span>
+          <span style="position: absolute; right: 40px; top: 330px; z-index: 3; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; background: var(--surface); box-shadow: 0 10px 24px rgba(13,59,102,.14); font: 600 12.5px/1 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #0D3B66;"></i>{{ t.tag4 }}</span>
+
+          <div style="height: 430px; overflow: hidden; border-radius: 22px 22px 0 0;">
+            <div style="width: 1016px; background: var(--surface); border: 1px solid var(--border); border-bottom: 0; border-radius: 22px 22px 0 0; box-shadow: 0 -2px 60px rgba(13,59,102,.14); overflow: hidden;">
+
+              <div style="display: flex; align-items: center; gap: 18px; height: 52px; padding: 0 18px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="assets/busup-mark.png" alt="" style="height: 17px; width: auto;">
+                  <b style="font: 800 13.5px/1 Manrope, sans-serif;">BusUp</b>
+                </div>
+                <div style="display: flex; gap: 3px;">
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); font: 600 11.5px/1 Inter, sans-serif;">Dashboard</span>
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; color: var(--muted); font: 500 11.5px/1 Inter, sans-serif;">Rotas</span>
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; color: var(--muted); font: 500 11.5px/1 Inter, sans-serif;">Viaturas</span>
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; color: var(--muted); font: 500 11.5px/1 Inter, sans-serif;">Viagens</span>
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; color: var(--muted); font: 500 11.5px/1 Inter, sans-serif;">Cartões</span>
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; color: var(--muted); font: 500 11.5px/1 Inter, sans-serif;">Relatórios</span>
+                  <span style="height: 28px; display: flex; align-items: center; padding: 0 11px; border-radius: 999px; color: var(--muted); font: 500 11.5px/1 Inter, sans-serif;">Auditoria</span>
+                </div>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 148px; height: 28px; border-radius: 999px; border: 1px solid var(--border); display: flex; align-items: center; padding: 0 11px; font: 400 11px/1 Inter, sans-serif; color: var(--muted);">Pesquisar…</span>
+                  <span style="width: 26px; height: 26px; border-radius: 999px; background: #0D3B66; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font: 700 10px/1 Inter, sans-serif;">AM</span>
+                </div>
+              </div>
+
+              <div style="padding: 20px 22px 26px; background: var(--surface2);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                  <b style="font: 800 19px/1 Manrope, sans-serif;">Painel de operação</b>
+                  <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 600 10.5px/1 Inter, sans-serif; color: #2A9D8F;"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2A9D8F; animation: bzpulse 2s ease-in-out infinite;"></i>Ao vivo</span>
+                  <div style="margin-left: auto; display: flex; gap: 6px;">
+                    <span style="height: 28px; display: flex; align-items: center; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 500 11px/1 Inter, sans-serif; color: var(--muted);">Hoje</span>
+                    <span style="height: 28px; display: flex; align-items: center; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 500 11px/1 Inter, sans-serif; color: var(--muted);">Todas as rotas</span>
+                    <span style="height: 28px; display: flex; align-items: center; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 500 11px/1 Inter, sans-serif; color: var(--muted);">Exportar</span>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;">
+                    <small style="display: block; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 8px;">Receita hoje</small>
+                    <b style="font: 800 22px/1 Manrope, sans-serif; font-variant-numeric: tabular-nums;">13 300 <span style="font-size: 12px; color: var(--muted);">MZN</span></b>
+                  </div>
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;">
+                    <small style="display: block; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 8px;">Bilhetes validados</small>
+                    <b style="font: 800 22px/1 Manrope, sans-serif; font-variant-numeric: tabular-nums;">140</b>
+                  </div>
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;">
+                    <small style="display: block; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 8px;">Ocupação</small>
+                    <b style="font: 800 22px/1 Manrope, sans-serif;">69<span style="font-size: 12px; color: var(--muted);">%</span></b>
+                    <span style="display: block; height: 5px; border-radius: 999px; background: var(--sky2); margin-top: 9px;"><i style="display: block; height: 5px; width: 69%; border-radius: 999px; background: #2D8CF0;"></i></span>
+                  </div>
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px;">
+                    <small style="display: block; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 8px;">Viagens activas</small>
+                    <b style="font: 800 22px/1 Manrope, sans-serif;">12</b>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 12px; margin-top: 12px;">
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                      <b style="font: 800 12.5px/1 Manrope, sans-serif;">Validações recentes</b>
+                      <span style="font: 500 10.5px/1 Inter, sans-serif; color: var(--muted);">últimos 30 min</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 7px;">
+                      <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--surface2);">
+                        <span style="font: 600 11.5px/1 Inter, sans-serif;">L5 · Baixa — Aeroporto</span>
+                        <span style="font: 400 11px/1 Inter, sans-serif; color: var(--muted); font-variant-numeric: tabular-nums;">84 123 4567</span>
+                        <span style="font: 700 10px/1 Inter, sans-serif; color: #2A9D8F;">validado</span>
+                      </div>
+                      <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--surface2);">
+                        <span style="font: 600 11.5px/1 Inter, sans-serif;">L2 · Museu — Costa do Sol</span>
+                        <span style="font: 400 11px/1 Inter, sans-serif; color: var(--muted); font-variant-numeric: tabular-nums;">86 998 1122</span>
+                        <span style="font: 700 10px/1 Inter, sans-serif; color: #2A9D8F;">validado</span>
+                      </div>
+                      <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--surface2);">
+                        <span style="font: 600 11.5px/1 Inter, sans-serif;">L6 · Junta — Marracuene</span>
+                        <span style="font: 400 11px/1 Inter, sans-serif; color: var(--muted); font-variant-numeric: tabular-nums;">85 447 9080</span>
+                        <span style="font: 700 10px/1 Inter, sans-serif; color: #2A9D8F;">validado</span>
+                      </div>
+                      <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 10px; border-radius: 10px; background: var(--surface2);">
+                        <span style="font: 600 11.5px/1 Inter, sans-serif;">L5 · Baixa — Aeroporto</span>
+                        <span style="font: 400 11px/1 Inter, sans-serif; color: var(--muted); font-variant-numeric: tabular-nums;">87 210 3345</span>
+                        <span style="font: 700 10px/1 Inter, sans-serif; color: #2A9D8F;">validado</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;">
+                    <b style="display: block; font: 800 12.5px/1 Manrope, sans-serif; margin-bottom: 4px;">ABC-123-MP</b>
+                    <small style="display: block; font: 400 10.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 12px;">32 lugares · 22 ocupados</small>
+                    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px;">
+                      <sc-for list="{{ seats }}" as="seat" hint-placeholder-count="32">
+                        <sc-if value="{{ seat.taken }}" hint-placeholder-val="{{ true }}">
+                          <i style="display: block; height: 14px; border-radius: 4px; background: #2D8CF0;"></i>
+                        </sc-if>
+                        <sc-if value="{{ seat.free }}">
+                          <i style="display: block; height: 14px; border-radius: 4px; background: var(--sky2);"></i>
+                        </sc-if>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style="border-top: 1px solid var(--border); background: var(--surface); position: static">
+        
+      <div style="max-width: 1180px; margin: 0 auto; padding: 40px 0 44px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <h2 style="margin: 0; font: 800 26px/1.2 Manrope, sans-serif; letter-spacing: -.025em; text-align: center;">{{ t.ecoStripTitle }}</h2>
+          <p style="margin: 0 0 22px; font: 400 14px/1.5 Inter, sans-serif; color: var(--muted); text-align: center;">{{ t.logosLead }}</p>
+          <div style="width: 100%; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);">
+            <div style="display: flex; align-items: center; gap: 16px; width: max-content; animation: bzmarquee 32s linear infinite;">
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-payup.png" alt="PayUp" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-cashup.png" alt="CashUp" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-gateup.png" alt="GateUp" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-vura.png" alt="Vura" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-ossoma.png" alt="Ossoma" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-payup.png" alt="PayUp" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-cashup.png" alt="CashUp" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-gateup.png" alt="GateUp" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-vura.png" alt="Vura" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+              <span style="flex: none; height: 62px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-ossoma.png" alt="Ossoma" style="max-height: 26px; max-width: 116px; object-fit: contain; display: block;"></span>
+            </div>
+          </div>
+        </div></div>
+
+      <section id="recursos" style="background: var(--surface2); padding: 88px 32px;">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div style="text-align: center; max-width: 720px; margin: 0 auto 44px;">
+            <h2 style="margin: 0 0 12px; font: 800 42px/1.12 Manrope, sans-serif; letter-spacing: -.025em; text-wrap: balance;">{{ t.featH2 }}</h2>
+            <p style="margin: 0; font: 400 16.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.featLead }}</p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 26px 26px 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
+              <div>
+                <h3 style="margin: 0 0 8px; font: 800 18px/1.3 Manrope, sans-serif;">{{ t.f1t }}</h3>
+                <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f1p }}</p>
+              </div>
+              <div style="margin: 0 -6px -1px; background: var(--surface2); border: 1px solid var(--border); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 14px;">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <b style="font: 800 12px/1 Manrope, sans-serif;">Comprar bilhete</b>
+                    <span style="font: 700 9.5px/1 Inter, sans-serif; color: #2D8CF0;">1 / 3</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <span style="display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; font: 500 11px/1 Inter, sans-serif; color: var(--text);">Maputo — Beira<i style="font-style: normal; color: var(--muted);">›</i></span>
+                    <span style="display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; font: 500 11px/1 Inter, sans-serif; color: var(--text);">06:30 · Lugar 14<i style="font-style: normal; color: var(--muted);">›</i></span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;">
+                    <span style="height: 34px; border-radius: 9px; border: 1.5px solid #2D8CF0; background: var(--sky2); display: flex; align-items: center; justify-content: center; font: 700 10.5px/1 Inter, sans-serif; color: var(--accent-dk);">M-Pesa</span>
+                    <span style="height: 34px; border-radius: 9px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font: 700 10.5px/1 Inter, sans-serif; color: var(--muted);">e-Mola</span>
+                  </div>
+                  <span style="display: flex; align-items: center; justify-content: center; height: 34px; border-radius: 999px; background: #2D8CF0; color: #FFFFFF; font: 700 11px/1 Inter, sans-serif; margin-top: 8px;">Pagar 850 MZN</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 26px 26px 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
+              <div>
+                <h3 style="margin: 0 0 8px; font: 800 18px/1.3 Manrope, sans-serif;">{{ t.f2t }}</h3>
+                <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f2p }}</p>
+              </div>
+              <div style="margin: 0 -6px -1px; background: var(--surface2); border: 1px solid var(--border); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 14px;">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <b style="font: 800 12px/1 Manrope, sans-serif;">Validação a bordo</b>
+                    <span style="display: inline-flex; align-items: center; gap: 5px; font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;"><i style="width: 5px; height: 5px; border-radius: 999px; background: #2A9D8F;"></i>POS ligado</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <span style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; background: #F0FAF7; font: 600 11px/1 Inter, sans-serif; color: var(--text);"><i style="width: 14px; height: 14px; border-radius: 999px; background: #2A9D8F;"></i>Bilhete QR · aceite</span>
+                    <span style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; background: #F0FAF7; font: 600 11px/1 Inter, sans-serif; color: var(--text);"><i style="width: 14px; height: 14px; border-radius: 999px; background: #2A9D8F;"></i>Cartão NFC · aceite</span>
+                    <span style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; background: #FFF7E6; font: 600 11px/1 Inter, sans-serif; color: var(--text);"><i style="width: 14px; height: 14px; border-radius: 999px; background: #FFB703;"></i>Saldo insuficiente</span>
+                    <span style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; background: #FDF1F1; font: 600 11px/1 Inter, sans-serif; color: var(--text);"><i style="width: 14px; height: 14px; border-radius: 999px; background: #D62828;"></i>Bilhete já usado</span>
+                  </div>
+                  <p style="margin: 10px 0 0; font: 500 9.5px/1.4 Inter, sans-serif; color: var(--muted);">Pacote especial › saldo normal › nega</p>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 26px 26px 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
+              <div>
+                <h3 style="margin: 0 0 8px; font: 800 18px/1.3 Manrope, sans-serif;">{{ t.f3t }}</h3>
+                <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f3p }}</p>
+              </div>
+              <div style="margin: 0 -6px -1px; background: var(--surface2); border: 1px solid var(--border); border-bottom: 0; border-radius: 16px 16px 0 0; padding: 14px;">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px;">
+                  <div style="display: flex; gap: 4px; margin-bottom: 10px;">
+                    <span style="height: 24px; padding: 0 10px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); display: flex; align-items: center; font: 700 10px/1 Inter, sans-serif;">Físicos</span>
+                    <span style="height: 24px; padding: 0 10px; border-radius: 999px; color: var(--muted); display: flex; align-items: center; font: 500 10px/1 Inter, sans-serif;">Digitais</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface2);">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">NFC · 0042 1187</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;">activo</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface2);">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">NFC · 0042 1188</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;">activo</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface2);">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">QR · maria.j</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #FFB703;">pendente</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface2);">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">NFC · 0042 1190</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: var(--muted);">bloqueado</span>
+                    </div>
+                  </div>
+                  <span style="display: flex; align-items: center; justify-content: center; height: 30px; border-radius: 9px; border: 1px dashed #CFE6FB; color: var(--accent-dk); font: 700 10px/1 Inter, sans-serif; margin-top: 8px;">Importar Excel (.xlsx)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1.35fr; gap: 16px; margin-top: 16px;">
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 26px; display: flex; flex-direction: column; gap: 18px;">
+              <div>
+                <h3 style="margin: 0 0 8px; font: 800 18px/1.3 Manrope, sans-serif;">{{ t.f4t }}</h3>
+                <p style="margin: 0; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f4p }}</p>
+              </div>
+              <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 16px;">
+                <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px;">
+                  <div>
+                    <small style="display: block; font: 600 10px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 6px;">Receita da semana</small>
+                    <b style="font: 800 20px/1 Manrope, sans-serif; font-variant-numeric: tabular-nums;">412 850 <span style="font-size: 11px; color: var(--muted);">MZN</span></b>
+                  </div>
+                  <span style="font: 700 10.5px/1 Inter, sans-serif; color: #2A9D8F;">reconciliado</span>
+                </div>
+                <div style="display: flex; align-items: flex-end; gap: 7px; height: 84px;">
+                  <i style="flex: 1; height: 46%; display: block; border-radius: 5px 5px 0 0; background: #CFE6FB;"></i>
+                  <i style="flex: 1; height: 62%; display: block; border-radius: 5px 5px 0 0; background: #CFE6FB;"></i>
+                  <i style="flex: 1; height: 38%; display: block; border-radius: 5px 5px 0 0; background: #CFE6FB;"></i>
+                  <i style="flex: 1; height: 74%; display: block; border-radius: 5px 5px 0 0; background: #5BA3F5;"></i>
+                  <i style="flex: 1; height: 100%; display: block; border-radius: 5px 5px 0 0; background: #2D8CF0;"></i>
+                  <i style="flex: 1; height: 58%; display: block; border-radius: 5px 5px 0 0; background: #5BA3F5;"></i>
+                  <i style="flex: 1; height: 30%; display: block; border-radius: 5px 5px 0 0; background: #CFE6FB;"></i>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; font: 500 9.5px/1 Inter, sans-serif; color: var(--muted);">
+                  <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: center;">
+              <div>
+                <h3 style="margin: 0 0 8px; font: 800 18px/1.3 Manrope, sans-serif;">{{ t.f5t }}</h3>
+                <p style="margin: 0 0 16px; font: 400 14px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f5p }}</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <span style="display: flex; align-items: center; gap: 8px; font: 500 12.5px/1.4 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.f5a }}</span>
+                  <span style="display: flex; align-items: center; gap: 8px; font: 500 12.5px/1.4 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.f5b }}</span>
+                  <span style="display: flex; align-items: center; gap: 8px; font: 500 12.5px/1.4 Inter, sans-serif; color: var(--text);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.f5c }}</span>
+                </div>
+              </div>
+              <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; height: 218px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <b style="font: 800 11.5px/1 Manrope, sans-serif;">{{ t.mapPanel }}</b>
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;"><i style="width: 5px; height: 5px; border-radius: 999px; background: #2A9D8F;"></i>GPS</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface); border: 1px solid var(--border);">
+                    <span style="font: 600 11px/1 Inter, sans-serif;">ABC-123-MP · L5</span>
+                    <span style="font: 500 10px/1 Inter, sans-serif; color: var(--muted);">42 km/h</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface); border: 1px solid var(--border);">
+                    <span style="font: 600 11px/1 Inter, sans-serif;">DEF-456-MP · L2</span>
+                    <span style="font: 500 10px/1 Inter, sans-serif; color: #2A9D8F;">em rota</span>
+                  </div>
+                </div>
+                <div style="flex: 1; border: 1px dashed #CFE6FB; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px;">
+                  <span style="font: 500 10.5px/1.45 Inter, sans-serif; color: var(--muted);">{{ t.mapPlaceholder }}</span>
+                </div>
+                            </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="porque" style="background: var(--surface); padding: 88px 32px;">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div style="text-align: center; max-width: 640px; margin: 0 auto 44px;">
+            <h2 style="margin: 0 0 12px; font: 800 42px/1.12 Manrope, sans-serif; letter-spacing: -.025em;">{{ t.statsH2 }}</h2>
+            <p style="margin: 0; font: 400 16.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.statsLead }}</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: end;">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div style="position: relative; background: var(--surface2); border: 1px solid var(--border); border-radius: 22px; padding: 26px; display: flex; flex-direction: column; gap: 46px;">
+                <i style="position: absolute; right: 20px; top: 22px; width: 9px; height: 9px; border-radius: 999px; background: #2D8CF0;"></i>
+                <b style="font: 800 44px/1 Manrope, sans-serif; letter-spacing: -.03em; color: var(--navy-text);">{{ s.v }}</b>
+                <span style="font: 400 13.5px/1.5 Inter, sans-serif; color: var(--muted);">{{ s.l }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section id="produto" style="background: var(--surface2); padding: 88px 32px;">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div style="text-align: center; max-width: 640px; margin: 0 auto 44px;">
+            <h2 style="margin: 0 0 12px; font: 800 42px/1.12 Manrope, sans-serif; letter-spacing: -.025em;">{{ t.stepsH2 }}</h2>
+            <p style="margin: 0; font: 400 16.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.stepsLead }}</p>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch;">
+            <div style="border-radius: 22px; background: linear-gradient(150deg, #5BA3F5 0%, #2D8CF0 48%, #0D3B66 100%); padding: 34px 34px 0; overflow: hidden; display: flex; flex-direction: column;">
+              <b style="font: 800 16px/1.3 Manrope, sans-serif; color: #FFFFFF;">{{ t.stepsPanelTitle }}</b>
+              <p style="margin: 8px 0 22px; font: 400 13px/1.5 Inter, sans-serif; color: rgba(255,255,255,.82); max-width: 34ch;">{{ t.stepsPanelText }}</p>
+              <div style="margin-top: auto; background: var(--surface); border-radius: 14px 14px 0 0; box-shadow: 0 -8px 30px rgba(10,46,80,.28); padding: 14px 14px 0; display: flex; gap: 12px;">
+                <div style="width: 150px; flex: none; display: flex; flex-direction: column; gap: 5px; padding-bottom: 14px;">
+                  <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 6px;">
+                    <img src="assets/busup-mark.png" alt="" style="height: 14px;">
+                    <b style="font: 800 11px/1 Manrope, sans-serif;">BusUp</b>
+                  </div>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; background: var(--sky2); color: var(--accent-dk); font: 700 10px/1 Inter, sans-serif;">Dashboard</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Rotas</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Paragens</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Viaturas</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Motoristas</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Tarifas</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Cartões</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Financeiro</span>
+                  <span style="height: 26px; display: flex; align-items: center; padding: 0 9px; border-radius: 8px; color: var(--muted); font: 500 10px/1 Inter, sans-serif;">Auditoria</span>
+                </div>
+                <div style="flex: 1; border-left: 1px solid var(--border); padding: 0 0 14px 14px;">
+                  <b style="display: block; font: 800 14px/1 Manrope, sans-serif; margin-bottom: 10px;">Rotas</b>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 10px;">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">L5 · Baixa — Aeroporto</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;">activa</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 10px;">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">L2 · Museu — Costa do Sol</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;">activa</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 10px;">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">Maputo — Beira</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #FFB703;">rascunho</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 10px;">
+                      <span style="font: 600 11px/1 Inter, sans-serif;">Maputo — Nelspruit</span>
+                      <span style="font: 700 9.5px/1 Inter, sans-serif; color: #2A9D8F;">activa</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 22px 24px; cursor: pointer;" onClick="{{ st.toggle }}" style-hover="border-color: #CFE6FB;">
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <span style="flex: none; width: 34px; height: 34px; border-radius: 999px; background: #0D3B66; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font: 800 12px/1 Manrope, sans-serif;">{{ st.n }}</span>
+                    <div style="flex: 1;">
+                      <b style="display: block; font: 800 16px/1.3 Manrope, sans-serif;">{{ st.title }}</b>
+                      <span style="display: block; font: 400 13px/1.5 Inter, sans-serif; color: var(--muted); margin-top: 3px;">{{ st.text }}</span>
+                    </div>
+                    <sc-if value="{{ st.open }}" hint-placeholder-val="{{ true }}">
+                      <span style="flex: none; width: 26px; height: 26px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); display: flex; align-items: center; justify-content: center; font: 700 14px/1 Inter, sans-serif;">−</span>
+                    </sc-if>
+                    <sc-if value="{{ st.closed }}">
+                      <span style="flex: none; width: 26px; height: 26px; border-radius: 999px; background: var(--surface2); color: var(--muted); display: flex; align-items: center; justify-content: center; font: 700 14px/1 Inter, sans-serif;">+</span>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ st.open }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                      <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 14px;">
+                        <b style="display: block; font: 800 11.5px/1 Manrope, sans-serif; margin-bottom: 10px;">{{ st.m1 }}</b>
+                        <span style="display: block; height: 26px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 6px;"></span>
+                        <span style="display: block; height: 26px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 6px;"></span>
+                        <span style="display: flex; align-items: center; justify-content: center; height: 28px; border-radius: 999px; background: #2D8CF0; color: #FFFFFF; font: 700 10px/1 Inter, sans-serif;">{{ st.m1cta }}</span>
+                      </div>
+                      <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 14px;">
+                        <b style="display: block; font: 800 11.5px/1 Manrope, sans-serif; margin-bottom: 10px;">{{ st.m2 }}</b>
+                        <span style="display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font: 600 10px/1 Inter, sans-serif; margin-bottom: 6px;"><i style="width: 12px; height: 12px; border-radius: 999px; background: #2A9D8F;"></i>{{ st.m2a }}</span>
+                        <span style="display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font: 600 10px/1 Inter, sans-serif;"><i style="width: 12px; height: 12px; border-radius: 999px; background: #2D8CF0;"></i>{{ st.m2b }}</span>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="casos" style="background: var(--surface); padding: 88px 32px;">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div style="text-align: center; max-width: 660px; margin: 0 auto 44px;">
+            <h2 style="margin: 0 0 12px; font: 800 42px/1.12 Manrope, sans-serif; letter-spacing: -.025em;">{{ t.casesH2 }}</h2>
+            <p style="margin: 0; font: 400 16.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.casesLead }}</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <sc-for list="{{ cases }}" as="c" hint-placeholder-count="3">
+              <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 22px; padding: 26px; display: flex; flex-direction: column; gap: 18px;">
+                <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);">{{ c.kind }}</span>
+                <p style="margin: 0; font: 500 16px/1.55 Inter, sans-serif; color: var(--text); text-wrap: pretty;">{{ c.quote }}</p>
+                <div style="margin-top: auto; display: flex; align-items: center; gap: 11px; padding-top: 14px; border-top: 1px solid var(--border);">
+                  <span style="width: 38px; height: 38px; border-radius: 999px; background: var(--sky2); border: 1px dashed #CFE6FB; display: flex; align-items: center; justify-content: center; font: 800 12px/1 Manrope, sans-serif; color: var(--accent-dk);">?</span>
+                  <span style="font: 500 12.5px/1.4 Inter, sans-serif; color: var(--muted);">{{ c.who }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section id="precos" style="background: var(--surface2); padding: 88px 32px;">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div style="text-align: center; max-width: 640px; margin: 0 auto 44px;">
+            <h2 style="margin: 0 0 12px; font: 800 42px/1.12 Manrope, sans-serif; letter-spacing: -.025em;">{{ t.priceH2 }}</h2>
+            <p style="margin: 0; font: 400 16.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.priceLead }}</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start;">
+            <sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+              <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 28px; display: flex; flex-direction: column; gap: 18px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <b style="font: 800 18px/1.2 Manrope, sans-serif;">{{ p.name }}</b>
+                  <sc-if value="{{ p.featured }}">
+                    <span style="height: 24px; padding: 0 10px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); display: flex; align-items: center; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase;">{{ p.badge }}</span>
+                  </sc-if>
+                </div>
+                <div>
+                  <b style="font: 800 30px/1 Manrope, sans-serif; letter-spacing: -.02em; color: var(--navy-text);">{{ p.price }}</b>
+                  <span style="display: block; font: 400 12.5px/1.5 Inter, sans-serif; color: var(--muted); margin-top: 7px;">{{ p.unit }}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 9px; padding-top: 4px;">
+                  <sc-for list="{{ p.items }}" as="li" hint-placeholder-count="4">
+                    <span style="display: flex; align-items: flex-start; gap: 9px; font: 400 13.5px/1.5 Inter, sans-serif; color: var(--text);"><i style="flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); display: flex; align-items: center; justify-content: center; font: 700 9px/1 Inter, sans-serif; font-style: normal;">✓</i>{{ li }}</span>
+                  </sc-for>
+                </div>
+                <a href="Contactos BusUp.dc.html" style="display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font: 700 14px/1 Inter, sans-serif; margin-top: 6px;" style-hover="background: #2D8CF0; border-color: #2D8CF0; color: #FFFFFF;">{{ p.cta }}</a>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section style="background: var(--surface); padding: 88px 32px;">
+        <div style="max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 48px; align-items: start;">
+          <div>
+            <h2 style="margin: 0 0 12px; font: 800 38px/1.14 Manrope, sans-serif; letter-spacing: -.025em;">{{ t.faqH2 }}</h2>
+            <p style="margin: 0; font: 400 15.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.faqLead }}</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="5">
+              <div style="border: 1px solid var(--border); border-radius: 18px; padding: 18px 20px; cursor: pointer; background: var(--surface);" onClick="{{ q.toggle }}" style-hover="border-color: #CFE6FB;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <b style="flex: 1; font: 700 15px/1.4 Inter, sans-serif; color: var(--text);">{{ q.q }}</b>
+                  <sc-if value="{{ q.open }}" hint-placeholder-val="{{ true }}">
+                    <span style="flex: none; width: 24px; height: 24px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); display: flex; align-items: center; justify-content: center; font: 700 13px/1 Inter, sans-serif;">−</span>
+                  </sc-if>
+                  <sc-if value="{{ q.closed }}">
+                    <span style="flex: none; width: 24px; height: 24px; border-radius: 999px; background: var(--surface2); color: var(--muted); display: flex; align-items: center; justify-content: center; font: 700 13px/1 Inter, sans-serif;">+</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ q.open }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: 12px 0 0; padding-right: 38px; font: 400 14px/1.6 Inter, sans-serif; color: var(--muted);">{{ q.a }}</p>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section id="contacto" style="background: linear-gradient(160deg, #0D3B66 0%, #0A2E50 100%); padding: 84px 32px; position: relative; overflow: hidden;">
+        <div style="position: relative; max-width: 900px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 18px;">
+          <h2 style="margin: 0; font: 800 42px/1.1 Manrope, sans-serif; letter-spacing: -.03em; color: #FFFFFF; text-wrap: balance;">{{ t.ctaH2 }}</h2>
+          <p style="margin: 0; max-width: 52ch; font: 400 17px/1.6 Inter, sans-serif; color: rgba(234,241,248,.8);">{{ t.ctaLead }}</p>
+          <div style="display: flex; gap: 12px; margin-top: 6px;">
+            <a href="Contactos BusUp.dc.html" style="display: inline-flex; align-items: center; height: 52px; padding: 0 28px; border-radius: 999px; white-space: nowrap; background: var(--surface); color: var(--navy-text); font: 700 15px/1 Inter, sans-serif;" style-hover="background: var(--sky2); color: var(--navy-text);">{{ t.ctaContact }}</a>
+            <a href="Precos BusUp.dc.html" style="display: inline-flex; align-items: center; height: 52px; padding: 0 28px; border-radius: 999px; white-space: nowrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: #FFFFFF; font: 700 15px/1 Inter, sans-serif;" style-hover="background: rgba(255,255,255,.22); color: #FFFFFF;">{{ t.ctaPricing }}</a>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; margin-top: 20px; padding-top: 22px; border-top: 1px solid rgba(234,241,248,.18);">
+            <sc-for list="{{ t.formFacts }}" as="f" hint-placeholder-count="3">
+              <span style="display: flex; align-items: center; gap: 9px; font: 500 14px/1.4 Inter, sans-serif; color: #EAF1F8;"><i style="flex: none; width: 20px; height: 20px; border-radius: 999px; background: rgba(91,163,245,.22); color: #5BA3F5; display: flex; align-items: center; justify-content: center; font: 700 10px/1 Inter, sans-serif; font-style: normal;">✓</i>{{ f }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section id="ecossistema" style="background: var(--surface); padding: 84px 32px; border-top: 1px solid var(--border);">
+        <div style="max-width: 1180px; margin: 0 auto;">
+          <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 56px; align-items: center;">
+            <div>
+              <span style="display: inline-block; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px;">{{ t.ecoLabel }}</span>
+              <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 54px; width: auto; display: block; margin-bottom: 22px;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 54px; width: auto; display: block; margin-bottom: 22px;">
+              <h2 style="margin: 0 0 12px; font: 800 34px/1.14 Manrope, sans-serif; letter-spacing: -.025em;">{{ t.ecoH2 }}</h2>
+              <p style="margin: 0 0 16px; max-width: 46ch; font: 400 16px/1.6 Inter, sans-serif; color: var(--muted); text-wrap: pretty;">{{ t.ecoLead }}</p>
+              
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <sc-for list="{{ ecoItems }}" as="e" hint-placeholder-count="5">
+                <a href="{{ e.url }}" target="_blank" rel="noopener" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 18px; padding: 20px; min-height: 88px; display: flex; align-items: center; justify-content: center; text-decoration: none;" style-hover="border-color: #2D8CF0;">
+                  <sc-if value="{{ e.logo }}"><img src="{{ e.logo }}" alt="{{ e.name }}" style="height: 34px; width: auto; max-width: 150px; object-fit: contain; display: block;"></sc-if>
+                </a>
+              </sc-for>
+              <a href="https://busup.updigital.co.mz" target="_blank" rel="noopener" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 18px; padding: 20px; min-height: 88px; display: flex; align-items: center; justify-content: center; text-decoration: none;" style-hover="border-color: #2D8CF0;">
+                <img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 34px; width: auto; max-width: 150px; object-fit: contain; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 34px; width: auto; max-width: 150px; object-fit: contain; display: block;">
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer style="background: #0A2E50; padding: 56px 32px 26px;">
+        <div style="max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr; gap: 44px;">
+          <div>
+            <img src="assets/busup-logo-dark.png" alt="BusUp" style="height: 26px; width: auto; display: block; margin-bottom: 14px;">
+            <p style="margin: 0; max-width: 34ch; font: 400 13.5px/1.6 Inter, sans-serif; color: rgba(234,241,248,.66);">{{ t.footerAbout }}</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <b style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5);">{{ t.footerProduct }}</b>
+            <a href="Landing BusUp - Ceu.dc.html" style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;" style-hover="color: #5BA3F5;">{{ t.navProduct }}</a>
+            <a href="Precos BusUp.dc.html" style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;" style-hover="color: #5BA3F5;">{{ t.navPricing }}</a>
+            <a href="Contactos BusUp.dc.html" style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;" style-hover="color: #5BA3F5;">{{ t.navContact }}</a>
+            <a href="Acesso BusUp.dc.html" style="font: 600 13.5px/1 Inter, sans-serif; color: #5BA3F5;" style-hover="color: #FFFFFF;">{{ t.portalLogin }}</a>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <b style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5);">{{ t.footerContact }}</b>
+            <span style="font: 400 13.5px/1.55 Inter, sans-serif; color: rgba(234,241,248,.66);">Av. Alberto Massavanhane, 1265<br>Matola — Moçambique</span>
+            <a href="mailto:sales@updigital.co.mz" style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;" style-hover="color: #5BA3F5;">sales@updigital.co.mz</a>
+            <a href="https://www.updigital.co.mz" target="_blank" rel="noopener" style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;" style-hover="color: #5BA3F5;">www.updigital.co.mz</a>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <b style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5);">{{ t.footerEco }}</b>
+            <span style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;">PayUp · CashUp</span>
+            <span style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;">GateUp · Vura</span>
+            <span style="font: 400 13.5px/1 Inter, sans-serif; color: #EAF1F8;">Ossoma</span>
+          </div>
+        </div>
+        <div style="max-width: 1180px; margin: 36px auto 0; padding-top: 22px; border-top: 1px solid rgba(234,241,248,.14); display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <span style="font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5); white-space: nowrap;">{{ t.poweredBy }}</span>
+            <img src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 28px; width: auto; display: block;">
+          </div>
+          <span style="font: 400 12px/1.5 Inter, sans-serif; color: rgba(234,241,248,.6); text-align: right;">© 2026 UpDigital, Limitada. {{ t.rights }}</span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-left: 6px;">Mobile · 390</span>
+
+    <div style="width: 390px; background: var(--surface); border-radius: 34px; overflow: hidden; box-shadow: 0 40px 90px rgba(13,59,102,.16); position: relative;">
+
+      <div style="background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 46%, var(--surface) 92%); padding-bottom: 0;">
+        <div style="height: 42px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font: 700 12px/1 Inter, sans-serif; color: var(--text);">09:41</div>
+        <header style="height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px;">
+          <span style="display: flex;"><img data-logo="light" src="assets/busup-logo-light.png" alt="BusUp" style="height: 20px; width: auto; display: block;"><img data-logo="dark" src="assets/busup-logo-dark.png" alt="BusUp" style="height: 20px; width: auto; display: block;"></span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" data-bz-theme-toggle="" aria-label="Alternar tema" style="flex: none; width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; font: 500 14px/1 Inter, sans-serif; display: flex; align-items: center; justify-content: center;">☾</button>
+            <div style="display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px;">
+              <sc-if value="{{ isPt }}" hint-placeholder-val="{{ true }}"><button type="button" aria-pressed="true" onClick="{{ setPt }}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: #0D3B66; cursor: pointer; font: 700 11px/1 Inter, sans-serif; color: #FFFFFF;">PT</button></sc-if><sc-if value="{{ isEn }}"><button type="button" aria-pressed="false" onClick="{{ setPt }}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; font: 700 11px/1 Inter, sans-serif; color: var(--muted);">PT</button></sc-if>
+              <sc-if value="{{ isEn }}"><button type="button" aria-pressed="true" onClick="{{ setEn }}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: #0D3B66; cursor: pointer; font: 700 11px/1 Inter, sans-serif; color: #FFFFFF;">EN</button></sc-if><sc-if value="{{ isPt }}"><button type="button" aria-pressed="false" onClick="{{ setEn }}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; font: 700 11px/1 Inter, sans-serif; color: var(--muted);">EN</button></sc-if>
+            </div>
+            <button type="button" onClick="{{ toggleMenu }}" style="width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+              <i style="width: 16px; height: 2px; border-radius: 2px; background: #0F1B2D;"></i>
+              <i style="width: 16px; height: 2px; border-radius: 2px; background: #0F1B2D;"></i>
+            </button>
+          </div>
+        </header>
+
+        <sc-if value="{{ menuOpen }}">
+          <nav style="margin: 0 14px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 8px; display: flex; flex-direction: column;">
+            <a href="#produto" style="height: 48px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; font: 600 15px/1 Inter, sans-serif; color: var(--text);" style-hover="background: var(--surface2);">{{ t.navProduct }}</a>
+            <a href="#recursos" style="height: 48px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; font: 600 15px/1 Inter, sans-serif; color: var(--text);" style-hover="background: var(--surface2);">{{ t.navFeatures }}</a>
+            <a href="#porque" style="height: 48px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; font: 600 15px/1 Inter, sans-serif; color: var(--text);" style-hover="background: var(--surface2);">{{ t.navWhy }}</a>
+            <a href="Precos BusUp.dc.html" style="height: 48px; display: flex; align-items: center; padding: 0 14px; border-radius: 14px; font: 600 15px/1 Inter, sans-serif; color: var(--text);" style-hover="background: var(--surface2);">{{ t.navPricing }}</a>
+          </nav>
+        </sc-if>
+
+        <div style="padding: 18px 20px 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+          <span style="display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border-radius: 999px; white-space: nowrap; background: var(--surface); border: 1px solid var(--border); font: 600 11.5px/1 Inter, sans-serif; color: var(--muted);"><i style="width: 6px; height: 6px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.heroBadge }}</span>
+          <h1 style="margin: 0; font: 800 33px/1.08 Manrope, sans-serif; letter-spacing: -.03em;">{{ t.heroH1a }}<span style="display: block; color: #2D8CF0;">{{ t.heroH1b }}</span></h1>
+          <p style="margin: 0; font: 400 15px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.heroLeadShort }}</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 2px;">
+            <a href="Contactos BusUp.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: #2D8CF0; color: #FFFFFF; font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 24px rgba(45,140,240,.3);">{{ t.ctaContact }}</a>
+            <a href="Compra de Bilhetes BusUp.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: var(--surface); border: 1px solid var(--sky1); color: var(--accent-dk); font: 700 15px/1 Inter, sans-serif;">{{ t.buyTicket }}</a>
+            <a href="#produto" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font: 700 15px/1 Inter, sans-serif;">{{ t.ctaSecondary }}</a>
+          </div>
+        </div>
+
+        <div style="margin: 24px 20px 0; height: 250px; overflow: hidden; position: relative;">
+          <span style="position: absolute; left: 0; top: 92px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--surface); box-shadow: 0 8px 18px rgba(13,59,102,.16); font: 600 10.5px/1 Inter, sans-serif;"><i style="width: 5px; height: 5px; border-radius: 999px; background: #2A9D8F;"></i>{{ t.tag1 }}</span>
+          <span style="position: absolute; right: 0; top: 178px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--surface); box-shadow: 0 8px 18px rgba(13,59,102,.16); font: 600 10.5px/1 Inter, sans-serif;"><i style="width: 5px; height: 5px; border-radius: 999px; background: #2D8CF0;"></i>{{ t.tag3 }}</span>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-bottom: 0; border-radius: 18px 18px 0 0; box-shadow: 0 -2px 40px rgba(13,59,102,.14); overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-bottom: 1px solid var(--border);">
+              <img src="assets/busup-mark.png" alt="" style="height: 14px;">
+              <b style="font: 800 11px/1 Manrope, sans-serif;">Painel</b>
+              <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font: 700 9px/1 Inter, sans-serif; color: #2A9D8F;"><i style="width: 5px; height: 5px; border-radius: 999px; background: #2A9D8F;"></i>Ao vivo</span>
+            </div>
+            <div style="padding: 12px; background: var(--surface2);">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px;">
+                  <small style="display: block; font: 600 9.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 7px;">Receita hoje</small>
+                  <b style="font: 800 16px/1 Manrope, sans-serif;">13 300</b>
+                </div>
+                <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px;">
+                  <small style="display: block; font: 600 9.5px/1 Inter, sans-serif; color: var(--muted); margin-bottom: 7px;">Validados</small>
+                  <b style="font: 800 16px/1 Manrope, sans-serif;">140</b>
+                </div>
+              </div>
+              <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="display: flex; align-items: center; gap: 7px; font: 600 10px/1 Inter, sans-serif;"><i style="width: 12px; height: 12px; border-radius: 999px; background: #2A9D8F;"></i>L5 · Baixa — Aeroporto</span>
+                <span style="display: flex; align-items: center; gap: 7px; font: 600 10px/1 Inter, sans-serif;"><i style="width: 12px; height: 12px; border-radius: 999px; background: #2A9D8F;"></i>L2 · Museu — Costa do Sol</span>
+                <span style="display: flex; align-items: center; gap: 7px; font: 600 10px/1 Inter, sans-serif;"><i style="width: 12px; height: 12px; border-radius: 999px; background: #2A9D8F;"></i>L6 · Junta — Marracuene</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 14px; align-items: center;">
+        <h2 style="margin: 0; font: 800 20px/1.2 Manrope, sans-serif; letter-spacing: -.025em; text-align: center;">{{ t.ecoStripTitle }}</h2>
+        <span style="font: 500 11.5px/1.4 Inter, sans-serif; color: var(--muted); text-align: center; margin-top: -6px;">{{ t.logosLead }}</span>
+        <div style="width: 100%; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);">
+          <div style="display: flex; align-items: center; gap: 10px; width: max-content; animation: bzmarquee 26s linear infinite;">
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-payup.png" alt="PayUp" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-cashup.png" alt="CashUp" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-gateup.png" alt="GateUp" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-vura.png" alt="Vura" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-ossoma.png" alt="Ossoma" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-payup.png" alt="PayUp" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-cashup.png" alt="CashUp" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-gateup.png" alt="GateUp" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-vura.png" alt="Vura" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+            <span style="flex: none; height: 48px; padding: 0 26px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); display: flex; align-items: center; justify-content: center;"><img src="assets/logo-ossoma.png" alt="Ossoma" style="max-height: 18px; max-width: 84px; object-fit: contain; display: block;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--surface2); padding: 40px 20px;">
+        <h2 style="margin: 0 0 10px; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em; text-align: center;">{{ t.featH2 }}</h2>
+        <p style="margin: 0 0 22px; font: 400 14.5px/1.6 Inter, sans-serif; color: var(--muted); text-align: center;">{{ t.featLead }}</p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px;">
+            <h3 style="margin: 0 0 7px; font: 800 16px/1.3 Manrope, sans-serif;">{{ t.f1t }}</h3>
+            <p style="margin: 0 0 14px; font: 400 13.5px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f1p }}</p>
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <span style="height: 40px; border-radius: 10px; border: 1.5px solid #2D8CF0; background: var(--sky2); display: flex; align-items: center; justify-content: center; font: 700 11.5px/1 Inter, sans-serif; color: var(--accent-dk);">M-Pesa</span>
+              <span style="height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: center; font: 700 11.5px/1 Inter, sans-serif; color: var(--muted);">e-Mola</span>
+            </div>
+          </div>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px;">
+            <h3 style="margin: 0 0 7px; font: 800 16px/1.3 Manrope, sans-serif;">{{ t.f2t }}</h3>
+            <p style="margin: 0 0 14px; font: 400 13.5px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f2p }}</p>
+            <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 7px;">
+              <span style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #F0FAF7; font: 600 11.5px/1 Inter, sans-serif;"><i style="width: 14px; height: 14px; border-radius: 999px; background: #2A9D8F;"></i>Bilhete QR · aceite</span>
+              <span style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #FFF7E6; font: 600 11.5px/1 Inter, sans-serif;"><i style="width: 14px; height: 14px; border-radius: 999px; background: #FFB703;"></i>Saldo insuficiente</span>
+            </div>
+          </div>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px;">
+            <h3 style="margin: 0 0 7px; font: 800 16px/1.3 Manrope, sans-serif;">{{ t.f4t }}</h3>
+            <p style="margin: 0; font: 400 13.5px/1.55 Inter, sans-serif; color: var(--muted);">{{ t.f4p }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 40px 20px;">
+        <h2 style="margin: 0 0 20px; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em; text-align: center;">{{ t.statsH2 }}</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="position: relative; background: var(--surface2); border: 1px solid var(--border); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 20px;">
+              <i style="position: absolute; right: 14px; top: 16px; width: 7px; height: 7px; border-radius: 999px; background: #2D8CF0;"></i>
+              <b style="font: 800 30px/1 Manrope, sans-serif; letter-spacing: -.03em; color: var(--navy-text);">{{ s.v }}</b>
+              <span style="font: 400 12px/1.45 Inter, sans-serif; color: var(--muted);">{{ s.l }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: var(--surface2); padding: 40px 20px;">
+        <h2 style="margin: 0 0 20px; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em; text-align: center;">{{ t.stepsH2 }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 18px; display: flex; align-items: flex-start; gap: 12px;">
+              <span style="flex: none; width: 30px; height: 30px; border-radius: 999px; background: #0D3B66; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font: 800 11px/1 Manrope, sans-serif;">{{ st.n }}</span>
+              <div>
+                <b style="display: block; font: 800 14.5px/1.3 Manrope, sans-serif;">{{ st.title }}</b>
+                <span style="display: block; font: 400 12.5px/1.5 Inter, sans-serif; color: var(--muted); margin-top: 4px;">{{ st.text }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="padding: 40px 20px;">
+        <h2 style="margin: 0 0 20px; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em; text-align: center;">{{ t.faqH2 }}</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{ faqs }}" as="q" hint-placeholder-count="5">
+            <div style="border: 1px solid var(--border); border-radius: 16px; padding: 16px; cursor: pointer;" onClick="{{ q.toggle }}">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <b style="flex: 1; font: 700 13.5px/1.4 Inter, sans-serif;">{{ q.q }}</b>
+                <sc-if value="{{ q.open }}" hint-placeholder-val="{{ true }}">
+                  <span style="flex: none; width: 22px; height: 22px; border-radius: 999px; background: var(--sky2); color: var(--accent-dk); display: flex; align-items: center; justify-content: center; font: 700 12px/1 Inter, sans-serif;">−</span>
+                </sc-if>
+                <sc-if value="{{ q.closed }}">
+                  <span style="flex: none; width: 22px; height: 22px; border-radius: 999px; background: var(--surface2); color: var(--muted); display: flex; align-items: center; justify-content: center; font: 700 12px/1 Inter, sans-serif;">+</span>
+                </sc-if>
+              </div>
+              <sc-if value="{{ q.open }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 10px 0 0; font: 400 13px/1.6 Inter, sans-serif; color: var(--muted);">{{ q.a }}</p>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: linear-gradient(160deg, #0D3B66 0%, #0A2E50 100%); padding: 36px 20px 40px;">
+        <h2 style="margin: 0 0 10px; font: 800 26px/1.15 Manrope, sans-serif; letter-spacing: -.025em; color: #FFFFFF;">{{ t.ctaH2 }}</h2>
+        <p style="margin: 0 0 18px; font: 400 14px/1.6 Inter, sans-serif; color: rgba(234,241,248,.8);">{{ t.ctaLead }}</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          <a href="Contactos BusUp.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: var(--surface); color: var(--navy-text); font: 700 15px/1 Inter, sans-serif;">{{ t.ctaContact }}</a>
+          <a href="Precos BusUp.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: #FFFFFF; font: 700 15px/1 Inter, sans-serif;">{{ t.ctaPricing }}</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <sc-for list="{{ t.formFacts }}" as="f" hint-placeholder-count="3">
+            <span style="display: flex; align-items: center; gap: 9px; font: 500 13px/1.4 Inter, sans-serif; color: #EAF1F8;"><i style="flex: none; width: 18px; height: 18px; border-radius: 999px; background: rgba(91,163,245,.22); color: #5BA3F5; display: flex; align-items: center; justify-content: center; font: 700 9px/1 Inter, sans-serif; font-style: normal;">✓</i>{{ f }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: var(--surface); border-top: 1px solid var(--border); padding: 32px 20px 100px;">
+        <span style="display: block; font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px;">{{ t.ecoLabel }}</span>
+        <img data-logo="light" src="assets/logo-updigital-dark.png" alt="UpDigital, Limitada" style="height: 38px; width: auto; display: block; margin-bottom: 16px;"><img data-logo="dark" src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 38px; width: auto; display: block; margin-bottom: 16px;">
+        <p style="margin: 0 0 18px; font: 400 13.5px/1.6 Inter, sans-serif; color: var(--muted);">{{ t.ecoLead }}</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <sc-for list="{{ ecoItems }}" as="e" hint-placeholder-count="5">
+            <a href="{{ e.url }}" target="_blank" rel="noopener" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 14px; min-height: 62px; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+              <sc-if value="{{ e.logo }}"><img src="{{ e.logo }}" alt="{{ e.name }}" style="height: 26px; width: auto; max-width: 112px; object-fit: contain; display: block;"></sc-if>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background: #0A2E50; padding: 30px 20px 26px;">
+        <img src="assets/busup-logo-dark.png" alt="BusUp" style="height: 22px; width: auto; display: block; margin-bottom: 12px;">
+        <p style="margin: 0 0 20px; font: 400 12.5px/1.6 Inter, sans-serif; color: rgba(234,241,248,.66);">{{ t.footerAbout }}</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px;">
+          <a href="Landing BusUp - Ceu.dc.html" style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: rgba(255,255,255,.08); font: 600 13px/1 Inter, sans-serif; color: #EAF1F8;">{{ t.navProduct }}</a>
+          <a href="Precos BusUp.dc.html" style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: rgba(255,255,255,.08); font: 600 13px/1 Inter, sans-serif; color: #EAF1F8;">{{ t.navPricing }}</a>
+          <a href="Contactos BusUp.dc.html" style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: rgba(255,255,255,.08); font: 600 13px/1 Inter, sans-serif; color: #EAF1F8;">{{ t.navContact }}</a>
+          <a href="Acesso BusUp.dc.html" style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: rgba(91,163,245,.18); font: 700 13px/1 Inter, sans-serif; color: #EAF1F8;">{{ t.portalLogin }}</a>
+          <a href="mailto:sales@updigital.co.mz" style="height: 44px; display: flex; align-items: center; padding: 0 14px; border-radius: 12px; background: rgba(255,255,255,.08); font: 600 13px/1 Inter, sans-serif; color: #EAF1F8;">Email</a>
+        </div>
+        <div style="padding-top: 18px; border-top: 1px solid rgba(234,241,248,.14); display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; justify-content: center">
+            <span style="font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: rgba(234,241,248,.5); white-space: nowrap;">{{ t.poweredBy }}</span>
+            <img src="assets/logo-updigital-white.png" alt="UpDigital, Limitada" style="height: 24px; width: auto; display: block;">
+          </div>
+          <span style="font: 400 11.5px/1.6 Inter, sans-serif; color: rgba(234,241,248,.6); text-align: center">© 2026 UpDigital, Limitada. {{ t.rights }}</span>
+        </div>
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pt&quot;,&quot;en&quot;],&quot;default&quot;:&quot;pt&quot;,&quot;tsType&quot;:&quot;\&quot;pt\&quot; | \&quot;en\&quot;&quot;}}">
+const PT = {
+  portalLogin: "Entrar no portal",
+  navContact: "Contactos", navProduct: "Produto", navFeatures: "Funcionalidades", navWhy: "Porquê BusUp", navCases: "Casos", navPricing: "Preços",
+  talkSales: "Falar com vendas", buyTicket: "Comprar bilhete",
+  heroBadge: "Bilhética digital · Moçambique",
+  heroH1a: "Bilhetes, frota e receita",
+  heroH1b: "numa só plataforma.",
+  heroLead: "O BusUp digitaliza a venda e a validação de bilhetes no transporte de passageiros — do bairro à viagem internacional. O passageiro compra no telemóvel ou no agente; o operador vê cada viagem e cada metical, em tempo real.",
+  heroLeadShort: "O passageiro compra no telemóvel ou no agente. O operador vê cada viagem e cada metical, em tempo real.",
+  ctaPrimary: "Falar com vendas", ctaSecondary: "Ver a plataforma",
+  chips: ["QR no telemóvel", "Cartão NFC", "M-Pesa", "e-Mola"],
+  tag1: "Cobrador", tag2: "Direcção", tag3: "Motorista", tag4: "Passageiro",
+  ecoStripTitle: "Ecossistemas UpDigital",
+  logosLead: "Construído sobre o ecossistema UpDigital",
+  featH2: "Tudo o que a operação precisa, num só sistema.",
+  featLead: "Venda, validação, cartões, receita e frota — sem folhas de Excel pelo meio.",
+  f1t: "Venda em três canais", f1p: "Site, app do passageiro e agente no terreno. Pago com M-Pesa ou e-Mola em menos de um minuto.",
+  f2t: "Validação a bordo", f2p: "QR ou cartão NFC confirmados em segundos, com a decisão registada na hora.",
+  f3t: "Cartões físicos e digitais", f3p: "Cartões NFC e passes digitais QR, criados um a um ou importados de Excel.",
+  f4t: "Receita em tempo real", f4p: "Cada bilhete fica registado. A tesouraria reconcilia sem esperar pelo fecho do dia.",
+  f5t: "Frota e rotas no mapa", f5p: "Viaturas, motoristas e viagens com posição GPS e ocupação por lugar.",
+  f5a: "Programação diária automática", f5b: "Ocupação por viatura e por lugar", f5c: "Histórico e auditoria de tudo",
+  statsH2: "Porque é que os operadores escolhem o BusUp",
+  statsLead: "Números do produto, não de marketing.",
+  stats: [
+    { v: "3", l: "canais de venda e validação" },
+    { v: "2", l: "carteiras móveis integradas" },
+    { v: "100%", l: "da receita registada" },
+    { v: "0", l: "obras na frota actual" },
+  ],
+  stepsH2: "Começar em três passos",
+  stepsLead: "Carregamos as suas rotas e horários; a operação arranca no mesmo dia.",
+  stepsPanelTitle: "Portal de gestão",
+  stepsPanelText: "Rotas, paragens, viaturas e tarifas configurados por nós, revistos por si.",
+  steps: [
+    { n: "01", title: "Configuração das rotas", text: "Importamos rotas, paragens, horários e tarifas da sua operação actual.", m1: "Nova rota", m1cta: "Guardar", m2: "Paragens", m2a: "Baixa", m2b: "Aeroporto" },
+    { n: "02", title: "Equipa e dispositivos", text: "Perfis por função, POS dos agentes activados e cartões emitidos.", m1: "Novo agente", m1cta: "Activar", m2: "Dispositivos", m2a: "POS-04 ligado", m2b: "POS-07 ligado" },
+    { n: "03", title: "Vender e acompanhar", text: "A venda arranca e a direcção acompanha a receita em tempo real.", m1: "Relatório", m1cta: "Exportar", m2: "Receita", m2a: "Fecho conferido", m2b: "Auditoria activa" },
+  ],
+  casesH2: "Resultados reais, impacto real",
+  casesLead: "Espaço reservado para depoimentos de operadores. Envie-nos as citações e atribuições reais e substituímos.",
+  cases: [
+    { kind: "Urbano · Maputo", quote: "[Depoimento a preencher] Espaço para o que o operador diz sobre o fim do dinheiro vivo a bordo.", who: "Nome, cargo — operador urbano" },
+    { kind: "Interurbano", quote: "[Depoimento a preencher] Espaço para o que muda no fecho de contas e na reconciliação diária.", who: "Nome, cargo — operador interurbano" },
+    { kind: "Institucional", quote: "[Depoimento a preencher] Espaço para o que muda no controlo do embarque escolar ou de colaboradores.", who: "Nome, cargo — instituição" },
+  ],
+  priceH2: "Preços por operação, não por tabela",
+  priceLead: "O valor depende da frota, dos canais de venda e do volume. Sem custo de licença por telemóvel do passageiro.",
+  plans: [
+    { name: "Urbano", price: "Sob consulta", unit: "Frotas até 20 viaturas, venda no agente e QR no telemóvel.", cta: "Pedir proposta", items: ["Portal de gestão", "App POS para agentes", "M-Pesa e e-Mola", "Relatórios diários"] },
+    { name: "Interurbano", price: "Sob consulta", unit: "Rotas longas com lugar marcado e bilhete em PDF.", featured: true, badge: "Mais procurado", cta: "Pedir proposta", items: ["Tudo do plano Urbano", "Lugar marcado e mapa de lugares", "Bilhete PDF com QR", "Cartões NFC e digitais"] },
+    { name: "Institucional", price: "Sob consulta", unit: "Empresas, escolas e frotas com contrato próprio.", cta: "Falar com vendas", items: ["Tudo do plano Interurbano", "Pacotes e subsídios", "Perfis e permissões por função", "Suporte dedicado local"] },
+  ],
+  faqH2: "Perguntas que os operadores fazem",
+  faqLead: "Se faltar alguma, escreva-nos — respondemos no mesmo dia útil.",
+  faqs: [
+    { q: "É preciso instalar equipamento nas viaturas?", a: "Não. A validação corre na app POS do agente ou do motorista, num telemóvel Android comum. Cartões NFC e QR funcionam com o mesmo aparelho." },
+    { q: "Funciona sem rede?", a: "A venda exige rede para o pagamento, mas a validação a bordo tolera falhas: o registo é guardado no dispositivo e sincroniza quando a ligação volta." },
+    { q: "Que pagamentos são aceites?", a: "M-Pesa e e-Mola através da Payless, além de dinheiro no agente e saldo em carteira ou cartão." },
+    { q: "O passageiro tem de criar conta?", a: "Não. A compra pública funciona sem registo — o bilhete chega em PDF com QR. Contas e cartões são opcionais para passageiros frequentes." },
+    { q: "Quem tem acesso a quê?", a: "Perfis com permissões por função e registo de auditoria de quem fez o quê, em todo o portal." },
+  ],
+  formH2: "Vamos ver isto na sua operação.",
+  formLead: "Preenchemos a plataforma com as suas rotas e horários e mostramos o fluxo completo — venda, embarque e fecho de contas.",
+  formFacts: ["A plataforma com os seus dados", "Instalação sem obra na frota", "Suporte local em Moçambique"],
+  formTitle: "Pedido de contacto",
+  fName: "Nome", fCompany: "Empresa", fPhone: "Telefone", fFleet: "Viaturas na frota", fMsg: "Mensagem",
+  formCta: "Enviar pedido",
+  formNote: "Respondemos em dias úteis, das 08h00 às 17h00 (CAT).",
+  sentTitle: "Pedido enviado.", sentText: "A equipa comercial responde no próximo dia útil.",
+  commercial: "Comercial",
+  ctaH2: "Leve o BusUp para a sua frota.",
+  ctaLead: "Mostramos a plataforma a operar com as suas rotas, os seus horários e os seus números.",
+  ctaContact: "Falar com vendas", ctaPricing: "Ver preços",
+  mapPanel: "Mapa da frota", mapPlaceholder: "Screenshot do mapa Leaflet/OpenStreetMap do portal a inserir",
+  ecoLabel: "Desenvolvido por",
+  ecoH2: "Quem constrói o BusUp",
+  ecoLead: "O BusUp é desenvolvido pela UpDigital, Limitada — empresa moçambicana de software com sede na Matola. A mesma engenharia sustenta os outros produtos do grupo.",
+  ecoNote: "Suporte local: quem escreve o software é quem atende o operador.",
+  ecoItems: [
+    { logo: "assets/logo-payup.png", name: "PayUp", url: "https://payup.updigital.co.mz" },
+    { logo: "assets/logo-cashup.png", name: "CashUp", url: "https://cashup.updigital.co.mz" },
+    { logo: "assets/logo-gateup.png", name: "GateUp", url: "https://gateup.updigital.co.mz" },
+    { logo: "assets/logo-vura.png", name: "Vura", url: "https://vura.updigital.co.mz" },
+    { logo: "assets/logo-ossoma.png", name: "Ossoma", url: "https://ossoma.updigital.co.mz" },
+  ],
+  footerAbout: "Plataforma de bilhética digital para o transporte de passageiros. Desenvolvido em Moçambique.",
+  footerProduct: "Produto", footerAccess: "Acesso", footerContact: "Contacto",
+  footerPortal: "Portal de gestão", footerApps: "Descarregar apps",
+  poweredBy: "Desenvolvido por", footerEco: "Ecossistema",
+  rights: "Todos os direitos reservados.",
+};
+
+const EN = {
+  portalLogin: "Sign in to the portal",
+  navContact: "Contact", navProduct: "Product", navFeatures: "Features", navWhy: "Why BusUp", navCases: "Cases", navPricing: "Pricing",
+  talkSales: "Talk to sales", buyTicket: "Buy a ticket",
+  heroBadge: "Digital ticketing · Mozambique",
+  heroH1a: "Tickets, fleet and revenue",
+  heroH1b: "on a single platform.",
+  heroLead: "BusUp digitises ticket sales and validation in passenger transport — from the neighbourhood route to the cross-border trip. Passengers buy on their phone or from an agent; the operator sees every trip and every metical, in real time.",
+  heroLeadShort: "Passengers buy on their phone or from an agent. The operator sees every trip and every metical, in real time.",
+  ctaPrimary: "Talk to sales", ctaSecondary: "See the platform",
+  chips: ["QR on the phone", "NFC card", "M-Pesa", "e-Mola"],
+  tag1: "Agent", tag2: "Management", tag3: "Driver", tag4: "Passenger",
+  ecoStripTitle: "UpDigital ecosystems",
+  logosLead: "Built on the UpDigital ecosystem",
+  featH2: "Everything the operation needs, in one system.",
+  featLead: "Sales, validation, cards, revenue and fleet — with no spreadsheets in between.",
+  f1t: "Sales across three channels", f1p: "Website, passenger app and agent on the ground. Paid with M-Pesa or e-Mola in under a minute.",
+  f2t: "Validation on board", f2p: "QR or NFC card confirmed in seconds, with the decision recorded on the spot.",
+  f3t: "Physical and digital cards", f3p: "NFC cards and digital QR passes, created one by one or imported from Excel.",
+  f4t: "Revenue in real time", f4p: "Every ticket is recorded. Treasury reconciles without waiting for the daily close.",
+  f5t: "Fleet and routes on the map", f5p: "Vehicles, drivers and trips with GPS position and seat-level occupancy.",
+  f5a: "Automatic daily scheduling", f5b: "Occupancy per vehicle and per seat", f5c: "Full history and audit trail",
+  statsH2: "Why operators choose BusUp",
+  statsLead: "Product numbers, not marketing ones.",
+  stats: [
+    { v: "3", l: "sales and validation channels" },
+    { v: "2", l: "mobile wallets integrated" },
+    { v: "100%", l: "of revenue recorded" },
+    { v: "0", l: "changes to your current fleet" },
+  ],
+  stepsH2: "Get started in three steps",
+  stepsLead: "We load your routes and schedules; the operation starts the same day.",
+  stepsPanelTitle: "Management portal",
+  stepsPanelText: "Routes, stops, vehicles and fares configured by us, reviewed by you.",
+  steps: [
+    { n: "01", title: "Route configuration", text: "We import routes, stops, schedules and fares from your current operation.", m1: "New route", m1cta: "Save", m2: "Stops", m2a: "Downtown", m2b: "Airport" },
+    { n: "02", title: "Team and devices", text: "Roles per function, agent POS activated and cards issued.", m1: "New agent", m1cta: "Activate", m2: "Devices", m2a: "POS-04 online", m2b: "POS-07 online" },
+    { n: "03", title: "Sell and follow through", text: "Selling starts and management follows revenue in real time.", m1: "Report", m1cta: "Export", m2: "Revenue", m2a: "Close checked", m2b: "Audit active" },
+  ],
+  casesH2: "Real results, real impact",
+  casesLead: "Placeholder for operator testimonials. Send us the real quotes and attributions and we will swap them in.",
+  cases: [
+    { kind: "Urban · Maputo", quote: "[Testimonial to be filled] Space for what the operator says about ending cash on board.", who: "Name, role — urban operator" },
+    { kind: "Intercity", quote: "[Testimonial to be filled] Space for what changes in the daily close and reconciliation.", who: "Name, role — intercity operator" },
+    { kind: "Institutional", quote: "[Testimonial to be filled] Space for what changes in school or staff boarding control.", who: "Name, role — institution" },
+  ],
+  priceH2: "Priced per operation, not per table",
+  priceLead: "The figure depends on fleet size, sales channels and volume. No licence cost per passenger phone.",
+  plans: [
+    { name: "Urban", price: "On request", unit: "Fleets up to 20 vehicles, agent sales and QR on the phone.", cta: "Request a quote", items: ["Management portal", "POS app for agents", "M-Pesa and e-Mola", "Daily reports"] },
+    { name: "Intercity", price: "On request", unit: "Long routes with assigned seats and PDF tickets.", featured: true, badge: "Most requested", cta: "Request a quote", items: ["Everything in Urban", "Assigned seats and seat map", "PDF ticket with QR", "NFC and digital cards"] },
+    { name: "Institutional", price: "On request", unit: "Companies, schools and fleets under contract.", cta: "Talk to sales", items: ["Everything in Intercity", "Packages and subsidies", "Roles and permissions", "Dedicated local support"] },
+  ],
+  faqH2: "Questions operators ask",
+  faqLead: "If one is missing, write to us — we answer the same business day.",
+  faqs: [
+    { q: "Do we need to install equipment on the vehicles?", a: "No. Validation runs in the agent or driver POS app on an ordinary Android phone. NFC cards and QR work on the same device." },
+    { q: "Does it work without a connection?", a: "Sales need a connection for payment, but on-board validation tolerates outages: the record is kept on the device and syncs when the link returns." },
+    { q: "Which payments are accepted?", a: "M-Pesa and e-Mola through Payless, plus cash with an agent and wallet or card balance." },
+    { q: "Does the passenger need an account?", a: "No. Public purchase works without registration — the ticket arrives as a PDF with a QR code. Accounts and cards are optional for frequent passengers." },
+    { q: "Who has access to what?", a: "Roles with permissions per function and an audit record of who did what, across the whole portal." },
+  ],
+  formH2: "Let us see this on your operation.",
+  formLead: "We fill the platform with your routes and schedules and show the full flow — sale, boarding and daily close.",
+  formFacts: ["The platform with your own data", "Installed with no fleet retrofit", "Local support in Mozambique"],
+  formTitle: "Contact request",
+  fName: "Name", fCompany: "Company", fPhone: "Phone", fFleet: "Vehicles in fleet", fMsg: "Message",
+  formCta: "Send request",
+  formNote: "We reply on business days, 08:00 to 17:00 (CAT).",
+  sentTitle: "Request sent.", sentText: "The sales team replies on the next business day.",
+  commercial: "Sales",
+  ctaH2: "Bring BusUp to your fleet.",
+  ctaLead: "We show the platform running on your routes, your schedules and your numbers.",
+  ctaContact: "Talk to sales", ctaPricing: "See pricing",
+  mapPanel: "Fleet map", mapPlaceholder: "Screenshot of the portal's Leaflet/OpenStreetMap view to be added",
+  ecoLabel: "Built by",
+  ecoH2: "Who builds BusUp",
+  ecoLead: "BusUp is built by UpDigital, Limitada — a Mozambican software company based in Matola. The same engineering supports the group's other products.",
+  ecoNote: "Local support: the people who write the software are the people who answer the operator.",
+  ecoItems: [
+    { logo: "assets/logo-payup.png", name: "PayUp", url: "https://payup.updigital.co.mz" },
+    { logo: "assets/logo-cashup.png", name: "CashUp", url: "https://cashup.updigital.co.mz" },
+    { logo: "assets/logo-gateup.png", name: "GateUp", url: "https://gateup.updigital.co.mz" },
+    { logo: "assets/logo-vura.png", name: "Vura", url: "https://vura.updigital.co.mz" },
+    { logo: "assets/logo-ossoma.png", name: "Ossoma", url: "https://ossoma.updigital.co.mz" },
+  ],
+  footerAbout: "Digital ticketing platform for passenger transport. Built in Mozambique.",
+  footerProduct: "Product", footerAccess: "Access", footerContact: "Contact",
+  footerPortal: "Management portal", footerApps: "Download apps",
+  poweredBy: "Powered by", footerEco: "Ecosystem",
+  rights: "All rights reserved.",
+};
+
+class Component extends DCLogic {
+  state = { lang: null, step: 0, faq: 0, sent: false, menu: false };
+
+  get lang() { return this.state.lang || this.props.lang || "pt"; }
+
+  renderVals() {
+    const t = this.lang === "en" ? EN : PT;
+    const openStep = this.state.step;
+    const openFaq = this.state.faq;
+    return {
+      t,
+      isPt: this.lang !== "en",
+      isEn: this.lang === "en",
+      setPt: () => this.setState({ lang: "pt" }),
+      setEn: () => this.setState({ lang: "en" }),
+      toggleMenu: () => this.setState((s) => ({ menu: !s.menu })),
+      menuOpen: this.state.menu,
+      stats: t.stats,
+      ecoItems: t.ecoItems,
+      cases: t.cases,
+      plans: t.plans,
+      seats: Array.from({ length: 32 }, (_, i) => ({ taken: i < 22, free: i >= 22 })),
+      bars: [52, 68, 44, 80, 96, 62, 34].map((h) => ({ spacer: "", style: h })),
+      steps: t.steps.map((s, i) => ({
+        ...s,
+        open: openStep === i,
+        closed: openStep !== i,
+        toggle: () => this.setState({ step: openStep === i ? -1 : i }),
+      })),
+      faqs: t.faqs.map((q, i) => ({
+        ...q,
+        open: openFaq === i,
+        closed: openFaq !== i,
+        toggle: () => this.setState({ faq: openFaq === i ? -1 : i }),
+      })),
+      sent: this.state.sent,
+      notSent: !this.state.sent,
+      submit: (e) => { e.preventDefault(); this.setState({ sent: true }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

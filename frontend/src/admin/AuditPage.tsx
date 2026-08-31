@@ -64,7 +64,7 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
             </select>
           </label>
           <label className="field"><span>{t(lc, "search")}</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t(lc, "auditSearchHint")} /></label>
-          <label className="field"><span>{t(lc, "actor")}</span><input value={actor} onChange={(e) => setActor(e.target.value)} placeholder="Nome do actor" /></label>
+          <label className="field"><span>{t(lc, "actor")}</span><input value={actor} onChange={(e) => setActor(e.target.value)} placeholder={t(lc, "actorName")} /></label>
           <label className="field"><span>{t(lc, "from")}</span><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
           <label className="field"><span>{t(lc, "to")}</span><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
           <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>

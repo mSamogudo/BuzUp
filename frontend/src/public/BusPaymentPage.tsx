@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { t } from "../lib/i18n";
+import { useUi } from "../ui/UiPreferences";
 import { Link, useParams } from "react-router-dom";
 import { AlertCircle, ArrowRight, Bus, CheckCircle, MapPin, Phone, ShoppingCart, Ticket, Users } from "lucide-react";
 import { apiPublic } from "../lib/api";
@@ -39,6 +41,7 @@ interface CheckoutResult {
 const PHONE_REGEX = /^[0-9]{9}$/;
 
 export default function BusPaymentPage() {
+  const { locale: lc } = useUi();
   const { branding } = useBranding();
   const { vehicleUuid } = useParams<{ vehicleUuid: string }>();
   const [info, setInfo] = useState<BusInfo | null>(null);
@@ -160,7 +163,7 @@ export default function BusPaymentPage() {
         <img alt="BusUp" src={pickLogo(branding.primary_logo_url, "/assets/busup/logo-dark.png")} className="bus-pay-logo" />
         <div className="bus-pay-header-text">
           <strong>BusUp</strong>
-          <span>Comprar Bilhete</span>
+          <span>{t(lc, "buyTicket")}</span>
         </div>
       </header>
 
@@ -169,14 +172,14 @@ export default function BusPaymentPage() {
           <div className="bus-pay-error" role="alert">
             <AlertCircle size={16} />
             <span>{error}</span>
-            <button onClick={() => setError("")} type="button" aria-label="Fechar">&times;</button>
+            <button onClick={() => setError("")} type="button" aria-label={t(lc, "close")}>&times;</button>
           </div>
         )}
 
         {loading ? (
           <section className="bus-pay-card bus-pay-empty">
             <Bus size={32} />
-            <p>A carregar...</p>
+            <p>{t(lc, "loading")}</p>
           </section>
         ) : !info || !trip ? (
           <section className="bus-pay-card bus-pay-empty">
@@ -189,16 +192,16 @@ export default function BusPaymentPage() {
             <h2>{result.payment_status === "confirmed" ? "Bilhete Emitido" : "Pedido Recebido"}</h2>
             <p>{result.detail_message}</p>
             <div className="bus-pay-receipt">
-              <div><span>Referencia</span><strong>{result.checkout_reference}</strong></div>
-              <div><span>Total</span><strong>{result.total_amount} MZN</strong></div>
+              <div><span>{t(lc, "reference")}</span><strong>{result.checkout_reference}</strong></div>
+              <div><span>{t(lc, "total")}</span><strong>{result.total_amount} MZN</strong></div>
             </div>
             {result.status === "issued" && result.ticket_url && (
               <a className="bus-pay-btn" href={result.ticket_url} target="_blank" rel="noreferrer">
-                <Ticket size={18} /> Ver Bilhete
+                <Ticket size={18} /> {t(lc, "viewTicket")}
               </a>
             )}
             <button className="bus-pay-btn-outline" onClick={resetForm} type="button">
-              Novo Pedido
+              {t(lc, "newRequest")}
             </button>
           </section>
         ) : (
@@ -213,7 +216,7 @@ export default function BusPaymentPage() {
 
             {precisaFluxoCompleto ? (
               <section className="bus-pay-card bus-pay-handoff">
-                <h2>Esta viagem tem lugar marcado</h2>
+                <h2>{t(lc, "seatedTripHint")}</h2>
                 <p>
                   Numa carreira {trip.service_type === "international" ? "internacional" : "interprovincial"}{" "}
                   o bilhete é nominal: leva o seu lugar, o nome de quem viaja, o
@@ -221,39 +224,39 @@ export default function BusPaymentPage() {
                   completa — o percurso vai preenchido.
                 </p>
                 <label className="bus-pay-field">
-                  <span><MapPin size={14} /> Origem</span>
+                  <span><MapPin size={14} /> {t(lc, "origin")}</span>
                   <select value={originId}
                     onChange={(e) => { const v = e.target.value; setOriginId(v); if (v && v === destId) setDestId(""); }}>
-                    <option value="">Seleccione</option>
+                    <option value="">{t(lc, "select")}</option>
                     {trip.stops.filter((st) => String(st.id) !== destId).map((st) => (
                       <option key={st.id} value={st.id}>{st.name}</option>
                     ))}
                   </select>
                 </label>
                 <label className="bus-pay-field">
-                  <span><MapPin size={14} /> Destino</span>
+                  <span><MapPin size={14} /> {t(lc, "destination")}</span>
                   <select value={destId} onChange={(e) => setDestId(e.target.value)}>
-                    <option value="">Seleccione</option>
+                    <option value="">{t(lc, "select")}</option>
                     {trip.stops.filter((st) => String(st.id) !== originId).map((st) => (
                       <option key={st.id} value={st.id}>{st.name}</option>
                     ))}
                   </select>
                 </label>
                 <Link className="bus-pay-btn" to={linkFluxoCompleto()}>
-                  Continuar a compra <ArrowRight size={18} />
+                  {t(lc, "continuePurchase")} <ArrowRight size={18} />
                 </Link>
               </section>
             ) : (
             <section className="bus-pay-card">
               <form className="bus-pay-form" onSubmit={handleSubmit}>
                 <label className="bus-pay-field">
-                  <span><MapPin size={14} /> Origem</span>
+                  <span><MapPin size={14} /> {t(lc, "origin")}</span>
                   <select
                     value={originId}
                     onChange={(e) => { const v = e.target.value; setOriginId(v); if (v && v === destId) setDestId(""); }}
                     required
                   >
-                    <option value="">Seleccione</option>
+                    <option value="">{t(lc, "select")}</option>
                     {trip.stops.filter((s) => String(s.id) !== destId).map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -261,13 +264,13 @@ export default function BusPaymentPage() {
                 </label>
 
                 <label className="bus-pay-field">
-                  <span><MapPin size={14} /> Destino</span>
+                  <span><MapPin size={14} /> {t(lc, "destination")}</span>
                   <select
                     value={destId}
                     onChange={(e) => { const v = e.target.value; setDestId(v); if (v && v === originId) setOriginId(""); }}
                     required
                   >
-                    <option value="">Seleccione</option>
+                    <option value="">{t(lc, "select")}</option>
                     {trip.stops.filter((s) => String(s.id) !== originId).map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -275,7 +278,7 @@ export default function BusPaymentPage() {
                 </label>
 
                 <label className="bus-pay-field">
-                  <span><Users size={14} /> Quantidade</span>
+                  <span><Users size={14} /> {t(lc, "quantity")}</span>
                   <input
                     type="number"
                     inputMode="numeric"
@@ -289,7 +292,7 @@ export default function BusPaymentPage() {
                 </label>
 
                 <label className="bus-pay-field">
-                  <span><Phone size={14} /> Telefone (9 digitos)</span>
+                  <span><Phone size={14} /> {t(lc, "phone9Hint")}</span>
                   <input
                     type="tel"
                     inputMode="numeric"
@@ -309,7 +312,7 @@ export default function BusPaymentPage() {
                     <span>
                       Li e aceito os{" "}
                       <button type="button" className="bus-pay-terms-link"
-                        onClick={() => setTermosAbertos(true)}>Termos e Condições</button>
+                        onClick={() => setTermosAbertos(true)}>{t(lc, "termsAndConditions")}</button>
                       {branding.company_name ? ` da ${branding.company_name}` : ""}.
                     </span>
                   </label>

@@ -1,4 +1,6 @@
 import { Pause, Play, QrCode, Ticket } from "lucide-react";
+import { useUi } from "../../ui/UiPreferences";
+import { t, type Locale } from "../../lib/i18n";
 import { formatCount, formatCurrency, formatDateTime } from "../../lib/format";
 import { DataTable, MetricCard, type TableColumn } from "../../ui/common";
 import { shortTime } from "./theme";
@@ -14,60 +16,53 @@ import type {
  * transportes: recargas ≠ receita. O backend separa-as de propósito e aqui
  * mantemos essa leitura visível em vez de a esconder num tooltip. */
 export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: PackagesBlock }) {
+  const { locale: lc } = useUi();
   const completion = k.trips_total ? Math.round((k.trips_completed / k.trips_total) * 100) : 0;
   return (
     <>
       <div className="admin-metric-grid">
         <MetricCard
-          detail="M-Pesa, e-Mola e numerário recebidos"
-          label="Entradas de dinheiro"
+          detail={t(lc, "cashInHint")}
+          label={t(lc, "cashIn")}
           value={formatCurrency(k.cash_in)}
         />
         <MetricCard
-          detail="Bilhetes + validações — o dinheiro que virou viagem"
-          label="Receita de transporte"
+          detail={t(lc, "transportRevenueHint")}
+          label={t(lc, "transportRevenue")}
           value={formatCurrency(k.transport_revenue)}
         />
         <MetricCard
           detail={formatCurrency(k.ticket_revenue)}
-          label="Bilhetes vendidos"
+          label={t(lc, "ticketsSoldLabel")}
           value={formatCount(k.tickets_sold)}
         />
         <MetricCard
           detail={formatCurrency(k.validation_revenue)}
-          label="Validações"
+          label={t(lc, "validations")}
           value={formatCount(k.validations)}
         />
         <MetricCard
-          detail="Receita de bilhetes ÷ bilhetes emitidos"
-          label="Bilhete médio"
+          detail={t(lc, "averageTicketHint")}
+          label={t(lc, "averageTicket")}
           value={formatCurrency(k.avg_ticket)}
         />
         <MetricCard
-          detail="Saldo carregado — vira receita quando o passageiro viaja"
-          label="Recargas"
+          detail={t(lc, "topUpsHint")}
+          label={t(lc, "topUps")}
           value={formatCurrency(k.topups_total)}
         />
         <MetricCard
-          detail={`${formatCount(k.trips_completed)} concluídas · ${completion}%`}
-          label="Viagens"
+          detail={`${formatCount(k.trips_completed)} ${t(lc, "completedPl").toLowerCase()} · ${completion}%`}
+          label={t(lc, "trips")}
           value={formatCount(k.trips_total)}
         />
         <MetricCard
-          detail={`${formatCount(packages.subscriptions)} subscrições no período`}
-          label="Pacotes activos"
+          detail={`${formatCount(packages.subscriptions)} ${t(lc, "subscriptions").toLowerCase()}`}
+          label={t(lc, "activePackages")}
           value={formatCount(packages.active_now)}
         />
       </div>
-      <p className="dash-kpi-note">
-        <strong>Entradas de dinheiro</strong> são os pagamentos confirmados nos canais externos
-        (M-Pesa, e-Mola, numerário), venham de recargas ou de bilhetes. <strong>Receita de
-        transporte</strong> é o serviço já prestado: bilhetes + validações. Uma recarga é
-        dinheiro recebido mas ainda em dívida ao passageiro — vira receita quando ele viaja,
-        por isso somar as duas contaria o mesmo dinheiro duas vezes. <strong>Recargas</strong>
-        mede o saldo creditado nas carteiras, que pode divergir das entradas quando há
-        créditos feitos fora dos canais de pagamento.
-      </p>
+      <p className="dash-kpi-note">{t(lc, "kpiNote")}</p>
     </>
   );
 }
@@ -76,34 +71,34 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
 /* Tabelas                                                             */
 /* ------------------------------------------------------------------ */
 
-const tripCols: TableColumn<TopTripRow>[] = [
-  { header: "Viagem", render: (r) => <strong>#{r.trip_id}</strong> },
-  { header: "Rota", render: (r) => r.route || "-" },
-  { header: "Partida", render: (r) => (r.departure ? formatDateTime(r.departure) : "-") },
-  { header: "Autocarro", render: (r) => r.vehicle || "-" },
-  { header: "Motorista", render: (r) => r.driver || "-" },
-  { header: "Passageiros", render: (r) => formatCount(r.passengers) },
-  { header: "Receita", render: (r) => formatCurrency(r.revenue) },
+const tripCols = (lc: Locale): TableColumn<TopTripRow>[] => [
+  { header: t(lc, "trip"), render: (r) => <strong>#{r.trip_id}</strong> },
+  { header: t(lc, "route"), render: (r) => r.route || "-" },
+  { header: t(lc, "departure"), render: (r) => (r.departure ? formatDateTime(r.departure) : "-") },
+  { header: t(lc, "bus"), render: (r) => r.vehicle || "-" },
+  { header: t(lc, "driver"), render: (r) => r.driver || "-" },
+  { header: t(lc, "passengers"), render: (r) => formatCount(r.passengers) },
+  { header: t(lc, "revenue"), render: (r) => formatCurrency(r.revenue) },
 ];
 
-const driverCols: TableColumn<TopDriverRow>[] = [
-  { header: "Motorista", render: (r) => <strong>{r.name || `#${r.driver_id}`}</strong> },
-  { header: "Viagens", render: (r) => formatCount(r.trips) },
-  { header: "Concluídas", render: (r) => formatCount(r.completed) },
-  { header: "Passageiros", render: (r) => formatCount(r.passengers) },
-  { header: "Receita", render: (r) => formatCurrency(r.revenue) },
+const driverCols = (lc: Locale): TableColumn<TopDriverRow>[] => [
+  { header: t(lc, "driver"), render: (r) => <strong>{r.name || `#${r.driver_id}`}</strong> },
+  { header: t(lc, "trips"), render: (r) => formatCount(r.trips) },
+  { header: t(lc, "completedPl"), render: (r) => formatCount(r.completed) },
+  { header: t(lc, "passengers"), render: (r) => formatCount(r.passengers) },
+  { header: t(lc, "revenue"), render: (r) => formatCurrency(r.revenue) },
 ];
 
-const agentCols: TableColumn<TopAgentRow>[] = [
-  { header: "Agente", render: (r) => <strong>{r.name || `#${r.agent_id}`}</strong> },
-  { header: "Vendas", render: (r) => formatCount(r.sales) },
-  { header: "Receita", render: (r) => formatCurrency(r.revenue) },
+const agentCols = (lc: Locale): TableColumn<TopAgentRow>[] => [
+  { header: t(lc, "agent"), render: (r) => <strong>{r.name || `#${r.agent_id}`}</strong> },
+  { header: t(lc, "sales"), render: (r) => formatCount(r.sales) },
+  { header: t(lc, "revenue"), render: (r) => formatCurrency(r.revenue) },
 ];
 
-const packageCols: TableColumn<PackagesBlock["by_package"][number]>[] = [
-  { header: "Pacote", render: (r) => <strong>{r.name || "-"}</strong> },
-  { header: "Subscrições", render: (r) => formatCount(r.count) },
-  { header: "Receita", render: (r) => formatCurrency(r.revenue) },
+const packageCols = (lc: Locale): TableColumn<PackagesBlock["by_package"][number]>[] => [
+  { header: t(lc, "package"), render: (r) => <strong>{r.name || "-"}</strong> },
+  { header: t(lc, "subscriptions"), render: (r) => formatCount(r.count) },
+  { header: t(lc, "revenue"), render: (r) => formatCurrency(r.revenue) },
 ];
 
 function Compact<T>({ columns, rows, rowKey, empty }: {
@@ -124,19 +119,23 @@ function Compact<T>({ columns, rows, rowKey, empty }: {
 }
 
 export function TopTripsTable({ rows }: { rows: TopTripRow[] }) {
-  return <Compact columns={tripCols} empty="Sem viagens com bilhetes no intervalo." rowKey={(r) => String(r.trip_id)} rows={rows} />;
+  const { locale: lc } = useUi();
+  return <Compact columns={tripCols(lc)} empty={t(lc, "noTripsWithTickets")} rowKey={(r) => String(r.trip_id)} rows={rows} />;
 }
 
 export function TopDriversTable({ rows }: { rows: TopDriverRow[] }) {
-  return <Compact columns={driverCols} empty="Sem motoristas com viagens no intervalo." rowKey={(r) => String(r.driver_id)} rows={rows} />;
+  const { locale: lc } = useUi();
+  return <Compact columns={driverCols(lc)} empty={t(lc, "noDriversWithTrips")} rowKey={(r) => String(r.driver_id)} rows={rows} />;
 }
 
 export function TopAgentsTable({ rows }: { rows: TopAgentRow[] }) {
-  return <Compact columns={agentCols} empty="Sem vendas de agentes no intervalo." rowKey={(r) => String(r.agent_id)} rows={rows} />;
+  const { locale: lc } = useUi();
+  return <Compact columns={agentCols(lc)} empty={t(lc, "noAgentSales")} rowKey={(r) => String(r.agent_id)} rows={rows} />;
 }
 
 export function PackagesTable({ rows }: { rows: PackagesBlock["by_package"] }) {
-  return <Compact columns={packageCols} empty="Sem subscrições de pacotes no intervalo." rowKey={(r) => r.name || "-"} rows={rows} />;
+  const { locale: lc } = useUi();
+  return <Compact columns={packageCols(lc)} empty={t(lc, "noPackageSubs")} rowKey={(r) => r.name || "-"} rows={rows} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -144,24 +143,25 @@ export function PackagesTable({ rows }: { rows: PackagesBlock["by_package"] }) {
 /* ------------------------------------------------------------------ */
 
 export function AutoRefreshToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  const { locale: lc } = useUi();
   return (
     <button
       aria-pressed={on}
       className={`admin-chip-button${on ? " admin-chip-button-active" : ""}`}
       onClick={onToggle}
-      title={on ? "Desligar actualização automática" : "Actualizar automaticamente a cada 30 segundos"}
+      title={on ? t(lc, "autoRefreshOff") : t(lc, "autoRefreshOn")}
       type="button"
     >
       {on ? (
         <span className="dash-live">
           <span className="dash-live-dot" />
           <Pause size={11} style={{ verticalAlign: "-1px" }} />
-          Auto 30s
+          {t(lc, "auto30s")}
         </span>
       ) : (
         <span className="dash-live">
           <Play size={11} style={{ verticalAlign: "-1px" }} />
-          Auto 30s
+          {t(lc, "auto30s")}
         </span>
       )}
     </button>
@@ -169,7 +169,8 @@ export function AutoRefreshToggle({ on, onToggle }: { on: boolean; onToggle: () 
 }
 
 export function RecentActivity({ items }: { items: RecentItem[] }) {
-  if (!items.length) return <p className="dashboard-empty">Sem movimentos no intervalo seleccionado.</p>;
+  const { locale: lc } = useUi();
+  if (!items.length) return <p className="dashboard-empty">{t(lc, "noMovements")}</p>;
   return (
     <div className="dash-recent-list">
       {items.map((it, i) => (
@@ -178,8 +179,8 @@ export function RecentActivity({ items }: { items: RecentItem[] }) {
             {it.kind === "validation" ? <QrCode size={13} /> : <Ticket size={13} />}
           </span>
           <div className="dash-recent-body">
-            <strong>{it.label || (it.kind === "validation" ? "Validação" : "Bilhete")}</strong>
-            <span>{it.kind === "validation" ? "Validação" : "Bilhete"} · {shortTime(it.at)}</span>
+            <strong>{it.label || (it.kind === "validation" ? t(lc, "validation") : t(lc, "ticket"))}</strong>
+            <span>{it.kind === "validation" ? t(lc, "validation") : t(lc, "ticket")} · {shortTime(it.at)}</span>
           </div>
           <span className="dash-recent-amount">{formatCurrency(it.amount)}</span>
         </div>

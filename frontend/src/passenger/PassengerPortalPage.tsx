@@ -20,6 +20,7 @@ import {
 import { apiBlobUrl, apiDownload, apiFetch, apiPost, apiPublic } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { StatusBadge } from "../ui/common";
@@ -155,7 +156,7 @@ export default function PassengerPortalPage() {
       const res = await apiFetch("/api/auth/me/passenger-portal/", token);
       setData(res as PortalData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar dados.");
+      setError(mensagemDeErro(err, locale));
     }
   }, [token]);
 
@@ -220,7 +221,7 @@ export default function PassengerPortalPage() {
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
     if (originId && destId && originId === destId) {
-      showToast("danger", "O destino deve ser diferente da origem.");
+      showToast("danger", t(locale, "errSameOriginDest"));
       return;
     }
     setSearching(true);
@@ -235,7 +236,7 @@ export default function PassengerPortalPage() {
       setTrips(filtered);
       setHasSearched(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao pesquisar.");
+      setError(mensagemDeErro(err, locale));
     } finally {
       setSearching(false);
     }
@@ -300,13 +301,13 @@ export default function PassengerPortalPage() {
       setPaymentResult(res);
       const used = res.used_package;
       if (used) {
-        showToast("success", `Bilhete emitido com pacote ${used.name}.`);
+        showToast("success", t(locale, "okTicketIssued"));
       } else {
-        showToast("success", "Bilhete emitido com saldo da conta.");
+        showToast("success", t(locale, "okTicketIssued"));
       }
       await Promise.all([loadPortal(), loadTransactions()]);
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao comprar bilhete.");
+      showToast("danger", mensagemDeErro(err, locale));
     } finally {
       setSubmittingPayment(false);
     }
@@ -323,10 +324,10 @@ export default function PassengerPortalPage() {
         payer_phone: topupPhone,
       });
       setTopupResult(res);
-      showToast(res.status === "confirmed" ? "success" : "neutral", res.detail_message || "Recarga iniciada.");
+      showToast(res.status === "confirmed" ? "success" : "neutral", res.detail_message || t(locale, "okTopUpStarted"));
       await Promise.all([loadPortal(), loadTransactions()]);
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao iniciar recarga.");
+      showToast("danger", mensagemDeErro(err, locale));
     } finally {
       setTopupSubmitting(false);
     }
@@ -337,10 +338,10 @@ export default function PassengerPortalPage() {
     setPackageBuyingId(packageId);
     try {
       const res = await apiPost("/api/auth/me/passenger-portal/packages/subscribe/", token, { package_id: packageId });
-      showToast("success", `Pacote ${res.package_name || ""} activo.`);
+      showToast("success", t(locale, "okSubscribed"));
       await Promise.all([loadPortal(), loadTransactions()]);
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao comprar pacote.");
+      showToast("danger", mensagemDeErro(err, locale));
     } finally {
       setPackageBuyingId(null);
     }
@@ -361,7 +362,7 @@ export default function PassengerPortalPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao gerar extracto.");
+      showToast("danger", mensagemDeErro(err, locale));
     }
   }
 
@@ -414,11 +415,11 @@ export default function PassengerPortalPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="secondary-button" onClick={() => setWalletOpen(true)} type="button" aria-label="Minha Carteira">
+            <button className="secondary-button" onClick={() => setWalletOpen(true)} type="button" aria-label={t(locale, "myWallet")}>
               <Wallet size={16} />
               <span>{formatCurrency(data?.balance || "0")}</span>
             </button>
-            <button className="secondary-button" onClick={handleLogout} type="button" aria-label="Sair">
+            <button className="secondary-button" onClick={handleLogout} type="button" aria-label={t(locale, "signOut")}>
               <LogOut size={16} />
             </button>
           </div>
@@ -426,28 +427,28 @@ export default function PassengerPortalPage() {
 
         <section className="portal-wallet-grid">
           <article className="portal-wallet-card portal-wallet-card-strong">
-            <span>Saldo da conta</span>
+            <span>{t(locale, "accountBalance")}</span>
             <strong>{formatCurrency(data?.balance || "0")}</strong>
             <button className="primary-button" onClick={() => setWalletOpen(true)} type="button">
-              <Wallet size={16} /> Recarregar
+              <Wallet size={16} /> {t(locale, "topUp")}
             </button>
           </article>
           <article className="portal-wallet-card">
-            <span>Cartao</span>
+            <span>{t(locale, "card")}</span>
             <strong>{data?.card_number || "Sem cartao associado"}</strong>
-            <small>O validador desconta directamente deste saldo.</small>
+            <small>{t(locale, "validatorDeductsHint")}</small>
           </article>
           <article className="portal-wallet-card">
-            <span>Pacotes activos</span>
+            <span>{t(locale, "activePackages")}</span>
             <strong>{data?.active_packages?.length || 0}</strong>
-            <small>Pacotes e bilhetes tambem usam o saldo da conta.</small>
+            <small>{t(locale, "balanceUsedHint")}</small>
           </article>
         </section>
 
         <section className="portal-section">
           <h2 className="portal-section-title">
             <Search size={18} />
-            Pesquisar Autocarro
+            {t(locale, "searchBus")}
           </h2>
 
           <form className="co-form" onSubmit={handleSearch}>
@@ -456,7 +457,7 @@ export default function PassengerPortalPage() {
               value={originId}
               onChange={(e) => { const v = e.target.value; setOriginId(v); if (v && v === destId) setDestId(""); }}
             >
-              <option value="">Origem</option>
+              <option value="">{t(locale, "origin")}</option>
               {stops.filter((s) => String(s.id) !== destId).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -467,7 +468,7 @@ export default function PassengerPortalPage() {
               value={destId}
               onChange={(e) => { const v = e.target.value; setDestId(v); if (v && v === originId) setOriginId(""); }}
             >
-              <option value="">Destino</option>
+              <option value="">{t(locale, "destination")}</option>
               {stops.filter((s) => String(s.id) !== originId).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -483,7 +484,7 @@ export default function PassengerPortalPage() {
                   onChange={() => setDirection("outbound")}
                   style={{ display: "none" }}
                 />
-                <ArrowRight size={16} /> IDA
+                <ArrowRight size={16} /> {t(locale, "outboundCaps")}
               </label>
               <label className={`co-btn-outline${direction === "inbound" ? " " : ""}`} style={direction === "inbound" ? { borderColor: "#1D5FA7", color: "#1D5FA7", fontWeight: 700 } : undefined}>
                 <input
@@ -494,7 +495,7 @@ export default function PassengerPortalPage() {
                   onChange={() => setDirection("inbound")}
                   style={{ display: "none" }}
                 />
-                <ArrowLeft size={16} /> VOLTA
+                <ArrowLeft size={16} /> {t(locale, "inboundCaps")}
               </label>
             </div>
 
@@ -511,7 +512,7 @@ export default function PassengerPortalPage() {
               {trips.length} autocarro{trips.length === 1 ? "" : "s"} disponivel{trips.length === 1 ? "" : "s"}
             </h2>
             {trips.length === 0 ? (
-              <p className="portal-empty">Nenhum autocarro disponivel para essa pesquisa.</p>
+              <p className="portal-empty">{t(locale, "noBusFound")}</p>
             ) : (
               <div className="co-trips">
                 {trips.map((trip) => (
@@ -520,7 +521,7 @@ export default function PassengerPortalPage() {
                       <span className="co-trip-code">{trip.route_code}</span>
                       <div className="co-trip-details">
                         <strong>{trip.vehicle || trip.route_name}</strong>
-                        <span>{trip.route_name} - {trip.direction === "inbound" ? "VOLTA" : "IDA"}</span>
+                        <span>{trip.route_name} - {trip.direction === "inbound" ? t(locale, "inboundCaps") : t(locale, "outboundCaps")}</span>
                         <span>
                           <MapPin size={12} /> {trip.started_at ? formatDateTime(trip.started_at) : trip.departure ? formatDateTime(trip.departure) : "-"}
                         </span>
@@ -538,11 +539,11 @@ export default function PassengerPortalPage() {
       {selectedTrip && (
         <>
           <div className="admin-modal-overlay" onClick={closePaymentModal} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label="Comprar Bilhete">
+          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label={t(locale, "buyTicket")}>
             <div className="admin-modal-card">
               <div className="admin-modal-head">
                 <div>
-                  <h3>Comprar Bilhete</h3>
+                  <h3>{t(locale, "buyTicket")}</h3>
                   <p>{selectedTrip.route_code} - {selectedTrip.route_name}</p>
                 </div>
                 <button className="icon-button" onClick={closePaymentModal} type="button"><X size={18} /></button>
@@ -551,16 +552,16 @@ export default function PassengerPortalPage() {
                 {paymentResult ? (
                   <div className="co-success">
                     <CheckCircle size={48} className="co-success-icon" />
-                    <h2>Bilhete Emitido</h2>
-                    <p>O valor foi debitado do saldo da sua conta.</p>
+                    <h2>{t(locale, "ticketIssuedTitle")}</h2>
+                    <p>{t(locale, "chargedToBalance")}</p>
                     <div className="co-receipt">
-                      <div><span>Rota</span><strong>{paymentResult.route_code}</strong></div>
-                      <div><span>Total</span><strong>{formatCurrency(paymentResult.fare_amount)}</strong></div>
-                      <div><span>Estado</span><strong>{paymentResult.status}</strong></div>
+                      <div><span>{t(locale, "route")}</span><strong>{paymentResult.route_code}</strong></div>
+                      <div><span>{t(locale, "total")}</span><strong>{formatCurrency(paymentResult.fare_amount)}</strong></div>
+                      <div><span>{t(locale, "status")}</span><strong>{paymentResult.status}</strong></div>
                     </div>
                     {paymentResult.pdf_url && (
                       <a className="co-btn" href={paymentResult.pdf_url} target="_blank" rel="noreferrer">
-                        <Ticket size={18} /> Ver Bilhete
+                        <Ticket size={18} /> {t(locale, "viewTicket")}
                       </a>
                     )}
                   </div>
@@ -571,7 +572,7 @@ export default function PassengerPortalPage() {
                         <span className="co-trip-code">{selectedTrip.route_code}</span>
                         <div>
                           <strong>{selectedTrip.vehicle || selectedTrip.route_name}</strong>
-                          <span>{selectedTrip.direction === "inbound" ? "VOLTA" : "IDA"}</span>
+                          <span>{selectedTrip.direction === "inbound" ? t(locale, "inboundCaps") : t(locale, "outboundCaps")}</span>
                         </div>
                       </div>
                       <div className="co-pay-amount">
@@ -591,7 +592,7 @@ export default function PassengerPortalPage() {
                       <div className="portal-package-picker">
                         <label className="portal-payment-toggle">
                           <input type="checkbox" checked={usePackage} onChange={(e) => setUsePackage(e.target.checked)} />
-                          <span>Usar pacote especial se disponivel</span>
+                          <span>{t(locale, "useSpecialPackage")}</span>
                         </label>
                         {usePackage && (
                           <select
@@ -599,7 +600,7 @@ export default function PassengerPortalPage() {
                             value={selectedPackageId === null ? "" : String(selectedPackageId)}
                             onChange={(e) => setSelectedPackageId(e.target.value ? Number(e.target.value) : null)}
                           >
-                            <option value="">Automatico (escolhe melhor)</option>
+                            <option value="">{t(locale, "autoBestOption")}</option>
                             {(data?.active_packages || []).map((p) => (
                               <option key={p.id} value={p.id}>
                                 {p.package_name} {(p.trips_remaining || 0) > 0 ? `· ${p.trips_remaining} viagens` : p.special_balance ? `· ${formatCurrency(p.special_balance)} saldo` : ""}
@@ -620,7 +621,7 @@ export default function PassengerPortalPage() {
                           </>
                         ) : (
                           <>
-                            <strong>Pagamento por saldo da conta</strong>
+                            <strong>{t(locale, "payWithBalance")}</strong>
                             <span>Saldo actual: {formatCurrency(data?.balance || "0")}</span>
                           </>
                         )}
@@ -644,7 +645,7 @@ export default function PassengerPortalPage() {
             className="portal-wallet-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Minha Carteira"
+            aria-label={t(locale, "myWallet")}
             style={{
               position: "fixed",
               top: 0,
@@ -660,7 +661,7 @@ export default function PassengerPortalPage() {
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 700 }}>
-                <Wallet size={20} /> Minha Carteira
+                <Wallet size={20} /> {t(locale, "myWallet")}
               </h2>
               <button className="icon-button" onClick={() => setWalletOpen(false)} type="button"><X size={18} /></button>
             </div>
@@ -678,13 +679,13 @@ export default function PassengerPortalPage() {
             <section className="portal-section">
               <h3 className="portal-section-title">
                 <Wallet size={18} />
-                Recarregar conta
+                {t(locale, "topUpAccount")}
               </h3>
               <form className="co-form" onSubmit={handleTopup}>
                 <input
                   className="co-input"
                   inputMode="decimal"
-                  placeholder="Valor da recarga"
+                  placeholder={t(locale, "topUpAmount")}
                   required
                   type="number"
                   min={1}
@@ -696,19 +697,19 @@ export default function PassengerPortalPage() {
                   className="co-input"
                   required
                   type="tel"
-                  placeholder="Telefone M-Pesa/E-Mola"
+                  placeholder={t(locale, "mobileMoneyPhone")}
                   value={topupPhone}
                   onChange={(e) => setTopupPhone(e.target.value)}
                 />
                 <button className="co-btn" disabled={topupSubmitting || !topupAmount || !topupPhone} type="submit">
-                  <CreditCard size={18} />{topupSubmitting ? "A processar..." : "Recarregar"}
+                  <CreditCard size={18} />{topupSubmitting ? "A processar..." : t(locale, "topUp")}
                 </button>
               </form>
               {topupResult && (
                 <div className="co-receipt">
-                  <div><span>Referencia</span><strong>{topupResult.reference}</strong></div>
-                  <div><span>Estado</span><strong>{topupResult.status}</strong></div>
-                  <div><span>Valor</span><strong>{formatCurrency(topupResult.amount)}</strong></div>
+                  <div><span>{t(locale, "reference")}</span><strong>{topupResult.reference}</strong></div>
+                  <div><span>{t(locale, "status")}</span><strong>{topupResult.status}</strong></div>
+                  <div><span>{t(locale, "amount")}</span><strong>{formatCurrency(topupResult.amount)}</strong></div>
                 </div>
               )}
             </section>
@@ -717,21 +718,21 @@ export default function PassengerPortalPage() {
               <div className="portal-section-head">
                 <h3 className="portal-section-title">
                   <ReceiptText size={18} />
-                  Transaccoes
+                  {t(locale, "transactions")}
                 </h3>
                 <div className="portal-section-actions">
-                  <button className="icon-button" onClick={loadTransactions} title="Actualizar" type="button">
+                  <button className="icon-button" onClick={loadTransactions} title={t(locale, "refresh")} type="button">
                     <RefreshCw size={16} />
                   </button>
-                  <button className="icon-button" onClick={downloadExtract} title="Baixar extracto" type="button">
+                  <button className="icon-button" onClick={downloadExtract} title={t(locale, "downloadStatement")} type="button">
                     <Download size={16} />
                   </button>
                 </div>
               </div>
               {loadingTransactions ? (
-                <p className="portal-empty">A carregar transaccoes...</p>
+                <p className="portal-empty">{t(locale, "loadingTransactions")}</p>
               ) : transactions.length === 0 ? (
-                <p className="portal-empty">Sem transaccoes recentes.</p>
+                <p className="portal-empty">{t(locale, "noRecentTransactions")}</p>
               ) : (
                 <div className="portal-transactions-list">
                   {transactions.map((tx) => {
@@ -792,7 +793,7 @@ export default function PassengerPortalPage() {
                           style={{ width: 220, height: 220 }}
                         />
                         <small style={{ color: "#6B6356", textAlign: "center" }}>
-                          Mostre este QR ao agente para comprar bilhetes ou recarregar a sua carteira.
+                          {t(locale, "showQrHint")}
                         </small>
                         <button
                           className="primary-button"
@@ -801,7 +802,7 @@ export default function PassengerPortalPage() {
                             `/api/cards/${data.card_id}/qr.png`, token, `buzup-qr-${data.card_number}.png`,
                           ).catch(() => undefined)}
                         >
-                          Descarregar QR
+                          {t(locale, "downloadQr")}
                         </button>
                       </div>
                     )}
@@ -828,7 +829,7 @@ export default function PassengerPortalPage() {
                       <div className="portal-package-details">
                         {pkg.discount_type === "fixed_amount" && (
                           <span>
-                            Saldo especial: <strong>{formatCurrency(pkg.special_balance)}</strong>
+                            {t(locale, "specialBalance")} <strong>{formatCurrency(pkg.special_balance)}</strong>
                           </span>
                         )}
                         {pkg.trips_remaining !== null && (
@@ -851,7 +852,7 @@ export default function PassengerPortalPage() {
               <div className="portal-section-head portal-package-market-head">
                 <h3 className="portal-section-title">
                   <Gift size={18} />
-                  Comprar pacote
+                  {t(locale, "buyPackage")}
                 </h3>
               </div>
               <div className="portal-packages-list">
@@ -881,7 +882,7 @@ export default function PassengerPortalPage() {
                     </article>
                   ))}
                 {(data?.available_packages || []).filter((pkg) => !(data?.active_packages || []).some((active) => active.package_id === pkg.id && active.status === "active")).length === 0 ? (
-                  <p className="portal-empty">Sem pacotes disponiveis para compra.</p>
+                  <p className="portal-empty">{t(locale, "noPackagesToBuy")}</p>
                 ) : null}
               </div>
             </section>

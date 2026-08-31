@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { t } from "../lib/i18n";
+import { useUi } from "../ui/UiPreferences";
 import { ArrowLeft, Bus, CheckCircle, Clock, MapPin, Search, Ticket } from "lucide-react";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { useBranding, pickLogo } from "../lib/branding";
@@ -17,6 +19,7 @@ async function api(path: string, opts?: RequestInit) {
 }
 
 export default function CheckoutPage() {
+  const { locale: lc } = useUi();
   const { branding } = useBranding();
   const [step, setStep] = useState<Step>("search");
   const [routes, setRoutes] = useState<RouteOption[]>([]);
@@ -94,7 +97,7 @@ export default function CheckoutPage() {
         <img alt="BusUp" src={pickLogo(branding.primary_logo_url, "/assets/busup/logo-dark.png")} className="co-logo" />
         <div className="co-header-text">
           <strong>BusUp</strong>
-          <span>Bilhete Electronico</span>
+          <span>{t(lc, "eTicket")}</span>
         </div>
       </header>
 
@@ -104,19 +107,19 @@ export default function CheckoutPage() {
         {step === "search" && (
           <section className="co-card co-search">
             <div className="co-card-icon"><Search size={24} /></div>
-            <h2>Pesquisar Autocarro</h2>
+            <h2>{t(lc, "searchBus")}</h2>
             <form className="co-form" onSubmit={search}>
               <select className="co-select" value={routeId} onChange={(e) => setRouteId(e.target.value)}>
-                <option value="">Todas as rotas</option>
+                <option value="">{t(lc, "allRoutes")}</option>
                 {routes.map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
               </select>
               <div className="co-row">
                 <select className="co-select" value={originId} onChange={(e) => { const value = e.target.value; setOriginId(value); if (value && value === destId) setDestId(""); }}>
-                  <option value="">Origem</option>
+                  <option value="">{t(lc, "origin")}</option>
                   {stops.filter((s) => String(s.id) !== destId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 <select className="co-select" value={destId} onChange={(e) => { const value = e.target.value; setDestId(value); if (value && value === originId) setOriginId(""); }}>
-                  <option value="">Destino</option>
+                  <option value="">{t(lc, "destination")}</option>
                   {stops.filter((s) => String(s.id) !== originId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
@@ -129,10 +132,10 @@ export default function CheckoutPage() {
 
         {step === "results" && (
           <section className="co-card">
-            <button className="co-back" onClick={() => setStep("search")} type="button"><ArrowLeft size={16} /> Alterar pesquisa</button>
+            <button className="co-back" onClick={() => setStep("search")} type="button"><ArrowLeft size={16} /> {t(lc, "changeSearch")}</button>
             <h2><Bus size={20} /> {trips.length} autocarros disponiveis</h2>
             {trips.length === 0 ? (
-              <div className="co-empty"><MapPin size={32} /><p>Nenhum autocarro disponivel.</p><button className="co-btn-outline" onClick={() => setStep("search")}>Nova pesquisa</button></div>
+              <div className="co-empty"><MapPin size={32} /><p>{t(lc, "noBusAvailable")}</p><button className="co-btn-outline" onClick={() => setStep("search")}>{t(lc, "newSearch")}</button></div>
             ) : (
               <div className="co-trips">
                 {trips.map((t) => (
@@ -155,7 +158,7 @@ export default function CheckoutPage() {
 
         {step === "payment" && selectedTrip && (
           <section className="co-card">
-            <button className="co-back" onClick={() => setStep("results")} type="button"><ArrowLeft size={16} /> Voltar</button>
+            <button className="co-back" onClick={() => setStep("results")} type="button"><ArrowLeft size={16} /> {t(lc, "back")}</button>
             <div className="co-pay-summary">
               <div className="co-pay-route">
                 <span className="co-trip-code">{selectedTrip.route_code}</span>
@@ -164,7 +167,7 @@ export default function CheckoutPage() {
               <div className="co-pay-amount">{formatCurrency(selectedTrip.fare_amount)}</div>
             </div>
             <form className="co-form" onSubmit={pay}>
-              <input className="co-input" required type="tel" placeholder="Telefone (84/85/86/87...)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="co-input" required type="tel" placeholder={t(lc, "phoneHint")} value={phone} onChange={(e) => setPhone(e.target.value)} />
               <div className="co-row">
                 <select className="co-select" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))}>
                   {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n} bilhete{n > 1 ? "s" : ""}</option>)}
@@ -184,17 +187,17 @@ export default function CheckoutPage() {
             <h2>{result.payment_status === "confirmed" ? "Bilhete Emitido!" : "Pagamento Pendente"}</h2>
             <p>{result.detail_message}</p>
             <div className="co-receipt">
-              <div><span>Referencia</span><strong>{result.checkout_reference}</strong></div>
-              <div><span>Total</span><strong>{formatCurrency(result.total_amount)}</strong></div>
+              <div><span>{t(lc, "reference")}</span><strong>{result.checkout_reference}</strong></div>
+              <div><span>{t(lc, "total")}</span><strong>{formatCurrency(result.total_amount)}</strong></div>
             </div>
             {result.status === "issued" && result.ticket_url && (
               <a className="co-btn" href={result.ticket_url} target="_blank" rel="noreferrer">
-                <Ticket size={18} /> Ver Bilhete
+                <Ticket size={18} /> {t(lc, "viewTicket")}
               </a>
             )}
-            <button className="co-btn-outline" onClick={reset} type="button">Nova Compra</button>
+            <button className="co-btn-outline" onClick={reset} type="button">{t(lc, "newPurchase")}</button>
             {result.payment_status === "pending" && (
-              <p className="co-pending">Confirme o pagamento na sua carteira movel.</p>
+              <p className="co-pending">{t(lc, "confirmOnWallet")}</p>
             )}
           </section>
         )}

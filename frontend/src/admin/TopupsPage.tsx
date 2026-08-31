@@ -74,12 +74,12 @@ export default function TopupsPage() {
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.reference || ""} fields={viewing ? [
         { label: t(lc, "reference"), value: viewing.reference },
-        { label: "Tipo", value: viewing.purpose.replace(/_/g, " ") },
+        { label: t(lc, "type"), value: viewing.purpose.replace(/_/g, " ") },
         { label: t(lc, "amount"), value: formatCurrency(viewing.amount, viewing.currency) },
         { label: t(lc, "passenger"), value: viewing.wallet_passenger_name || "-" },
         { label: t(lc, "phone"), value: viewing.wallet_passenger_phone || viewing.payer_phone },
         { label: t(lc, "provider"), value: viewing.provider || "-" },
-        { label: "Ref. Provedor", value: viewing.provider_reference || "-" },
+        { label: t(lc, "providerRef"), value: viewing.provider_reference || "-" },
         { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
         { label: t(lc, "confirmed"), value: formatDateTime(viewing.confirmed_at) },
         { label: t(lc, "created"), value: formatDateTime(viewing.created_at) },

@@ -1,7 +1,8 @@
 import { useCallback, useState, type FormEvent } from "react";
 import { Eye, KeyRound, Pencil, Plus, Power, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
-import { t } from "../lib/i18n";
+import { t, type Locale, type TranslationKey } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -12,42 +13,36 @@ import { useConfirm } from "../ui/ConfirmDialog";
 interface UserRecord { id: number; uuid: string; username: string; email: string; phone: string; first_name: string; last_name: string; is_active: boolean; roles: { id: number; role_id: number; role_name: string; role_code: string }[]; created_at: string; }
 interface RoleRecord { id: number; uuid: string; name: string; code: string; permissions: string[]; description: string; is_system: boolean; }
 
-const ALL_PERMISSIONS = [
-  { key: "passengers.read", label: "Passageiros: Visualizar" },
-  { key: "passengers.manage", label: "Passageiros: Gerir" },
-  { key: "wallets.read", label: "Carteiras: Visualizar" },
-  { key: "wallets.manage", label: "Carteiras: Gerir" },
-  { key: "cards.read", label: "Cartoes: Visualizar" },
-  { key: "cards.manage", label: "Cartoes: Gerir" },
-  { key: "routes.read", label: "Rotas: Visualizar" },
-  { key: "routes.manage", label: "Rotas: Gerir" },
-  { key: "stops.read", label: "Paragens: Visualizar" },
-  { key: "stops.manage", label: "Paragens: Gerir" },
-  { key: "trips.read", label: "Viagens: Visualizar" },
-  { key: "trips.manage", label: "Viagens: Gerir" },
-  { key: "fares.read", label: "Tarifas: Visualizar" },
-  { key: "fares.manage", label: "Tarifas: Gerir" },
-  { key: "vehicles.read", label: "Veiculos: Visualizar" },
-  { key: "vehicles.manage", label: "Veiculos: Gerir" },
-  { key: "drivers.read", label: "Motoristas: Visualizar" },
-  { key: "drivers.manage", label: "Motoristas: Gerir" },
-  { key: "devices.read", label: "Terminais: Visualizar" },
-  { key: "devices.manage", label: "Terminais: Gerir" },
-  { key: "payments.read", label: "Pagamentos: Visualizar" },
-  { key: "payments.manage", label: "Pagamentos: Gerir" },
-  { key: "validations.read", label: "Validacoes: Visualizar" },
-  { key: "reports.read", label: "Relatorios: Visualizar" },
-  { key: "reconciliation.read", label: "Reconciliacao: Visualizar" },
-  { key: "audit.read", label: "Auditoria: Visualizar" },
-  { key: "users.read", label: "Utilizadores: Visualizar" },
-  { key: "users.manage", label: "Utilizadores: Gerir" },
-  { key: "roles.read", label: "Roles: Visualizar" },
-  { key: "roles.manage", label: "Roles: Gerir" },
-  { key: "packages.read", label: "Pacotes: Visualizar" },
-  { key: "packages.manage", label: "Pacotes: Gerir" },
-  { key: "imports.manage", label: "Importacoes: Gerir" },
-  { key: "pos.operate", label: "POS: Operar" },
+// A etiqueta nasce do proprio codigo da permissao: "routes.manage" le-se
+// "Rotas: Gerir". Antes eram 34 etiquetas escritas a mao, so em portugues —
+// e cada permissao nova no backend chegava aqui sem nome nenhum.
+const AREAS: Record<string, TranslationKey> = {
+  passengers: "passengers", wallets: "wallets", cards: "cards", routes: "routes",
+  stops: "stops", trips: "trips", fares: "fares", vehicles: "vehicles",
+  drivers: "drivers", devices: "devices", payments: "payments",
+  validations: "validations", reports: "reports", reconciliation: "reconciliation",
+  audit: "audit", users: "users", roles: "permRoles", packages: "packages",
+  imports: "permImports", pos: "pos",
+};
+const ACCOES: Record<string, TranslationKey> = {
+  read: "permView", manage: "permManage", operate: "permOperate",
+};
+const PERMISSOES = [
+  "passengers.read", "passengers.manage", "wallets.read", "wallets.manage",
+  "cards.read", "cards.manage", "routes.read", "routes.manage",
+  "stops.read", "stops.manage", "trips.read", "trips.manage",
+  "fares.read", "fares.manage", "vehicles.read", "vehicles.manage",
+  "drivers.read", "drivers.manage", "devices.read", "devices.manage",
+  "payments.read", "payments.manage", "validations.read", "reports.read",
+  "reconciliation.read", "audit.read", "users.read", "users.manage",
+  "roles.read", "roles.manage", "packages.read", "packages.manage",
+  "imports.manage", "pos.operate",
 ];
+const permissoes = (lc: Locale) => PERMISSOES.map((key) => {
+  const [area, accao] = key.split(".");
+  const nome = AREAS[area] ? t(lc, AREAS[area]) : area;
+  return { key, label: `${nome}: ${ACCOES[accao] ? t(lc, ACCOES[accao]) : accao}` };
+});
 
 function UsersTab() {
   const { token } = useAuth();
@@ -100,41 +95,41 @@ function UsersTab() {
     try {
       if (editId) await apiPatch(`/api/admin/users/${editId}/`, token!, payload);
       else await apiPost("/api/admin/users/", token!, payload);
-      showToast("success", editId ? t(lc, "update") : t(lc, "create")); reset(); reload();
+      showToast("success", editId ? t(lc, "okUserUpdated") : t(lc, "okUserCreated")); reset(); reload();
     }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
   const handleResetPassword = async (user: UserRecord) => {
     const ok = await confirm({
-      title: "Repor senha",
-      message: `Repor a senha de ${user.username}? Uma nova senha sera gerada e comunicada ao utilizador.`,
+      title: t(lc, "resetPassword"),
+      message: t(lc, "confirmResetPassword", { n: user.username }),
       confirmLabel: "Repor",
     });
     if (!ok) return;
     try {
       const res = await apiPost(`/api/admin/users/${user.id}/reset-password/`, token!, {});
-      showToast("success", (res && res.detail) || "Senha reposta.");
+      showToast("success", (res && res.detail) || t(lc, "okPasswordReset"));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao repor senha.");
+      showToast("danger", mensagemDeErro(err, lc));
     }
   };
 
   const handleToggleActive = async (user: UserRecord) => {
     const ok = await confirm({
       title: user.is_active ? "Desactivar utilizador" : "Activar utilizador",
-      message: `${user.is_active ? "Desactivar" : "Activar"} ${user.username}?`,
+      message: t(lc, "confirmToggle", { a: user.is_active ? t(lc, "deactivate") : t(lc, "activate"), n: user.username }),
       tone: user.is_active ? "danger" : "default",
       confirmLabel: user.is_active ? "Desactivar" : "Activar",
     });
     if (!ok) return;
     try {
       await apiPost(`/api/admin/users/${user.id}/toggle-active/`, token!, {});
-      showToast("success", user.is_active ? "Utilizador desactivado." : "Utilizador activado.");
+      showToast("success", user.is_active ? t(lc, "okUserDeactivated") : t(lc, "okUserActivated"));
       reload();
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro.");
+      showToast("danger", mensagemDeErro(err, lc));
     }
   };
 
@@ -151,7 +146,7 @@ function UsersTab() {
           <div className="admin-inline-actions">
             <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
             <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => openEdit(r)} />
-            <TableActionButton icon={<KeyRound size={15} />} label="Repor senha" onClick={() => void handleResetPassword(r)} />
+            <TableActionButton icon={<KeyRound size={15} />} label={t(lc, "resetPassword")} onClick={() => void handleResetPassword(r)} />
             <TableActionButton icon={<Power size={15} />} label={r.is_active ? "Desactivar" : "Activar"} onClick={() => void handleToggleActive(r)} tone={r.is_active ? "danger" : "default"} />
           </div>
         )},
@@ -162,7 +157,7 @@ function UsersTab() {
         { label: t(lc, "email"), value: viewing.email },
         { label: t(lc, "phone"), value: viewing.phone || "-" },
         { label: t(lc, "status"), value: <StatusBadge value={viewing.is_active ? "active" : "inactive"} /> },
-        { label: "Roles", value: viewing.roles.map((r) => r.role_name).join(", ") || "-" },
+        { label: t(lc, "roles"), value: viewing.roles.map((r) => r.role_name).join(", ") || "-" },
       ] : []} />
 
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "edit") : t(lc, "create")}>
@@ -170,8 +165,8 @@ function UsersTab() {
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "username")}</span><input required value={form.username} onChange={(e) => f("username", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "email")}</span><input required type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
-            <label className="field"><span>Nome</span><input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
-            <label className="field"><span>Apelido</span><input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "name")}</span><input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "lastName")}</span><input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "phone")}</span><input value={form.phone} onChange={(e) => f("phone", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "status")}</span><select value={form.is_active ? "active" : "inactive"} onChange={(e) => f("is_active", e.target.value === "active")}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option></select></label>
             <label className="field"><span>{t(lc, "password")}</span><input required={!editId} type="password" minLength={8} placeholder={editId ? "Deixar vazio para manter" : ""} value={form.password} onChange={(e) => f("password", e.target.value)} /></label>
@@ -221,7 +216,7 @@ function RolesTab() {
     });
   };
 
-  const selectAll = () => setSelectedPerms(new Set(ALL_PERMISSIONS.map((p) => p.key)));
+  const selectAll = () => setSelectedPerms(new Set(permissoes(lc).map((p) => p.key)));
   const clearAll = () => setSelectedPerms(new Set());
 
   const submit = async (e: FormEvent) => {
@@ -230,25 +225,25 @@ function RolesTab() {
     try {
       if (editId) await apiPatch(`/api/admin/roles/${editId}/`, token!, payload);
       else await apiPost("/api/admin/roles/", token!, payload);
-      showToast("success", editId ? t(lc, "update") : t(lc, "create")); reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", editId ? t(lc, "okRoleUpdated") : t(lc, "okRoleCreated")); reset(); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
   return (
-    <SectionCard title="Roles">
+    <SectionCard title={t(lc, "roles")}>
       <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
         <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
         <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "create")}</button>
       </div>
       <DataTable columns={[
         { header: t(lc, "name"), sortKey: "name", render: (r: RoleRecord) => <TablePrimaryCell title={r.name} subtitle={r.code} /> },
-        { header: "Permissoes", render: (r: RoleRecord) => `${r.permissions.includes("*") ? "Todas" : r.permissions.length}` },
+        { header: t(lc, "permissions"), render: (r: RoleRecord) => `${r.permissions.includes("*") ? t(lc, "allRoutes") : r.permissions.length}` },
         { header: t(lc, "actions"), className: "table-actions-cell", render: (r: RoleRecord) => (
           <div className="admin-inline-actions">
             <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
             <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setFormName(r.name); setFormDesc(r.description); setSelectedPerms(new Set(r.permissions)); setModalOpen(true); }} />
-            {!r.is_system && <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { if (!confirm(`${t(lc, "delete")} ${r.name}?`)) return; try { await apiDelete(`/api/admin/roles/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />}
+            {!r.is_system && <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { if (!confirm(t(lc, "confirmDelete", { n: r.name }))) return; try { await apiDelete(`/api/admin/roles/${r.id}/`, token!); showToast("success", t(lc, "okRoleDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } }} tone="danger" />}
           </div>
         )},
       ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noData")} />
@@ -257,24 +252,24 @@ function RolesTab() {
         { label: t(lc, "name"), value: viewing.name },
         { label: t(lc, "code"), value: viewing.code },
         { label: t(lc, "description"), value: viewing.description || "-" },
-        { label: "Permissoes", value: viewing.permissions.includes("*") ? "Todas (Super Admin)" : viewing.permissions.join(", ") },
+        { label: t(lc, "permissions"), value: viewing.permissions.includes("*") ? "Todas (Super Admin)" : viewing.permissions.join(", ") },
       ] : []} />
 
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "edit") + " Role" : "Nova Role"}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field admin-field-span-full"><span>{t(lc, "name")}</span><input required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Gestor de Frota" /></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "name")}</span><input required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t(lc, "egRoleName")} /></label>
             <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} /></label>
           </div>
           <div style={{ margin: "12px 0 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <strong style={{ fontSize: 13 }}>Permissoes ({selectedPerms.size})</strong>
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="secondary-button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={selectAll}>Todas</button>
-              <button type="button" className="secondary-button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={clearAll}>Limpar</button>
+              <button type="button" className="secondary-button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={selectAll}>{t(lc, "allRoutes")}</button>
+              <button type="button" className="secondary-button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={clearAll}>{t(lc, "clear")}</button>
             </div>
           </div>
           <div className="perm-grid">
-            {ALL_PERMISSIONS.map((p) => (
+            {permissoes(lc).map((p) => (
               <label key={p.key} className="perm-check">
                 <input type="checkbox" checked={selectedPerms.has(p.key)} onChange={() => togglePerm(p.key)} />
                 <span>{p.label}</span>
@@ -299,7 +294,7 @@ export default function UsersPage() {
     <PageFrame kicker={t(lc, "management")} title={t(lc, "users")}>
       <TabBar items={[
         { key: "users", label: t(lc, "users") },
-        { key: "roles", label: "Roles" },
+        { key: "roles", label: t(lc, "roles") },
       ]} value={tab} onChange={setTab} />
       {tab === "users" && <UsersTab />}
       {tab === "roles" && <RolesTab />}

@@ -14,6 +14,7 @@ export const COPY = {
     skip: "Saltar para o conteúdo",
     openMenu: "Abrir menu",
     closeMenu: "Fechar menu",
+    language: "Idioma",
     themeLight: "Tema claro",
     themeDark: "Tema escuro",
     hero: {
@@ -105,6 +106,7 @@ export const COPY = {
       about: "Plataforma de bilhética digital para o transporte de passageiros. Desenvolvido em Moçambique.",
       product: "Produto", access: "Acesso", contact: "Contacto",
       features: "Funcionalidades", portal: "Portal de gestão", apps: "Descarregar apps",
+      appPassenger: "App do passageiro", appPos: "App POS",
       rights: "Todos os direitos reservados.",
     },
   },
@@ -118,6 +120,7 @@ export const COPY = {
     skip: "Skip to content",
     openMenu: "Open menu",
     closeMenu: "Close menu",
+    language: "Language",
     themeLight: "Light theme",
     themeDark: "Dark theme",
     hero: {
@@ -209,6 +212,7 @@ export const COPY = {
       about: "Digital ticketing platform for passenger transport. Built in Mozambique.",
       product: "Product", access: "Access", contact: "Contact",
       features: "Features", portal: "Management portal", apps: "Download apps",
+      appPassenger: "Passenger app", appPos: "POS app",
       rights: "All rights reserved.",
     },
   },

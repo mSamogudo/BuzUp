@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
+import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { mensagemDeErro } from "../lib/errors";
+import { useUi } from "../ui/UiPreferences";
 
 interface Schedule {
   id: number;
@@ -70,6 +73,7 @@ export default function SchedulesPage({
   registerActions?: (actions: { create: () => void; reload: () => void }) => void;
 }) {
   const { token } = useAuth();
+  const { locale: lc } = useUi();
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   const loader = useCallback(() => apiFetch("/api/schedules/", token!).then((d) => d.results || d), [token]);
@@ -124,7 +128,7 @@ export default function SchedulesPage({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.route_id) { showToast("danger", "Seleccione a rota."); return; }
+    if (!form.route_id) { showToast("danger", t(lc, "errSelectRoute")); return; }
     setBusy(true);
     try {
       const vehicle = form.vehicle_id ? Number(form.vehicle_id) : null;
@@ -143,22 +147,22 @@ export default function SchedulesPage({
         days_of_week: [...form.days].sort((a, b) => a - b),
         status: form.status,
       };
-      if (editId) { await apiPatch(`/api/schedules/${editId}/`, token!, payload); showToast("success", "Horário actualizado."); }
-      else { await apiPost("/api/schedules/", token!, payload); showToast("success", "Horário criado."); }
+      if (editId) { await apiPatch(`/api/schedules/${editId}/`, token!, payload); showToast("success", t(lc, "okScheduleUpdated")); }
+      else { await apiPost("/api/schedules/", token!, payload); showToast("success", t(lc, "okScheduleCreated")); }
       reset(); reload(); onChanged?.();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
   const remove = async (r: Schedule) => {
     const ok = await confirm({
-      title: "Eliminar horário",
-      message: `Tem a certeza que pretende eliminar o horário da rota ${r.route_code} (${formatTime(r.start_time)}–${formatTime(r.end_time)})?`,
+      title: t(lc, "deleteSchedule"),
+      message: t(lc, "confirmDelete", { n: `${r.route_code} ${formatTime(r.start_time)}–${formatTime(r.end_time)}` }),
       tone: "danger",
     });
     if (!ok) return;
-    try { await apiDelete(`/api/schedules/${r.id}/`, token!); showToast("success", "Horário eliminado."); reload(); onChanged?.(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiDelete(`/api/schedules/${r.id}/`, token!); showToast("success", t(lc, "okScheduleDeleted")); reload(); onChanged?.(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   // A página embutida não desenha cabeçalho; entrega os seus botões ao
@@ -171,63 +175,63 @@ export default function SchedulesPage({
 
   const body = (
     <>
-      <SectionCard title="Horários" description="Programações recorrentes por rota, usadas para gerar as viagens do dia.">
+      <SectionCard title={t(lc, "schedules")} description={t(lc, "schedulesHint")}>
         <DataTable columns={[
-          { header: "Rota", render: (r: Schedule) => <TablePrimaryCell title={`${r.route_code} - ${r.route_name}`} subtitle={r.agent_name ? `Agente: ${r.agent_name}` : undefined} /> },
-          { header: "Veículo", render: (r: Schedule) => r.vehicle_registration || "-" },
-          { header: "Motorista", render: (r: Schedule) => r.driver_name || "-" },
-          { header: "Janela", render: (r: Schedule) => `${formatTime(r.start_time)} – ${formatTime(r.end_time)}` },
-          { header: "Frequência", render: (r: Schedule) => `${r.frequency_minutes} min` },
-          { header: "Dias", render: (r: Schedule) => formatDays(r.days_of_week) },
-          { header: "Estado", render: (r: Schedule) => <StatusBadge value={r.status} /> },
-          { header: "Acções", className: "table-actions-cell", render: (r: Schedule) => (
+          { header: t(lc, "route"), render: (r: Schedule) => <TablePrimaryCell title={`${r.route_code} - ${r.route_name}`} subtitle={r.agent_name ? `Agente: ${r.agent_name}` : undefined} /> },
+          { header: t(lc, "vehicle"), render: (r: Schedule) => r.vehicle_registration || "-" },
+          { header: t(lc, "driver"), render: (r: Schedule) => r.driver_name || "-" },
+          { header: t(lc, "window"), render: (r: Schedule) => `${formatTime(r.start_time)} – ${formatTime(r.end_time)}` },
+          { header: t(lc, "frequency"), render: (r: Schedule) => `${r.frequency_minutes} min` },
+          { header: t(lc, "days"), render: (r: Schedule) => formatDays(r.days_of_week) },
+          { header: t(lc, "status"), render: (r: Schedule) => <StatusBadge value={r.status} /> },
+          { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Schedule) => (
             <div className="admin-inline-actions">
-              <TableActionButton icon={<Pencil size={15} />} label="Editar" onClick={() => openEdit(r)} />
-              <TableActionButton icon={<Trash2 size={15} />} label="Eliminar" onClick={() => remove(r)} tone="danger" />
+              <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => openEdit(r)} />
+              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={() => remove(r)} tone="danger" />
             </div>
           )},
-        ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage="Sem horários registados." />
+        ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noSchedules")} />
       </SectionCard>
 
-      <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar horário" : "Novo horário"}>
+      <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar horário" : t(lc, "newSchedule")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>Rota</span>
+            <label className="field"><span>{t(lc, "route")}</span>
               <select required value={form.route_id} onChange={(e) => f("route_id", e.target.value)}>
-                <option value="">Seleccione...</option>
+                <option value="">{t(lc, "select")}</option>
                 {routes.map((r) => <option key={r.id} value={r.id}>{r.code} - {r.name}</option>)}
               </select>
             </label>
-            <label className="field"><span>Veículo</span>
+            <label className="field"><span>{t(lc, "vehicle")}</span>
               <select value={form.vehicle_id} onChange={(e) => f("vehicle_id", e.target.value)}>
-                <option value="">Sem veículo</option>
+                <option value="">{t(lc, "noVehicle")}</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.registration}</option>)}
               </select>
             </label>
-            <label className="field"><span>Motorista (opcional)</span>
+            <label className="field"><span>{t(lc, "driverOptional")}</span>
               <select value={form.driver_id} onChange={(e) => f("driver_id", e.target.value)}>
-                <option value="">Sem motorista</option>
+                <option value="">{t(lc, "noDriver")}</option>
                 {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
               </select>
             </label>
-            <label className="field"><span>Agente (opcional)</span>
+            <label className="field"><span>{t(lc, "agentOptional")}</span>
               <select value={form.agent_id} onChange={(e) => f("agent_id", e.target.value)}>
-                <option value="">Sem agente</option>
+                <option value="">{t(lc, "noAgent")}</option>
                 {agents.map((a) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
               </select>
             </label>
-            <label className="field"><span>Hora de início</span><input required type="time" value={form.start_time} onChange={(e) => f("start_time", e.target.value)} /></label>
-            <label className="field"><span>Hora de fim</span><input required type="time" value={form.end_time} onChange={(e) => f("end_time", e.target.value)} /></label>
-            <label className="field"><span>Frequência (minutos)</span><input required type="number" min={1} step={1} value={form.frequency_minutes} onChange={(e) => f("frequency_minutes", e.target.value)} /></label>
-            <label className="field"><span>Estado</span>
+            <label className="field"><span>{t(lc, "startTime")}</span><input required type="time" value={form.start_time} onChange={(e) => f("start_time", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "endTime")}</span><input required type="time" value={form.end_time} onChange={(e) => f("end_time", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "frequencyMinutes")}</span><input required type="number" min={1} step={1} value={form.frequency_minutes} onChange={(e) => f("frequency_minutes", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "status")}</span>
               <select value={form.status} onChange={(e) => f("status", e.target.value)}>
-                <option value="active">Activo</option>
-                <option value="inactive">Inactivo</option>
+                <option value="active">{t(lc, "active")}</option>
+                <option value="inactive">{t(lc, "inactive")}</option>
               </select>
             </label>
           </div>
           <div className="field">
-            <span>Dias da semana</span>
+            <span>{t(lc, "weekdays")}</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "0.35rem" }}>
               {DAY_LABELS.map((label, idx) => (
                 <label key={label} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", cursor: "pointer" }}>
@@ -236,11 +240,11 @@ export default function SchedulesPage({
                 </label>
               ))}
             </div>
-            <small style={{ opacity: 0.7 }}>Sem dias seleccionados = todos os dias.</small>
+            <small style={{ opacity: 0.7 }}>{t(lc, "noDaysHint")}</small>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? "A guardar..." : editId ? "Actualizar" : "Criar"}</button>
-            <button className="secondary-button" onClick={reset} type="button">Cancelar</button>
+            <button className="primary-button" disabled={busy} type="submit">{busy ? "A guardar..." : editId ? t(lc, "refresh") : "Criar"}</button>
+            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
           </div>
         </form>
       </AdminModal>
@@ -252,10 +256,10 @@ export default function SchedulesPage({
   if (embedded) return body;
 
   return (
-    <PageFrame kicker="Operação" title="Horários"
+    <PageFrame kicker={t(lc, "operations")} title={t(lc, "schedules")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>Actualizar</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> Novo horário</button>
+        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
+        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newSchedule")}</button>
       </>}>
       {body}
     </PageFrame>

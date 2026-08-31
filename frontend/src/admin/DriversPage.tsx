@@ -2,6 +2,7 @@ import { useCallback, useState, type FormEvent } from "react";
 import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -35,8 +36,8 @@ export default function DriversPage() {
       const payload: Record<string, unknown> = { ...form };
       if (!form.password) delete payload.password;
       if (editId) { await apiPatch(`/api/drivers/${editId}/`, token!, payload); } else { await apiPost("/api/drivers/", token!, payload); }
-      showToast("success", editId ? t(lc, "update") : t(lc, "create")); reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", editId ? t(lc, "okDriverUpdated") : t(lc, "okDriverCreated")); reset(); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -64,7 +65,7 @@ export default function DriversPage() {
             <div className="admin-inline-actions">
               <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => openEdit(r)} />
-              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar ${r.full_name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/drivers/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
+              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.full_name }), tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/drivers/${r.id}/`, token!); showToast("success", t(lc, "okDriverDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } }} tone="danger" />
             </div>
           )},
         ]} rows={drivers || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noDrivers")} />
@@ -97,7 +98,7 @@ export default function DriversPage() {
             <label className="field"><span>{t(lc, "active")}</span><select value={form.is_active ? "1" : "0"} onChange={(e) => f("is_active", e.target.value === "1")}><option value="1">{t(lc, "yes")}</option><option value="0">{t(lc, "no")}</option></select></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
+            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okDriverUpdated") : t(lc, "okDriverCreated")}</button>
             <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
           </div>
         </form>

@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { t } from "../lib/i18n";
+import { useUi } from "../ui/UiPreferences";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const WEEKDAYS = ["S", "T", "Q", "Q", "S", "S", "D"];
@@ -45,6 +47,7 @@ export default function TripCalendar({
   alreadyScheduled?: Set<string>;
   months?: number;
 }) {
+  const { locale: lc } = useUi();
   const hoje = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const [cursor, setCursor] = useState(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [arrastando, setArrastando] = useState<null | "marcar" | "desmarcar">(null);
@@ -95,11 +98,11 @@ export default function TripCalendar({
     <div className="bzcal" onMouseLeave={() => setArrastando(null)} onMouseUp={() => setArrastando(null)}>
       <div className="bzcal-bar">
         <div className="bzcal-nav-group">
-          <button type="button" className="bzcal-nav" disabled={!podeRecuar} aria-label="Mês anterior"
+          <button type="button" className="bzcal-nav" disabled={!podeRecuar} aria-label={t(lc, "prevMonth")}
             onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>
             <ChevronLeft size={15} />
           </button>
-          <button type="button" className="bzcal-nav" aria-label="Mês seguinte"
+          <button type="button" className="bzcal-nav" aria-label={t(lc, "nextMonth")}
             onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>
             <ChevronRight size={15} />
           </button>
@@ -110,7 +113,7 @@ export default function TripCalendar({
               onClick={() => alternarBloco(a.criterio)}>{a.rotulo}</button>
           ))}
           <button type="button" className="bzcal-shortcut is-quiet"
-            disabled={selected.length === 0} onClick={() => onChange([])}>Limpar</button>
+            disabled={selected.length === 0} onClick={() => onChange([])}>{t(lc, "clear")}</button>
         </div>
       </div>
 
@@ -160,7 +163,7 @@ export default function TripCalendar({
       </div>
 
       <p className="bzcal-hint">
-        Clique num dia, arraste para marcar vários, ou use a inicial do dia da semana.
+        {t(lc, "calendarHint")}
       </p>
     </div>
   );

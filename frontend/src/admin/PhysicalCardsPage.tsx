@@ -3,6 +3,7 @@ import { Download, Eye, Lock, RefreshCw, Upload, UserPlus } from "lucide-react";
 import { apiFetch, apiPost } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -33,16 +34,16 @@ export default function PhysicalCardsPage() {
 
   const block = async (uid: string) => {
     if (!confirm(`${t(lc, "block")}?`)) return;
-    try { await apiPost("/api/card-actions/block/", token!, { card_uid: uid }); showToast("success", t(lc, "block")); reload(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiPost("/api/card-actions/block/", token!, { card_uid: uid }); showToast("success", t(lc, "okCardBlocked")); reload(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const doAssign = async () => {
     if (!assignCard || !assignPassenger) return; setBusy(true);
     try {
       await apiPost("/api/card-actions/assign/", token!, { card_uid: assignCard.card_uid, passenger_id: Number(assignPassenger) });
-      showToast("success", t(lc, "activate")); setAssignModal(false); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } finally { setBusy(false); }
+      showToast("success", t(lc, "okCardAssigned")); setAssignModal(false); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } finally { setBusy(false); }
   };
 
   const doImport = async () => {
@@ -52,9 +53,9 @@ export default function PhysicalCardsPage() {
       const res = await fetch("/api/import/cards/", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Erro");
-      showToast("success", `${data.imported} cartoes importados.`);
+      showToast("success", t(lc, "okCardsImported", { n: data.imported }));
       setImportModal(false); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } finally { setBusy(false); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } finally { setBusy(false); }
   };
 
   const downloadTemplate = async () => {
@@ -69,8 +70,8 @@ export default function PhysicalCardsPage() {
   return (
     <PageFrame kicker={t(lc, "management")} title={t(lc, "physicalCards")}
       action={<>
-        <button className="icon-text-button" onClick={downloadTemplate} type="button"><Download size={15} /><span>Template</span></button>
-        <button className="icon-text-button" onClick={() => { setImportFile(null); setImportModal(true); }} type="button"><Upload size={15} /><span>Importar</span></button>
+        <button className="icon-text-button" onClick={downloadTemplate} type="button"><Download size={15} /><span>{t(lc, "template")}</span></button>
+        <button className="icon-text-button" onClick={() => { setImportFile(null); setImportModal(true); }} type="button"><Upload size={15} /><span>{t(lc, "importAction")}</span></button>
         <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
       </>}>
       <div className="admin-metric-grid">
@@ -90,7 +91,7 @@ export default function PhysicalCardsPage() {
         { header: t(lc, "actions"), className: "table-actions-cell", render: (r: CardRecord) => (
           <div className="admin-inline-actions">
             <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
-            {r.status === "inactive" && <TableActionButton icon={<UserPlus size={15} />} label="Atribuir" onClick={() => { setAssignCard(r); setAssignPassenger(""); setAssignModal(true); }} />}
+            {r.status === "inactive" && <TableActionButton icon={<UserPlus size={15} />} label={t(lc, "assign")} onClick={() => { setAssignCard(r); setAssignPassenger(""); setAssignModal(true); }} />}
             {r.status === "active" && <TableActionButton icon={<Lock size={15} />} label={t(lc, "block")} onClick={() => block(r.card_uid)} tone="danger" />}
           </div>
         )},
@@ -98,7 +99,7 @@ export default function PhysicalCardsPage() {
 
       <DetailDrawer open={!!viewing} onClose={() => setViewing(null)} title={viewing?.card_number || ""} fields={viewing ? [
         { label: t(lc, "cardNumber"), value: viewing.card_number },
-        { label: "UID", value: viewing.card_uid },
+        { label: t(lc, "uid"), value: viewing.card_uid },
         { label: t(lc, "cardTechnology"), value: viewing.card_technology },
         { label: t(lc, "status"), value: <StatusBadge value={viewing.status} /> },
         { label: t(lc, "passenger"), value: viewing.passenger_name || t(lc, "noPassenger") },
@@ -109,10 +110,10 @@ export default function PhysicalCardsPage() {
         { label: t(lc, "activated"), value: formatDateTime(viewing.activated_at) },
       ] : []} />
 
-      <AdminModal open={assignModal} onClose={() => setAssignModal(false)} title="Atribuir Cartao">
+      <AdminModal open={assignModal} onClose={() => setAssignModal(false)} title={t(lc, "assignCard")}>
         <div className="admin-form">
           <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>
-            Cartao <strong>{assignCard?.card_number}</strong> sera activado e vinculado ao passageiro.
+            {t(lc, "card")} <strong>{assignCard?.card_number}</strong> sera activado e vinculado ao passageiro.
           </p>
           <label className="field"><span>{t(lc, "passenger")}</span>
             <select value={assignPassenger} onChange={(e) => setAssignPassenger(e.target.value)}>
@@ -127,14 +128,14 @@ export default function PhysicalCardsPage() {
         </div>
       </AdminModal>
 
-      <AdminModal open={importModal} onClose={() => setImportModal(false)} title="Importar Cartoes Excel">
+      <AdminModal open={importModal} onClose={() => setImportModal(false)} title={t(lc, "importCards")}>
         <div className="admin-form">
-          <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>Descarregue o template Excel e preencha com os dados do lote.</p>
-          <label className="field"><span>Ficheiro Excel</span>
+          <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>{t(lc, "importCardsHint")}</p>
+          <label className="field"><span>{t(lc, "excelFileShort")}</span>
             <input type="file" accept=".xlsx,.xls" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
           </label>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy || !importFile} onClick={doImport} type="button">{busy ? "A importar..." : "Importar"}</button>
+            <button className="primary-button" disabled={busy || !importFile} onClick={doImport} type="button">{busy ? "A importar..." : t(lc, "importAction")}</button>
             <button className="secondary-button" onClick={() => setImportModal(false)} type="button">{t(lc, "cancel")}</button>
           </div>
         </div>

@@ -5,10 +5,13 @@ import {
   Plus, Repeat, Route as RouteIcon, Sparkles, TriangleAlert, UserRound, X,
 } from "lucide-react";
 import { apiFetch, apiPost } from "../lib/api";
+import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { PageFrame, useAsyncData } from "../ui/common";
 import TripCalendar from "./TripCalendar";
+import { mensagemDeErro } from "../lib/errors";
+import { useUi } from "../ui/UiPreferences";
 
 interface RouteOpt { id: number; code: string; name: string; service_type?: string }
 interface VehicleOpt { id: number; registration: string; seated_capacity?: number }
@@ -54,6 +57,7 @@ function diaCurto(iso: string): string {
  * diz sempre quantas partidas nascem e quanto isso é.
  */
 export default function TripSchedulerPage() {
+  const { locale: lc } = useUi();
   const { token } = useAuth();
   const navigate = useNavigate();
 
@@ -73,6 +77,9 @@ export default function TripSchedulerPage() {
   const [rota, setRota] = useState("");
   const [viatura, setViatura] = useState("");
   const [motorista, setMotorista] = useState("");
+  // Para que lado vai a partida. A rota tem as paragens nos dois sentidos; a
+  // viagem não tinha nenhum, e quem procurava a ida recebia também a volta.
+  const [sentido, setSentido] = useState<"outbound" | "inbound">("outbound");
   const [horas, setHoras] = useState<string[]>(["05:00"]);
   const [duracao, setDuracao] = useState("");
   const [dias, setDias] = useState<string[]>([]);
@@ -102,8 +109,9 @@ export default function TripSchedulerPage() {
     dates: dias,
     times: horasValidas,
     duration_minutes: duracao ? Number(duracao) : null,
+    direction: sentido,
     preview,
-  }), [rota, viatura, motorista, dias, horasValidas, duracao]);
+  }), [rota, viatura, motorista, dias, horasValidas, duracao, sentido]);
 
   useEffect(() => {
     if (modo !== "calendario" || !pronto || !token) { setPrevia(null); return; }
@@ -112,7 +120,7 @@ export default function TripSchedulerPage() {
       setACalcular(true);
       apiPost("/api/trips/schedule-days/", token, corpo(true))
         .then((r) => { if (!cancelado) { setPrevia(r as CalendarPreview); setErro(""); } })
-        .catch((e) => { if (!cancelado) { setPrevia(null); setErro(e instanceof Error ? e.message : "Erro"); } })
+        .catch((e) => { if (!cancelado) { setPrevia(null); setErro(mensagemDeErro(e, lc)); } })
         .finally(() => { if (!cancelado) setACalcular(false); });
     }, 220);
     return () => { cancelado = true; window.clearTimeout(id); };
@@ -127,7 +135,7 @@ export default function TripSchedulerPage() {
       if (horarioId !== "all") body.schedule_id = Number(horarioId);
       apiPost("/api/trips/generate/", token, body)
         .then((r) => { if (!cancelado) { setPreviaH(r as SchedulePreview); setErro(""); } })
-        .catch((e) => { if (!cancelado) { setPreviaH(null); setErro(e instanceof Error ? e.message : "Erro"); } })
+        .catch((e) => { if (!cancelado) { setPreviaH(null); setErro(mensagemDeErro(e, lc)); } })
         .finally(() => { if (!cancelado) setACalcular(false); });
     }, 220);
     return () => { cancelado = true; window.clearTimeout(id); };
@@ -140,16 +148,16 @@ export default function TripSchedulerPage() {
         const r = await apiPost("/api/trips/schedule-days/", token!, corpo(false));
         const n = Number(r?.created ?? 0);
         showToast(n > 0 ? "success" : "neutral",
-          n > 0 ? `${n} partida(s) programada(s).` : "Nada a criar: estas partidas já existem.");
+          n > 0 ? t(lc, "okTripsScheduled", { n }) : t(lc, "okNothingToSchedule"));
       } else {
         const body: Record<string, unknown> = { days: horizonte, date_from: desde };
         if (horarioId !== "all") body.schedule_id = Number(horarioId);
         const r = await apiPost("/api/trips/generate/", token!, body);
-        showToast("success", `${Number(r?.generated ?? 0)} viagem(ns) programada(s).`);
+        showToast("success", t(lc, "okTripsScheduled", { n: Number(r?.generated ?? 0) }));
       }
       navigate("/app/trips");
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao programar.");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setACriar(false);
     }
@@ -173,23 +181,23 @@ export default function TripSchedulerPage() {
 
   return (
     <PageFrame
-      kicker="Operação"
-      title="Programar viagens"
-      description="Defina a partida e marque os dias. Vê quantas nascem antes de confirmar."
+      kicker={t(lc, "operations")}
+      title={t(lc, "scheduleTrips")}
+      description={t(lc, "schedulerHint")}
       action={
         <button className="icon-text-button" type="button" onClick={() => navigate("/app/trips")}>
-          <ArrowLeft size={16} /><span>Voltar às viagens</span>
+          <ArrowLeft size={16} /><span>{t(lc, "backToTrips")}</span>
         </button>
       }
     >
-      <div className="bzsched-modes" role="tablist" aria-label="Modo de programação">
+      <div className="bzsched-modes" role="tablist" aria-label={t(lc, "schedulingMode")}>
         <button type="button" role="tab" aria-selected={modo === "calendario"}
           className={`bzsched-mode${modo === "calendario" ? " is-on" : ""}`}
           onClick={() => { setModo("calendario"); setErro(""); }}>
           <CalendarDays size={16} />
           <span>
-            <b>Calendário</b>
-            <small>Marque os dias, um a um</small>
+            <b>{t(lc, "calendar")}</b>
+            <small>{t(lc, "pickDaysOneByOne")}</small>
           </span>
         </button>
         <button type="button" role="tab" aria-selected={modo === "horario"}
@@ -197,7 +205,7 @@ export default function TripSchedulerPage() {
           onClick={() => { setModo("horario"); setErro(""); }}>
           <Repeat size={16} />
           <span>
-            <b>Horário recorrente</b>
+            <b>{t(lc, "recurringSchedule")}</b>
             <small>{activos > 0 ? `${activos} horário(s) activo(s)` : "Nenhum horário criado"}</small>
           </span>
         </button>
@@ -209,29 +217,46 @@ export default function TripSchedulerPage() {
           {modo === "calendario" ? (
             <>
               <div className="bzsched-card">
-                <h3 className="bzsched-h3"><RouteIcon size={14} /> A partida</h3>
+                <h3 className="bzsched-h3"><RouteIcon size={14} /> {t(lc, "departure")}</h3>
                 <label className="field">
-                  <span>Rota</span>
+                  <span>{t(lc, "route")}</span>
                   <select value={rota} onChange={(e) => setRota(e.target.value)} required>
-                    <option value="">Escolher…</option>
+                    <option value="">{t(lc, "choose")}</option>
                     {(routes || []).map((r) => (
                       <option key={r.id} value={r.id}>{r.code} — {r.name}</option>
                     ))}
                   </select>
                 </label>
+                <div className="field">
+                  <span>{t(lc, "direction")}</span>
+                  {/* A ida e a volta são duas programações. Fazê-las de uma vez,
+                      como duas horas do mesmo dia, criava partidas sem sentido
+                      declarado — e o passageiro que procurava Maputo→Nelspruit
+                      recebia também as de Nelspruit→Maputo. */}
+                  <div className="bzsched-dir">
+                    {([["outbound", "Ida"], ["inbound", "Volta"]] as const).map(([v, rotulo]) => (
+                      <button key={v} type="button"
+                        className={`bzsched-dir-b${sentido === v ? " is-on" : ""}`}
+                        aria-pressed={sentido === v}
+                        onClick={() => setSentido(v)}>
+                        {rotulo}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <label className="field">
-                  <span><Bus size={12} style={{ verticalAlign: -2 }} /> Autocarro</span>
+                  <span><Bus size={12} style={{ verticalAlign: -2 }} /> {t(lc, "bus")}</span>
                   <select value={viatura} onChange={(e) => setViatura(e.target.value)}>
-                    <option value="">Sem autocarro atribuído</option>
+                    <option value="">{t(lc, "noBusAssigned")}</option>
                     {(vehicles || []).map((v) => (
                       <option key={v.id} value={v.id}>{v.registration}</option>
                     ))}
                   </select>
                 </label>
                 <label className="field">
-                  <span><UserRound size={12} style={{ verticalAlign: -2 }} /> Motorista</span>
+                  <span><UserRound size={12} style={{ verticalAlign: -2 }} /> {t(lc, "driver")}</span>
                   <select value={motorista} onChange={(e) => setMotorista(e.target.value)}>
-                    <option value="">Sem motorista atribuído</option>
+                    <option value="">{t(lc, "noDriverAssigned")}</option>
                     {(drivers || []).map((d) => (
                       <option key={d.id} value={d.id}>{d.full_name}</option>
                     ))}
@@ -240,14 +265,14 @@ export default function TripSchedulerPage() {
               </div>
 
               <div className="bzsched-card">
-                <h3 className="bzsched-h3"><Clock size={14} /> Horas de partida</h3>
+                <h3 className="bzsched-h3"><Clock size={14} /> {t(lc, "departureTimes")}</h3>
                 <div className="bzsched-times">
                   {horas.map((h, i) => (
                     <div className="bzsched-time" key={i}>
                       <input type="time" value={h} required
                         onChange={(e) => setHoras(horas.map((x, j) => (j === i ? e.target.value : x)))} />
                       {horas.length > 1 ? (
-                        <button type="button" className="bzsched-time-x" aria-label="Remover hora"
+                        <button type="button" className="bzsched-time-x" aria-label={t(lc, "removeTime")}
                           onClick={() => setHoras(horas.filter((_, j) => j !== i))}>
                           <X size={13} />
                         </button>
@@ -262,10 +287,11 @@ export default function TripSchedulerPage() {
                   ) : null}
                 </div>
                 <p className="bzsched-note">
-                  Cada hora cria uma partida em cada dia marcado — é assim que se programa a ida e a volta.
+                  Cada hora cria uma partida em cada dia marcado, todas no sentido escolhido acima.
+                  A volta programa-se a seguir, trocando o sentido.
                 </p>
                 <label className="field">
-                  <span>Duração da viagem (minutos)</span>
+                  <span>{t(lc, "tripDuration")}</span>
                   <input type="number" min={1} max={2880} placeholder="ex.: 270"
                     value={duracao} onChange={(e) => setDuracao(e.target.value)} />
                 </label>
@@ -273,17 +299,17 @@ export default function TripSchedulerPage() {
             </>
           ) : (
             <div className="bzsched-card">
-              <h3 className="bzsched-h3"><Repeat size={14} /> Horário</h3>
+              <h3 className="bzsched-h3"><Repeat size={14} /> {t(lc, "schedule")}</h3>
               {activos === 0 ? (
                 <p className="bzsched-note">
                   Ainda não há horários recorrentes. Crie um no separador «Programações»,
-                  ou use o <b>Calendário</b> — é mais directo para uma carreira que sai
+                  ou use o <b>{t(lc, "calendar")}</b> — é mais directo para uma carreira que sai
                   uma vez por dia.
                 </p>
               ) : (
                 <>
                   <label className="field">
-                    <span>Qual</span>
+                    <span>{t(lc, "which")}</span>
                     <select value={horarioId} onChange={(e) => setHorarioId(e.target.value)}>
                       <option value="all">Todos os activos ({activos})</option>
                       {(schedules || []).map((s) => (
@@ -294,12 +320,12 @@ export default function TripSchedulerPage() {
                     </select>
                   </label>
                   <label className="field">
-                    <span>A partir de</span>
+                    <span>{t(lc, "startingFrom")}</span>
                     <input type="date" value={desde} min={todayISO()}
                       onChange={(e) => setDesde(e.target.value || todayISO())} />
                   </label>
                   <label className="field">
-                    <span>Horizonte</span>
+                    <span>{t(lc, "horizon")}</span>
                     <div className="bzsched-chips">
                       {HORIZONS.map((d) => (
                         <button key={d} type="button"
@@ -321,7 +347,7 @@ export default function TripSchedulerPage() {
           {modo === "calendario" ? (
             <div className="bzsched-card bzsched-card-flush">
               <div className="bzsched-main-head">
-                <h3 className="bzsched-h3"><CalendarDays size={14} /> Dias</h3>
+                <h3 className="bzsched-h3"><CalendarDays size={14} /> {t(lc, "days")}</h3>
                 <span className="bzsched-count-pill">
                   {dias.length} {dias.length === 1 ? "dia marcado" : "dias marcados"}
                 </span>
@@ -331,7 +357,7 @@ export default function TripSchedulerPage() {
           ) : (
             <div className="bzsched-card">
               <div className="bzsched-main-head">
-                <h3 className="bzsched-h3"><CalendarClock size={14} /> Distribuição</h3>
+                <h3 className="bzsched-h3"><CalendarClock size={14} /> {t(lc, "distribution")}</h3>
                 <span className="bzsched-count-pill">
                   {previaH ? `${diaCurto(previaH.date_from)} → ${diaCurto(previaH.date_to)}` : "—"}
                 </span>
@@ -353,7 +379,7 @@ export default function TripSchedulerPage() {
                   })}
                 </div>
               ) : (
-                <p className="bzsched-note">Sem nada a mostrar para este intervalo.</p>
+                <p className="bzsched-note">{t(lc, "nothingForRange")}</p>
               )}
               {previaH && previaH.by_schedule.length > 1 ? (
                 <ul className="bzsched-list">
@@ -373,7 +399,7 @@ export default function TripSchedulerPage() {
       <div className="bzsched-footer">
         <div className="bzsched-summary">
           {aCalcular ? (
-            <span className="bzsched-calc"><Loader2 className="bztw-spin" size={16} /> A calcular…</span>
+            <span className="bzsched-calc"><Loader2 className="bztw-spin" size={16} /> {t(lc, "calculating")}</span>
           ) : erro ? (
             <span className="bzsched-err"><TriangleAlert size={16} /> {erro}</span>
           ) : (

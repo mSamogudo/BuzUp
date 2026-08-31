@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import {
   Activity, BarChart3, Clock, CreditCard, Route as RouteIcon, RefreshCw, TrendingUp,
 } from "lucide-react";
@@ -9,9 +9,15 @@ import { useUi } from "../ui/UiPreferences";
 import { PageFrame, SectionCard, useAsyncData } from "../ui/common";
 import { SkeletonCard } from "../ui/Skeleton";
 import FilterBar, { countActive, defaultFilters } from "./dashboard/FilterBar";
-import {
-  ChartCard, HourlyChart, PaymentDonut, RevenueChart, TopRoutesChart,
-} from "./dashboard/Charts";
+import { ChartCard } from "./dashboard/ChartCard";
+// Os graficos sao 430 kB de recharts — mais do que todo o resto do portal
+// junto. O painel e o primeiro ecra depois de entrar, e os numeros que
+// interessam (entradas, receita, bilhetes) sao cartoes de texto: aparecem
+// de imediato, e os graficos chegam a seguir sem ninguem esperar por eles.
+const RevenueChart = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.RevenueChart })));
+const HourlyChart = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.HourlyChart })));
+const PaymentDonut = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.PaymentDonut })));
+const TopRoutesChart = lazy(() => import("./dashboard/Charts").then((m) => ({ default: m.TopRoutesChart })));
 import {
   AutoRefreshToggle, KpiStrip, PackagesTable, RecentActivity,
   TopAgentsTable, TopDriversTable, TopTripsTable,
@@ -41,7 +47,7 @@ function buildQuery(f: DashFilters): string {
 
 export default function DashboardPage() {
   const { token } = useAuth();
-  const { locale, theme } = useUi();
+  const { locale: lc, theme } = useUi();
   const c = chartTheme(theme);
 
   const [filters, setFilters] = useState<DashFilters>(defaultFilters);
@@ -120,7 +126,7 @@ export default function DashboardPage() {
           <AutoRefreshToggle on={autoRefresh} onToggle={() => setAutoRefresh((v) => !v)} />
           <button className="icon-text-button" disabled={loading} onClick={reload} type="button">
             <RefreshCw className={refreshing ? "button-spinner" : undefined} size={16} />
-            <span>{t(locale, "refresh")}</span>
+            <span>{t(lc, "refresh")}</span>
           </button>
         </div>
       }
@@ -129,8 +135,8 @@ export default function DashboardPage() {
           ? `Actualizado às ${lastLoad.toLocaleTimeString("pt-MZ", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}${autoRefresh ? " · auto 30s" : ""}`
           : undefined
       }
-      kicker={t(locale, "overview")}
-      title={t(locale, "dashboard")}
+      kicker={t(lc, "overview")}
+      title={t(lc, "dashboard")}
     >
       <FilterBar
         agents={agents}
@@ -153,10 +159,10 @@ export default function DashboardPage() {
 
       {error ? (
         <div className="dash-error" style={{ marginTop: 16 }}>
-          <strong>Não foi possível carregar o dashboard</strong>
+          <strong>{t(lc, "dashboardFailed")}</strong>
           <p>{error}</p>
           <button className="primary-button" onClick={reload} type="button">
-            <RefreshCw size={15} /> Tentar de novo
+            <RefreshCw size={15} /> {t(lc, "tryAgain")}
           </button>
         </div>
       ) : null}
@@ -189,58 +195,58 @@ export default function DashboardPage() {
           <div className="dash-grid dash-grid-2">
             <ChartCard
               icon={<TrendingUp size={18} />}
-              subtitle="Bilhetes e validações empilham (receita). Recargas ficam a tracejado — são saldo, não receita."
-              title="Receita por dia"
+              subtitle={t(lc, "revenueChartHint")}
+              title={t(lc, "revenuePerDay")}
             >
-              <RevenueChart c={c} data={data.revenue_series} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><RevenueChart c={c} data={data.revenue_series} /></Suspense>
             </ChartCard>
 
             <ChartCard
               icon={<CreditCard size={18} />}
-              subtitle="Pagamentos confirmados por canal"
-              title="Métodos de pagamento"
+              subtitle={t(lc, "confirmedByChannel")}
+              title={t(lc, "paymentMethods")}
             >
-              <PaymentDonut c={c} data={data.payment_methods} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><PaymentDonut c={c} data={data.payment_methods} /></Suspense>
             </ChartCard>
           </div>
 
           <div className="dash-grid dash-grid-2-even">
             <ChartCard
               icon={<Clock size={18} />}
-              subtitle="Validações por hora do dia — a barra cheia é o pico"
-              title="Distribuição horária"
+              subtitle={t(lc, "hourlyHint")}
+              title={t(lc, "hourlySpread")}
             >
-              <HourlyChart c={c} data={data.hourly} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><HourlyChart c={c} data={data.hourly} /></Suspense>
             </ChartCard>
 
             <ChartCard
               icon={<RouteIcon size={18} />}
-              subtitle="Receita por rota (bilhetes + validações)"
-              title="Top rotas"
+              subtitle={t(lc, "revenuePerRoute")}
+              title={t(lc, "topRoutes")}
             >
-              <TopRoutesChart c={c} data={data.top_routes} />
+              <Suspense fallback={<div className="dashboard-empty" style={{ minHeight: 220 }} />}><TopRoutesChart c={c} data={data.top_routes} /></Suspense>
             </ChartCard>
           </div>
 
           <div className="dash-grid dash-grid-2">
-            <SectionCard description="Viagens com mais receita no intervalo." title="Top viagens">
+            <SectionCard description={t(lc, "topTripsHint")} title={t(lc, "topTrips")}>
               <TopTripsTable rows={data.top_trips} />
             </SectionCard>
 
             <SectionCard
               description={autoRefresh ? "A actualizar a cada 30 segundos." : "Últimos movimentos no intervalo."}
-              title="Actividade recente"
+              title={t(lc, "recentActivity")}
             >
               <RecentActivity items={data.recent} />
             </SectionCard>
           </div>
 
           <div className="dash-grid dash-grid-2-even">
-            <SectionCard description="Ordenado por receita associada às viagens." title="Top motoristas">
+            <SectionCard description={t(lc, "sortedByTripRevenue")} title={t(lc, "topDrivers")}>
               <TopDriversTable rows={data.top_drivers} />
             </SectionCard>
 
-            <SectionCard description="Vendas de bilhetes emitidos por agente." title="Top agentes">
+            <SectionCard description={t(lc, "agentSalesHint")} title={t(lc, "topAgents")}>
               <TopAgentsTable rows={data.top_agents} />
             </SectionCard>
           </div>
@@ -248,7 +254,7 @@ export default function DashboardPage() {
           <div className="dash-grid">
             <SectionCard
               description={`${data.packages.subscriptions} subscrições no intervalo · ${data.packages.active_now} activas neste momento.`}
-              title="Pacotes"
+              title={t(lc, "packages")}
             >
               <PackagesTable rows={data.packages.by_package} />
             </SectionCard>
@@ -259,13 +265,13 @@ export default function DashboardPage() {
       {!firstLoad && !data && !error ? (
         <div className="admin-empty-state" style={{ marginTop: 16 }}>
           <BarChart3 size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />
-          {t(locale, "noData")}
+          {t(lc, "noData")}
         </div>
       ) : null}
 
       {refreshing ? (
         <p className="dash-kpi-note" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Activity size={12} /> A actualizar…
+          <Activity size={12} /> {t(lc, "refreshing")}
         </p>
       ) : null}
     </PageFrame>

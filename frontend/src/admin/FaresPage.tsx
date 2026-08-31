@@ -3,6 +3,7 @@ import { Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { formatCurrency } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -67,7 +68,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         });
         setContactsLoaded(true);
       })
-      .catch((err) => showToast("danger", err instanceof Error ? err.message : "Erro"));
+      .catch((err) => showToast("danger", mensagemDeErro(err, lc)));
   }, [tab, contactsLoaded, token]);
 
   useEffect(() => {
@@ -98,8 +99,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
     try {
       if (editP) await apiPatch(`/api/fare-products/${editP}/`, token!, pForm);
       else await apiPost("/api/fare-products/", token!, pForm);
-      showToast("success", editP ? t(lc, "update") : t(lc, "create")); setProdModal(false); setEditP(null); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", editP ? t(lc, "okProductUpdated") : t(lc, "okProductCreated")); setProdModal(false); setEditP(null); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -135,8 +136,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
     try {
       if (editR) await apiPatch(`/api/fare-rules/${editR}/`, token!, payload);
       else await apiPost("/api/fare-rules/", token!, payload);
-      showToast("success", editR ? t(lc, "update") : t(lc, "create")); setRuleModal(false); setEditR(null); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", editR ? t(lc, "okRuleUpdated") : t(lc, "okRuleCreated")); setRuleModal(false); setEditR(null); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -145,12 +146,12 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "fares")}>
       <TabBar items={[
-        { key: "matrix", label: "Tabela de preços" },
+        { key: "matrix", label: t(lc, "priceTable") },
         { key: "rules", label: t(lc, "fareRules"), count: (rules || []).length },
         { key: "products", label: t(lc, "fareProducts"), count: (products || []).length },
-        { key: "fees", label: "Taxas administrativas", count: (fees || []).length },
-        { key: "fx", label: "Câmbio", count: (fxRates || []).length },
-        { key: "contacts", label: "Contactos" },
+        { key: "fees", label: t(lc, "adminFees"), count: (fees || []).length },
+        { key: "fx", label: t(lc, "fxRate"), count: (fxRates || []).length },
+        { key: "contacts", label: t(lc, "contacts") },
       ]} value={tab} onChange={(k) => setTab(k as typeof tab)} />
 
       {tab === "matrix" && <FareMatrixTab routes={routeOpts || []} />}
@@ -167,7 +168,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewR(r)} />
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditR(r.id); setRForm({ fare_product: String(r.fare_product_id), route: r.route_id ? String(r.route_id) : "", origin_stop: r.origin_stop_id ? String(r.origin_stop_id) : "", destination_stop: r.destination_stop_id ? String(r.destination_stop_id) : "", calculation_method: r.calculation_method, fixed_amount: r.fixed_amount, amount_per_km: r.amount_per_km || "", min_amount: r.min_amount || "", max_amount: r.max_amount || "", distance_min_km: r.distance_min_km != null ? String(r.distance_min_km) : "", distance_max_km: r.distance_max_km != null ? String(r.distance_max_km) : "", passenger_class: r.passenger_class, priority: String(r.priority) }); setRuleModal(true); }} />
-                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: "Tem a certeza que pretende eliminar esta regra de tarifa?", tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-rules/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDeleteThis"), tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-rules/${r.id}/`, token!); showToast("success", t(lc, "okRuleDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } }} tone="danger" />
               </div>
             )},
           ]} rows={rules || []} rowKey={(r) => r.uuid} loading={lR} emptyMessage={t(lc, "noRules")} />
@@ -185,7 +186,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             { header: t(lc, "actions"), className: "table-actions-cell", render: (r: FareProduct) => (
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditP(r.id); setPForm({ name: r.name, product_type: r.product_type, status: r.status }); setProdModal(true); }} />
-                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar o produto ${r.name}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-products/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
+                <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.name }), tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/fare-products/${r.id}/`, token!); showToast("success", t(lc, "okProductDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } }} tone="danger" />
               </div>
             )},
           ]} rows={products || []} rowKey={(r) => r.uuid} loading={lP} emptyMessage={t(lc, "noProducts")} />
@@ -193,19 +194,19 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
       )}
 
       {tab === "fees" && (
-        <SectionCard title="Taxas administrativas" description="Configure as taxas cobradas no registo, recuperacao de cartao, multas e outras.">
+        <SectionCard title={t(lc, "adminFees")} description={t(lc, "adminFeesHint")}>
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
             <button className="primary-button" type="button" onClick={() => {
               setEditFee(null);
               setFeeForm({ code: "", name: "", kind: "card_issuance", amount: "0.00", currency: "MZN", description: "", is_active: true });
               setFeeModal(true);
-            }}><Plus size={15} /> Nova taxa</button>
+            }}><Plus size={15} /> {t(lc, "newFee")}</button>
           </div>
           <DataTable columns={[
-            { header: "Nome", render: (r: AdminFee) => <TablePrimaryCell title={r.name} subtitle={r.code} /> },
-            { header: "Tipo", render: (r: AdminFee) => <StatusBadge value={r.kind} /> },
-            { header: "Valor", render: (r: AdminFee) => `${formatCurrency(r.amount)} ${r.currency}` },
-            { header: "Estado", render: (r: AdminFee) => <StatusBadge value={r.is_active ? "active" : "inactive"} /> },
+            { header: t(lc, "name"), render: (r: AdminFee) => <TablePrimaryCell title={r.name} subtitle={r.code} /> },
+            { header: t(lc, "type"), render: (r: AdminFee) => <StatusBadge value={r.kind} /> },
+            { header: t(lc, "amount"), render: (r: AdminFee) => `${formatCurrency(r.amount)} ${r.currency}` },
+            { header: t(lc, "status"), render: (r: AdminFee) => <StatusBadge value={r.is_active ? "active" : "inactive"} /> },
             { header: t(lc, "actions"), className: "table-actions-cell", render: (r: AdminFee) => (
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => {
@@ -214,38 +215,38 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
                   setFeeModal(true);
                 }} />
                 <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => {
-                  const ok = await confirm({ title: t(lc, "delete"), message: `Eliminar taxa ${r.name}?`, tone: "danger" });
+                  const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.name }), tone: "danger" });
                   if (!ok) return;
                   try { await apiDelete(`/api/admin-fees/${r.id}/`, token!); reload(); }
-                  catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+                  catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
                 }} tone="danger" />
               </div>
             )},
-          ]} rows={fees || []} rowKey={(r) => r.uuid} loading={lF} emptyMessage="Sem taxas configuradas." />
+          ]} rows={fees || []} rowKey={(r) => r.uuid} loading={lF} emptyMessage={t(lc, "noFees")} />
         </SectionCard>
       )}
 
       {tab === "fx" && (
         <SectionCard
-          title="Taxa de câmbio"
-          description="Preços mostrados noutra moeda (ex.: rand nas rotas para a África do Sul). A cobrança é sempre em meticais — isto só afecta a visualização, e cada bilhete congela a taxa em vigor no acto da compra."
+          title={t(lc, "exchangeRate")}
+          description={t(lc, "fxHint")}
         >
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
             <button className="primary-button" type="button" onClick={() => {
               setEditFx(null);
               setFxForm({ currency: "ZAR", rate_to_mzn: "", rounding_step: "1", is_active: true, notes: "" });
               setFxModal(true);
-            }}><Plus size={15} /> Nova taxa de câmbio</button>
+            }}><Plus size={15} /> {t(lc, "newFxRate")}</button>
           </div>
           <DataTable columns={[
-            { header: "Moeda", render: (r: ExchangeRate) => <TablePrimaryCell title={r.currency} subtitle={r.notes || ""} /> },
-            { header: "Taxa", render: (r: ExchangeRate) => `1 ${r.currency} = ${formatCurrency(r.rate_to_mzn)} MZN` },
-            { header: "Arredondamento", render: (r: ExchangeRate) => (
+            { header: t(lc, "currency"), render: (r: ExchangeRate) => <TablePrimaryCell title={r.currency} subtitle={r.notes || ""} /> },
+            { header: t(lc, "fee"), render: (r: ExchangeRate) => `1 ${r.currency} = ${formatCurrency(r.rate_to_mzn)} MZN` },
+            { header: t(lc, "rounding"), render: (r: ExchangeRate) => (
                 Number(r.rounding_step) > 0.01
                   ? `Múltiplos de ${Number(r.rounding_step)}`
                   : "Ao cêntimo") },
-            { header: "Estado", render: (r: ExchangeRate) => <StatusBadge value={r.is_active ? "active" : "inactive"} /> },
-            { header: "Actualizada", render: (r: ExchangeRate) => new Date(r.updated_at).toLocaleString("pt-PT") },
+            { header: t(lc, "status"), render: (r: ExchangeRate) => <StatusBadge value={r.is_active ? "active" : "inactive"} /> },
+            { header: t(lc, "updatedAt"), render: (r: ExchangeRate) => new Date(r.updated_at).toLocaleString("pt-PT") },
             { header: t(lc, "actions"), className: "table-actions-cell", render: (r: ExchangeRate) => (
               <div className="admin-inline-actions">
                 <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => {
@@ -254,43 +255,43 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
                   setFxModal(true);
                 }} />
                 <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => {
-                  const ok = await confirm({ title: t(lc, "delete"), message: `Eliminar a taxa de câmbio ${r.currency}? Os preços passam a aparecer só em meticais.`, tone: "danger" });
+                  const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDeleteFx", { n: r.currency }), tone: "danger" });
                   if (!ok) return;
                   try { await apiDelete(`/api/exchange-rates/${r.id}/`, token!); reload(); }
-                  catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+                  catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
                 }} tone="danger" />
               </div>
             )},
-          ]} rows={fxRates || []} rowKey={(r) => r.uuid} loading={lX} emptyMessage="Sem taxas de câmbio — os preços aparecem só em meticais." />
+          ]} rows={fxRates || []} rowKey={(r) => r.uuid} loading={lX} emptyMessage={t(lc, "noFxRates")} />
         </SectionCard>
       )}
 
       {tab === "contacts" && (
         <SectionCard
-          title="Contactos no bilhete"
-          description="Aparecem impressos em cada bilhete e nas apps. O número de emergência é o que o passageiro liga se alguma coisa correr mal durante a viagem — deve atender 24 horas."
+          title={t(lc, "ticketContacts")}
+          description={t(lc, "contactsHint")}
         >
           <form className="admin-form" onSubmit={async (e: FormEvent) => {
             e.preventDefault();
             setBusy(true);
             try {
               await apiPatch("/api/branding/", token!, contacts);
-              showToast("success", "Contactos actualizados. Os bilhetes emitidos a partir de agora já os levam.");
+              showToast("success", t(lc, "okContactsSaved"));
             } catch (err) {
-              showToast("danger", err instanceof Error ? err.message : "Erro");
+              showToast("danger", mensagemDeErro(err, lc));
             } finally { setBusy(false); }
           }}>
             <div className="admin-form-grid">
-              <label className="field"><span>Número de emergência</span>
-                <input value={contacts.emergency_phone} placeholder="ex: 800 123 456"
+              <label className="field"><span>{t(lc, "emergencyPhone")}</span>
+                <input value={contacts.emergency_phone} placeholder={t(lc, "egSupportPhone")}
                        onChange={(e) => setContacts((c) => ({ ...c, emergency_phone: e.target.value }))} />
               </label>
-              <label className="field"><span>Número de apoio ao cliente</span>
-                <input value={contacts.support_phone} placeholder="ex: 84 000 0000"
+              <label className="field"><span>{t(lc, "supportPhone")}</span>
+                <input value={contacts.support_phone} placeholder={t(lc, "egPhone")}
                        onChange={(e) => setContacts((c) => ({ ...c, support_phone: e.target.value }))} />
               </label>
-              <label className="field"><span>Email de apoio</span>
-                <input type="email" value={contacts.support_email} placeholder="ex: apoio@exemplo.co.mz"
+              <label className="field"><span>{t(lc, "supportEmail")}</span>
+                <input type="email" value={contacts.support_email} placeholder={t(lc, "egEmail")}
                        onChange={(e) => setContacts((c) => ({ ...c, support_email: e.target.value }))} />
               </label>
             </div>
@@ -304,7 +305,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         </SectionCard>
       )}
 
-      <AdminModal open={fxModal} onClose={() => setFxModal(false)} title={editFx ? "Editar taxa de câmbio" : "Nova taxa de câmbio"}>
+      <AdminModal open={fxModal} onClose={() => setFxModal(false)} title={editFx ? "Editar taxa de câmbio" : t(lc, "newFxRate")}>
         <form className="admin-form" onSubmit={async (e: FormEvent) => {
           e.preventDefault();
           setBusy(true);
@@ -319,13 +320,13 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             if (editFx) await apiPatch(`/api/exchange-rates/${editFx}/`, token!, payload);
             else await apiPost(`/api/exchange-rates/`, token!, payload);
             setFxModal(false); reload();
-            showToast("success", editFx ? "Taxa de câmbio actualizada." : "Taxa de câmbio criada.");
+            showToast("success", editFx ? t(lc, "okFxUpdated") : t(lc, "okFxCreated"));
           } catch (err) {
-            showToast("danger", err instanceof Error ? err.message : "Erro");
+            showToast("danger", mensagemDeErro(err, lc));
           } finally { setBusy(false); }
         }}>
           <div className="admin-form-grid">
-            <label className="field"><span>Moeda (ISO)</span>
+            <label className="field"><span>{t(lc, "currencyIso")}</span>
               <input required value={fxForm.currency} maxLength={3} placeholder="ZAR"
                      onChange={(e) => setFxForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
             </label>
@@ -333,24 +334,24 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <input required type="number" min="0.0001" step="0.0001" value={fxForm.rate_to_mzn} placeholder="ex: 4.1000"
                      onChange={(e) => setFxForm((f) => ({ ...f, rate_to_mzn: e.target.value }))} />
             </label>
-            <label className="field"><span>Arredondar a</span>
+            <label className="field"><span>{t(lc, "roundTo")}</span>
               <select value={fxForm.rounding_step}
                       onChange={(e) => setFxForm((f) => ({ ...f, rounding_step: e.target.value }))}>
-                <option value="1">Unidade inteira (sem cêntimos)</option>
-                <option value="5">Múltiplos de 5</option>
-                <option value="10">Múltiplos de 10</option>
-                <option value="0.01">Ao cêntimo (não arredondar)</option>
+                <option value="1">{t(lc, "roundUnit")}</option>
+                <option value="5">{t(lc, "roundFives")}</option>
+                <option value="10">{t(lc, "roundTens")}</option>
+                <option value="0.01">{t(lc, "roundNone")}</option>
               </select>
             </label>
-            <label className="field"><span>Estado</span>
+            <label className="field"><span>{t(lc, "status")}</span>
               <select value={fxForm.is_active ? "1" : "0"} onChange={(e) => setFxForm((f) => ({ ...f, is_active: e.target.value === "1" }))}>
-                <option value="1">Activa</option>
-                <option value="0">Inactiva</option>
+                <option value="1">{t(lc, "activeF")}</option>
+                <option value="0">{t(lc, "inactiveF")}</option>
               </select>
             </label>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
-              <span>Notas</span>
-              <input value={fxForm.notes} placeholder="ex: taxa de balcão + margem" onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
+              <span>{t(lc, "notes")}</span>
+              <input value={fxForm.notes} placeholder={t(lc, "egNotes")} onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
             </label>
           </div>
           {fxForm.rate_to_mzn && Number(fxForm.rate_to_mzn) > 0 && (() => {
@@ -359,7 +360,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             const mostrado = Math.ceil(bruto / passo) * passo;
             return (
               <p className="dash-kpi-note" style={{ marginTop: 8 }}>
-                Exemplo: um bilhete de 1.000,00 MZN aparece como <b>{mostrado.toFixed(2)} {fxForm.currency || "ZAR"}</b>
+                {t(lc, "roundingExample")} <b>{mostrado.toFixed(2)} {fxForm.currency || "ZAR"}</b>
                 {passo > 0.01 ? ` (${bruto.toFixed(2)} arredondado para cima)` : ""}.
                 Arredonda-se sempre para cima — o valor mostrado nunca pode ser menor do que o que sai da conta do passageiro.
               </p>
@@ -372,7 +373,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         </form>
       </AdminModal>
 
-      <DetailDrawer open={!!viewR} onClose={() => setViewR(null)} title="Regra de Tarifa" fields={viewR ? [
+      <DetailDrawer open={!!viewR} onClose={() => setViewR(null)} title={t(lc, "fareRule")} fields={viewR ? [
         { label: t(lc, "fareProducts"), value: viewR.fare_product_name },
         { label: t(lc, "route"), value: viewR.route_code || t(lc, "allRoutes") },
         { label: t(lc, "method"), value: viewR.calculation_method },
@@ -422,22 +423,22 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
 
             {method === "distance" && (
               <>
-                <label className="field"><span>Distancia minima (km)</span>
+                <label className="field"><span>{t(lc, "minDistanceKm")}</span>
                   <input required type="number" step="0.1" min="0" value={rForm.distance_min_km} onChange={(e) => setRForm((f) => ({ ...f, distance_min_km: e.target.value }))} />
                 </label>
-                <label className="field"><span>Distancia maxima (km)</span>
+                <label className="field"><span>{t(lc, "maxDistanceKm")}</span>
                   <input required type="number" step="0.1" min="0" value={rForm.distance_max_km} onChange={(e) => setRForm((f) => ({ ...f, distance_max_km: e.target.value }))} />
                 </label>
-                <label className="field"><span>Valor por Km (MZN)</span>
+                <label className="field"><span>{t(lc, "amountPerKm")}</span>
                   <input type="number" step="0.01" min="0" value={rForm.amount_per_km} onChange={(e) => setRForm((f) => ({ ...f, amount_per_km: e.target.value }))} />
                 </label>
-                <label className="field"><span>Preco Fixo (MZN)</span>
+                <label className="field"><span>{t(lc, "fixedPrice")}</span>
                   <input type="number" step="0.01" min="0" value={rForm.fixed_amount} onChange={(e) => setRForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
                 </label>
-                <label className="field"><span>Minimo (MZN)</span>
+                <label className="field"><span>{t(lc, "minAmount")}</span>
                   <input type="number" step="0.01" min="0" value={rForm.min_amount} onChange={(e) => setRForm((f) => ({ ...f, min_amount: e.target.value }))} />
                 </label>
-                <label className="field"><span>Maximo (MZN)</span>
+                <label className="field"><span>{t(lc, "maxAmount")}</span>
                   <input type="number" step="0.01" min="0" value={rForm.max_amount} onChange={(e) => setRForm((f) => ({ ...f, max_amount: e.target.value }))} />
                 </label>
               </>
@@ -461,7 +462,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             )}
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editR ? t(lc, "update") : t(lc, "create")}</button>
+            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editR ? t(lc, "okRuleUpdated") : t(lc, "okRuleCreated")}</button>
             <button className="secondary-button" onClick={() => setRuleModal(false)} type="button">{t(lc, "cancel")}</button>
           </div>
         </form>
@@ -489,13 +490,13 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editP ? t(lc, "update") : t(lc, "create")}</button>
+            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editP ? t(lc, "okProductUpdated") : t(lc, "okProductCreated")}</button>
             <button className="secondary-button" onClick={() => setProdModal(false)} type="button">{t(lc, "cancel")}</button>
           </div>
         </form>
       </AdminModal>
 
-      <AdminModal open={feeModal} onClose={() => setFeeModal(false)} title={editFee ? "Editar taxa" : "Nova taxa"}>
+      <AdminModal open={feeModal} onClose={() => setFeeModal(false)} title={editFee ? "Editar taxa" : t(lc, "newFee")}>
         <form className="admin-form" onSubmit={async (e: FormEvent) => {
           e.preventDefault();
           setBusy(true);
@@ -512,41 +513,41 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             if (editFee) await apiPatch(`/api/admin-fees/${editFee}/`, token!, payload);
             else await apiPost(`/api/admin-fees/`, token!, payload);
             setFeeModal(false); reload();
-            showToast("success", editFee ? "Taxa actualizada." : "Taxa criada.");
+            showToast("success", editFee ? t(lc, "okFeeUpdated") : t(lc, "okFeeCreated"));
           } catch (err) {
-            showToast("danger", err instanceof Error ? err.message : "Erro");
+            showToast("danger", mensagemDeErro(err, lc));
           } finally { setBusy(false); }
         }}>
           <div className="admin-form-grid">
-            <label className="field"><span>Codigo (slug)</span>
-              <input required value={feeForm.code} onChange={(e) => setFeeForm((f) => ({ ...f, code: e.target.value }))} placeholder="ex: card-issuance-2026" />
+            <label className="field"><span>{t(lc, "codeSlug")}</span>
+              <input required value={feeForm.code} onChange={(e) => setFeeForm((f) => ({ ...f, code: e.target.value }))} placeholder={t(lc, "egSlug")} />
             </label>
-            <label className="field"><span>Nome</span>
+            <label className="field"><span>{t(lc, "name")}</span>
               <input required value={feeForm.name} onChange={(e) => setFeeForm((f) => ({ ...f, name: e.target.value }))} />
             </label>
-            <label className="field"><span>Tipo</span>
+            <label className="field"><span>{t(lc, "type")}</span>
               <select value={feeForm.kind} onChange={(e) => setFeeForm((f) => ({ ...f, kind: e.target.value }))}>
-                <option value="card_issuance">Taxa de adesao de cartao</option>
-                <option value="card_recovery">Taxa de recuperacao de cartao</option>
-                <option value="fine">Multa</option>
-                <option value="other">Outra</option>
+                <option value="card_issuance">{t(lc, "cardIssueFee")}</option>
+                <option value="card_recovery">{t(lc, "cardRecoveryFee")}</option>
+                <option value="fine">{t(lc, "penalty")}</option>
+                <option value="other">{t(lc, "other")}</option>
               </select>
             </label>
-            <label className="field"><span>Valor</span>
+            <label className="field"><span>{t(lc, "amount")}</span>
               <input required type="number" min="0" step="0.01" value={feeForm.amount}
                      onChange={(e) => setFeeForm((f) => ({ ...f, amount: e.target.value }))} />
             </label>
-            <label className="field"><span>Moeda</span>
+            <label className="field"><span>{t(lc, "currency")}</span>
               <input value={feeForm.currency} maxLength={3} onChange={(e) => setFeeForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
             </label>
-            <label className="field"><span>Estado</span>
+            <label className="field"><span>{t(lc, "status")}</span>
               <select value={feeForm.is_active ? "1" : "0"} onChange={(e) => setFeeForm((f) => ({ ...f, is_active: e.target.value === "1" }))}>
-                <option value="1">Activa</option>
-                <option value="0">Inactiva</option>
+                <option value="1">{t(lc, "activeF")}</option>
+                <option value="0">{t(lc, "inactiveF")}</option>
               </select>
             </label>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
-              <span>Descricao</span>
+              <span>{t(lc, "description")}</span>
               <input value={feeForm.description} onChange={(e) => setFeeForm((f) => ({ ...f, description: e.target.value }))} />
             </label>
           </div>

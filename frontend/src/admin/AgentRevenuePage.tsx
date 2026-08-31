@@ -4,6 +4,7 @@ import { apiDownload, apiFetch } from "../lib/api";
 import { showToast } from "../lib/toast";
 import { formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import {
@@ -147,13 +148,13 @@ export default function AgentRevenuePage() {
     try {
       await apiDownload(path, token!, name);
     } catch (e) {
-      showToast("danger", e instanceof Error ? e.message : "Erro ao exportar.");
+      showToast("danger", mensagemDeErro(e, lc));
     }
   };
 
   const sessionColumns: TableColumn<DayCloseRow>[] = [
     {
-      header: "Agente",
+      header: t(lc, "agent"),
       render: (r) => (
         <TablePrimaryCell
           title={r.agent_name || `Agente #${r.agent_id ?? "-"}`}
@@ -161,15 +162,15 @@ export default function AgentRevenuePage() {
         />
       ),
     },
-    { header: "Data", render: (r) => r.date },
-    { header: "Fechado em", render: (r) => formatDateTime(r.closed_at) },
-    { header: "Receita", render: (r) => `${fmt(r.total_revenue)} MZN` },
-    { header: "Vendas", render: (r) => `${fmt(r.sales_total)} MZN` },
-    { header: "Recargas", render: (r) => `${fmt(r.topups_total)} MZN` },
-    { header: "Validacoes", render: (r) => `${fmt(r.validations_revenue)} MZN` },
-    { header: "Bilhetes", render: (r) => String(r.tickets_count) },
+    { header: t(lc, "date"), render: (r) => r.date },
+    { header: t(lc, "closedOn"), render: (r) => formatDateTime(r.closed_at) },
+    { header: t(lc, "revenue"), render: (r) => `${fmt(r.total_revenue)} MZN` },
+    { header: t(lc, "sales"), render: (r) => `${fmt(r.sales_total)} MZN` },
+    { header: t(lc, "topUps"), render: (r) => `${fmt(r.topups_total)} MZN` },
+    { header: t(lc, "validations"), render: (r) => `${fmt(r.validations_revenue)} MZN` },
+    { header: t(lc, "tickets"), render: (r) => String(r.tickets_count) },
     {
-      header: "Estado",
+      header: t(lc, "status"),
       render: (r) => (
         <span style={{ display: "inline-flex", gap: 4 }}>
           <StatusBadge value={r.confirmed_count > 0 ? "confirmed" : "neutral"} />
@@ -179,14 +180,14 @@ export default function AgentRevenuePage() {
       ),
     },
     {
-      header: "Acoes",
+      header: t(lc, "actions"),
       render: (r) => (
         <span style={{ display: "inline-flex", gap: 6 }}>
-          <TableActionButton icon={<Eye size={15} />} label="Ver" onClick={() => openDetail(r)} />
-          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("pdf", "session", r.id)} title="Exportar PDF">
+          <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => openDetail(r)} />
+          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("pdf", "session", r.id)} title={t(lc, "exportPdf")}>
             <FileText size={15} />
           </button>
-          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("xlsx", "session", r.id)} title="Exportar Excel">
+          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("xlsx", "session", r.id)} title={t(lc, "exportExcel")}>
             <FileSpreadsheet size={15} />
           </button>
         </span>
@@ -196,7 +197,7 @@ export default function AgentRevenuePage() {
 
   const agentColumns: TableColumn<AgentSummary>[] = [
     {
-      header: "Agente",
+      header: t(lc, "agent"),
       render: (r) => (
         <TablePrimaryCell
           title={r.agent_name || `Agente #${r.agent_id ?? r.agent_user_id}`}
@@ -204,58 +205,58 @@ export default function AgentRevenuePage() {
         />
       ),
     },
-    { header: "Receita", render: (r) => `${fmt(r.total_revenue)} MZN` },
-    { header: "Vendas", render: (r) => `${fmt(r.sales_total)} MZN` },
-    { header: "Recargas", render: (r) => `${fmt(r.topups_total)} MZN` },
-    { header: "Validacoes", render: (r) => `${fmt(r.validations_revenue)} MZN` },
-    { header: "Bilhetes", render: (r) => String(r.tickets) },
-    { header: "Fechos", render: (r) => String(r.closes) },
+    { header: t(lc, "revenue"), render: (r) => `${fmt(r.total_revenue)} MZN` },
+    { header: t(lc, "sales"), render: (r) => `${fmt(r.sales_total)} MZN` },
+    { header: t(lc, "topUps"), render: (r) => `${fmt(r.topups_total)} MZN` },
+    { header: t(lc, "validations"), render: (r) => `${fmt(r.validations_revenue)} MZN` },
+    { header: t(lc, "tickets"), render: (r) => String(r.tickets) },
+    { header: t(lc, "closures"), render: (r) => String(r.closes) },
   ];
 
   return (
     <PageFrame
       kicker={t(lc, "financial")}
       title={t(lc, "agentRevenue")}
-      description="Acompanhe a receita por agente, exporte PDF/Excel e veja o detalhe de cada fecho de caixa."
+      description={t(lc, "agentRevenueHint")}
       action={
         <>
           <button className="icon-text-button" onClick={reloadBoth} type="button">
-            <RefreshCw size={15} /><span>Actualizar</span>
+            <RefreshCw size={15} /><span>{t(lc, "refresh")}</span>
           </button>
           <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf", "summary")}>
-            <FileText size={15} /><span>PDF Resumo</span>
+            <FileText size={15} /><span>{t(lc, "summaryPdf")}</span>
           </button>
           <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx", "summary")}>
-            <FileSpreadsheet size={15} /><span>Excel Resumo</span>
+            <FileSpreadsheet size={15} /><span>{t(lc, "summaryExcel")}</span>
           </button>
         </>
       }
     >
-      <SectionCard title="Filtros" description="Defina o intervalo e (opcional) o agente.">
+      <SectionCard title={t(lc, "filters")} description={t(lc, "filtersHint")}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <label className="field">
-            <span>De</span>
+            <span>{t(lc, "from")}</span>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           </label>
           <label className="field">
-            <span>Ate</span>
+            <span>{t(lc, "to")}</span>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </label>
           <label className="field">
-            <span>Procurar</span>
+            <span>{t(lc, "search")}</span>
             {/* Era "ID do agente". Ninguem sabe de cor o id do motorista — a
                 operacao fala destes fechos por nome e por rota. */}
             <input type="text" value={agentFilter} style={{ minWidth: 220 }}
               onChange={(e) => setAgentFilter(e.target.value)}
-              placeholder="Nome, telefone ou rota (ex.: Joao, MZ-NEL)" />
+              placeholder={t(lc, "searchAgentHint")} />
           </label>
           <div style={{ display: "flex", gap: 8, paddingBottom: 6 }}>
             <button className="icon-text-button" onClick={reloadBoth} type="button">
-              <Search size={15} /><span>Aplicar</span>
+              <Search size={15} /><span>{t(lc, "apply")}</span>
             </button>
             {agentFilter && (
               <button className="icon-text-button" onClick={() => setAgentFilter("")} type="button">
-                <X size={15} /><span>Limpar</span>
+                <X size={15} /><span>{t(lc, "clear")}</span>
               </button>
             )}
           </div>
@@ -263,43 +264,43 @@ export default function AgentRevenuePage() {
       </SectionCard>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 12 }}>
-        <MetricCard label="Receita total" value={`${fmt(String(totals.total_revenue ?? "0"))} MZN`} />
-        <MetricCard label="Vendas" value={`${fmt(String(totals.sales_total ?? "0"))} MZN`} />
-        <MetricCard label="Recargas" value={`${fmt(String(totals.topups_total ?? "0"))} MZN`} />
-        <MetricCard label="Validacoes" value={`${fmt(String(totals.validations_revenue ?? "0"))} MZN`} />
-        <MetricCard label="Bilhetes" value={String(totals.tickets ?? 0)} />
-        <MetricCard label="Agentes activos" value={String(totals.agents_count ?? 0)} />
+        <MetricCard label={t(lc, "totalRevenue")} value={`${fmt(String(totals.total_revenue ?? "0"))} MZN`} />
+        <MetricCard label={t(lc, "sales")} value={`${fmt(String(totals.sales_total ?? "0"))} MZN`} />
+        <MetricCard label={t(lc, "topUps")} value={`${fmt(String(totals.topups_total ?? "0"))} MZN`} />
+        <MetricCard label={t(lc, "validations")} value={`${fmt(String(totals.validations_revenue ?? "0"))} MZN`} />
+        <MetricCard label={t(lc, "tickets")} value={String(totals.tickets ?? 0)} />
+        <MetricCard label={t(lc, "activeAgents")} value={String(totals.agents_count ?? 0)} />
       </div>
 
       <TabBar
         items={[
-          { key: "sessions", label: "Fechos do dia", count: sessionsList.length },
-          { key: "agents", label: "Resumo por agente", count: agentsList.length },
+          { key: "sessions", label: t(lc, "closuresToday"), count: sessionsList.length },
+          { key: "agents", label: t(lc, "agentSummary"), count: agentsList.length },
         ]}
         value={tab}
         onChange={(k) => setTab(k as "sessions" | "agents")}
       />
 
       {tab === "sessions" && (
-        <SectionCard title="Fechos do dia" description="Cada linha representa uma sessao fechada por um agente.">
+        <SectionCard title={t(lc, "closuresToday")} description={t(lc, "sessionsHint")}>
           <DataTable<DayCloseRow>
             columns={sessionColumns}
             rows={sessionsList}
             rowKey={(r) => String(r.id)}
             loading={loadingSessions}
-            emptyMessage="Sem fechos no intervalo seleccionado."
+            emptyMessage={t(lc, "noClosures")}
           />
         </SectionCard>
       )}
 
       {tab === "agents" && (
-        <SectionCard title="Resumo agregado por agente" description={`Periodo: ${revenue?.date_from || dateFrom} a ${revenue?.date_to || dateTo}`}>
+        <SectionCard title={t(lc, "agentSummaryHint")} description={`Periodo: ${revenue?.date_from || dateFrom} a ${revenue?.date_to || dateTo}`}>
           <DataTable<AgentSummary>
             columns={agentColumns}
             rows={agentsList}
             rowKey={(r) => String(r.agent_user_id)}
             loading={loadingRevenue}
-            emptyMessage="Sem actividade no periodo."
+            emptyMessage={t(lc, "noActivityPeriod")}
           />
         </SectionCard>
       )}
@@ -307,26 +308,26 @@ export default function AgentRevenuePage() {
       <AdminModal
         open={detail !== null}
         onClose={() => setDetail(null)}
-        title={detail ? `Sessao ${detail.date} - ${detail.agent_name || "Agente"}` : ""}
+        title={detail ? `Sessao ${detail.date} - ${detail.agent_name || t(lc, "agent")}` : ""}
         description={detail ? `Fechada em ${formatDateTime(detail.closed_at)} | Receita: ${fmt(detail.total_revenue)} MZN` : ""}
       >
         {loadingDetail || !detail ? (
-          <div className="admin-empty-state">A carregar...</div>
+          <div className="admin-empty-state">{t(lc, "loading")}</div>
         ) : (
           <div style={{ display: "grid", gap: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-              <MetricCard label="Vendas" value={`${fmt(detail.sales_total)} MZN`} />
-              <MetricCard label="Recargas" value={`${fmt(detail.topups_total)} MZN`} />
-              <MetricCard label="Validacoes" value={`${fmt(detail.validations_revenue)} MZN`} />
-              <MetricCard label="Bilhetes" value={String(detail.tickets_count)} />
+              <MetricCard label={t(lc, "sales")} value={`${fmt(detail.sales_total)} MZN`} />
+              <MetricCard label={t(lc, "topUps")} value={`${fmt(detail.topups_total)} MZN`} />
+              <MetricCard label={t(lc, "validations")} value={`${fmt(detail.validations_revenue)} MZN`} />
+              <MetricCard label={t(lc, "tickets")} value={String(detail.tickets_count)} />
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
               <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf", "session", detail.id)}>
-                <FileText size={15} /><span>PDF da sessao</span>
+                <FileText size={15} /><span>{t(lc, "sessionPdf")}</span>
               </button>
               <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx", "session", detail.id)}>
-                <FileSpreadsheet size={15} /><span>Excel da sessao</span>
+                <FileSpreadsheet size={15} /><span>{t(lc, "sessionExcel")}</span>
               </button>
             </div>
 
@@ -335,13 +336,13 @@ export default function AgentRevenuePage() {
                 rows={detail.payload.sales || []}
                 rowKey={(r) => String(r.reference || r.sale_reference || JSON.stringify(r))}
                 loading={false}
-                emptyMessage="Sem vendas."
+                emptyMessage={t(lc, "noSales")}
                 columns={[
-                  { header: "Referencia", render: (r) => String(r.sale_reference || r.reference || "") },
-                  { header: "Telefone", render: (r) => String(r.payer_phone_masked || "") },
-                  { header: "Qtd", render: (r) => String(r.quantity ?? "-") },
-                  { header: "Valor", render: (r) => `${fmt(String(r.amount ?? "0"))} MZN` },
-                  { header: "Estado", render: (r) => <StatusBadge value={String(r.status || "")} /> },
+                  { header: t(lc, "reference"), render: (r) => String(r.sale_reference || r.reference || "") },
+                  { header: t(lc, "phone"), render: (r) => String(r.payer_phone_masked || "") },
+                  { header: t(lc, "qty"), render: (r) => String(r.quantity ?? "-") },
+                  { header: t(lc, "amount"), render: (r) => `${fmt(String(r.amount ?? "0"))} MZN` },
+                  { header: t(lc, "status"), render: (r) => <StatusBadge value={String(r.status || "")} /> },
                 ]}
               />
             </SectionCard>
@@ -351,12 +352,12 @@ export default function AgentRevenuePage() {
                 rows={detail.payload.topups || []}
                 rowKey={(r) => String(r.reference || JSON.stringify(r))}
                 loading={false}
-                emptyMessage="Sem recargas."
+                emptyMessage={t(lc, "noTopUps")}
                 columns={[
-                  { header: "Referencia", render: (r) => String(r.reference || "") },
-                  { header: "Telefone", render: (r) => String(r.payer_phone_masked || "") },
-                  { header: "Valor", render: (r) => `${fmt(String(r.amount ?? "0"))} MZN` },
-                  { header: "Estado", render: (r) => <StatusBadge value={String(r.status || "")} /> },
+                  { header: t(lc, "reference"), render: (r) => String(r.reference || "") },
+                  { header: t(lc, "phone"), render: (r) => String(r.payer_phone_masked || "") },
+                  { header: t(lc, "amount"), render: (r) => `${fmt(String(r.amount ?? "0"))} MZN` },
+                  { header: t(lc, "status"), render: (r) => <StatusBadge value={String(r.status || "")} /> },
                 ]}
               />
             </SectionCard>
@@ -366,13 +367,13 @@ export default function AgentRevenuePage() {
                 rows={detail.payload.validations || []}
                 rowKey={(r) => String(r.id || JSON.stringify(r))}
                 loading={false}
-                emptyMessage="Sem validacoes."
+                emptyMessage={t(lc, "noValidations")}
                 columns={[
-                  { header: "Tipo", render: (r) => String(r.validation_type || "") },
-                  { header: "Rota", render: (r) => String(r.route || "") },
-                  { header: "Debito", render: (r) => `${fmt(String(r.amount_debited ?? "0"))} MZN` },
-                  { header: "Dispositivo", render: (r) => String(r.device_serial || "") },
-                  { header: "Estado", render: (r) => <StatusBadge value={String(r.status || "")} /> },
+                  { header: t(lc, "type"), render: (r) => String(r.validation_type || "") },
+                  { header: t(lc, "route"), render: (r) => String(r.route || "") },
+                  { header: t(lc, "debit"), render: (r) => `${fmt(String(r.amount_debited ?? "0"))} MZN` },
+                  { header: t(lc, "device"), render: (r) => String(r.device_serial || "") },
+                  { header: t(lc, "status"), render: (r) => <StatusBadge value={String(r.status || "")} /> },
                 ]}
               />
             </SectionCard>

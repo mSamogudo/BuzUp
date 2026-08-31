@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, GripVertical, Plus, RefreshCw, Save, X } from "lucide-react";
 import { apiFetch, apiPost } from "../lib/api";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -61,7 +62,7 @@ export default function RouteStopsPage() {
       }));
       setRouteStops(resequence(items));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setLoading(false);
     }
@@ -71,10 +72,10 @@ export default function RouteStopsPage() {
 
   const addRouteStop = () => {
     const stop = (stopOptions || []).find((s) => String(s.id) === stopDraft.stop_id);
-    if (!stop) { showToast("danger", t(lc, "select")); return; }
+    if (!stop) { showToast("danger", t(lc, "errSelectStop")); return; }
     const direction = stopDraft.direction;
     if (routeStops.some((s) => s.direction === direction && Number(s.stop_id) === stop.id)) {
-      showToast("danger", "Paragem duplicada na mesma direccao.");
+      showToast("danger", t(lc, "errDuplicateStop"));
       return;
     }
     setRouteStops(resequence([...routeStops, {
@@ -128,10 +129,10 @@ export default function RouteStopsPage() {
         distance_from_start_km: item.distance_from_start_km || "0",
         direction: item.direction,
       })));
-      showToast("success", t(lc, "saveStops"));
+      showToast("success", t(lc, "okStopsSaved"));
       await load();
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setBusy(false);
     }
@@ -147,7 +148,7 @@ export default function RouteStopsPage() {
       title={title}
       action={<>
         <button className="icon-text-button" onClick={() => navigate("/app/routes")} type="button">
-          <ArrowLeft size={16} /><span>Voltar</span>
+          <ArrowLeft size={16} /><span>{t(lc, "back")}</span>
         </button>
         <button className="icon-text-button" onClick={() => void load()} type="button">
           <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
@@ -156,7 +157,7 @@ export default function RouteStopsPage() {
     >
       <SectionCard title={t(lc, "routeStops")}>
         <div className="route-stop-builder">
-          <p className="route-stop-hint">Arraste as paragens para reordenar. A sequencia e recalculada automaticamente.</p>
+          <p className="route-stop-hint">{t(lc, "dragStopsHint")}</p>
 
           <div className="admin-form-grid admin-form-grid-wide">
             <label className="field">

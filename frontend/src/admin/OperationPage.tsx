@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarClock, Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { formatDateTime } from "../lib/format";
-import { t } from "../lib/i18n";
+import { t, type Locale } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -20,6 +21,8 @@ interface Trip {
   vehicle_id: number | null; vehicle_registration: string;
   driver_id: number | null; driver_name: string;
   planned_departure_at: string | null;
+  /** "outbound" | "inbound" — vazio nas partidas criadas antes do campo. */
+  direction: string;
   status: string;
 }
 interface RouteOpt { id: number; code: string; name: string }
@@ -27,17 +30,36 @@ interface VehicleOpt { id: number; registration: string }
 interface DriverOpt { id: number; full_name: string }
 
 const EMPTY_TRIP = {
-  route: "", vehicle: "", driver: "",
+  route: "", vehicle: "", driver: "", direction: "",
   planned_departure_at: "", planned_arrival_at: "", status: "scheduled",
 };
 
-/** Janelas de tempo para a lista de viagens. "Próximas" é o que interessa
+/** Para que lado vai a partida.
+ *
+ *  Uma rota traz as paragens nos dois sentidos; a viagem não trazia nenhum, e
+ *  por isso quem procurava Maputo→Nelspruit recebia também as partidas de
+ *  Nelspruit→Maputo.
+ *
+ *  Deixar em branco não é "sem sentido": é deixar a ROTA decidir. Numa rota
+ *  definida num só sentido o servidor preenche-o sozinho — não há escolha a
+ *  fazer, e perguntar seria pôr o operador a decidir uma coisa já decidida.
+ *  Numa rota com ida e volta o servidor recusa e diz que falta, porque uma
+ *  partida nova não pode nascer ambígua. */
+const sentidos = (lc: Locale) => [
+  { key: "", label: t(lc, "autoRouteDecides") },
+  { key: "outbound", label: t(lc, "outbound") },
+  { key: "inbound", label: t(lc, "inbound") },
+];
+const dirLabel = (lc: Locale, d: string) =>
+  sentidos(lc).find((x) => x.key === d)?.label ?? "";
+
+/** Janelas de tempo para a lista de viagens. O que vem a seguir e o que interessa
  *  no dia-a-dia; o histórico só se procura de propósito. */
-const WHEN_FILTERS = [
-  { key: "upcoming", label: "Próximas" },
-  { key: "today", label: "Hoje" },
-  { key: "past", label: "Passadas" },
-  { key: "all", label: "Todas" },
+const janelas = (lc: Locale) => [
+  { key: "upcoming", label: t(lc, "upcoming") },
+  { key: "today", label: t(lc, "today") },
+  { key: "past", label: t(lc, "past") },
+  { key: "all", label: t(lc, "allRoutes") },
 ];
 
 function dayBounds(offset = 0): [Date, Date] {
@@ -52,7 +74,7 @@ function dayBounds(offset = 0): [Date, Date] {
 /**
  * Operação: viagens e as programações que as geram, no mesmo sítio.
  *
- * Estavam em dois itens de menu — "Viagens" e "Horários" — e o operador tinha
+ * Estavam em dois itens de menu — t(lc, "trips") e "Horários" — e o operador tinha
  * de saber que as viagens nascem dos horários para perceber onde ir. São a
  * mesma tarefa vista de dois ângulos, por isso vivem em separadores, e a
  * programação (criar viagens a partir dos horários) é uma acção da página,
@@ -127,26 +149,27 @@ export default function OperationPage() {
       driver: form.driver ? Number(form.driver) : null,
       planned_departure_at: form.planned_departure_at || null,
       planned_arrival_at: form.planned_arrival_at || null,
+      direction: form.direction,
       status: form.status,
     };
     try {
       if (editId) await apiPatch(`/api/trips/${editId}/`, token!, payload);
       else await apiPost("/api/trips/", token!, payload);
-      showToast("success", editId ? "Viagem actualizada." : "Viagem criada.");
+      showToast("success", editId ? t(lc, "okTripUpdated") : t(lc, "okTripCreated"));
       reset(); reload(); reloadResumo();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
   const removeTrip = async (r: Trip) => {
     const ok = await confirm({
-      title: "Eliminar viagem",
-      message: `Tem a certeza que pretende eliminar a viagem ${r.route_code}?`,
+      title: t(lc, "deleteTrip"),
+      message: t(lc, "confirmDelete", { n: r.route_code }),
       tone: "danger",
     });
     if (!ok) return;
-    try { await apiDelete(`/api/trips/${r.id}/`, token!); showToast("success", "Viagem eliminada."); reload(); reloadResumo(); }
-    catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+    try { await apiDelete(`/api/trips/${r.id}/`, token!); showToast("success", t(lc, "okTripDeleted")); reload(); reloadResumo(); }
+    catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
   };
 
   const action = tab === "viagens" ? (
@@ -155,10 +178,10 @@ export default function OperationPage() {
         <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
       </button>
       <button className="icon-text-button" onClick={() => navigate("/app/trips/schedule")} type="button">
-        <CalendarClock size={16} /><span>Programar viagens</span>
+        <CalendarClock size={16} /><span>{t(lc, "scheduleTrips")}</span>
       </button>
       <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button">
-        <Plus size={16} /> Nova viagem
+        <Plus size={16} /> {t(lc, "newTrip")}
       </button>
     </>
   ) : (
@@ -167,20 +190,20 @@ export default function OperationPage() {
         <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
       </button>
       <button className="icon-text-button" onClick={() => navigate("/app/trips/schedule")} type="button">
-        <CalendarClock size={16} /><span>Programar viagens</span>
+        <CalendarClock size={16} /><span>{t(lc, "scheduleTrips")}</span>
       </button>
       <button className="primary-button" onClick={() => scheduleActions?.create()} type="button">
-        <Plus size={16} /> Novo horário
+        <Plus size={16} /> {t(lc, "newSchedule")}
       </button>
     </>
   );
 
   return (
-    <PageFrame kicker={t(lc, "operation")} title="Viagens e horários" action={action}>
+    <PageFrame kicker={t(lc, "operation")} title={t(lc, "tripsAndSchedules")} action={action}>
       <TabBar
         items={[
-          { key: "viagens", label: "Viagens", count: all.length },
-          { key: "programacoes", label: "Programações", count: (schedules || []).length },
+          { key: "viagens", label: t(lc, "trips"), count: all.length },
+          { key: "programacoes", label: t(lc, "schedulesTab"), count: (schedules || []).length },
         ]}
         value={tab}
         onChange={setTab}
@@ -189,18 +212,18 @@ export default function OperationPage() {
       {tab === "viagens" ? (
         <>
           <div className="admin-metric-grid">
-            <MetricCard label="Hoje" value={String(counts.hoje)} />
-            <MetricCard label="Em circulação" value={String(counts.circulacao)} />
-            <MetricCard label="Agendadas" value={String(counts.agendadas)} />
-            <MetricCard label="Em repouso" value={String(counts.repouso)} />
+            <MetricCard label={t(lc, "today")} value={String(counts.hoje)} />
+            <MetricCard label={t(lc, "running")} value={String(counts.circulacao)} />
+            <MetricCard label={t(lc, "scheduledPl")} value={String(counts.agendadas)} />
+            <MetricCard label={t(lc, "idle")} value={String(counts.repouso)} />
           </div>
 
           <SectionCard
-            title="Viagens"
-            description="Partidas concretas. Nascem das programações ou são criadas à mão."
+            title={t(lc, "trips")}
+            description={t(lc, "tripsHint")}
           >
             <div className="bztw-horizons" style={{ marginBottom: 12 }}>
-              {WHEN_FILTERS.map((w) => (
+              {janelas(lc).map((w) => (
                 <button
                   key={w.key}
                   type="button"
@@ -221,6 +244,11 @@ export default function OperationPage() {
                   />
                 ) },
                 { header: t(lc, "departure"), render: (r: Trip) => formatDateTime(r.planned_departure_at) },
+                { header: t(lc, "direction"), render: (r: Trip) => (
+                  r.direction
+                    ? <span>{dirLabel(lc, r.direction)}</span>
+                    : <span className="text-muted" title={t(lc, "noDirectionHint")}>—</span>
+                ) },
                 { header: t(lc, "status"), render: (r: Trip) => <StatusBadge value={r.status} /> },
                 { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Trip) => (
                   <div className="admin-inline-actions">
@@ -235,6 +263,7 @@ export default function OperationPage() {
                           driver: r.driver_id ? String(r.driver_id) : "",
                           planned_departure_at: r.planned_departure_at || "",
                           planned_arrival_at: "",
+                          direction: r.direction || "",
                           status: r.status,
                         });
                       }} />
@@ -262,8 +291,8 @@ export default function OperationPage() {
         />
       )}
 
-      <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar viagem" : "Nova viagem"}
-        description="Uma partida avulsa. Para uma série regular, crie um horário e use «Programar viagens».">
+      <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar viagem" : t(lc, "newTrip")}
+        description={t(lc, "newTripHint")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "route")}</span>
@@ -284,6 +313,11 @@ export default function OperationPage() {
                 {(driverOpts || []).map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
               </select>
             </label>
+            <label className="field"><span>{t(lc, "direction")}</span>
+              <select value={form.direction} onChange={(e) => f("direction", e.target.value)}>
+                {sentidos(lc).map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+              </select>
+            </label>
             <label className="field"><span>{t(lc, "plannedDeparture")}</span>
               <input type="datetime-local" value={form.planned_departure_at}
                 onChange={(e) => f("planned_departure_at", e.target.value)} />
@@ -294,12 +328,12 @@ export default function OperationPage() {
             </label>
             <label className="field"><span>{t(lc, "status")}</span>
               <select value={form.status} onChange={(e) => f("status", e.target.value)}>
-                <option value="scheduled">Agendada</option>
-                <option value="boarding">Em Circulacao</option>
-                <option value="departed">Em Viagem</option>
-                <option value="paused">Em Repouso</option>
-                <option value="completed">Concluida</option>
-                <option value="cancelled">Cancelada</option>
+                <option value="scheduled">{t(lc, "scheduled")}</option>
+                <option value="boarding">{t(lc, "running")}</option>
+                <option value="departed">{t(lc, "onTheRoad")}</option>
+                <option value="paused">{t(lc, "idle")}</option>
+                <option value="completed">{t(lc, "completed")}</option>
+                <option value="cancelled">{t(lc, "cancelledF")}</option>
               </select>
             </label>
           </div>

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { t } from "../lib/i18n";
+import { useUi } from "./UiPreferences";
 import { useLocation } from "react-router-dom";
 import { Download, Smartphone, X } from "lucide-react";
 
@@ -15,6 +17,7 @@ const DISMISS_KEY = "buzup_pwa_dismissed_at";
 const DISMISS_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 export default function PwaInstallPrompt() {
+  const { locale: lc } = useUi();
   const { pathname } = useLocation();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
@@ -67,17 +70,17 @@ export default function PwaInstallPrompt() {
 
   if (visible) {
     return (
-      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BusUp">
+      <div className="pwa-install-banner" role="dialog" aria-label={t(lc, "installBusUp")}>
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
-          <strong>Instalar BusUp</strong>
-          <span>Acesso rapido a partir do ecra inicial</span>
+          <strong>{t(lc, "installBusUp")}</strong>
+          <span>{t(lc, "pwaHint")}</span>
         </div>
         <div className="pwa-install-actions">
           <button className="pwa-install-btn" onClick={install} type="button" disabled={installing}>
-            <Download size={14} /> Instalar
+            <Download size={14} /> {t(lc, "install")}
           </button>
-          <button className="pwa-install-close" onClick={dismiss} type="button" aria-label="Fechar">
+          <button className="pwa-install-close" onClick={dismiss} type="button" aria-label={t(lc, "close")}>
             <X size={16} />
           </button>
         </div>
@@ -87,13 +90,13 @@ export default function PwaInstallPrompt() {
 
   if (iosVisible) {
     return (
-      <div className="pwa-install-banner" role="dialog" aria-label="Instalar BusUp">
+      <div className="pwa-install-banner" role="dialog" aria-label={t(lc, "installBusUp")}>
         <div className="pwa-install-icon"><Smartphone size={22} /></div>
         <div className="pwa-install-text">
-          <strong>Instalar BusUp</strong>
-          <span>Toque em Partilhar e depois "Adicionar ao Ecra Inicial"</span>
+          <strong>{t(lc, "installBusUp")}</strong>
+          <span>{t(lc, "pwaIosHint")}</span>
         </div>
-        <button className="pwa-install-close" onClick={dismiss} type="button" aria-label="Fechar">
+        <button className="pwa-install-close" onClick={dismiss} type="button" aria-label={t(lc, "close")}>
           <X size={16} />
         </button>
       </div>

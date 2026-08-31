@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Send, Users } from "lucide-react";
 import { apiPost } from "../lib/api";
+import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { AdminModal } from "../ui/common";
+import { mensagemDeErro } from "../lib/errors";
+import { useUi } from "../ui/UiPreferences";
 
 const LIMITE = 320;
 
@@ -32,6 +35,7 @@ export default function BroadcastModal({
   /** O que se está a avisar, para o utilizador confirmar que é o alvo certo. */
   contexto?: string;
 }) {
+  const { locale: lc } = useUi();
   const { token } = useAuth();
   const [texto, setTexto] = useState("");
   const [previa, setPrevia] = useState<Previa | null>(null);
@@ -58,7 +62,7 @@ export default function BroadcastModal({
       setACarregar(true);
       apiPost("/api/admin/broadcasts/", token, corpo({ preview: true, body: texto }))
         .then((r) => { if (!cancelado) { setPrevia(r as Previa); setErro(""); } })
-        .catch((e) => { if (!cancelado) { setPrevia(null); setErro(e instanceof Error ? e.message : "Erro"); } })
+        .catch((e) => { if (!cancelado) { setPrevia(null); setErro(mensagemDeErro(e, lc)); } })
         .finally(() => { if (!cancelado) setACarregar(false); });
     }, 250);
     return () => { cancelado = true; window.clearTimeout(id); };
@@ -72,11 +76,11 @@ export default function BroadcastModal({
       const falhadas = Number(r?.failed ?? 0);
       showToast(falhadas > 0 ? "danger" : "success",
         falhadas > 0
-          ? `${enviadas} aviso(s) enviado(s), ${falhadas} falhou/falharam.`
-          : `${enviadas} aviso(s) enviado(s).`);
+          ? t(lc, "okBroadcastPartial", { n: enviadas, f: falhadas })
+          : t(lc, "okBroadcastSent", { n: enviadas }));
       onClose();
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao enviar.");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setAEnviar(false);
     }
@@ -87,8 +91,8 @@ export default function BroadcastModal({
 
   return (
     <AdminModal open={open} onClose={onClose}
-      title="Avisar quem vai a bordo"
-      description="Chega a quem tem bilhete activo ou já validado numa viagem que ainda não terminou. Quem já viajou não é incomodado.">
+      title={t(lc, "notifyOnBoard")}
+      description={t(lc, "broadcastHint")}>
       <form className="admin-form" onSubmit={(e) => { e.preventDefault(); void enviar(); }}>
         {contexto ? (
           <div className="bztw-preview" style={{ minHeight: 0, marginTop: 0 }}>
@@ -99,9 +103,9 @@ export default function BroadcastModal({
         ) : null}
 
         <label className="field">
-          <span>Mensagem</span>
+          <span>{t(lc, "message")}</span>
           <textarea rows={4} value={texto} maxLength={LIMITE} required
-            placeholder="ex.: Avaria na estrada. O autocarro segue viagem às 14h00. Pedimos desculpa."
+            placeholder={t(lc, "broadcastExample")}
             onChange={(e) => setTexto(e.target.value)} />
           <small style={{ opacity: 0.7 }}>
             {texto.length}/{LIMITE} caracteres
@@ -113,7 +117,7 @@ export default function BroadcastModal({
 
         <div className="bztw-preview">
           {aCarregar ? (
-            <div className="bztw-preview-empty"><Loader2 className="bztw-spin" size={16} /> A contar…</div>
+            <div className="bztw-preview-empty"><Loader2 className="bztw-spin" size={16} /> {t(lc, "counting")}</div>
           ) : erro ? (
             <div className="bztw-preview-empty bztw-error"><AlertTriangle size={16} /> {erro}</div>
           ) : previa ? (
@@ -158,10 +162,10 @@ export default function BroadcastModal({
               <><Send size={16} />{previa ? ` Enviar a ${previa.recipients}` : " Enviar"}</>
             )}
           </button>
-          <button className="secondary-button" type="button" onClick={onClose}>Cancelar</button>
+          <button className="secondary-button" type="button" onClick={onClose}>{t(lc, "cancel")}</button>
         </div>
         <small style={{ opacity: 0.7 }}>
-          O envio fica registado com o seu nome, a mensagem e quantas chegaram.
+          {t(lc, "broadcastLogHint")}
         </small>
       </form>
     </AdminModal>

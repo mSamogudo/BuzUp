@@ -200,7 +200,7 @@ export default function AdminLayout() {
                     <button className="icon-button" onClick={() => setNotifOpen(false)} type="button"><X size={14} /></button>
                   </div>
                   <div className="topbar-popover-body">
-                    <p style={{ color: "var(--app-text-muted)", fontSize: 13, textAlign: "center", padding: 20 }}>Sem notificacoes.</p>
+                    <p style={{ color: "var(--app-text-muted)", fontSize: 13, textAlign: "center", padding: 20 }}>{t(locale, "noNotifications")}</p>
                   </div>
                 </div>
               )}
@@ -236,7 +236,7 @@ export default function AdminLayout() {
                         type="button"
                         style={{ flex: 1, fontSize: 12 }}
                       >
-                        <UserCog size={14} /> Editar perfil
+                        <UserCog size={14} /> {t(locale, "editProfile")}
                       </button>
                       <button className="danger-button" onClick={logout} type="button" style={{ flex: 1, fontSize: 12 }}>
                         <LogOut size={14} /> {t(locale, "signOut")}

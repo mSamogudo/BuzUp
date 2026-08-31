@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Download, Sparkles, Upload } from "lucide-react";
 import { apiFetch, apiPost } from "../lib/api";
+import { t, type Locale } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { AdminModal, SectionCard } from "../ui/common";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { mensagemDeErro } from "../lib/errors";
+import { useUi } from "../ui/UiPreferences";
 
 /** Tabela de preços de uma rota: uma grelha origem × destino.
  *
@@ -27,12 +30,13 @@ interface MatrixData {
   unsellable: number;
 }
 
-const METODOS = [
-  { key: "origin_destination", label: "Paragem a paragem", hint: "Uma linha por trajecto — preço diferente em cada par." },
-  { key: "fixed", label: "Preço único", hint: "Um só valor, igual em qualquer trajecto da rota." },
+const metodos = (lc: Locale) => [
+  { key: "origin_destination", label: t(lc, "stopToStop"), hint: t(lc, "stopToStopHint") },
+  { key: "fixed", label: t(lc, "flatPrice"), hint: t(lc, "flatPriceHint") },
 ];
 
 export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
+  const { locale: lc } = useUi();
   const { token } = useAuth();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [routeId, setRouteId] = useState("");
@@ -64,7 +68,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
     try {
       aplicar(await apiFetch(`/api/admin/routes/${id}/fare-matrix/`, token!));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
       setData(null);
     } finally { setLoading(false); }
   }, [token, aplicar]);
@@ -90,10 +94,10 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
       aplicar(d);
       const s = (d as unknown as { saved?: { created: number; updated: number; deleted: number } }).saved;
       showToast("success", s
-        ? `Tabela gravada: ${s.created} novos, ${s.updated} actualizados, ${s.deleted} removidos.`
-        : "Tabela gravada.");
+        ? t(lc, "okFareGridSaved", { c: s.created, u: s.updated, d: s.deleted })
+        : t(lc, "okFareImported"));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally { setBusy(false); }
   };
 
@@ -109,9 +113,9 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
       setPrices(r.prices || {});
       setDirty(true);
       setFillModal(false);
-      showToast("neutral", "Grelha preenchida. Reveja os valores e grave.");
+      showToast("neutral", t(lc, "okFareGridFilled"));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally { setBusy(false); }
   };
 
@@ -123,9 +127,9 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
         `/api/admin/routes/${data.route.id}/fare-matrix/return-direction/`, token!, {},
       );
       aplicar(d);
-      showToast("success", "Sentido de volta criado a espelhar a ida. Confirme as distâncias em Rotas.");
+      showToast("success", t(lc, "okFareReturnCreated"));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally { setBusy(false); }
   };
 
@@ -144,7 +148,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     }
   };
 
@@ -166,12 +170,12 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
         setPreview(null);
         setFile(null);
         if (fileRef.current) fileRef.current.value = "";
-        showToast("success", "Tabela importada e aplicada.");
+        showToast("success", t(lc, "okFareImported"));
       } else {
         setPreview({ rows: d.rows, changes: d.changes });
       }
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally { setBusy(false); }
   };
 
@@ -180,8 +184,8 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
   const trocarRota = async (novo: string) => {
     if (dirty && data) {
       const ok = await confirm({
-        title: "Alteracoes por gravar",
-        message: "A tabela desta rota tem alteracoes que ainda nao foram gravadas. Se mudar de rota, perde-as.",
+        title: t(lc, "unsavedChanges"),
+        message: t(lc, "unsavedGrid"),
         confirmLabel: "Mudar de rota",
         tone: "danger",
       });
@@ -197,17 +201,17 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
 
   return (
     <SectionCard
-      title="Tabela de preços"
-      description="O preço de cada trajecto da rota, de paragem a paragem e nos dois sentidos. Um trajecto sem preço próprio cai no preço de recurso; sem nenhum dos dois, o passageiro não consegue comprar."
+      title={t(lc, "priceTable")}
+      description={t(lc, "priceTableHint")}
     >
       <div className="admin-form-grid" style={{ marginBottom: 14 }}>
-        <label className="field"><span>Rota</span>
+        <label className="field"><span>{t(lc, "route")}</span>
           <select value={routeId} onChange={(e) => trocarRota(e.target.value)}>
-            <option value="">Escolha a rota…</option>
+            <option value="">{t(lc, "chooseRoute")}</option>
             {routes.map((r) => <option key={r.id} value={r.id}>{r.code} · {r.name}</option>)}
           </select>
         </label>
-        <label className="field"><span>Preço de recurso (MZN)</span>
+        <label className="field"><span>{t(lc, "fallbackPrice")}</span>
           <input
             value={fallback}
             disabled={!data}
@@ -218,9 +222,9 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
       </div>
 
       {!data && !loading ? (
-        <p className="dash-kpi-note">Escolha uma rota para ver e editar a tabela de preços.</p>
+        <p className="dash-kpi-note">{t(lc, "chooseRouteForPrices")}</p>
       ) : null}
-      {loading ? <p className="dash-kpi-note">A carregar…</p> : null}
+      {loading ? <p className="dash-kpi-note">{t(lc, "loading")}</p> : null}
 
       {data ? (
         <>
@@ -231,7 +235,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
                 <AlertTriangle size={14} /> {data.unsellable} {data.unsellable === 1 ? "trajecto não se vende" : "trajectos não se vendem"} hoje
               </span>
             ) : (
-              <span className="fare-matrix-ok">Todos os trajectos têm preço.</span>
+              <span className="fare-matrix-ok">{t(lc, "allLegsPriced")}</span>
             )}
           </div>
 
@@ -239,26 +243,26 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
             <div className="fare-matrix-warn">
               <AlertTriangle size={16} />
               <div>
-                <strong>Esta rota só tem sentido de ida.</strong>
+                <strong>{t(lc, "outboundOnly")}</strong>
                 <p>O regresso não é sequer um trajecto válido: a compra é recusada antes de se olhar para o preço. Criar o sentido de volta espelha as paragens da ida pela ordem inversa.</p>
               </div>
-              <button className="primary-button" disabled={busy} onClick={criarVolta} type="button">Criar sentido de volta</button>
+              <button className="primary-button" disabled={busy} onClick={criarVolta} type="button">{t(lc, "createInbound")}</button>
             </div>
           ) : null}
 
           <div className="admin-toolbar">
             <div className="fare-matrix-tools">
-              <select value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Método do modelo">
-                {METODOS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+              <select value={method} onChange={(e) => setMethod(e.target.value)} aria-label={t(lc, "templateMethod")}>
+                {metodos(lc).map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
               </select>
               <button className="icon-text-button" onClick={descarregarModelo} type="button">
-                <Download size={15} /><span>Modelo Excel</span>
+                <Download size={15} /><span>{t(lc, "excelTemplate")}</span>
               </button>
               <button className="icon-text-button" onClick={() => { setFile(null); setPreview(null); setImportModal(true); }} type="button">
-                <Upload size={15} /><span>Importar Excel</span>
+                <Upload size={15} /><span>{t(lc, "importExcel")}</span>
               </button>
               <button className="icon-text-button" onClick={() => setFillModal(true)} type="button">
-                <Sparkles size={15} /><span>Preencher por paragens</span>
+                <Sparkles size={15} /><span>{t(lc, "fillByStops")}</span>
               </button>
             </div>
             <div className="admin-toolbar-spacer" />
@@ -266,16 +270,16 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
               {busy ? "A gravar…" : "Gravar tabela"}
             </button>
           </div>
-          <p className="dash-kpi-note">{METODOS.find((m) => m.key === method)?.hint}</p>
+          <p className="dash-kpi-note">{metodos(lc).find((m) => m.key === method)?.hint}</p>
 
           {data.stops.length < 2 ? (
-            <p className="dash-kpi-note">Esta rota não tem paragens suficientes para ter tabela de preços.</p>
+            <p className="dash-kpi-note">{t(lc, "notEnoughStops")}</p>
           ) : (
             <div className="fare-matrix-wrap">
               <table className="fare-matrix">
                 <thead>
                   <tr>
-                    <th className="fare-matrix-corner">De \ Para</th>
+                    <th className="fare-matrix-corner">{t(lc, "fromTo")}</th>
                     {data.stops.map((s) => <th key={s.id} title={s.name}>{s.name}</th>)}
                   </tr>
                 </thead>
@@ -311,34 +315,34 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
         </>
       ) : null}
 
-      <AdminModal open={fillModal} onClose={() => setFillModal(false)} title="Preencher por paragens">
+      <AdminModal open={fillModal} onClose={() => setFillModal(false)} title={t(lc, "fillByStops")}>
         <div className="admin-form">
           <p className="dash-kpi-note">
             Calcula um preço para cada trajecto a partir do número de paragens entre a origem e o destino. Preenche a grelha para rever — não grava nada.
           </p>
           <div className="admin-form-grid">
-            <label className="field"><span>Preço base (1 paragem)</span>
+            <label className="field"><span>{t(lc, "basePrice")}</span>
               <input value={fill.base} inputMode="decimal" placeholder="ex: 100"
                      onChange={(e) => setFill((f) => ({ ...f, base: e.target.value }))} />
             </label>
-            <label className="field"><span>Acréscimo por paragem extra</span>
+            <label className="field"><span>{t(lc, "perExtraStop")}</span>
               <input value={fill.per_stop} inputMode="decimal" placeholder="ex: 50"
                      onChange={(e) => setFill((f) => ({ ...f, per_stop: e.target.value }))} />
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy || !fill.base} onClick={preencher} type="button">Preencher grelha</button>
-            <button className="secondary-button" onClick={() => setFillModal(false)} type="button">Cancelar</button>
+            <button className="primary-button" disabled={busy || !fill.base} onClick={preencher} type="button">{t(lc, "fillGrid")}</button>
+            <button className="secondary-button" onClick={() => setFillModal(false)} type="button">{t(lc, "cancel")}</button>
           </div>
         </div>
       </AdminModal>
 
-      <AdminModal open={importModal} onClose={() => setImportModal(false)} title="Importar tabela de preços">
+      <AdminModal open={importModal} onClose={() => setImportModal(false)} title={t(lc, "importPriceTable")}>
         <div className="admin-form">
           <p className="dash-kpi-note">
             Descarregue o modelo, preencha a coluna do preço e volte a enviá-lo. O ficheiro é primeiro pré-visualizado: nada muda até confirmar.
           </p>
-          <label className="field"><span>Ficheiro Excel (.xlsx)</span>
+          <label className="field"><span>{t(lc, "excelFile")}</span>
             <input ref={fileRef} type="file" accept=".xlsx"
                    onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); }} />
           </label>
@@ -350,11 +354,11 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
           ) : null}
           <div className="admin-form-actions">
             {preview ? (
-              <button className="primary-button" disabled={busy} onClick={() => enviarExcel(true)} type="button">Aplicar</button>
+              <button className="primary-button" disabled={busy} onClick={() => enviarExcel(true)} type="button">{t(lc, "apply")}</button>
             ) : (
-              <button className="primary-button" disabled={busy || !file} onClick={() => enviarExcel(false)} type="button">Pré-visualizar</button>
+              <button className="primary-button" disabled={busy || !file} onClick={() => enviarExcel(false)} type="button">{t(lc, "preview")}</button>
             )}
-            <button className="secondary-button" onClick={() => setImportModal(false)} type="button">Cancelar</button>
+            <button className="secondary-button" onClick={() => setImportModal(false)} type="button">{t(lc, "cancel")}</button>
           </div>
         </div>
       </AdminModal>

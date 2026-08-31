@@ -2,6 +2,7 @@ import { useCallback, useState, type FormEvent } from "react";
 import { Eye, Pencil, Plus, Printer, QrCode, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete, apiUpload } from "../lib/api";
 import { t } from "../lib/i18n";
+import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
@@ -48,8 +49,8 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
         const payload = { ...form, seated_capacity: Number(form.seated_capacity), standing_capacity: Number(form.standing_capacity), last_row_seats: Number(form.last_row_seats) };
         if (editId) { await apiPatch(`/api/vehicles/${editId}/`, token!, payload); } else { await apiPost("/api/vehicles/", token!, payload); }
       }
-      showToast("success", editId ? t(lc, "update") : t(lc, "create")); reset(); reload();
-    } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); }
+      showToast("success", editId ? t(lc, "okVehicleUpdated") : t(lc, "okVehicleCreated")); reset(); reload();
+    } catch (err) { showToast("danger", mensagemDeErro(err, lc)); }
     finally { setBusy(false); }
   };
 
@@ -66,9 +67,9 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
           { header: t(lc, "actions"), className: "table-actions-cell", render: (r: Vehicle) => (
             <div className="admin-inline-actions">
               <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
-              <TableActionButton icon={<QrCode size={15} />} label="QR Code" onClick={() => setQrVehicle(r)} />
+              <TableActionButton icon={<QrCode size={15} />} label={t(lc, "qrCode")} onClick={() => setQrVehicle(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setForm({ registration: r.registration, make: r.make, model_name: r.model_name, seated_capacity: String(r.seated_capacity), standing_capacity: String(r.standing_capacity), seat_layout: r.seat_layout || "2+2", last_row_seats: String(r.last_row_seats ?? 0), status: r.status }); setModalOpen(true); }} />
-              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: `Tem a certeza que pretende eliminar a viatura ${r.registration}?`, tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/vehicles/${r.id}/`, token!); showToast("success", t(lc, "delete")); reload(); } catch (err) { showToast("danger", err instanceof Error ? err.message : "Erro"); } }} tone="danger" />
+              <TableActionButton icon={<Trash2 size={15} />} label={t(lc, "delete")} onClick={async () => { const ok = await confirm({ title: t(lc, "delete"), message: t(lc, "confirmDelete", { n: r.registration }), tone: "danger" }); if (!ok) return; try { await apiDelete(`/api/vehicles/${r.id}/`, token!); showToast("success", t(lc, "okVehicleDeleted")); reload(); } catch (err) { showToast("danger", mensagemDeErro(err, lc)); } }} tone="danger" />
             </div>
           )},
         ]} rows={vehicles || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noVehicles")} />
@@ -93,13 +94,13 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "model")}</span><input value={form.model_name} onChange={(e) => setForm((p) => ({ ...p, model_name: e.target.value }))} /></label>
             <label className="field"><span>{t(lc, "seatedCapacity")}</span><input type="number" min="0" value={form.seated_capacity} onChange={(e) => setForm((p) => ({ ...p, seated_capacity: e.target.value }))} /></label>
             <label className="field"><span>{t(lc, "standingCapacity")}</span><input type="number" min="0" value={form.standing_capacity} onChange={(e) => setForm((p) => ({ ...p, standing_capacity: e.target.value }))} /></label>
-            <label className="field"><span>Disposição dos bancos</span><select value={form.seat_layout} onChange={(e) => setForm((p) => ({ ...p, seat_layout: e.target.value }))}><option value="1+1">1+1 — um banco de cada lado</option><option value="1+2">1+2 — um à esquerda, dois à direita</option><option value="2+1">2+1 — dois à esquerda, um à direita</option><option value="2+2">2+2 — dois de cada lado</option><option value="2+3">2+3</option><option value="3+2">3+2</option></select></label>
-            <label className="field"><span>Bancos na fila do fundo</span><input type="number" min="0" value={form.last_row_seats} onChange={(e) => setForm((p) => ({ ...p, last_row_seats: e.target.value }))} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>Fila corrida sem corredor. Zero se não houver.</small></label>
+            <label className="field"><span>{t(lc, "seatLayout")}</span><select value={form.seat_layout} onChange={(e) => setForm((p) => ({ ...p, seat_layout: e.target.value }))}><option value="1+1">1+1 — um banco de cada lado</option><option value="1+2">1+2 — um à esquerda, dois à direita</option><option value="2+1">2+1 — dois à esquerda, um à direita</option><option value="2+2">2+2 — dois de cada lado</option><option value="2+3">2+3</option><option value="3+2">3+2</option></select></label>
+            <label className="field"><span>{t(lc, "backRowSeats")}</span><input type="number" min="0" value={form.last_row_seats} onChange={(e) => setForm((p) => ({ ...p, last_row_seats: e.target.value }))} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "backRowHint")}</small></label>
             {/* Ver antes de gravar: a planta que o passageiro vai encontrar a
                 bordo. Escolher "2+2" numa lista sem ver o resultado é onde os
                 minibus acabavam com uma planta que não existe. */}
             <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <span>Como fica a planta</span>
+              <span>{t(lc, "layoutPreview")}</span>
               <SeatLayoutPreview
                 capacity={Number(form.seated_capacity) || 0}
                 layout={form.seat_layout}
@@ -110,13 +111,13 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
             <label className="field admin-field-span-full"><span>{t(lc, "livrete")}</span><input type="file" accept="application/pdf,image/*" onChange={(e) => setLivrete(e.target.files?.[0] ?? null)} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "livreteHint")}</small></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
+            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okVehicleUpdated") : t(lc, "okVehicleCreated")}</button>
             <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
           </div>
         </form>
       </AdminModal>
 
-      <AdminModal open={!!qrVehicle} onClose={() => setQrVehicle(null)} title={qrVehicle ? `QR Code · ${qrVehicle.registration}` : "QR Code"}>
+      <AdminModal open={!!qrVehicle} onClose={() => setQrVehicle(null)} title={qrVehicle ? `QR Code · ${qrVehicle.registration}` : t(lc, "qrCode")}>
         {qrVehicle && (() => {
           const url = `${window.location.origin}/bus/${qrVehicle.uuid}`;
           const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
@@ -131,7 +132,7 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
                 </div>
               </div>
               <div className="admin-form-actions vehicle-qr-actions">
-                <button className="primary-button" onClick={() => window.print()} type="button"><Printer size={15} /> Imprimir</button>
+                <button className="primary-button" onClick={() => window.print()} type="button"><Printer size={15} /> {t(lc, "print")}</button>
                 <button className="secondary-button" onClick={() => setQrVehicle(null)} type="button">{t(lc, "cancel")}</button>
               </div>
             </div>

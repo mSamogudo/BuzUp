@@ -3,10 +3,13 @@ import {
   ChevronDown, ChevronUp, Eye, FileText, Plus, RefreshCw, Save, Trash2, X,
 } from "lucide-react";
 import { apiFetch, apiPatch } from "../lib/api";
+import { t } from "../lib/i18n";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { PageFrame, SectionCard } from "../ui/common";
 import TermsDialog from "../public/booking/TermsDialog";
+import { mensagemDeErro } from "../lib/errors";
+import { useUi } from "../ui/UiPreferences";
 
 interface Seccao { title: string; items: string[] }
 
@@ -26,6 +29,7 @@ const VAZIA: Seccao = { title: "", items: [""] };
  * aceitou os termos de ontem, e ninguém conseguiria dizer o que essa pessoa leu.
  */
 export default function TermsPage() {
+  const { locale: lc } = useUi();
   const { token } = useAuth();
 
   const [empresa, setEmpresa] = useState({
@@ -77,7 +81,7 @@ export default function TermsPage() {
         setActualizado(d?.terms_updated_at || null);
         setCarregado(true);
       })
-      .catch((e) => showToast("danger", e instanceof Error ? e.message : "Erro"));
+      .catch((e) => showToast("danger", mensagemDeErro(e, lc)));
   }, [token]);
 
   useEffect(() => { carregar(); }, [carregar]);
@@ -103,7 +107,7 @@ export default function TermsPage() {
     const limpasEn = limpar(seccoesEn);
 
     if (seccoes.length > 0 && limpas.length === 0) {
-      showToast("danger", "Cada secção precisa de um título e de pelo menos um parágrafo.");
+      showToast("danger", t(lc, "errTermsSection"));
       return;
     }
 
@@ -123,9 +127,9 @@ export default function TermsPage() {
       setSeccoesEn(limpasEn);
       setVersao(r?.terms_version || versao);
       setActualizado(r?.terms_updated_at || actualizado);
-      showToast("success", "Termos e contactos gravados.");
+      showToast("success", t(lc, "okTermsSaved"));
     } catch (err) {
-      showToast("danger", err instanceof Error ? err.message : "Erro ao gravar.");
+      showToast("danger", mensagemDeErro(err, lc));
     } finally {
       setAGravar(false);
     }
@@ -133,59 +137,59 @@ export default function TermsPage() {
 
   return (
     <PageFrame
-      kicker="Definições"
-      title="Termos e Condições"
-      description="O que o passageiro aceita ao comprar. Cada alteração sobe a versão, e a versão fica registada em cada compra."
+      kicker={t(lc, "settings")}
+      title={t(lc, "termsAndConditions")}
+      description={t(lc, "termsHint")}
       action={<>
         <button className="icon-text-button" type="button" onClick={() => setPrevia(true)}>
-          <Eye size={16} /><span>Pré-visualizar</span>
+          <Eye size={16} /><span>{t(lc, "preview")}</span>
         </button>
         <button className="icon-text-button" type="button" onClick={carregar}>
-          <RefreshCw size={16} /><span>Recarregar</span>
+          <RefreshCw size={16} /><span>{t(lc, "reload")}</span>
         </button>
         <button className="primary-button" type="button" disabled={aGravar || !carregado} onClick={gravar}>
           <Save size={16} /> {aGravar ? "A gravar…" : "Gravar"}
         </button>
       </>}
     >
-      <SectionCard title="Operador"
-        description="Sai no rodapé da compra, no bilhete e nas apps. É a quem o passageiro liga quando algo corre mal.">
+      <SectionCard title={t(lc, "operator")}
+        description={t(lc, "supportPhoneHint")}>
         <div className="admin-form-grid">
-          <label className="field"><span>Nome da empresa</span>
+          <label className="field"><span>{t(lc, "companyName")}</span>
             <input value={empresa.company_name} placeholder="TPM-TUR (PTY) — Transporte e Turismo"
               onChange={(e) => setEmpresa((p) => ({ ...p, company_name: e.target.value }))} />
           </label>
-          <label className="field"><span>Sítio na internet</span>
+          <label className="field"><span>{t(lc, "website")}</span>
             <input value={empresa.company_website} placeholder="www.tpmtur.co.mz"
               onChange={(e) => setEmpresa((p) => ({ ...p, company_website: e.target.value }))} />
           </label>
-          <label className="field" style={{ gridColumn: "1 / -1" }}><span>Morada</span>
+          <label className="field" style={{ gridColumn: "1 / -1" }}><span>{t(lc, "address")}</span>
             <input value={empresa.company_address} placeholder="Rua da Resistência, Parcela 24, 1º Andar, Maputo"
               onChange={(e) => setEmpresa((p) => ({ ...p, company_address: e.target.value }))} />
           </label>
-          <label className="field"><span>Email de apoio</span>
+          <label className="field"><span>{t(lc, "supportEmail")}</span>
             <input type="email" value={empresa.support_email} placeholder="info@tpmtur.co.mz"
               onChange={(e) => setEmpresa((p) => ({ ...p, support_email: e.target.value }))} />
           </label>
-          <label className="field"><span>Telefone de apoio</span>
+          <label className="field"><span>{t(lc, "supportPhoneLabel")}</span>
             <input value={empresa.support_phone}
               onChange={(e) => setEmpresa((p) => ({ ...p, support_phone: e.target.value }))} />
           </label>
-          <label className="field"><span>Linha de emergência</span>
+          <label className="field"><span>{t(lc, "emergencyLine")}</span>
             <input value={empresa.emergency_phone}
               onChange={(e) => setEmpresa((p) => ({ ...p, emergency_phone: e.target.value }))} />
             <small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>
-              Impressa no bilhete. Fica vazia para usar o telefone de apoio.
+              {t(lc, "emergencyLineHint")}
             </small>
           </label>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <span>Outros contactos</span>
+            <span>{t(lc, "otherContacts")}</span>
             <div className="bzterms-phones">
               {telefones.map((n, i) => (
                 <div className="bzterms-phone" key={i}>
                   <input value={n} placeholder="+258 …"
                     onChange={(e) => setTelefones(telefones.map((x, j) => (j === i ? e.target.value : x)))} />
-                  <button type="button" className="bzsched-time-x" aria-label="Remover"
+                  <button type="button" className="bzsched-time-x" aria-label={t(lc, "remove")}
                     onClick={() => setTelefones(telefones.filter((_, j) => j !== i))}>
                     <X size={13} />
                   </button>
@@ -199,11 +203,11 @@ export default function TermsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Texto dos termos"
+      <SectionCard title={t(lc, "termsText")}
         description={versao
           ? `Versão em vigor: ${versao}${actualizado ? ` · actualizada a ${new Date(actualizado).toLocaleDateString("pt-PT")}` : ""}`
           : "Ainda sem versão publicada."}>
-        <div className="bzterms-langs" role="tablist" aria-label="Língua dos termos">
+        <div className="bzterms-langs" role="tablist" aria-label={t(lc, "termsLanguage")}>
           {(["pt", "en"] as const).map((l) => (
             <button key={l} type="button" role="tab" aria-selected={lingua === l}
               className={`bzterms-lang${lingua === l ? " is-on" : ""}`}
@@ -222,7 +226,7 @@ export default function TermsPage() {
           </p>
         ) : null}
 
-        <label className="field"><span>Introdução</span>
+        <label className="field"><span>{t(lc, "intro")}</span>
           <textarea rows={2} value={introActual}
             placeholder={pt
               ? "Os passageiros embarcam sujeitos a certos requerimentos das nossas condições de embarque."
@@ -235,25 +239,25 @@ export default function TermsPage() {
             <div className="bzterms-editor" key={i}>
               <div className="bzterms-editor-head">
                 <span className="bzterms-num">{i + 1}</span>
-                <input className="bzterms-title" value={s.title} placeholder="Título da secção (ex.: Bilhetes)"
+                <input className="bzterms-title" value={s.title} placeholder={t(lc, "sectionTitleHint")}
                   onChange={(e) => mexerSeccao(i, { title: e.target.value })} />
                 <div className="bzterms-editor-actions">
-                  <button type="button" className="bzsched-time-x" aria-label="Subir"
+                  <button type="button" className="bzsched-time-x" aria-label={t(lc, "moveUp")}
                     disabled={i === 0} onClick={() => mover(i, -1)}><ChevronUp size={13} /></button>
-                  <button type="button" className="bzsched-time-x" aria-label="Descer"
+                  <button type="button" className="bzsched-time-x" aria-label={t(lc, "moveDown")}
                     disabled={i === seccoesActuais.length - 1} onClick={() => mover(i, 1)}><ChevronDown size={13} /></button>
-                  <button type="button" className="bzsched-time-x" aria-label="Eliminar secção"
+                  <button type="button" className="bzsched-time-x" aria-label={t(lc, "deleteSection")}
                     onClick={() => setSeccoesActuais(seccoesActuais.filter((_, j) => j !== i))}><Trash2 size={13} /></button>
                 </div>
               </div>
               {s.items.map((item, j) => (
                 <div className="bzterms-item" key={j}>
-                  <textarea rows={2} value={item} placeholder="Parágrafo"
+                  <textarea rows={2} value={item} placeholder={t(lc, "paragraph")}
                     onChange={(e) => mexerSeccao(i, {
                       items: s.items.map((x, k) => (k === j ? e.target.value : x)),
                     })} />
                   {s.items.length > 1 ? (
-                    <button type="button" className="bzsched-time-x" aria-label="Remover parágrafo"
+                    <button type="button" className="bzsched-time-x" aria-label={t(lc, "removeParagraph")}
                       onClick={() => mexerSeccao(i, { items: s.items.filter((_, k) => k !== j) })}>
                       <X size={13} />
                     </button>
@@ -270,10 +274,10 @@ export default function TermsPage() {
 
         <button type="button" className="icon-text-button" style={{ marginTop: 12 }}
           onClick={() => setSeccoesActuais([...seccoesActuais, { ...VAZIA, items: [""] }])}>
-          <FileText size={15} /><span>Nova secção</span>
+          <FileText size={15} /><span>{t(lc, "newSection")}</span>
         </button>
 
-        <label className="field" style={{ marginTop: 16 }}><span>Fecho</span>
+        <label className="field" style={{ marginTop: 16 }}><span>{t(lc, "closing")}</span>
           <input value={fechoActual}
             placeholder={pt
               ? "A TPM-TUR deseja-lhe uma viagem segura e confortável."

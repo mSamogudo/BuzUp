@@ -39,12 +39,26 @@ const ACTIONS: Record<ErrorKey, { first: string; second: string }> = {
   offline: { first: "reload", second: "back" },
 };
 
+/** A referência que o suporte vai seguir: codigo, endereco e hora reais.
+ *
+ * Sem isto ficava a do protótipo — `404 · /rota-antiga · 04 Ago 2026, 10:12` —
+ * impressa a todos os visitantes. Quem ligasse para o suporte com ela mandava
+ * procurar um endereço que ninguém abriu, numa data que já passou.
+ */
+function refDoPedido(code: ErrorKey): string {
+  const quando = new Date().toLocaleString("pt-PT", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+  return `${code} · ${window.location.pathname} · ${quando}`;
+}
+
 export default function ErrorScreen({
   code,
   reference,
 }: {
   code: ErrorKey;
-  /** Referência técnica real; sem ela usa-se a do desenho como exemplo. */
+  /** Referência técnica vinda de quem chamou; sem ela é construída do pedido. */
   reference?: string;
 }) {
   const { locale, theme, toggleTheme } = useUi();
@@ -118,7 +132,7 @@ export default function ErrorScreen({
             ))}
           </div>
 
-          <span className="bze-ref">{reference || entry.ref}</span>
+          <span className="bze-ref">{reference || refDoPedido(code)}</span>
         </div>
       </main>
 

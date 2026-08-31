@@ -26,6 +26,12 @@ const COPY: Record<Locale, {
   resetBusy: string;
   resetOk: string;
   resetFail: string;
+  proofs: string[];
+  staffPanelTitle: string;
+  staffPanelLead: string;
+  keepSignedIn: string;
+  keepSignedInHint: string;
+  troubleLabel: string;
 }> = {
   pt: {
     eyebrow: { staff: "Acesso seguro", otp: "Acesso por SMS", register: "Nova conta" },
@@ -38,6 +44,16 @@ const COPY: Record<Locale, {
     resetBusy: "A enviar...",
     resetOk: "Se o telefone estiver associado, receberá uma SMS com a nova senha.",
     resetFail: "Erro ao solicitar reposição.",
+    proofs: [
+      "Sessão por conta nominal, com auditoria",
+      "Acesso por SMS para passageiros",
+      "Suporte local em Moçambique",
+    ],
+    staffPanelTitle: "Utilizador e senha",
+    staffPanelLead: "Para pessoal do operador: direcção, tesouraria, agentes e motoristas.",
+    keepSignedIn: "Manter sessão iniciada",
+    keepSignedInHint: "Num terminal partilhado, desligue — a sessão termina ao fechar o separador.",
+    troubleLabel: "Problemas a entrar?",
   },
   en: {
     eyebrow: { staff: "Secure sign in", otp: "SMS access", register: "New account" },
@@ -50,6 +66,16 @@ const COPY: Record<Locale, {
     resetBusy: "Sending...",
     resetOk: "If the phone is linked to an account, you will receive an SMS with the new password.",
     resetFail: "Could not request the reset.",
+    proofs: [
+      "Named-account sessions, fully audited",
+      "SMS access for passengers",
+      "Local support in Mozambique",
+    ],
+    staffPanelTitle: "Username and password",
+    staffPanelLead: "For operator staff: management, treasury, agents and drivers.",
+    keepSignedIn: "Keep me signed in",
+    keepSignedInHint: "On a shared terminal, switch this off — the session ends when the tab closes.",
+    troubleLabel: "Trouble signing in?",
   },
 };
 
@@ -82,6 +108,9 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // Ligado por omissao: e o computador da direccao que se usa todos os dias.
+  // Quem esta num terminal partilhado desliga, e a sessao morre com o separador.
+  const [manterSessao, setManterSessao] = useState(true);
   const [error, setError] = useState("");
   // Desafio do segundo factor. Enquanto existir, o formulário mostra o campo
   // do código em vez do da senha.
@@ -129,7 +158,7 @@ export default function LoginPage() {
 
   /** Depois de autenticado, encaminha para o painel certo. */
   async function entrar(access: string, refresh: string) {
-    login(access, refresh);
+    login(access, refresh, manterSessao);
     const driverRes = await fetch("/api/driver/trips/", {
       headers: { Authorization: `Bearer ${access}` },
     }).catch(() => null);
@@ -203,7 +232,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await apiOtpVerify(phone, challengeId, code, mode === "register" ? fullName.trim() : undefined);
-      login(res.access, res.refresh);
+      login(res.access, res.refresh, manterSessao);
       if (res.agent_id) {
         navigate("/agent", { replace: true });
       } else if (res.driver_id) {
@@ -356,6 +385,16 @@ export default function LoginPage() {
               )}
               <h1>{heading}</h1>
               <p className="bzau-sub">{subheading}</p>
+              {/* As tres provas do desenho: dizem porque e que a conta e
+                  nominal antes de a pessoa perguntar. */}
+              <ul className="bzau-proofs">
+                {copy.proofs.map((prova) => (
+                  <li key={prova}>
+                    <Shield aria-hidden="true" size={14} />
+                    {prova}
+                  </li>
+                ))}
+              </ul>
             </div>
 
             {/* Idioma e tema por cima dos separadores: e onde a mao ja esta,
@@ -403,6 +442,12 @@ export default function LoginPage() {
 
               <div id="bzau-panel" role="tabpanel" aria-labelledby={`bzau-tab-${mode}`}>
                 <p className="bzau-eyebrow">{copy.eyebrow[mode]}</p>
+                {mode === "staff" && !desafio ? (
+                  <div className="bzau-panel-head">
+                    <h2>{copy.staffPanelTitle}</h2>
+                    <p>{copy.staffPanelLead}</p>
+                  </div>
+                ) : null}
 
                 {mode === "staff" ? (
                   desafio ? (
@@ -486,6 +531,17 @@ export default function LoginPage() {
                       {loading ? t(locale, "entering") : t(locale, "enter")}
                       {!loading && <ArrowRight size={16} aria-hidden="true" />}
                     </button>
+                    <label className="bzau-keep">
+                      <input
+                        checked={manterSessao}
+                        onChange={(e) => setManterSessao(e.target.checked)}
+                        type="checkbox"
+                      />
+                      <span>
+                        {copy.keepSignedIn}
+                        <small>{copy.keepSignedInHint}</small>
+                      </span>
+                    </label>
                     <div className="bzau-actions">
                       <button
                         type="button"
@@ -607,8 +663,12 @@ export default function LoginPage() {
               </div>
             </section>
 
-            {/* ── Rodapé: powered by UpDigital ── */}
+            {/* ── Rodapé: ajuda e quem desenvolve ── */}
             <div className="bzau-foot">
+              <p className="bzau-trouble">
+                {copy.troubleLabel}{" "}
+                <a href="mailto:sales@updigital.co.mz">sales@updigital.co.mz</a>
+              </p>
               <p className="bzau-powered">
                 <span>{t(locale, "poweredBy")}</span>
                 {branding.powered_by_logo_url ? (

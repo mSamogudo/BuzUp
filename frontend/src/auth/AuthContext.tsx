@@ -17,7 +17,7 @@ interface AuthState {
   passengerId: number | null;
   driverId: number | null;
   agentId: number | null;
-  login: (access: string, refresh: string) => void;
+  login: (access: string, refresh: string, manter?: boolean) => void;
   logout: () => void;
 }
 
@@ -31,21 +31,63 @@ const AuthContext = createContext<AuthState>({
   logout: () => {},
 });
 
+/* Onde a sessao fica guardada.
+ *
+ * "Manter sessão iniciada" e uma escolha real e nao um visto decorativo: com
+ * ela, o token vai para `localStorage` e sobrevive a fechar o browser — e o
+ * que se quer no computador da direccao. Sem ela vai para `sessionStorage` e
+ * morre com o separador, que e o que tem de acontecer num terminal partilhado
+ * do balcao, onde o turno seguinte nao pode herdar a sessao do anterior.
+ *
+ * Ler procura nos dois: quem ja tinha sessao antes desta opcao existir tinha-a
+ * em `localStorage` e nao pode ser posto fora por causa disto.
+ */
+const CHAVES = ["buzup_token", "buzup_refresh"] as const;
+
+function leSessao(chave: string): string | null {
+  try {
+    return localStorage.getItem(chave) ?? sessionStorage.getItem(chave);
+  } catch {
+    return null;
+  }
+}
+
+function guardarSessao(chave: string, valor: string, manter: boolean) {
+  try {
+    (manter ? localStorage : sessionStorage).setItem(chave, valor);
+    // Nunca deixar a chave nos dois sitios: senao "não manter" deixava rasto.
+    (manter ? sessionStorage : localStorage).removeItem(chave);
+  } catch {
+    /* armazenamento bloqueado: a sessao vive so em memoria nesta aba */
+  }
+}
+
+function limparSessao() {
+  for (const chave of CHAVES) {
+    try {
+      localStorage.removeItem(chave);
+      sessionStorage.removeItem(chave);
+    } catch {
+      /* nada a fazer */
+    }
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const initialPayload = (() => {
-    const stored = localStorage.getItem("buzup_token");
+    const stored = leSessao("buzup_token");
     return stored ? parseJwtPayload(stored) : {};
   })();
 
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("buzup_token"));
-  const [refresh, setRefresh] = useState<string | null>(() => localStorage.getItem("buzup_refresh"));
+  const [token, setToken] = useState<string | null>(() => leSessao("buzup_token"));
+  const [refresh, setRefresh] = useState<string | null>(() => leSessao("buzup_refresh"));
   const [passengerId, setPassengerId] = useState<number | null>(() => intOrNull(initialPayload.passenger_id));
   const [driverId, setDriverId] = useState<number | null>(() => intOrNull(initialPayload.driver_id));
   const [agentId, setAgentId] = useState<number | null>(() => intOrNull(initialPayload.agent_id));
 
-  const login = useCallback((access: string, refreshToken: string) => {
-    localStorage.setItem("buzup_token", access);
-    localStorage.setItem("buzup_refresh", refreshToken);
+  const login = useCallback((access: string, refreshToken: string, manter = true) => {
+    guardarSessao("buzup_token", access, manter);
+    guardarSessao("buzup_refresh", refreshToken, manter);
     setToken(access);
     setRefresh(refreshToken);
     const payload = parseJwtPayload(access);
@@ -55,8 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("buzup_token");
-    localStorage.removeItem("buzup_refresh");
+    limparSessao();
     setToken(null);
     setRefresh(null);
     setPassengerId(null);

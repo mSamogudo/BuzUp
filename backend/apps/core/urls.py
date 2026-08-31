@@ -28,6 +28,7 @@ urlpatterns = [
     path("", include("apps.pos.api.urls")),
     path("", include("apps.users.api.urls_admin")),
     path("", include("apps.sms.api.urls")),
+    path("", include("apps.notifications.api.urls")),
     path("agent/", include("apps.agent_api.urls")),
     path("mobile/", include("apps.mobile_api.urls")),
 ]

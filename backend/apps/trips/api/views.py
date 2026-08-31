@@ -221,16 +221,24 @@ class ProgramarPartidasView(APIView):
             pk = data.get(chave)
             return modelo.objects.filter(pk=pk).first() if pk else None
 
-        resultado = programar_partidas(
-            route=route,
-            dates=data["dates"],
-            times=data["times"],
-            vehicle=_opcional(Vehicle, "vehicle_id"),
-            driver=_opcional(Driver, "driver_id"),
-            agent=_opcional(Agent, "agent_id"),
-            duration_minutes=data.get("duration_minutes"),
-            preview=data["preview"],
-        )
+        from apps.routes.services import SentidoIndefinido
+
+        try:
+            resultado = programar_partidas(
+                route=route,
+                dates=data["dates"],
+                times=data["times"],
+                vehicle=_opcional(Vehicle, "vehicle_id"),
+                driver=_opcional(Driver, "driver_id"),
+                agent=_opcional(Agent, "agent_id"),
+                duration_minutes=data.get("duration_minutes"),
+                direction=data.get("direction") or "",
+                preview=data["preview"],
+            )
+        except SentidoIndefinido as e:
+            # Chega a pre-visualizacao tambem: o operador ve o problema
+            # enquanto escolhe, e nao depois de carregar em criar.
+            return Response({"direction": [str(e)]}, status=status.HTTP_400_BAD_REQUEST)
         criadas = resultado.pop("trips")
         resultado["route_code"] = route.code
         resultado["route_name"] = route.name

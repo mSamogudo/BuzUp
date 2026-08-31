@@ -164,3 +164,95 @@ def route_segments_for_stop_pair(
         if segment:
             result[route.id] = segment
     return result
+
+
+def paragens_no_sentido(route, direction: str = "") -> list:
+    """As paragens da rota pela ordem em que o autocarro as vai encontrar.
+
+    Uma rota tem duas listas — `outbound` e `inbound` — e sao a mesma estrada ao
+    contrario. Quem listava paragens ordenava por `("direction", "sequence")` e
+    ficava-se pela primeira ocorrencia de cada paragem: como "inbound" vem antes
+    de "outbound" por ordem alfabetica, o percurso saia SEMPRE na ordem da
+    volta. Na ida, o passageiro via o destino em primeiro lugar e a origem no
+    fim — exactamente o percurso contrario ao que ia fazer.
+
+    Com o sentido conhecido, mostra-se o dele. Sem sentido declarado (partidas
+    anteriores ao campo existir), fica a ida — que e a leitura natural da rota,
+    e a mesma que o portal ja usa para o nome dela.
+    """
+    from apps.routes.models import RouteStop
+
+    escolhido = direction or RouteStop.Direction.OUTBOUND
+    paragens = list(
+        RouteStop.objects.select_related("stop")
+        .filter(route=route, direction=escolhido, stop__status="active")
+        .order_by("sequence")
+    )
+    if not paragens:
+        # Rota so definida no outro sentido: mais vale mostrar o que existe do
+        # que devolver um percurso vazio.
+        paragens = list(
+            RouteStop.objects.select_related("stop")
+            .filter(route=route, stop__status="active")
+            .order_by("direction", "sequence")
+        )
+    vistas: dict = {}
+    for rs in paragens:
+        vistas.setdefault(rs.stop_id, {"id": rs.stop_id, "code": rs.stop.code, "name": rs.stop.name})
+    return list(vistas.values())
+
+
+class SentidoIndefinido(Exception):
+    """A rota tem dois sentidos e a partida nao diz por qual vai."""
+
+
+def sentidos_da_rota(route) -> set:
+    """Os sentidos que esta rota tem realmente definidos nas paragens."""
+    from apps.routes.models import RouteStop
+
+    return set(
+        RouteStop.objects.filter(route=route)
+        .values_list("direction", flat=True)
+        .distinct()
+    )
+
+
+def sentido_obrigatorio(route, direction: str) -> str:
+    """O sentido de uma partida nesta rota, validado contra as paragens dela.
+
+    Poder declarar o sentido nao chega: enquanto for opcional, a proxima
+    partida criada por engano sem ele volta a aparecer nas duas pesquisas, e o
+    defeito reaparece sem ninguem dar por isso. Uma correccao que depende de
+    alguem se lembrar nao e uma correccao.
+
+    Quem sabe se ha escolha a fazer e a propria rota:
+
+    - definida num so sentido — nao ha nada a escolher, e a partida herda-o;
+    - definida nos dois — a partida TEM de dizer por qual vai;
+    - sem paragens ainda — nao ha como validar, aceita-se o que vier.
+
+    Assim o operador so responde quando a pergunta existe mesmo, e nunca fica
+    a decidir uma coisa que a rota ja decidiu por ele.
+    """
+    sentidos = {d for d in sentidos_da_rota(route) if d}
+    escolhido = (direction or "").strip()
+
+    if not sentidos:
+        return escolhido
+    if len(sentidos) == 1:
+        unico = next(iter(sentidos))
+        if escolhido and escolhido != unico:
+            raise SentidoIndefinido(
+                f"Esta rota so esta definida no sentido "
+                f"'{'ida' if unico == 'outbound' else 'volta'}'. "
+                f"Acrescente as paragens do outro sentido antes de a programar."
+            )
+        return unico
+    if not escolhido:
+        raise SentidoIndefinido(
+            "Esta rota tem ida e volta. Indique o sentido da partida — sem ele, "
+            "quem procurar a ida recebe tambem as viagens de volta."
+        )
+    if escolhido not in sentidos:
+        raise SentidoIndefinido(f"Sentido desconhecido: {escolhido!r}.")
+    return escolhido

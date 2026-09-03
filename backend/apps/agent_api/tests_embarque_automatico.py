@@ -115,6 +115,33 @@ class EmbarqueAutomaticoTests(TestCase):
         self.viagem.refresh_from_db()
         self.assertEqual(self.viagem.status, Trip.Status.DEPARTED)
 
+    def test_venda_antecipada_nao_abre_o_embarque_de_amanha(self):
+        """A guarda que a venda antecipada obrigou a por.
+
+        Desde que o balcao voltou a vender para outro dia, a primeira venda
+        para amanha punha a viagem de amanha em embarque HOJE. Partiam-se duas
+        coisas de uma vez: perdia-se o registo de quando o embarque comecou de
+        facto — que e a razao de ser deste automatismo — e a viagem passava a
+        contar como "a circular", ficando na lista do balcao ate ao dia
+        seguinte.
+        """
+        self.viagem.planned_departure_at = timezone.now() + timedelta(days=1)
+        self.viagem.save(update_fields=["planned_departure_at"])
+        r = self._vender()
+        self.assertEqual(r.status_code, 201, r.content)
+        self.viagem.refresh_from_db()
+        self.assertEqual(self.viagem.status, Trip.Status.SCHEDULED)
+        self.assertIsNone(self.viagem.activity_started_at)
+
+    def test_partida_sem_data_continua_a_abrir_o_embarque(self):
+        """Nao ha por onde julga-la, e e o caso da urbana vendida com o
+        autocarro ali a frente."""
+        self.viagem.planned_departure_at = None
+        self.viagem.save(update_fields=["planned_departure_at"])
+        self._vender()
+        self.viagem.refresh_from_db()
+        self.assertEqual(self.viagem.status, Trip.Status.BOARDING)
+
     def test_venda_sem_motorista_atribuido_abre_o_embarque_na_mesma(self):
         """Venda ao balcao numa partida sem motorista: nao ha ciclo de
         motorista para abrir, mas a viagem tem de ficar vendavel."""

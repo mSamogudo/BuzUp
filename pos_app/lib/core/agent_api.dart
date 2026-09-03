@@ -188,10 +188,19 @@ class AgentApi {
   }
 
   // ----- Trips -----
-  Future<List<dynamic>> trips({int? routeId}) async {
+  /// As viagens que o balcao pode vender.
+  ///
+  /// Sem [date], sao as de hoje — o que esta a circular mais as partidas do
+  /// dia. Com [date] (AAAA-MM-DD), sao as partidas desse dia e so desse: e a
+  /// venda antecipada, em que o agente da recepcao escolhe o dia de proposito.
+  Future<List<dynamic>> trips({int? routeId, String? date}) async {
+    final query = <String, dynamic>{
+      if (routeId != null) 'route': routeId,
+      if (date != null && date.isNotEmpty) 'date': date,
+    };
     final res = await _http.get<List<dynamic>>(
       '/api/agent/trips/',
-      query: routeId != null ? {'route': routeId} : null,
+      query: query.isEmpty ? null : query,
     );
     return res.data ?? const [];
   }

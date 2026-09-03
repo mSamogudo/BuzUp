@@ -64,17 +64,26 @@ class _FakeApi extends AgentApi {
 
   final bool seated;
 
+  /// O `date` com que a lista foi pedida da ultima vez. `null` e hoje.
+  String? diaPedido;
+
   @override
-  Future<List<dynamic>> trips({int? routeId}) async => [
-        {
-          'id': 7,
-          'route_code': 'R-XX',
-          'route_name': 'Maputo - Xai-Xai',
-          'vehicle': 'AAA-11-MC',
-          'driver': 'Joao Sitoe',
-          'status': 'scheduled',
-        },
-      ];
+  Future<List<dynamic>> trips({int? routeId, String? date}) async {
+    diaPedido = date;
+    return [
+      {
+        'id': 7,
+        'route_code': 'R-XX',
+        'route_name': 'Maputo - Xai-Xai',
+        'vehicle': 'AAA-11-MC',
+        'driver': 'Joao Sitoe',
+        'status': 'scheduled',
+        // A hora e o que distingue duas partidas da mesma rota no mesmo dia.
+        'planned_departure_at':
+            DateTime.now().add(const Duration(hours: 3)).toIso8601String(),
+      },
+    ];
+  }
 
   @override
   Future<Map<String, dynamic>> trip(int tripId) async => {
@@ -220,6 +229,69 @@ FilledButton _actionButton(WidgetTester tester) =>
     tester.widget<FilledButton>(find.byType(FilledButton).last);
 
 void main() {
+  // --- venda antecipada (reposta em 2026-09-03) -------------------------
+  //
+  // O agente de recepcao nao viaja: reserva para amanha e para a semana. Mas a
+  // janela aberta de sete dias que houve em Agosto trazia a mesma rota
+  // repetida dia apos dia, escrita igual, e bastava um toque distraido para o
+  // bilhete sair para o autocarro errado. Daí a regra: a lista abre SEMPRE em
+  // hoje, e o outro dia pede-se.
+
+  testWidgets('a lista abre em hoje — nao pede dia nenhum ao servidor',
+      (tester) async {
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    expect(api.diaPedido, isNull);
+  });
+
+  testWidgets('escolher outro dia pede esse dia ao servidor', (tester) async {
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+
+    await tester.tap(find.text('Outro dia'));
+    await tester.pumpAndSettle();
+    // O calendario abre em hoje; o dia seguinte esta sempre visivel na grelha.
+    final amanha = DateTime.now().add(const Duration(days: 1));
+    await tester.tap(find.text('${amanha.day}').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver partidas'));
+    await tester.pumpAndSettle();
+
+    final esperado = '${amanha.year.toString().padLeft(4, '0')}-'
+        '${amanha.month.toString().padLeft(2, '0')}-'
+        '${amanha.day.toString().padLeft(2, '0')}';
+    expect(api.diaPedido, esperado);
+  });
+
+  testWidgets('vender para outro dia avisa no ecra que nao e hoje',
+      (tester) async {
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    await tester.tap(find.text('Outro dia'));
+    await tester.pumpAndSettle();
+    final amanha = DateTime.now().add(const Duration(days: 1));
+    await tester.tap(find.text('${amanha.day}').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ver partidas'));
+    await tester.pumpAndSettle();
+
+    // Sem este aviso, uma lista de partidas de amanha e visualmente igual a de
+    // hoje — que e exactamente o engano que se quer evitar.
+    expect(find.textContaining('Venda antecipada'), findsOneWidget);
+    expect(find.text('Voltar a hoje'), findsOneWidget);
+  });
+
+  testWidgets('a hora da partida aparece na lista', (tester) async {
+    // Mostrava rota, sentido, viatura e motorista — nunca a hora. Numa rota
+    // com tres partidas no mesmo dia as linhas eram indistinguiveis.
+    final api = _FakeApi(seated: false);
+    await _pump(tester, api);
+    final parte = DateTime.now().add(const Duration(hours: 3));
+    final hhmm = '${parte.hour.toString().padLeft(2, '0')}:'
+        '${parte.minute.toString().padLeft(2, '0')}';
+    expect(find.textContaining(hhmm), findsOneWidget);
+  });
+
   testWidgets('carreira urbana vende em tres passos', (tester) async {
     await _pump(tester, _FakeApi(seated: false));
     expect(find.text('PASSO 1 DE 3'), findsOneWidget);

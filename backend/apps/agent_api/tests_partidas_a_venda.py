@@ -7,13 +7,22 @@ seja: a unica maneira de vender era o motorista abrir o embarque primeiro, o
 que numa carreira internacional acontece horas depois de o bilhete ser vendido.
 
 **A regra mudou em 2026-08-26, por decisao do operador.** O balcao passou a
-mostrar SO o que esta a circular: a TPM-TUR nao vende antecipado ao balcao, e
+mostrar SO o que esta a circular: a TPM-TUR nao vendia antecipado ao balcao, e
 abrir o embarque e o acto que poe o autocarro a venda.
 
-Isso repoe, de propósito, o comportamento que originou o incidente acima — com
-uma diferenca que e tudo: agora e a REGRA e nao um acidente, e o ecra vazio diz
-o que falta ("A venda so esta disponivel depois de o motorista abrir o
-embarque") com atalho para o ecra onde se abre.
+**E mudou outra vez em 2026-09-03, tambem por decisao do operador.** O agente
+de recepcao nao viaja: quem atende ao balcao reserva para amanha e para a
+semana, e o modelo "vende-se o autocarro que esta ali" nunca foi o dele.
+
+O que NAO volta e a janela aberta de Agosto, que foi o que correu mal — o
+balcao abria com 14 viagens das quais 3 estavam a acontecer, e as outras eram a
+mesma rota repetida dia apos dia. A antecedencia volta com a data PEDIDA:
+
+* sem `?date=`, a lista e a de hoje, identica a que estes testes ja fixavam;
+* com `?date=AAAA-MM-DD`, sao as partidas desse dia e so desse, ate 30 dias.
+
+A diferenca esta em quem escolhe. Em Agosto a viagem de amanha estava na lista
+a espera de um toque a mais; agora e preciso pedir o dia.
 
 `Trip.sellable_statuses_for` continua a permitir a venda a uma partida agendada
 — o portal publico usa-a para a venda antecipada pelo site. O que mudou foi o
@@ -34,7 +43,14 @@ from apps.routes.models import Route, RouteStop, Stop
 from apps.trips.models import Agent, Trip, Vehicle
 
 
-class PartidasNoBalcaoTests(TestCase):
+class _CenarioDoBalcao:
+    """Cenario partilhado pelas duas listas — a de hoje e a do dia pedido.
+
+    Mixin, e nao heranca entre as classes de teste: as duas correm contra o
+    mesmo mundo, mas herdar uma da outra punha os testes da primeira a correr
+    duas vezes sem provar nada de novo.
+    """
+
     def setUp(self):
         User = get_user_model()
         self.user = User.objects.create_user(
@@ -62,6 +78,14 @@ class PartidasNoBalcaoTests(TestCase):
         self.assertEqual(r.status_code, 200, r.content)
         return {t["id"] for t in r.json()}
 
+    def ids_do_dia(self, quando):
+        """A lista com o dia pedido de proposito — a venda antecipada."""
+        r = self.client.get("/api/agent/trips/", {"date": quando.strftime("%Y-%m-%d")})
+        self.assertEqual(r.status_code, 200, r.content)
+        return {t["id"] for t in r.json()}
+
+
+class PartidasNoBalcaoTests(_CenarioDoBalcao, TestCase):
     def test_partida_agendada_de_hoje_aparece_no_balcao(self):
         """A viagem criada no portal nasce `agendada` e tem de aparecer.
 
@@ -80,29 +104,24 @@ class PartidasNoBalcaoTests(TestCase):
         viagem = self._viagem(rota, Trip.Status.BOARDING, timezone.now() + timedelta(minutes=90))
         self.assertIn(viagem.id, self.ids_listados())
 
-    def test_partida_de_amanha_nao_aparece(self):
-        """REQUISITO CORRIGIDO PELO OPERADOR em 2026-08-26.
+    def test_partida_de_amanha_nao_aparece_na_lista_de_hoje(self):
+        """A venda antecipada existe, mas nao se intromete na lista de hoje.
 
-        Este teste afirmava o contrario — "viagem criada hoje para amanha,
-        vendida hoje" — porque se assumira que o balcao vendia antecipado. O
-        operador (TPM-TUR) esclareceu que NAO vende: a venda antecipada faz-se
-        pelo site, onde a data se escolhe de proposito.
-
-        Com o prazo de sete dias, o balcao abria com 14 viagens das quais 3
-        estavam a acontecer — as outras eram a mesma rota repetida dia apos
-        dia, e bastava tocar na linha errada para o bilhete sair para o
-        autocarro de amanha.
-
-        Fica a janela do DIA. Se um dia voltarem a vender antecipado ao balcao,
-        e este teste que muda — e o de cima, que protege a viagem de hoje ainda
-        sem embarque, tem de continuar a passar.
+        E esta a licao de Agosto: a viagem de amanha na lista por omissao era a
+        14a linha visualmente igual as outras, a espera de um toque distraido.
+        Continua fora dela. Quem quer amanha, pede amanha — ver
+        `test_partida_de_amanha_aparece_quando_se_pede_o_dia`.
         """
         rota = self._rota("R-INT-AM", Route.ServiceType.INTERNATIONAL)
         viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(days=1))
         self.assertNotIn(viagem.id, self.ids_listados())
 
     def test_partida_agendada_de_rota_urbana_nao_aparece(self):
-        """Na urbana vende-se o autocarro que esta ali, nao o de amanha."""
+        """Na urbana vende-se o autocarro que esta ali, nao o de amanha.
+
+        Vale para a lista de hoje e para a data pedida — ver
+        `test_urbana_nao_entra_na_venda_antecipada`.
+        """
         rota = self._rota("R-URB", Route.ServiceType.URBAN)
         viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(days=1))
         self.assertNotIn(viagem.id, self.ids_listados())
@@ -149,3 +168,76 @@ class PartidasNoBalcaoTests(TestCase):
         )
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(r.json()["fare_amount"], "1500.00")
+
+
+class VendaAntecipadaTests(_CenarioDoBalcao, TestCase):
+    """A antecedencia com a data pedida — reposta em 2026-09-03."""
+
+    def test_partida_de_amanha_aparece_quando_se_pede_o_dia(self):
+        """O caso que motivou tudo: o agente de recepcao vende para amanha."""
+        rota = self._rota("R-ANT-1", Route.ServiceType.INTERNATIONAL)
+        amanha = timezone.localtime() + timedelta(days=1)
+        viagem = self._viagem(rota, Trip.Status.SCHEDULED, amanha)
+        self.assertIn(viagem.id, self.ids_do_dia(amanha))
+
+    def test_o_dia_pedido_traz_so_esse_dia(self):
+        """Senao era a lista de Agosto outra vez, so que com um botao a frente."""
+        rota = self._rota("R-ANT-2", Route.ServiceType.INTERPROVINCIAL)
+        amanha = timezone.localtime() + timedelta(days=1)
+        depois = timezone.localtime() + timedelta(days=2)
+        de_amanha = self._viagem(rota, Trip.Status.SCHEDULED, amanha)
+        de_depois = self._viagem(rota, Trip.Status.SCHEDULED, depois)
+        listados = self.ids_do_dia(amanha)
+        self.assertIn(de_amanha.id, listados)
+        self.assertNotIn(de_depois.id, listados)
+
+    def test_pedir_hoje_da_a_lista_de_hoje_com_o_que_circula(self):
+        """Nao ha duas verdades para o mesmo dia.
+
+        Uma viagem em embarque sem hora de partida so aparece pelo ramo do
+        "esta a circular". Se `?date=hoje` fosse uma consulta a parte, ela
+        desaparecia — e o agente que carregasse em "hoje" via menos do que
+        antes de carregar.
+        """
+        rota = self._rota("R-ANT-3", Route.ServiceType.INTERNATIONAL)
+        circulando = Trip.objects.create(
+            route=rota, vehicle=self.viatura, status=Trip.Status.BOARDING)
+        self.assertIn(circulando.id, self.ids_do_dia(timezone.localtime()))
+
+    def test_urbana_nao_entra_na_venda_antecipada(self):
+        """Nao se reserva o autocarro urbano de quinta — entra-se no que esta la."""
+        rota = self._rota("R-ANT-URB", Route.ServiceType.URBAN)
+        amanha = timezone.localtime() + timedelta(days=1)
+        viagem = self._viagem(rota, Trip.Status.SCHEDULED, amanha)
+        self.assertNotIn(viagem.id, self.ids_do_dia(amanha))
+
+    def test_viagem_ja_encerrada_num_dia_futuro_nao_se_vende(self):
+        """Uma partida futura que nao esta `agendada` e erro de dados."""
+        rota = self._rota("R-ANT-4", Route.ServiceType.INTERNATIONAL)
+        amanha = timezone.localtime() + timedelta(days=1)
+        viagem = self._viagem(rota, Trip.Status.COMPLETED, amanha)
+        self.assertNotIn(viagem.id, self.ids_do_dia(amanha))
+
+    def test_dia_alem_do_limite_diz_porque(self):
+        """Lista vazia nao explicava nada; o limite tem de se anunciar."""
+        alem = (timezone.localtime() + timedelta(days=31)).strftime("%Y-%m-%d")
+        r = self.client.get("/api/agent/trips/", {"date": alem})
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertIn("30", r.json()["detail"])
+
+    def test_dia_que_ja_passou_e_recusado(self):
+        ontem = (timezone.localtime() - timedelta(days=1)).strftime("%Y-%m-%d")
+        r = self.client.get("/api/agent/trips/", {"date": ontem})
+        self.assertEqual(r.status_code, 400, r.content)
+
+    def test_data_com_lixo_nao_rebenta(self):
+        r = self.client.get("/api/agent/trips/", {"date": "amanha"})
+        self.assertEqual(r.status_code, 400, r.content)
+
+    def test_data_vazia_e_a_lista_de_hoje(self):
+        """O POS manda `date=` vazio quando o agente limpa a escolha."""
+        rota = self._rota("R-ANT-5", Route.ServiceType.INTERNATIONAL)
+        viagem = self._viagem(rota, Trip.Status.SCHEDULED, timezone.now() + timedelta(hours=2))
+        r = self.client.get("/api/agent/trips/", {"date": ""})
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertIn(viagem.id, {t["id"] for t in r.json()})

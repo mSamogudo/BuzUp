@@ -161,9 +161,25 @@ def abrir_embarque_se_preciso(trip, agent, user=None) -> None:
     Falhar aqui nao pode travar a venda: o dinheiro do passageiro nao depende
     de um estado de viagem. Se nao conseguir abrir, a venda segue e o embarque
     fica como estava.
+
+    **So a partida de HOJE.** Desde que o balcao voltou a vender antecipado
+    (`AgentTripListView`), a primeira venda para amanha punha a viagem de
+    amanha em embarque hoje, e carimbava-lhe um `activity_started_at` de hoje.
+    Duas coisas partiam-se de uma vez: perdia-se o registo de quando o embarque
+    comecou de facto — que e a razao de ser desta funcao — e a viagem passava a
+    contar como "a circular", ficando na lista do balcao ate ao dia seguinte.
+
+    Uma partida sem data planeada continua a abrir: nao ha por onde julga-la, e
+    e o caso da carreira urbana que se vende com o autocarro ali a frente.
     """
     if trip is None or trip.status != Trip.Status.SCHEDULED:
         return
+    if trip.planned_departure_at is not None:
+        from django.utils import timezone as _tz
+
+        tz = _tz.get_current_timezone()
+        if trip.planned_departure_at.astimezone(tz).date() > _tz.now().astimezone(tz).date():
+            return
     try:
         from apps.trips.activity import start_trip_activity
 

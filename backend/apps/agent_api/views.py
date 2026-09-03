@@ -575,9 +575,17 @@ class AgentTripListView(APIView):
     autocarro, distintas so pela data. Uma linha tocada por engano mandava o
     bilhete para o autocarro de amanha.
 
-    **A TPM-TUR nao vende antecipado ao balcao** — decidido pelo operador em
-    2026-08-26. Amanha em diante nao aparece: a venda antecipada faz-se pelo
-    site, onde a data se escolhe de proposito e nao por engano.
+    **A venda antecipada ao balcao voltou em 2026-09-03, por decisao do
+    operador.** Nao volta como estava: o agente de recepcao nao viaja, e o
+    modelo "vende-se o autocarro que esta ali" nunca foi o dele — quem atende
+    ao balcao reserva para amanha, para a semana. O que nao volta e a janela
+    ABERTA, que foi o que correu mal (ver `TOLERANCIA` e o paragrafo seguinte).
+
+    A data pede-se: sem `?date=`, a lista e a de HOJE, exactamente como era.
+    Com `?date=AAAA-MM-DD`, o balcao ve as partidas DESSE dia e so desse. E a
+    diferenca que importa em relacao aos sete dias de Agosto: a data e uma
+    escolha explicita do agente, e nao uma linha a mais numa lista que ele
+    percorre com o polegar.
 
     Chegou a mostrar SO o que circulava, tambem a pedido. Voltou a incluir as
     de hoje quando o embarque passou a abrir-se sozinho na primeira venda (ver
@@ -585,9 +593,16 @@ class AgentTripListView(APIView):
     o agente nunca a podia escolher, e a primeira venda — que e o que abre o
     embarque — nunca chegava a acontecer. As duas regras juntas nao funcionam.
 
-    A janela do DIA e o que concilia as duas: nao ha venda antecipada, e o
-    autocarro que o motorista vai trabalhar hoje esta la para ser vendido sem
-    ter de carregar em nada antes.
+    A janela do DIA e o que concilia as duas: a lista que se abre sozinha e a
+    de hoje, e o autocarro que o motorista vai trabalhar hoje esta la para ser
+    vendido sem ter de carregar em nada antes.
+
+    Vender para um dia futuro NAO abre o embarque — ver
+    `abrir_embarque_se_preciso`, que so actua na partida de hoje. Sem essa
+    guarda, a primeira venda antecipada punha a viagem de amanha em embarque
+    hoje e dava-lhe um `activity_started_at` de hoje: o registo de quando o
+    embarque comecou de facto ficava perdido, e a viagem passava a contar como
+    "a circular" e nunca mais saia da lista.
 
     O ciclo do motorista vive noutro sitio (`DriverTripsView`), que mostra as
     agendadas todas: e la que o embarque se abre.
@@ -626,13 +641,40 @@ class AgentTripListView(APIView):
     #: mais gente aparece a comprar.
     TOLERANCIA = timedelta(hours=6)
 
+    #: Ate quantos dias a frente o balcao pode vender, com a data pedida.
+    #:
+    #: Nao e uma medida de seguranca — e o limite ate onde as partidas estao
+    #: realmente planeadas. Pedir um dia para alem disto devolve uma lista
+    #: vazia que nao explica nada; e preferivel dize-lo.
+    ANTECEDENCIA_MAXIMA = 30
+
     def get(self, request):
         agora = timezone.now()
         tz = timezone.get_current_timezone()
+        hoje = agora.astimezone(tz).date()
+
+        # Dia pedido de proposito pelo agente ("vender para outro dia").
+        pedido = (request.query_params.get("date") or "").strip()
+        if pedido:
+            try:
+                dia = datetime.strptime(pedido, "%Y-%m-%d").date()
+            except ValueError:
+                return Response({"detail": "Data invalida. Use AAAA-MM-DD."}, status=400)
+            if dia < hoje:
+                return Response({"detail": "Nao se vende para um dia que ja passou."}, status=400)
+            if (dia - hoje).days > self.ANTECEDENCIA_MAXIMA:
+                return Response(
+                    {"detail": f"So e possivel vender ate {self.ANTECEDENCIA_MAXIMA} dias a frente."},
+                    status=400,
+                )
+            if dia > hoje:
+                return self._partidas_do_dia(request, dia, tz)
+            # Para HOJE nao ha duas verdades: cai na lista de sempre, que alem
+            # das agendadas traz o que esta a circular.
+
         # Fim do dia em hora LOCAL: o balcao raciocina no dia dele, nao em UTC.
         # Com o fuso de Maputo (+2) a diferenca sao duas partidas inteiras.
-        fim_do_dia = timezone.make_aware(
-            datetime.combine(agora.astimezone(tz).date(), time.max), tz)
+        fim_do_dia = timezone.make_aware(datetime.combine(hoje, time.max), tz)
         qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
             # Viva por qualquer um dos dois sinais: arrancada ha pouco, ou
             # com partida prevista para ha pouco.
@@ -657,6 +699,35 @@ class AgentTripListView(APIView):
             )
         )
         # Motorista ve apenas as viagens que conduz; o agente escolhe qualquer.
+        driver = driver_only_scope(request.user)
+        if driver:
+            qs = qs.filter(driver=driver)
+        route_id = request.query_params.get("route")
+        if route_id:
+            qs = qs.filter(route_id=route_id)
+        return Response([_trip_payload(t) for t in qs.order_by("planned_departure_at")[:50]])
+
+    def _partidas_do_dia(self, request, dia, tz):
+        """As partidas de um dia FUTURO — a venda antecipada ao balcao.
+
+        So `agendada`: uma viagem futura em qualquer outro estado e um erro de
+        dados (ou uma viagem antiga reutilizada), e nao algo para vender.
+
+        So os servicos com lugar marcado (interprovincial, internacional). Na
+        urbana nao se reserva o autocarro de quinta-feira — entra-se no que
+        esta na paragem — e por isso a antecedencia nao lhe diz respeito.
+
+        O limite do motorista mantem-se: quem conduz continua a ver so as suas,
+        seja hoje ou daqui a duas semanas.
+        """
+        inicio = timezone.make_aware(datetime.combine(dia, time.min), tz)
+        fim = timezone.make_aware(datetime.combine(dia, time.max), tz)
+        qs = Trip.objects.select_related("route", "vehicle", "driver").filter(
+            status=Trip.Status.SCHEDULED,
+            route__service_type__in=Route.SEATED_SERVICE_TYPES,
+            planned_departure_at__gte=inicio,
+            planned_departure_at__lte=fim,
+        )
         driver = driver_only_scope(request.user)
         if driver:
             qs = qs.filter(driver=driver)

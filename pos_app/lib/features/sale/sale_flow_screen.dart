@@ -54,6 +54,15 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   /// a decorrer, é nessa que se vende. Ver [_viagemEmCurso].
   bool _escolhaManual = false;
 
+  /// O dia para o qual se está a vender. `null` é hoje — a lista de sempre.
+  ///
+  /// O agente de recepção não viaja: reserva para amanhã e para a semana. Mas
+  /// a lista abre sempre em hoje, e o outro dia pede-se. A janela aberta de
+  /// sete dias que houve em Agosto trazia a mesma rota repetida dia após dia,
+  /// escrita igual, e bastava um toque distraído para o bilhete sair para o
+  /// autocarro de amanhã. Agora a data é uma escolha, não uma linha a mais.
+  DateTime? _diaEscolhido;
+
 
   Map<String, dynamic>? _selectedTrip;
   List<dynamic> _stops = [];
@@ -212,6 +221,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       _paymentStatus = '';
       _tickets = [];
       _error = null;
+      // O dia volta a hoje. Pela mesma razao que o contacto de emergencia se
+      // limpa: o passageiro seguinte e outra pessoa, e um balcao que ficasse
+      // preso em amanha vendia-lhe o autocarro errado sem nada no ecra a
+      // dize-lo. Quem quer amanha outra vez, pede outra vez.
+      _diaEscolhido = null;
     });
     // A venda que acabou de ser feita mudou a lotacao: recarregar evita
     // oferecer lugares que ja nao existem.
@@ -247,11 +261,13 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     });
     try {
       final api = ref.read(agentApiProvider);
-      final trips = await api.trips();
+      final trips = await api.trips(
+          date: _diaEscolhido == null ? null : _isoDia(_diaEscolhido!));
       setState(() => _trips = trips);
-      // Uma só a decorrer: é essa. Vende-se nela sem passar pela lista.
+      // Uma só a decorrer: é essa. Vende-se nela sem passar pela lista. Não
+      // vale quando se pediu outro dia: aí o agente escolheu ver a lista.
       final activa = _viagemEmCurso;
-      if (activa != null && !_escolhaManual && _step == _Step.trip) {
+      if (activa != null && !_escolhaManual && _diaEscolhido == null && _step == _Step.trip) {
         await _selectTrip(activa);
       }
     } on DioException catch (e) {
@@ -259,6 +275,58 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     } finally {
       if (mounted) setState(() => _loadingTrips = false);
     }
+  }
+
+  /// AAAA-MM-DD em hora LOCAL. `toIso8601String()` não serve: converte para
+  /// UTC e, com o fuso de Maputo (+2), uma partida da meia-noite e meia passa
+  /// a ser do dia anterior.
+  static String _isoDia(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}'
+      '-${d.day.toString().padLeft(2, '0')}';
+
+  static bool _mesmoDia(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  /// A hora da partida, como aparece na lista.
+  ///
+  /// É o que faltava para a lista ser legível: mostrava rota, sentido, viatura
+  /// e motorista, mas nunca a hora — e numa rota com três partidas no mesmo
+  /// dia as linhas eram indistinguíveis. Fora de hoje leva também o dia, senão
+  /// "07:30" não diz para que manhã é.
+  static String _quandoParte(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    final t = DateTime.tryParse(iso)?.toLocal();
+    if (t == null) return '';
+    final hora = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    if (_mesmoDia(t, DateTime.now())) return hora;
+    return '${t.day.toString().padLeft(2, '0')}/${t.month.toString().padLeft(2, '0')} $hora';
+  }
+
+  /// "Vender para outro dia" — a venda antecipada ao balcão.
+  ///
+  /// O limite de 30 dias é o mesmo do servidor (`ANTECEDENCIA_MAXIMA`): mais
+  /// vale o calendário não deixar escolher do que devolver um erro depois.
+  Future<void> _escolherDia() async {
+    final agora = DateTime.now();
+    final hoje = DateTime(agora.year, agora.month, agora.day);
+    final escolhido = await showDatePicker(
+      context: context,
+      initialDate: _diaEscolhido ?? hoje,
+      firstDate: hoje,
+      lastDate: hoje.add(const Duration(days: 30)),
+      helpText: 'Vender para que dia?',
+      cancelText: 'Cancelar',
+      confirmText: 'Ver partidas',
+    );
+    if (escolhido == null || !mounted) return;
+    setState(() {
+      // Escolher hoje volta à lista normal, que além das partidas do dia traz
+      // o que está a circular — e não a uma consulta só de hoje, que mostraria
+      // menos do que antes de carregar.
+      _diaEscolhido = _mesmoDia(escolhido, hoje) ? null : escolhido;
+      _escolhaManual = true;
+    });
+    await _loadTrips();
   }
 
   Future<void> _selectTrip(Map<String, dynamic> trip) async {
@@ -855,9 +923,53 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       };
 
   Widget _stepSelectTrip() {
+    final dia = _diaEscolhido;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _errorBanner(),
-      const Text('1. Escolha a viagem', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      Row(children: [
+        const Expanded(
+          child: Text('1. Escolha a viagem',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+        TextButton.icon(
+          onPressed: _escolherDia,
+          icon: const Icon(Icons.event, size: 18),
+          label: Text(dia == null
+              ? 'Outro dia'
+              : '${dia.day.toString().padLeft(2, '0')}/${dia.month.toString().padLeft(2, '0')}'),
+        ),
+      ]),
+      // O aviso de que NAO se esta a vender para hoje. Sem ele, uma lista de
+      // partidas de amanha e visualmente igual a de hoje — que e exactamente
+      // o engano que se quer evitar.
+      if (dia != null)
+        Container(
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1D5FA7).withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(children: [
+            const Icon(Icons.event_available, size: 18, color: Color(0xFF1D5FA7)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Venda antecipada para ${dia.day.toString().padLeft(2, '0')}'
+                '/${dia.month.toString().padLeft(2, '0')}/${dia.year}',
+                style: const TextStyle(
+                    fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF1D5FA7)),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() => _diaEscolhido = null);
+                _loadTrips();
+              },
+              child: const Text('Voltar a hoje'),
+            ),
+          ]),
+        ),
       const SizedBox(height: 12),
       Expanded(
         child: _loadingTrips
@@ -875,7 +987,11 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                           title: Text('${t['route_code']} - ${t['route_name']}'),
                           // O sentido distingue a ida da volta: a mesma rota
                           // aparecia duas vezes no mesmo dia, escrita igual.
+                          // A hora vem primeiro: e o que distingue duas
+                          // partidas da mesma rota no mesmo dia, e nao havia
+                          // nada aqui que a mostrasse.
                           subtitle: Text([
+                            _quandoParte(t['planned_departure_at'] as String?),
                             _sentidoLabel((t['direction'] ?? '').toString()),
                             '${t['vehicle']}',
                             'motorista: ${t['driver']}',
@@ -895,25 +1011,39 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
 
   /// Lista vazia — e o que fazer a seguir.
   ///
-  /// A venda mostra só o que está a circular: as partidas agendadas deixaram
-  /// de aparecer aqui (não se vende antecipado ao balcão). A consequência é
-  /// que, enquanto o embarque não abrir, não há nada para vender — e um
-  /// "Nenhuma viagem disponivel." seco deixava o agente sem perceber porquê,
-  /// com o passageiro à frente. Diz-se o que falta e quem o faz.
+  /// Em HOJE, a lista traz as partidas do dia mais o que está a circular. Pode
+  /// mesmo assim estar vazia, e um "Nenhuma viagem disponivel." seco deixava o
+  /// agente sem perceber porquê, com o passageiro à frente. Diz-se o que falta
+  /// e quem o faz.
+  ///
+  /// Num dia escolhido a razão é outra — não há partidas marcadas — e por isso
+  /// o texto e o botão também são outros.
   Widget _semViagens() {
+    // Num dia futuro o texto de cima seria mentira: nao ha embarque nenhum por
+    // abrir, so nao ha partidas marcadas nesse dia. E "Minhas viagens" nao
+    // resolve nada — quem marca partidas e o portal.
+    final dia = _diaEscolhido;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const Icon(Icons.no_transfer, size: 48, color: Colors.grey),
+          Icon(dia == null ? Icons.no_transfer : Icons.event_busy,
+              size: 48, color: Colors.grey),
           const SizedBox(height: 10),
-          const Text('Nenhuma viagem a decorrer',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+          Text(
+            dia == null
+                ? 'Nenhuma viagem a decorrer'
+                : 'Sem partidas em ${dia.day.toString().padLeft(2, '0')}'
+                    '/${dia.month.toString().padLeft(2, '0')}',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 6),
-          const Text(
-            'A venda só está disponível depois de o motorista abrir o embarque.',
+          Text(
+            dia == null
+                ? 'A venda só está disponível depois de o motorista abrir o embarque.'
+                : 'Não há partidas marcadas para este dia. Escolha outro, ou marque a viagem no portal.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF6B7A8F)),
+            style: const TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF6B7A8F)),
           ),
           const SizedBox(height: 14),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -923,11 +1053,18 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
               label: const Text('Actualizar'),
             ),
             const SizedBox(width: 10),
-            FilledButton.icon(
-              onPressed: () => context.push('/driver/trips'),
-              icon: const Icon(Icons.departure_board, size: 18),
-              label: const Text('Minhas viagens'),
-            ),
+            if (dia == null)
+              FilledButton.icon(
+                onPressed: () => context.push('/driver/trips'),
+                icon: const Icon(Icons.departure_board, size: 18),
+                label: const Text('Minhas viagens'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: _escolherDia,
+                icon: const Icon(Icons.event, size: 18),
+                label: const Text('Outro dia'),
+              ),
           ]),
         ]),
       ),

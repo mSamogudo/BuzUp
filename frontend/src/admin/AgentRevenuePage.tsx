@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import {
   AdminModal,
+  ButtonSpinner,
   DataTable,
   MetricCard,
   PageFrame,
@@ -79,6 +80,12 @@ function daysAgoISO(d: number) {
   dt.setDate(dt.getDate() - d);
   return dt.toISOString().slice(0, 10);
 }
+/// Identifica cada botao de exportacao. A mesma sessao aparece na linha da
+/// tabela e no detalhe, por isso o `id` sozinho nao chega — e o par
+/// formato+sitio que distingue o botao que ficou a girar.
+function exportKey(kind: string, scope: string, id?: number) {
+  return `${scope}:${id ?? "all"}:${kind}`;
+}
 function fmt(v: string | number | undefined) {
   const n = Number(v ?? 0);
   return n.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -93,6 +100,11 @@ export default function AgentRevenuePage() {
   const [agentFilter, setAgentFilter] = useState<string>("");
   const [detail, setDetail] = useState<DayCloseDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  // Qual descarga esta a ser preparada, pela chave do botao. Sao seis
+  // botoes a chamar o mesmo `exportReport`, e sem isto nenhum dizia que
+  // estava a trabalhar: um resumo de 30 dias leva segundos e o toque
+  // repetido punha o servidor a gerar o mesmo ficheiro varias vezes.
+  const [exporting, setExporting] = useState<string | null>(null);
 
   const sessionsLoader = useCallback(async () => {
     const qs = new URLSearchParams();
@@ -133,6 +145,7 @@ export default function AgentRevenuePage() {
   // O token vai no cabecalho, nao no URL: um URL fica gravado no log do nginx
   // e no historico do browser, e ali ia o token de acesso completo.
   const exportReport = async (kind: "pdf" | "xlsx", scope: "session" | "summary", id?: number) => {
+    if (exporting) return;
     let path: string;
     let name: string;
     if (scope === "session" && id) {
@@ -145,11 +158,12 @@ export default function AgentRevenuePage() {
       path = `/api/agent/admin/revenue/export.${kind}?${qs.toString()}`;
       name = `receita-agentes.${kind}`;
     }
+    setExporting(exportKey(kind, scope, id));
     try {
       await apiDownload(path, token!, name);
     } catch (e) {
       showToast("danger", mensagemDeErro(e, lc));
-    }
+    } finally { setExporting(null); }
   };
 
   const sessionColumns: TableColumn<DayCloseRow>[] = [
@@ -184,11 +198,15 @@ export default function AgentRevenuePage() {
       render: (r) => (
         <span style={{ display: "inline-flex", gap: 6 }}>
           <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => openDetail(r)} />
-          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("pdf", "session", r.id)} title={t(lc, "exportPdf")}>
-            <FileText size={15} />
+          <button className="admin-inline-button admin-inline-button-icon" type="button"
+            disabled={exporting !== null} onClick={() => void exportReport("pdf", "session", r.id)}
+            title={exporting === exportKey("pdf", "session", r.id) ? t(lc, "preparingDownload") : t(lc, "exportPdf")}>
+            {exporting === exportKey("pdf", "session", r.id) ? <ButtonSpinner size={15} /> : <FileText size={15} />}
           </button>
-          <button className="admin-inline-button admin-inline-button-icon" type="button" onClick={() => void exportReport("xlsx", "session", r.id)} title={t(lc, "exportExcel")}>
-            <FileSpreadsheet size={15} />
+          <button className="admin-inline-button admin-inline-button-icon" type="button"
+            disabled={exporting !== null} onClick={() => void exportReport("xlsx", "session", r.id)}
+            title={exporting === exportKey("xlsx", "session", r.id) ? t(lc, "preparingDownload") : t(lc, "exportExcel")}>
+            {exporting === exportKey("xlsx", "session", r.id) ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
           </button>
         </span>
       ),
@@ -223,11 +241,15 @@ export default function AgentRevenuePage() {
           <button className="icon-text-button" onClick={reloadBoth} type="button">
             <RefreshCw size={15} /><span>{t(lc, "refresh")}</span>
           </button>
-          <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf", "summary")}>
-            <FileText size={15} /><span>{t(lc, "summaryPdf")}</span>
+          <button className="icon-text-button" type="button" disabled={exporting !== null}
+            onClick={() => void exportReport("pdf", "summary")}>
+            {exporting === exportKey("pdf", "summary") ? <ButtonSpinner size={15} /> : <FileText size={15} />}
+            <span>{exporting === exportKey("pdf", "summary") ? t(lc, "preparingDownload") : t(lc, "summaryPdf")}</span>
           </button>
-          <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx", "summary")}>
-            <FileSpreadsheet size={15} /><span>{t(lc, "summaryExcel")}</span>
+          <button className="icon-text-button" type="button" disabled={exporting !== null}
+            onClick={() => void exportReport("xlsx", "summary")}>
+            {exporting === exportKey("xlsx", "summary") ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
+            <span>{exporting === exportKey("xlsx", "summary") ? t(lc, "preparingDownload") : t(lc, "summaryExcel")}</span>
           </button>
         </>
       }
@@ -323,11 +345,15 @@ export default function AgentRevenuePage() {
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf", "session", detail.id)}>
-                <FileText size={15} /><span>{t(lc, "sessionPdf")}</span>
+              <button className="icon-text-button" type="button" disabled={exporting !== null}
+                onClick={() => void exportReport("pdf", "session", detail.id)}>
+                {exporting === exportKey("pdf", "session", detail.id) ? <ButtonSpinner size={15} /> : <FileText size={15} />}
+                <span>{exporting === exportKey("pdf", "session", detail.id) ? t(lc, "preparingDownload") : t(lc, "sessionPdf")}</span>
               </button>
-              <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx", "session", detail.id)}>
-                <FileSpreadsheet size={15} /><span>{t(lc, "sessionExcel")}</span>
+              <button className="icon-text-button" type="button" disabled={exporting !== null}
+                onClick={() => void exportReport("xlsx", "session", detail.id)}>
+                {exporting === exportKey("xlsx", "session", detail.id) ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
+                <span>{exporting === exportKey("xlsx", "session", detail.id) ? t(lc, "preparingDownload") : t(lc, "sessionExcel")}</span>
               </button>
             </div>
 

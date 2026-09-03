@@ -188,7 +188,7 @@ export default function TripDetailPage() {
           {manifest && manifest.totals.total > 0 ? (
             <button className="icon-text-button" onClick={() => void downloadManifest()}
               disabled={downloading} type="button">
-              <Download size={16} /><span>{downloading ? "A preparar..." : "Manifesto PDF"}</span>
+              <Download size={16} /><span>{downloading ? t(lc, "preparingDownload") : "Manifesto PDF"}</span>
             </button>
           ) : null}
           <button className="icon-text-button" onClick={() => setAvisoAberto(true)} type="button">
@@ -410,7 +410,7 @@ export default function TripDetailPage() {
                 <button className="icon-text-button" onClick={() => void downloadManifest()}
                   disabled={downloading} type="button">
                   <Download size={15} />
-                  <span>{downloading ? "A preparar..." : "Descarregar manifesto (PDF)"}</span>
+                  <span>{downloading ? t(lc, "preparingDownload") : "Descarregar manifesto (PDF)"}</span>
                 </button>
               </div>
               {!manifest.formal ? (

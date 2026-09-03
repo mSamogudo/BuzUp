@@ -7,7 +7,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
-import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell, useAsyncData, type TableColumn } from "../ui/common";
+import { ButtonSpinner, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell, useAsyncData, type TableColumn } from "../ui/common";
 import { SkeletonCard } from "../ui/Skeleton";
 
 interface RevenueData {
@@ -119,6 +119,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
   const [source, setSource] = useState<string>("");
   const [extraKind, setExtraKind] = useState<string>("");
   const [running, setRunning] = useState(false);
+  // Qual descarga esta a ser preparada. Um relatorio largo leva segundos
+  // a gerar no servidor e o botao nao dava sinal nenhum: o agente
+  // carregava outra vez, e outra, cada toque uma consulta pesada nova.
+  const [exporting, setExporting] = useState<"pdf" | "xlsx" | null>(null);
   const [result, setResult] = useState<ReportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [specsLoading, setSpecsLoading] = useState(true);
@@ -205,8 +209,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
   // do nginx e no historico do browser, e o que la ficava era o token de
   // acesso completo.
   const exportReport = async (format: "pdf" | "xlsx") => {
+    if (exporting) return;
     const qs = new URLSearchParams(buildQS());
     qs.set("output", format);
+    setExporting(format);
     try {
       await apiDownload(
         `/api/admin/reports/builder/${kind}/?${qs.toString()}`,
@@ -215,7 +221,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
       );
     } catch (e) {
       showToast("danger", mensagemDeErro(e, lc));
-    }
+    } finally { setExporting(null); }
   };
 
   const formatCell = (key: string, value: unknown): string => {
@@ -417,8 +423,16 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             <button className="primary-button" type="button" onClick={runReport} disabled={running}>
               <Search size={15} /> {running ? "A gerar..." : "Gerar pre-visualizacao"}
             </button>
-            <button className="icon-text-button" type="button" onClick={() => void exportReport("pdf")}><FileText size={15} /><span>PDF</span></button>
-            <button className="icon-text-button" type="button" onClick={() => void exportReport("xlsx")}><FileSpreadsheet size={15} /><span>Excel</span></button>
+            <button className="icon-text-button" type="button" disabled={exporting !== null}
+              onClick={() => void exportReport("pdf")}>
+              {exporting === "pdf" ? <ButtonSpinner size={15} /> : <FileText size={15} />}
+              <span>{exporting === "pdf" ? t(lc, "preparingDownload") : "PDF"}</span>
+            </button>
+            <button className="icon-text-button" type="button" disabled={exporting !== null}
+              onClick={() => void exportReport("xlsx")}>
+              {exporting === "xlsx" ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
+              <span>{exporting === "xlsx" ? t(lc, "preparingDownload") : "Excel"}</span>
+            </button>
           </div>
 
           {result && (

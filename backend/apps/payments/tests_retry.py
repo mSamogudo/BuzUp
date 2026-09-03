@@ -18,6 +18,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.payments.services.gateway import (
     PAYMENT_MAX_ATTEMPTS,
+    MobileWalletGateway,
     _compact_reference,
     _interpret_response,
     _is_transient_gateway_failure,
@@ -205,6 +206,26 @@ class TimeoutLocalNaoRepeteTests(SimpleTestCase):
         # morreu do lado dela e repetir nao incomoda ninguem.
         self.assertTrue(_is_transient_gateway_failure(408, {"detail": "Request timed out."}))
 
+    def test_o_nosso_timeout_fica_pendente_e_nao_falhado(self):
+        """A outra metade da regra — e a que faltava.
+
+        Nao repetir era so metade: o pedido ficava por interpretar, caia no
+        `status_code >= 400` e saia FALHADO. A vista cancelava o checkout, o
+        passageiro digitava o PIN a seguir, o M-Pesa debitava, e a
+        reconciliacao — que so olha para os PENDENTES — nunca via o pagamento.
+        A 2026-09-03 foram 6.600 MT debitados sem bilhete.
+        """
+        corpo = {"detail": "Request timed out.", "_timeout_local": True}
+        resultado, detalhe, _ = _interpret_response("MPESA", 408, corpo)
+        self.assertEqual(resultado, "PENDING")
+        self.assertIn("PIN", detalhe)
+
+    def test_o_408_da_operadora_continua_a_ser_falha(self):
+        # Sem a marca, e a operadora a dizer que o pedido morreu. Isso e uma
+        # resposta, e a resposta e "nao pagou".
+        resultado, _, _ = _interpret_response("MPESA", 408, {"detail": "Request timed out."})
+        self.assertEqual(resultado, "FAILED")
+
     def test_o_http_marca_o_proprio_timeout(self):
         """A marca tem de ser posta por quem apanha o socket.timeout."""
         import socket
@@ -220,6 +241,41 @@ class TimeoutLocalNaoRepeteTests(SimpleTestCase):
         self.assertEqual(status, 408)
         self.assertTrue(corpo.get("_timeout_local"))
         self.assertFalse(_is_transient_gateway_failure(status, corpo))
+
+
+@override_settings(PAYMENTS_ALLOW_SANDBOX=False, PAYMENT_GATEWAY_PROVIDER="AUTO")
+class TimeoutLocalNoCaminhoInteiroTests(SimpleTestCase):
+    """O mesmo, mas pela porta por onde a vista entra: `initiate_payment`.
+
+    As duas funcoes de cima concordarem nao chega — o que a vista le e o
+    `PaymentGatewayResult`, e e `pending` ai que a impede de cancelar o
+    checkout. Este teste reproduz o pedido de 2026-09-03 tal como ele correu:
+    o POST morre no nosso socket.timeout com o passageiro ainda a digitar.
+    """
+
+    def _gateway(self):
+        gw = MobileWalletGateway("MPESA")
+        gw.config = {**gw.config, "shortcode": "901913"}
+        return gw
+
+    def test_o_nosso_timeout_devolve_pendente_a_vista(self):
+        gw = self._gateway()
+        with patch("apps.payments.services.gateway._provider_is_configured", return_value=True), \
+             patch("apps.payments.services.gateway._post_with_retry",
+                   return_value=(408, {"detail": "Request timed out.", "_timeout_local": True}, 1)):
+            r = gw.initiate_payment("PAY-GC-ABC123", Decimal("6600.00"), "841234567")
+        self.assertTrue(r.pending, r)
+        self.assertFalse(r.success)
+        self.assertEqual(r.error, "", "pendente nao e erro: a vista nao pode cancelar")
+
+    def test_o_408_da_operadora_devolve_falha_a_vista(self):
+        gw = self._gateway()
+        with patch("apps.payments.services.gateway._provider_is_configured", return_value=True), \
+             patch("apps.payments.services.gateway._post_with_retry",
+                   return_value=(408, {"detail": "Request timed out."}, 3)):
+            r = gw.initiate_payment("PAY-GC-ABC124", Decimal("6600.00"), "841234567")
+        self.assertFalse(r.pending)
+        self.assertFalse(r.success)
 
 
 class TimeoutsPorProvedorTests(SimpleTestCase):

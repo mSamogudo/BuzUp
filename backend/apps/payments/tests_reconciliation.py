@@ -17,7 +17,7 @@ from django.utils import timezone
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.payments.models import PaymentIntent
 from apps.payments.services.gateway import PaymentGatewayResult
-from apps.payments.services.reconciliation import reconcile_pending_payments
+from apps.payments.services.reconciliation import referencia_para_consulta, reconcile_pending_payments
 from apps.passengers.models import PassengerAccount
 from apps.wallets.models import Wallet
 
@@ -222,3 +222,61 @@ class WalletTopupReconciliationTests(TestCase):
             wallet.balance_cached, Decimal("500.00"),
             "o passageiro pagou a recarga — o saldo tem de aparecer",
         )
+
+
+class ReferenciaDaConsultaTests(TestCase):
+    """Por que referencia se pergunta a operadora.
+
+    No caso para que a reconciliacao existe — o pedido morreu no nosso timeout
+    — a `provider_reference` esta vazia, e perguntava-se pela nossa `PAY-GC-...`,
+    que a operadora nunca viu. Respondia `data: []`, lia-se pendente, e o
+    pagamento ficava assim ate expirar. 6.600 MT a 2026-09-03.
+    """
+
+    def _intent(self, **extra):
+        return PaymentIntent.objects.create(
+            reference="PAY-GC-BC49262D46054E1DB9", idempotency_key="k-" + str(extra.get("provider", "")),
+            purpose=PaymentIntent.Purpose.GUEST_TRAVEL_PASS, amount=Decimal("6600.00"),
+            payer_phone="258843923574", status=PaymentIntent.Status.PENDING, **extra,
+        )
+
+    def test_pergunta_pelo_que_foi_enviado(self):
+        pi = self._intent(provider="MPESA", metadata={"gateway_request": {
+            "transactionReference": "MPBC49262D46054E1DB9", "thirdPartyReference": "BZBC49262D46054E1DB9"}})
+        self.assertEqual(referencia_para_consulta(pi), "MPBC49262D46054E1DB9")
+
+    def test_sem_metadata_deriva_a_compactada(self):
+        pi = self._intent(provider="MPESA")
+        self.assertEqual(referencia_para_consulta(pi), "MPBC49262D46054E1DB9")
+
+    def test_nunca_pergunta_pela_nossa_referencia_no_mpesa(self):
+        pi = self._intent(provider="MPESA", provider_reference="")
+        self.assertNotEqual(referencia_para_consulta(pi), pi.reference)
+
+    def test_a_reconciliacao_usa_essa_referencia(self):
+        """Ponta a ponta: o gateway recebe a compactada, nao a nossa."""
+        from apps.guest_checkouts.models import GuestCheckout
+
+        gc = GuestCheckout.objects.create(
+            reference="GC-BC49262D46054E1DB9", payer_phone="258843923574",
+            route_code="R1", route_name="Rota 1", origin_stop="A", destination_stop="B",
+            quantity=1, unit_amount=Decimal("6600.00"), total_amount=Decimal("6600.00"),
+            status=GuestCheckout.Status.PAYMENT_PENDING,
+            expires_at=timezone.now() + timedelta(minutes=20),
+        )
+        pi = self._intent(provider="MPESA", guest_checkout=gc,
+                          metadata={"gateway_request": {"transactionReference": "MPBC49262D46054E1DB9"}})
+        PaymentIntent.objects.filter(pk=pi.pk).update(created_at=timezone.now() - timedelta(minutes=30))
+        perguntou = []
+
+        class Gateway:
+            def query_payment(self, ref):
+                perguntou.append(ref)
+                return PaymentGatewayResult(success=True, provider_reference="DI35LFZBWZL")
+
+        with patch("apps.payments.services.reconciliation.get_payment_gateway", lambda *a, **k: Gateway()):
+            reconcile_pending_payments(min_age_minutes=5)
+        self.assertEqual(perguntou, ["MPBC49262D46054E1DB9"])
+        pi.refresh_from_db()
+        self.assertEqual(pi.status, PaymentIntent.Status.CONFIRMED)
+        self.assertEqual(pi.provider_reference, "DI35LFZBWZL")

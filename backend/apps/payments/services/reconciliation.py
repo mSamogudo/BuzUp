@@ -105,6 +105,37 @@ def _mark_for_review(payment_intent: PaymentIntent, provider_reference: str, det
     )
 
 
+def referencia_para_consulta(payment_intent: PaymentIntent) -> str:
+    """Por que referência se pergunta à operadora.
+
+    Era `provider_reference or reference`. No caso que esta função existe para
+    resolver — o pedido morreu no nosso timeout — a `provider_reference` está
+    VAZIA, porque a resposta nunca chegou. Caía então na nossa `PAY-GC-...`,
+    que a operadora nunca viu: o que lhe foi enviado foi a compactada
+    (`MP...`, ver `_compact_reference`). A Payless respondia `data: []`, que se
+    lia como pendente, e o pagamento ficava assim até expirar.
+
+    A 2026-09-03 foram 6.600 MT nesse limbo: a Payless tinha `INS-0` e o
+    `transactionID` à espera de quem perguntasse pela referência certa.
+
+    Primeiro o que FOI enviado (está na metadata) — é a única referência que
+    se SABE que a pesquisa da Payless reconhece. Depois a da operadora, se a
+    houver. Só então se deriva a compactada outra vez — é determinística, é
+    para isso que a compactação existe — e nunca a nossa, no M-Pesa.
+    """
+    from apps.payments.services.gateway import _compact_reference
+
+    pedido = (payment_intent.metadata or {}).get("gateway_request") or {}
+    enviada = str(pedido.get("transactionReference") or "").strip()
+    if enviada:
+        return enviada
+    if payment_intent.provider_reference:
+        return payment_intent.provider_reference
+    if payment_intent.provider == "MPESA" and payment_intent.reference:
+        return _compact_reference("MP", payment_intent.reference)
+    return payment_intent.reference or ""
+
+
 def reconcile_payment(payment_intent: PaymentIntent, report: ReconcileReport) -> None:
     """Alinha um pagamento com o que o gateway diz ter acontecido."""
     report.checked += 1
@@ -113,9 +144,7 @@ def reconcile_payment(payment_intent: PaymentIntent, report: ReconcileReport) ->
         payer_phone=payment_intent.payer_phone,
     )
 
-    # Sem referência do provedor não há nada para consultar: o pedido pode nem
-    # ter chegado ao gateway. Fica para o `expire_stale` fechar pela validade.
-    lookup_ref = payment_intent.provider_reference or payment_intent.reference
+    lookup_ref = referencia_para_consulta(payment_intent)
     if not lookup_ref:
         report.unsupported += 1
         return

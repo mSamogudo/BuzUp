@@ -409,6 +409,8 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
         "gwtransid", "data.gwtransid",
         "original.requestId", "original.request_id",
         "data.original.requestId",
+        # A pesquisa da Payless escreve-o assim, com ID em maiusculas.
+        "transactionID",
     ))
 
     mpesa_success = {"0", "00", "000", "INS-0", "SUCCESS", "OK"}
@@ -423,6 +425,24 @@ def _interpret_response(provider: str, status_code: int, payload: dict) -> tuple
                      "unpaid", "cancelled", "canceled", "cancelado", "expired", "expirado", "timeout"}
     # Negacao explicita ("not completed", "nao confirmado") anula o sucesso.
     negated = bool(re.search(r"\b(not|nao|não|no)\b", payload_text)) and bool(status_words & success_words)
+
+    # O NOSSO timeout nao e uma resposta. Fomos nos que desistimos de esperar;
+    # o pedido pode continuar vivo do lado da operadora, com o passageiro a
+    # digitar o PIN nesse preciso momento. `_is_transient_gateway_failure` ja
+    # sabia isto e recusava-se a repetir o pedido, contando que "fica pendente
+    # e a reconciliacao resolve" — mas esta funcao nunca soube: o 408 caia no
+    # `status_code >= 400` de baixo e saia FALHADO. A vista cancelava o
+    # checkout, o passageiro digitava o PIN a seguir, o M-Pesa debitava, e a
+    # reconciliacao — que so olha para os PENDENTES — nunca chegava a ver o
+    # pagamento. Foi assim a 2026-09-03: 6.600 MT debitados, bilhete nenhum,
+    # e o 15s do M-Pesa foi escolhido de proposito a contar com a reconciliacao.
+    if isinstance(payload, dict) and payload.get("_timeout_local"):
+        return (
+            "PENDING",
+            "A aguardar a confirmacao na carteira. Se ja introduziu o PIN, o "
+            "bilhete chega por SMS em poucos minutos.",
+            "",
+        )
 
     if any(k in payload_text for k in ("cancelled", "canceled", "rejected by customer")):
         result = "FAILED"
@@ -609,7 +629,10 @@ class MobileWalletGateway:
             timeout_seconds=self.query_timeout,
         )
 
-        result, detail, ext_ref = _interpret_response(self.provider, status_code, response_payload)
+        result, detail, ext_ref = _interpret_response(
+            self.provider, status_code,
+            _desembrulhar_pesquisa(response_payload, transaction_reference),
+        )
 
         return PaymentGatewayResult(
             success=(result == "SUCCESS"),
@@ -620,6 +643,38 @@ class MobileWalletGateway:
             response_payload=response_payload,
             status_code=status_code,
         )
+
+
+def _desembrulhar_pesquisa(payload: dict, transaction_reference: str) -> dict:
+    """A resposta do `/search/.../c2b` da Payless vem como LISTA em `data`.
+
+    `_interpret_response` le `data.responseCode` num dicionario; numa lista nao
+    encontra nada, cai em "200 sem palavras" e responde PENDENTE. Foi assim que
+    a 2026-09-03 um pagamento com `INS-0` e `transactionID` da operadora ficou
+    "pendente" — a reconciliacao tinha a confirmacao na mao e nao a soube ler.
+
+    Fica o elemento cuja `transactionReference` e a nossa; `data: []` — a
+    operadora nao conhece a referencia — devolve-se tal e qual, que continua a
+    ler-se como pendente, e e o que e: nao ha por onde decidir.
+
+    O `transactionID` "N/A" (pedido que nunca chegou a transaccao) e limpo,
+    senao ficava gravado como referencia da operadora.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+        return payload
+    lista = payload["data"]
+    hit = next((d for d in lista if isinstance(d, dict)
+                and d.get("transactionReference") == transaction_reference), None)
+    if hit is None and len(lista) == 1 and isinstance(lista[0], dict):
+        hit = lista[0]
+    if hit is None:
+        return payload
+    hit = dict(hit)
+    if str(hit.get("transactionID", "")).upper() in ("N/A", "NA", "NONE", "NULL"):
+        hit["transactionID"] = ""
+    # Ao nivel de cima, e nao em `data`: e ai que `_interpret_response` procura
+    # `responseCode` e `transactionID`.
+    return {**hit, "_search_results": len(lista)}
 
 
 def _detect_provider(payer_phone: str) -> str:

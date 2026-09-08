@@ -95,6 +95,12 @@ class GuestCheckoutCreateSerializer(serializers.Serializer):
     terms_version = serializers.CharField(
         max_length=32, required=False, allow_blank=True, default="",
     )
+    # Como se paga. A carteira movel deduz-se do telefone (84/85 M-Pesa,
+    # 86/87 e-Mola); o cartao e uma escolha explicita, porque leva o
+    # comprador para fora do site.
+    payment_method = serializers.ChoiceField(
+        choices=("mobile_wallet", "card"), required=False, default="mobile_wallet",
+    )
 
     def validate(self, attrs):
         origin_id = attrs.get("origin_stop_id")

@@ -419,13 +419,32 @@ class GuestCheckoutCreateView(APIView):
                 expires_at=gc.expires_at,
             )
 
-        gateway = get_payment_gateway(payer_phone=data["payer_phone"])
-        result = gateway.initiate_payment(
-            reference=pi.reference,
-            amount=total,
-            payer_phone=data["payer_phone"],
-            description=f"BuzUp bilhete {route.code}",
-        )
+        if data.get("payment_method") == "card":
+            # Cartao: o passageiro vai pagar a pagina do DPO e volta a
+            # `/comprar?ref=...`, onde a pagina pede ao servidor que confirme
+            # (`GuestCheckoutVerifyView`). O intent fica com o provider para a
+            # reconciliacao saber a quem perguntar.
+            gateway = get_payment_gateway(provider="DPO")
+            base = str(getattr(settings, "PUBLIC_BASE_URL", "") or "").rstrip("/")
+            result = gateway.initiate_payment(
+                reference=pi.reference,
+                amount=total,
+                payer_phone=data["payer_phone"],
+                description=f"BuzUp bilhete {route.code}",
+                redirect_url=f"{base}/comprar?ref={gc.reference}",
+                back_url=f"{base}/comprar?ref={gc.reference}&cancelled=1",
+                buyer_name=data.get("buyer_name", ""),
+                buyer_email=data.get("buyer_email", ""),
+                service_date=trip.planned_departure_at if trip else None,
+            )
+        else:
+            gateway = get_payment_gateway(payer_phone=data["payer_phone"])
+            result = gateway.initiate_payment(
+                reference=pi.reference,
+                amount=total,
+                payer_phone=data["payer_phone"],
+                description=f"BuzUp bilhete {route.code}",
+            )
 
         pi.provider = result.provider
         pi.metadata = {
@@ -460,6 +479,9 @@ class GuestCheckoutCreateView(APIView):
             "payment_status": pi.status,
             "detail_message": result.detail_message,
             "ticket_url": _public_ticket_url(first_pass.token) if first_pass else "",
+            # Cartao: para onde a pagina tem de mandar o comprador. Vazio no
+            # M-Pesa/e-Mola.
+            "redirect_url": getattr(result, "redirect_url", "") or "",
         }, status=status.HTTP_201_CREATED)
 
 
@@ -759,6 +781,56 @@ class TicketPdfView(APIView):
         filename_prefix = "bilhetes" if len(travel_passes) > 1 else "bilhete"
         response["Content-Disposition"] = f'inline; filename="{filename_prefix}-{ref}.pdf"'
         return response
+
+
+class GuestCheckoutVerifyView(APIView):
+    """O regresso da pagina do cartao: "ja esta pago?".
+
+    O DPO devolve o passageiro a `/comprar?ref=...` com `TransID` e
+    `CCDapproval` no URL — que nao valem nada, porque qualquer pessoa escreve
+    um URL. A pagina chama isto, e isto pergunta ao DPO de servidor para
+    servidor (`verifyToken`) pelo mesmo `reconcile_payment` que o cron usa.
+    Um passageiro que feche o browser a meio nao perde nada: o cron faz a
+    mesma pergunta 2 minutos depois.
+
+    Sem autenticacao, como o lookup: a referencia e o segredo, e o pior que
+    um curioso consegue e obrigar-nos a perguntar ao DPO outra vez.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request, reference):
+        from apps.payments.models import PaymentIntent
+        from apps.payments.services.reconciliation import ReconcileReport, reconcile_payment
+
+        try:
+            gc = GuestCheckout.objects.prefetch_related("travel_passes").get(reference=reference)
+        except GuestCheckout.DoesNotExist:
+            return Response({"detail": "Checkout nao encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        pi = PaymentIntent.objects.filter(guest_checkout=gc).order_by("-created_at").first()
+        detail = ""
+        if pi is not None and pi.status == PaymentIntent.Status.PENDING:
+            relatorio = ReconcileReport()
+            reconcile_payment(pi, relatorio)
+            pi.refresh_from_db()
+            gc = GuestCheckout.objects.prefetch_related("travel_passes").get(pk=gc.pk)
+            if relatorio.needs_review:
+                detail = ("O pagamento foi recebido depois de a reserva expirar. "
+                          "Vamos contacta-lo para confirmar o lugar.")
+
+        first_pass = gc.travel_passes.order_by("created_at").first() if gc.status == GuestCheckout.Status.ISSUED else None
+        return Response({
+            "checkout_reference": gc.reference,
+            "payment_reference": pi.reference if pi else "",
+            "total_amount": str(gc.total_amount),
+            "status": gc.status,
+            "payment_status": pi.status if pi else "",
+            "detail_message": detail,
+            "ticket_url": _public_ticket_url(first_pass.token) if first_pass else "",
+            "redirect_url": "",
+        })
 
 
 class GuestCheckoutLookupView(APIView):

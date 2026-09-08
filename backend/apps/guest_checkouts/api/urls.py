@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from apps.guest_checkouts.api.views import (
     GuestCheckoutCreateView,
     GuestCheckoutLookupView,
+    GuestCheckoutVerifyView,
     GuestCheckoutViewSet,
     PublicBusInfoView,
     PublicDocumentTypesView,
@@ -19,6 +20,7 @@ urlpatterns = [
     path("", include(router.urls)),
     path("guest-checkouts/", GuestCheckoutCreateView.as_view(), name="guest-checkout-create"),
     path("guest-checkouts/<str:reference>/", GuestCheckoutLookupView.as_view(), name="guest-checkout-lookup"),
+    path("guest-checkouts/<str:reference>/verify/", GuestCheckoutVerifyView.as_view(), name="guest-checkout-verify"),
     path("public/trips/", PublicTripSearchView.as_view(), name="public-trip-search"),
     path("public/trips/<int:trip_id>/seats/", PublicTripSeatsView.as_view(), name="public-trip-seats"),
     path("public/bus/<uuid:vehicle_uuid>/", PublicBusInfoView.as_view(), name="public-bus-info"),

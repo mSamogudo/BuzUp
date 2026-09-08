@@ -32,6 +32,9 @@ class PaymentGatewayResult:
     provider: str = ""
     timeout_seconds: int = 0
     supports_query: bool = False
+    #: Cartao: a pagina para onde o passageiro tem de ir pagar. Vazio nos
+    #: operadores de carteira, que sao push e nao redirect.
+    redirect_url: str = ""
 
 
 class MockPaymentGateway:
@@ -689,11 +692,18 @@ def _detect_provider(payer_phone: str) -> str:
     return methods.split(",")[0].strip().upper()
 
 
-def get_payment_gateway(provider: str | None = None, payer_phone: str = "") -> MockPaymentGateway | MobileWalletGateway:
+def get_payment_gateway(provider: str | None = None, payer_phone: str = ""):
     gateway_provider = str(getattr(settings, "PAYMENT_GATEWAY_PROVIDER", "MOCK") or "MOCK").strip().upper()
 
     if gateway_provider == "MOCK":
         return MockPaymentGateway()
 
-    resolved_provider = provider or _detect_provider(payer_phone)
-    return MobileWalletGateway(resolved_provider)
+    resolved_provider = (provider or "").strip().upper()
+    # Cartao nao se deduz do telefone: e uma escolha explicita do comprador
+    # (`payment_method=card`), e o intent fica com `provider=DPO` para a
+    # reconciliacao voltar aqui pelo mesmo caminho.
+    if resolved_provider in ("DPO", "CARD"):
+        from apps.payments.services.card_gateway import DpoCardGateway
+
+        return DpoCardGateway()
+    return MobileWalletGateway(resolved_provider or _detect_provider(payer_phone))

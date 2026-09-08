@@ -22,7 +22,15 @@ class BrandingView(APIView):
 
     def get(self, request):
         obj = BrandingSettings.load()
-        return Response(BrandingSettingsSerializer(obj, context={"request": request}).data)
+        data = BrandingSettingsSerializer(obj, context={"request": request}).data
+        # O botao "Cartao" na compra publica so aparece quando ha operador de
+        # cartoes configurado. Nao e da marca, e do ambiente — mas e aqui que
+        # a pagina de compra vai buscar o que precisa de saber antes de mostrar
+        # seja o que for, e uma chamada a mais so para isto era pior.
+        from apps.payments.services.card_gateway import _config as _dpo
+
+        data["card_payments_enabled"] = _dpo().configured
+        return Response(data)
 
     def patch(self, request):
         if not has_capabilities(request.user, ("settings.manage",)):

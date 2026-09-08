@@ -220,6 +220,65 @@ class MobileWalletWebhookView(APIView):
         })
 
 
+class CardWebhookView(APIView):
+    """Notificacao do DPO Pay (cartao).
+
+    O DPO avisa-nos por POST (XML) quando um token e pago. O corpo NAO e
+    prova de nada — nao vem assinado com o nosso segredo e qualquer pessoa
+    pode fabrica-lo. Por isso e so um GATILHO: encontra-se o pagamento pelo
+    token ou pela nossa referencia, e pergunta-se ao DPO de servidor para
+    servidor (`reconcile_payment` -> `verifyToken`). E o mesmo caminho da
+    pagina de regresso e do cron; nenhum deles confirma sem o DPO dizer que
+    sim.
+
+    O pior que um curioso consegue aqui e obrigar-nos a fazer uma consulta.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    # O DPO manda XML, que o DRF recusa com 415 antes de a vista ver o corpo.
+    # Sem parsers, `request.data` nunca e lido — o corpo cru chega inteiro.
+    parser_classes = []
+
+    def post(self, request):
+        from django.http import QueryDict
+
+        from apps.payments.services.card_gateway import parse_dpo_xml
+        from apps.payments.services.reconciliation import ReconcileReport, reconcile_payment
+
+        corpo = request.body.decode("utf-8", errors="replace")
+        tipo = str(request.content_type or "").lower()
+        if "x-www-form-urlencoded" in tipo:
+            payload = {k: v for k, v in QueryDict(corpo).items()}
+        elif "json" in tipo:
+            try:
+                payload = json.loads(corpo) if corpo else {}
+            except json.JSONDecodeError:
+                payload = {}
+        else:
+            payload = parse_dpo_xml(corpo)
+        if not isinstance(payload, dict):
+            payload = {}
+
+        token = str(payload.get("TransactionToken") or payload.get("TransID") or payload.get("ID") or "").strip()
+        company_ref = str(payload.get("CompanyRef") or payload.get("PnrID") or "").strip()
+
+        pi = None
+        if token:
+            pi = PaymentIntent.objects.filter(provider="DPO", provider_reference=token).first()
+        if pi is None and company_ref:
+            pi = PaymentIntent.objects.filter(reference=company_ref).first()
+        if pi is None:
+            logger.warning("[PAY][dpo] notificacao sem pagamento: token=%s ref=%s", token, company_ref)
+            return Response({"detail": "Payment intent not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if pi.status == PaymentIntent.Status.PENDING:
+            relatorio = ReconcileReport()
+            reconcile_payment(pi, relatorio)
+            pi.refresh_from_db()
+        return Response({"reference": pi.reference, "payment_status": pi.status})
+
+
 def _resolve_payment_intent(reference: str, provider_reference: str, provider: str) -> PaymentIntent | None:
     if reference:
         pi = PaymentIntent.objects.filter(reference=reference).first()

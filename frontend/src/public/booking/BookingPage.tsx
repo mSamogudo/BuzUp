@@ -47,6 +47,11 @@ interface TripOpt {
   seats_available: number | null; on_sale: boolean; sale_unavailable_reason: string;
 }
 interface Passenger { name: string; document_type: string; document_number: string; seat: string; return_seat: string }
+interface CheckoutResult {
+  checkout_reference: string; payment_reference: string; total_amount: string;
+  status: string; payment_status: string; detail_message: string; ticket_url: string;
+  redirect_url?: string;
+}
 
 /// Forma de cada tipo de documento. Vem de `/api/public/document-types/`, o
 /// mesmo sítio que o servidor usa para validar — escrever as regras outra vez
@@ -221,7 +226,10 @@ export default function BookingPage() {
   const [emergName, setEmergName] = useState("");
   const [emergPhone, setEmergPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [method, setMethod] = useState<"mpesa" | "emola">("mpesa");
+  // Carteira movel ou cartao. O servidor deduz M-Pesa/e-Mola do telefone;
+  // o cartao e uma escolha explicita, porque leva o comprador para fora do
+  // site (pagina do DPO) e volta por `?ref=`.
+  const [method, setMethod] = useState<"mpesa" | "emola" | "card">("mpesa");
   // Aceitação dos Termos. O servidor recusa a compra sem ela — a caixa aqui é
   // para o passageiro poder ler antes de dizer que sim, não é a barreira.
   const [aceitouTermos, setAceitouTermos] = useState(false);
@@ -229,7 +237,10 @@ export default function BookingPage() {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ checkout_reference: string; ticket_url: string; total_amount: string } | null>(null);
+  const [result, setResult] = useState<CheckoutResult | null>(null);
+  // Regresso da pagina do cartao (`/comprar?ref=GC-...`): a confirmar junto
+  // do servidor, que por sua vez pergunta ao DPO. O URL nao prova nada.
+  const [checking, setChecking] = useState(false);
 
   // Moeda de EXIBIÇÃO (rand nas rotas p/ África do Sul). A cobrança é sempre
   // em meticais; a taxa vem do portal e o bilhete congela a moeda escolhida.
@@ -303,6 +314,32 @@ export default function BookingPage() {
       ))}
     </div>
   );
+
+  /// Pergunta ao servidor se a compra `ref` já está paga. Usado no regresso da
+  /// página do cartão e no botão "verificar outra vez". Enquanto o servidor
+  /// disser pendente, volta a perguntar algumas vezes: o DPO leva uns segundos
+  /// a assentar a transacção depois de devolver o passageiro.
+  const verify = useCallback(async (ref: string, tentativas = 4) => {
+    setChecking(true); setError("");
+    try {
+      for (let i = 0; i < tentativas; i++) {
+        const res = await fetch(`/api/guest-checkouts/${encodeURIComponent(ref)}/verify/`, { method: "POST" });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(readServerError(body, tr("errPayment")));
+        setResult(body);
+        setStep("done");
+        if (body.payment_status !== "pending") break;
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : tr("errPayment"));
+    } finally { setChecking(false); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) void verify(ref);
+  }, [verify]);
 
   // Link partilhável: /comprar?origem=66&destino=70&data=2026-08-05&pax=2
   // (campanhas e CTAs da landing podem apontar directamente a um percurso).
@@ -579,15 +616,23 @@ export default function BookingPage() {
           display_currency: currency,
           accept_terms: aceitouTermos,
           terms_version: branding.terms_version,
+          payment_method: method === "card" ? "card" : "mobile_wallet",
         }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(readServerError(body, tr("errPurchase")));
+      if (body.redirect_url) {
+        // Cartao: o pagamento acontece na pagina do DPO. Fica-se em `busy`
+        // ate o browser sair — soltar o botao aqui era convidar a segundo toque.
+        window.location.assign(body.redirect_url);
+        return;
+      }
       setResult(body);
       setStep("done");
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : tr("errPayment"));
-    } finally { setBusy(false); }
+      setBusy(false);
+    }
   };
 
   const temTermos = (branding.terms_sections || []).length > 0;
@@ -1052,12 +1097,12 @@ export default function BookingPage() {
                 )}
 
                 <div className="bzbk-methods">
-                  {(["mpesa", "emola"] as const).map((m) => (
+                  {(["mpesa", "emola", ...(branding.card_payments_enabled ? ["card" as const] : [])] as const).map((m) => (
                     <button key={m} type="button"
                       className={`bzbk-method${method === m ? " is-on" : ""}`}
                       onClick={() => setMethod(m)} aria-pressed={method === m}>
                       <span className="dot" />
-                      {m === "mpesa" ? "M-Pesa" : "e-Mola"}
+                      {m === "mpesa" ? "M-Pesa" : m === "emola" ? "e-Mola" : tr("cardMethod")}
                     </button>
                   ))}
                 </div>
@@ -1068,7 +1113,7 @@ export default function BookingPage() {
                     <input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
                       autoComplete="off"
                       value={phone} required onChange={(e) => setPhone(filterPhone(e.target.value))} />
-                    <span className="bzbk-hint">{tr("payPhoneHint")}</span>
+                    <span className="bzbk-hint">{method === "card" ? tr("cardPhoneHint") : tr("payPhoneHint")}</span>
                   </div>
                   <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="em">{tr("emailOptional")}</label>
@@ -1098,10 +1143,17 @@ export default function BookingPage() {
                   </button>
                   <button className="bzbk-btn" type="submit"
                     disabled={busy || !phoneValid || (temTermos && !aceitouTermos)}>
-                    {busy ? <><span className="bzbk-spin" /> {tr("processing")}</> : <>{tr("pay")} {money(total)} MZN</>}
+                    {busy
+                      ? <><span className="bzbk-spin" /> {method === "card" ? tr("cardRedirecting") : tr("processing")}</>
+                      : <>{tr("pay")} {money(total)} MZN</>}
                   </button>
                 </div>
-                {busy && (
+                {method === "card" && !busy && (
+                  <div className="bzbk-notice info" style={{ marginTop: 16 }}>
+                    {tr("cardNotice")}
+                  </div>
+                )}
+                {busy && method !== "card" && (
                   <div className="bzbk-notice info" style={{ marginTop: 16 }}>
                     {tr("pinNotice")}
                   </div>
@@ -1109,27 +1161,54 @@ export default function BookingPage() {
               </form>
             )}
 
-            {step === "done" && result && (
-              <div className="bzbk-done">
-                <div className="bzbk-done-mark"><CheckCircle2 size={40} /></div>
-                <h2>Bilhete emitido</h2>
-                <p>
-                  Pagámento confirmado. Enviámos o link do bilhete por SMS para o número indicado —
-                  guarde o PDF no telemóvel e apresente o QR ao embarcar.
-                </p>
-                <div className="bzbk-ref">{result.checkout_reference}</div>
-                <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-                  {result.ticket_url && (
-                    <a className="bzbk-btn" href={result.ticket_url} target="_blank" rel="noreferrer">
-                      <Download size={17} /> {tr("downloadTicket")}
-                    </a>
-                  )}
-                  <Link className="bzbk-btn ghost" to="/">
-                    <Bus size={17} /> {tr("backHome")}
-                  </Link>
+            {step === "done" && result && (() => {
+              // Dizia "Bilhete emitido · Pagamento confirmado" fosse qual fosse
+              // o estado — e desde que o timeout do M-Pesa passou a ficar
+              // pendente em vez de falhado, "pendente" e um fim possivel.
+              // Mentir aqui e o passageiro pagar duas vezes ou ir-se embora
+              // sem bilhete.
+              const pago = result.payment_status === "confirmed" || result.status === "issued";
+              const falhou = result.status === "cancelled" || result.status === "expired"
+                || result.payment_status === "failed";
+              const pendente = !pago && !falhou;
+              return (
+                <div className="bzbk-done">
+                  <div className="bzbk-done-mark" style={pago ? undefined : { opacity: .55 }}>
+                    {checking ? <span className="bzbk-spin" /> : <CheckCircle2 size={40} />}
+                  </div>
+                  <h2>{checking ? tr("returnChecking") : pago ? tr("ticketIssued") : falhou ? tr("returnFailedTitle") : tr("pendingTitle")}</h2>
+                  <p>
+                    {pago ? tr("ticketIssuedText")
+                      : falhou ? tr("returnFailedText")
+                      : result.payment_reference?.startsWith("PAY-") && new URLSearchParams(window.location.search).get("ref")
+                        ? tr("returnPendingText") : tr("pendingText")}
+                    {result.detail_message && !pago ? ` ${result.detail_message}` : ""}
+                  </p>
+                  <div className="bzbk-ref">{result.checkout_reference}</div>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    {pago && result.ticket_url && (
+                      <a className="bzbk-btn" href={result.ticket_url} target="_blank" rel="noreferrer">
+                        <Download size={17} /> {tr("downloadTicket")}
+                      </a>
+                    )}
+                    {pendente && (
+                      <button className="bzbk-btn" type="button" disabled={checking}
+                        onClick={() => void verify(result.checkout_reference, 1)}>
+                        {checking ? <span className="bzbk-spin" /> : <CheckCircle2 size={17} />} {tr("checkAgain")}
+                      </button>
+                    )}
+                    {falhou && (
+                      <Link className="bzbk-btn" to="/comprar">
+                        <Bus size={17} /> {tr("tryAgain")}
+                      </Link>
+                    )}
+                    <Link className="bzbk-btn ghost" to="/">
+                      <Bus size={17} /> {tr("backHome")}
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
 

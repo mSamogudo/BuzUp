@@ -204,6 +204,16 @@ EMOLA_SMS_CONTENT = config("EMOLA_SMS_CONTENT", default="Confirme o pagamento Bu
 EMOLA_SERVICE = config("EMOLA_SERVICE", default="buzup")
 EMOLA_DESCRIPTION = config("EMOLA_DESCRIPTION", default="Pagamento BuzUp")
 
+# Cartao (Visa/Mastercard) pelo DPO Pay. Sem CompanyToken e ServiceType o
+# metodo nao aparece ao comprador. Sandbox: DPO_BASE_URL=https://secure1.sandbox.directpay.online
+# — e, tal como no M-Pesa, so cobra pelo sandbox onde PAYMENTS_ALLOW_SANDBOX=True.
+DPO_COMPANY_TOKEN = config("DPO_COMPANY_TOKEN", default="")
+DPO_SERVICE_TYPE = config("DPO_SERVICE_TYPE", default="")
+DPO_BASE_URL = config("DPO_BASE_URL", default="https://secure.3gdirectpay.com")
+DPO_CURRENCY = config("DPO_CURRENCY", default="MZN")
+DPO_PTL_MINUTES = config("DPO_PTL_MINUTES", default=25, cast=int)
+DPO_TIMEOUT_SECONDS = config("DPO_TIMEOUT_SECONDS", default=20, cast=int)
+
 BLUTEKI_BASE_URL = config("BLUTEKI_BASE_URL", default="")
 BLUTEKI_API_KEY = config("BLUTEKI_API_KEY", default="")
 BLUTEKI_SENDER_ID = config("BLUTEKI_SENDER_ID", default="UpDigital")

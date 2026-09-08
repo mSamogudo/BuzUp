@@ -34,6 +34,10 @@ export interface Branding {
   terms_closing_en: string;
   terms_version: string;
   terms_updated_at: string | null;
+
+  // Ha operador de cartoes configurado no servidor? Decide se a compra
+  // publica mostra "Cartao Visa / Mastercard" ao lado do M-Pesa e e-Mola.
+  card_payments_enabled: boolean;
 }
 
 const EMPTY: Branding = {
@@ -46,6 +50,7 @@ const EMPTY: Branding = {
   terms_sections: [], terms_intro: "", terms_closing: "",
   terms_sections_en: [], terms_intro_en: "", terms_closing_en: "",
   terms_version: "", terms_updated_at: null,
+  card_payments_enabled: false,
 };
 
 interface BrandingState {

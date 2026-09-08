@@ -213,7 +213,8 @@
 .bzbk-sum-total b{font-size:26px;font-weight:800;color:var(--heading)}
 
 /* Pagamento */
-.bzbk-methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.bzbk-methods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:760px){.bzbk-methods{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.bzbk-methods{grid-template-columns:1fr}}
 .bzbk-method{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:14px;
   background:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink);transition:all .15s}

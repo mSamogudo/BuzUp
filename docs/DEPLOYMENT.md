@@ -1,6 +1,22 @@
 # Deploy BuzUp em servidor compartilhado
 
-Este projecto assume o mesmo modelo usado hoje por CONDOVISIT/Vura e ETICKETING: o CONDOVISIT recebe 80/443 como Nginx central, entra na rede Docker `shared_web`, e encaminha cada dominio para o gateway correcto.
+## Onde vive cada ambiente
+
+> **Desde 2026-09-09 são duas máquinas.** Antes, produção e testes de dez
+> produtos partilhavam um servidor de 2 vCPU — e correr esta suite em staging
+> punha a **produção** com carga 10.
+
+| Ambiente | Máquina | Acesso | Domínio | Código no servidor |
+|---|---|---|---|---|
+| **Produção** | `updigital-prod` (Hostinger, 187.7.23.1) | `ssh updigital-prod` | `buzup.updigital.co.mz`, `tpm-tur.updigital.co.mz` | `/opt/prod/buzup/app` |
+| **Staging** | `goup-vps` (Hetzner, 95.216.50.19) | `ssh goup-vps` | `buzup-test.updigital.co.mz` | `/opt/staging/buzup/app` |
+
+A regra é o domínio: `buzup.` é produção, `buzup-test.` é staging. O mapa
+completo de todos os produtos, e o guião de migração entre as duas máquinas,
+estão em **`UPDIGITAL/docs/INFRAESTRUTURA.md`**.
+
+**A suite de testes corre em staging** (`goup-vps`), nunca em produção — ver
+`docs/WORKFLOWS.md`. É essa separação que a máquina nova veio garantir.
 
 ## Topologia
 

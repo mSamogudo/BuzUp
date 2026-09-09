@@ -168,11 +168,18 @@ PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SE
 # 9 minutos por pagamento.
 #
 #  - MPESA tem consulta de estado (/search/mpesa/c2b), logo o desfecho e sempre
-#    recuperavel depois pela reconciliacao. Espera-se pouco.
+#    recuperavel depois pela reconciliacao.
 #  - EMOLA nao tem consulta. A resposta sincrona e o unico sitio onde se aprende
 #    o desfecho, por isso nao se pode largar cedo. Medido na producao do
 #    ETICKETING: maximo de 43,5s em 111 pagamentos.
-PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA", default=15, cast=int)
+#
+# O M-Pesa esteve em 15s, a contar com a reconciliacao para o resto. Em 14 dias
+# (25/08-08/09) deu 9 pagamentos "falhados" em 12 — o PIN demora mais do que
+# isso — e, depois de o timeout passar a "pendente", um bilhete que so saia 6
+# minutos depois, com o agente e o passageiro a espera no balcao. 45s cabe na
+# maioria dos PINs e fica abaixo dos 75s do nginx (docker/prod/nginx.conf);
+# com o volume actual, uma thread presa 45s nao custa nada.
+PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA", default=45, cast=int)
 PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA", default=60, cast=int)
 # A consulta de estado e um GET, nao espera por ninguem.
 PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS = config("PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS", default=15, cast=int)

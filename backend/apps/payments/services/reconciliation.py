@@ -36,7 +36,12 @@ logger = logging.getLogger(__name__)
 
 # Margem antes de perguntar ao gateway: um pagamento acabado de iniciar está
 # legitimamente pendente enquanto o passageiro digita o PIN.
-DEFAULT_MIN_AGE_MINUTES = 5
+#
+# Era 5. Com o cron de 2 em 2 minutos, um pagamento que escapasse ao timeout
+# da cobrança só era confirmado 5 a 7 minutos depois — o "atraso nos
+# pagamentos" de 2026-09-08 (352 s numa venda ao balcão). A cobrança já espera
+# 45 s pelo PIN; ao fim de 1 minuto não há nada que a consulta possa estragar.
+DEFAULT_MIN_AGE_MINUTES = 1
 
 
 @dataclass
@@ -207,6 +212,44 @@ def reconcile_payment(payment_intent: PaymentIntent, report: ReconcileReport) ->
     )
     _fail_payment(payment_intent, callback)
     report.failed += 1
+
+
+#: Quem esta a espera no ecra pode pedir uma consulta a operadora, mas nao
+#: em cada toque: a primeira so passados `ESPERA_INICIAL_S` (o PIN tem de ter
+#: chegado ao telemovel), e nunca duas a menos de `INTERVALO_MINIMO_S`.
+ESPERA_INICIAL_S = 20
+INTERVALO_MINIMO_S = 5
+
+
+def perguntar_a_operadora_se_for_altura(payment_intent: PaymentIntent) -> bool:
+    """Consulta a operadora a pedido de quem espera — POS ou pagina — com freio.
+
+    Devolve True se perguntou (e o estado pode ter mudado). O carimbo da ultima
+    consulta fica na metadata, para o freio valer entre pedidos e entre
+    processos.
+    """
+    from django.utils import timezone as _tz
+
+    agora = _tz.now()
+    if (agora - payment_intent.created_at).total_seconds() < ESPERA_INICIAL_S:
+        return False
+    md = dict(payment_intent.metadata or {})
+    ultima = md.get("last_query_at")
+    if ultima:
+        try:
+            if (agora - _tz.datetime.fromisoformat(ultima)).total_seconds() < INTERVALO_MINIMO_S:
+                return False
+        except ValueError:
+            pass
+    md["last_query_at"] = agora.isoformat()
+    PaymentIntent.objects.filter(pk=payment_intent.pk).update(metadata=md)
+    payment_intent.metadata = md
+    try:
+        reconcile_payment(payment_intent, ReconcileReport())
+    except Exception:
+        logger.exception("consulta a pedido falhou para %s", payment_intent.reference)
+        return False
+    return True
 
 
 def reconcile_pending_payments(

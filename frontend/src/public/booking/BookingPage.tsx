@@ -341,6 +341,20 @@ export default function BookingPage() {
     if (ref) void verify(ref);
   }, [verify]);
 
+  // Pagamento por carteira que ficou pendente (o PIN demorou mais do que a
+  // cobrança esperou): em vez de mandar o passageiro esperar pelo SMS, a
+  // página pergunta ao servidor de 5 em 5 s durante 3 minutos — e o servidor
+  // pergunta à operadora. O bilhete aparece no segundo em que o PIN entra.
+  useEffect(() => {
+    if (step !== "done" || !result || result.payment_status !== "pending" || checking) return;
+    const inicio = Date.now();
+    const id = window.setInterval(() => {
+      if (Date.now() - inicio > 180_000) { window.clearInterval(id); return; }
+      void verify(result.checkout_reference, 1);
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [step, result, checking, verify]);
+
   // Link partilhável: /comprar?origem=66&destino=70&data=2026-08-05&pax=2
   // (campanhas e CTAs da landing podem apontar directamente a um percurso).
   useEffect(() => {

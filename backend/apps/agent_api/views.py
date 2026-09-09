@@ -1001,6 +1001,19 @@ class AgentPaymentStatusView(APIView):
             )
             return Response({"detail": "Sem permissao."}, status=403)
 
+        # O POS chama isto de 3 em 3 s enquanto "a aguardar pagamento". Se o
+        # pagamento ficou pendente — a cobranca desistiu de esperar pelo PIN —
+        # pergunta-se a operadora AQUI, e nao so quando o cron passar: era
+        # essa a diferenca entre o bilhete sair no segundo em que o passageiro
+        # confirma e sair 6 minutos depois, com o agente a olhar para o ecra.
+        # Uma consulta de 5 em 5 s no maximo; a primeira so passados 20 s, que
+        # e tempo de o PIN ter chegado ao telemovel.
+        if pi.status == PaymentIntent.Status.PENDING and pi.provider not in ("CASH", "", "MOCK"):
+            from apps.payments.services.reconciliation import perguntar_a_operadora_se_for_altura
+
+            if perguntar_a_operadora_se_for_altura(pi):
+                pi.refresh_from_db()
+
         gc = pi.guest_checkout
         passes = list(gc.travel_passes.all()) if gc else []
         return Response({

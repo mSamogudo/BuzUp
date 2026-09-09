@@ -280,3 +280,58 @@ class ReferenciaDaConsultaTests(TestCase):
         pi.refresh_from_db()
         self.assertEqual(pi.status, PaymentIntent.Status.CONFIRMED)
         self.assertEqual(pi.provider_reference, "DI35LFZBWZL")
+
+
+class ConsultaAPedidoTests(TestCase):
+    """Quem espera no ecra pode pedir a consulta — com freio."""
+
+    def _intent(self, segundos):
+        pi = PaymentIntent.objects.create(
+            reference=f"PAY-AS-PEDIDO{segundos}", idempotency_key=f"pedido-{segundos}",
+            purpose=PaymentIntent.Purpose.GUEST_TRAVEL_PASS, amount=Decimal("300.00"),
+            payer_phone="258843923574", status=PaymentIntent.Status.PENDING,
+            provider="MPESA", metadata={"gateway_request": {"transactionReference": "MPX"}},
+        )
+        PaymentIntent.objects.filter(pk=pi.pk).update(created_at=timezone.now() - timedelta(seconds=segundos))
+        pi.refresh_from_db()
+        return pi
+
+    def test_nos_primeiros_20s_nao_pergunta(self):
+        from apps.payments.services.reconciliation import perguntar_a_operadora_se_for_altura
+
+        pi = self._intent(5)
+        with patch("apps.payments.services.reconciliation.get_payment_gateway") as g:
+            self.assertFalse(perguntar_a_operadora_se_for_altura(pi))
+        g.assert_not_called()
+
+    def test_passados_20s_pergunta_e_confirma(self):
+        from apps.payments.services.reconciliation import perguntar_a_operadora_se_for_altura
+
+        pi = self._intent(30)
+        with patch("apps.payments.services.reconciliation.get_payment_gateway",
+                   _gateway_saying(PaymentGatewayResult(success=True, provider_reference="DI35"))):
+            self.assertTrue(perguntar_a_operadora_se_for_altura(pi))
+        pi.refresh_from_db()
+        self.assertEqual(pi.status, PaymentIntent.Status.CONFIRMED)
+
+    def test_nao_pergunta_duas_vezes_em_5s(self):
+        from apps.payments.services.reconciliation import perguntar_a_operadora_se_for_altura
+
+        pi = self._intent(30)
+        perguntas = []
+
+        class Gateway:
+            def query_payment(self, ref):
+                perguntas.append(ref)
+                return PaymentGatewayResult(success=False, pending=True)
+
+        with patch("apps.payments.services.reconciliation.get_payment_gateway", lambda *a, **k: Gateway()):
+            self.assertTrue(perguntar_a_operadora_se_for_altura(pi))
+            self.assertFalse(perguntar_a_operadora_se_for_altura(pi))
+        self.assertEqual(len(perguntas), 1)
+
+    def test_a_idade_minima_do_cron_e_um_minuto(self):
+        from apps.payments.services.reconciliation import DEFAULT_MIN_AGE_MINUTES
+
+        self.assertEqual(DEFAULT_MIN_AGE_MINUTES, 1,
+                         "5 minutos eram 5 a 7 minutos de espera no balcao")

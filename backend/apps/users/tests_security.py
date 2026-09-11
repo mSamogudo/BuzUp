@@ -10,13 +10,19 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.passengers.models import PassengerAccount
 from apps.trips.models import Agent
+from apps.users.models import PortalLoginChallenge
+from apps.users.otp import _hash_otp
+from apps.users.tokens import MARCA, token_para
 from apps.wallets.models import Wallet
 
 User = get_user_model()
@@ -187,3 +193,128 @@ class DeviceOnboardingTests(TestCase):
             "activation_code", res.data,
             "o codigo de activacao foi devolvido — qualquer pessoa activa o terminal",
         )
+
+
+class SenhaMudaTokenMorreTests(TestCase):
+    """Repor a senha de uma conta comprometida nao expulsava ninguem.
+
+    Era o ataque: alguem entra numa conta de agente, o administrador da por
+    isso e repoe a senha, o SMS com a senha temporaria sai. E o intruso
+    continua a vender no POS durante meia hora, porque o token de acesso que
+    ja tinha na mao nao consulta nada e vale ate expirar.
+
+    A lista negra nao resolvia — nem sequer era usada nestas vias — porque
+    so apanha o refresh, e nao e o refresh que abre portas.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="agente", email="agente@exemplo.co.mz",
+            password="senha-antiga-forte", phone="258840000009",
+            # Sem segundo factor para poder exercitar a porta directa do
+            # login; o caminho com 2FA tem teste proprio mais abaixo.
+            is_2fa_enabled=False,
+        )
+
+    def _bilhete_de_entrada(self) -> str:
+        """O que um intruso teria: um token de acesso valido, tirado antes."""
+        return str(token_para(self.user).access_token)
+
+    def _ainda_abre(self, access) -> int:
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        try:
+            return self.client.get(reverse("auth_me")).status_code
+        finally:
+            self.client.credentials()
+
+    def test_an_admin_reset_locks_the_intruder_out_immediately(self):
+        roubado = self._bilhete_de_entrada()
+        self.assertEqual(self._ainda_abre(roubado), 200, "o cenario exige que abrisse antes")
+
+        # O que o `AdminUserPasswordResetView` faz.
+        self.user.set_password("temporaria-nova-forte")
+        self.user.save(update_fields=["password", "updated_at"])
+
+        self.assertEqual(self._ainda_abre(roubado), 401)
+
+    def test_changing_my_own_password_ends_the_session_i_distrust(self):
+        outra_sessao = self._bilhete_de_entrada()
+        self.user.set_password("escolhida-por-mim-forte")
+        self.user.save(update_fields=["password", "updated_at"])
+        self.assertEqual(self._ainda_abre(outra_sessao), 401)
+
+    def test_a_refresh_from_before_cannot_mint_a_working_token(self):
+        """Fechar o acesso e inutil se o refresh velho puder fabricar outro.
+
+        Nao pode: o `TokenRefreshView` copia as claims do refresh, por isso o
+        acesso que sai nasce com a marca velha.
+        """
+        antigo = token_para(self.user)
+        self.user.set_password("outra-bem-diferente-forte")
+        self.user.save(update_fields=["password", "updated_at"])
+
+        resposta = self.client.post(reverse("token_refresh"), {"refresh": str(antigo)})
+        if resposta.status_code == 200:
+            self.assertEqual(
+                self._ainda_abre(resposta.data["access"]), 401,
+                "o token nascido de um refresh velho nao pode abrir nada",
+            )
+
+    def test_the_direct_login_hands_out_a_stamped_token(self):
+        """Se o login nao carimbar, tudo isto fica sem efeito para quem entra
+        pela porta normal — que e toda a gente."""
+        resposta = self.client.post(
+            reverse("token_obtain_pair"),
+            {"username": "agente", "password": "senha-antiga-forte"}, format="json",
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertIn(MARCA, RefreshToken(resposta.data["refresh"]).payload)
+
+    def test_the_two_factor_login_also_hands_out_a_stamped_token(self):
+        """O portal entra por aqui, nao pela porta directa. Sao dois sitios
+        diferentes a emitir tokens, e um por carimbar deixava o buraco aberto
+        por inteiro para quem entra por essa porta."""
+        cache.clear()
+        gestor = User.objects.create_user(
+            username="gestor-marca", email="gestor-marca@exemplo.co.mz",
+            password="senha-antiga-forte", phone="841234567", is_2fa_enabled=True,
+        )
+        primeiro = self.client.post(
+            reverse("token_obtain_pair"),
+            {"username": "gestor-marca", "password": "senha-antiga-forte"}, format="json",
+        )
+        self.assertEqual(primeiro.status_code, 202, "a senha sozinha nao pode abrir o portal")
+
+        desafio = PortalLoginChallenge.objects.get(user=gestor)
+        # O codigo em claro nunca e guardado; nos testes reproduz-se o hash.
+        for tentativa in range(1000000):
+            codigo = f"{tentativa:06d}"
+            if _hash_otp(codigo) == desafio.code_hash:
+                break
+        else:
+            self.fail("nao foi possivel reproduzir o codigo")
+
+        segundo = self.client.post(
+            reverse("portal_2fa_verify"),
+            {"challenge_id": str(desafio.uuid), "code": codigo}, format="json",
+        )
+        self.assertEqual(segundo.status_code, 200)
+        self.assertIn(MARCA, RefreshToken(segundo.data["refresh"]).payload)
+
+    def test_a_token_from_before_this_existed_still_works(self):
+        """Ha terminais POS em campo com sessao aberta. Recusar os tokens sem
+        marca deitava-os fora a meio de vendas, no momento do deploy."""
+        sem_marca = RefreshToken.for_user(self.user)
+        self.assertNotIn(MARCA, sem_marca.payload)
+        self.assertEqual(self._ainda_abre(str(sem_marca.access_token)), 200)
+
+    def test_someone_elses_reset_does_not_touch_my_session(self):
+        outro = User.objects.create_user(
+            username="colega", email="colega@exemplo.co.mz",
+            password="seja-o-que-for-forte", phone="258840000010",
+        )
+        meu = self._bilhete_de_entrada()
+        outro.set_password("mudou-a-dele-forte")
+        outro.save(update_fields=["password", "updated_at"])
+        self.assertEqual(self._ainda_abre(meu), 200)

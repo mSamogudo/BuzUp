@@ -250,7 +250,10 @@ OTP_MAX_REQUESTS_PER_IP = config("OTP_MAX_REQUESTS_PER_IP", default=20, cast=int
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Nao e a do SimpleJWT: esta recusa um token emitido antes da ultima
+        # mudanca de senha. Sem ela, repor a senha de uma conta comprometida
+        # nao expulsa ninguem durante 30 minutos. Ver `apps.users.tokens`.
+        "apps.users.authentication.JWTComMarcaDeSenha",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",

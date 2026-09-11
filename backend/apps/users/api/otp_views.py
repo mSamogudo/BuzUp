@@ -11,11 +11,11 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.passengers.models import PassengerAccount
 from apps.passengers.services import ensure_passenger_access_account
 from apps.users.models import OtpChallenge
+from apps.users.tokens import token_para
 from apps.users.otp import (
     OTP_MAX_ATTEMPTS,
     OTP_TTL_MINUTES,
@@ -199,7 +199,7 @@ class OtpVerifyView(APIView):
                 user.first_name = full_name
                 user.save(update_fields=["first_name", "updated_at"])
 
-            refresh = RefreshToken.for_user(user)
+            refresh = token_para(user)
             refresh["driver_id"] = driver.id
             refresh["phone"] = phone
             return Response({
@@ -219,7 +219,7 @@ class OtpVerifyView(APIView):
                 user.first_name = full_name
                 user.save(update_fields=["first_name", "updated_at"])
 
-            refresh = RefreshToken.for_user(user)
+            refresh = token_para(user)
             refresh["agent_id"] = agent.id
             refresh["phone"] = phone
             return Response({
@@ -249,7 +249,7 @@ class OtpVerifyView(APIView):
 
         user, _wallet, _digital_card = ensure_passenger_access_account(passenger, notify_by_sms=created)
 
-        refresh = RefreshToken.for_user(user)
+        refresh = token_para(user)
         refresh["passenger_id"] = passenger.id
         refresh["phone"] = phone
 

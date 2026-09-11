@@ -16,7 +16,6 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.core.permissions import ALL_CAPABILITIES, HasCapabilities
@@ -31,6 +30,7 @@ from apps.users.otp import (
 )
 from apps.users.two_factor import criar_desafio_portal, mascarar_telefone
 from apps.core.viewsets import BaseModelViewSet
+from apps.users.tokens import token_para
 from apps.users.api.serializers import (
     AssignRoleSerializer,
     BuzUpTokenObtainPairSerializer,
@@ -168,7 +168,7 @@ class PortalTwoFactorVerifyView(APIView):
         desafio.consumed_at = timezone.now()
         desafio.save(update_fields=["status", "consumed_at", "updated_at"])
 
-        refresh = RefreshToken.for_user(utilizador)
+        refresh = token_para(utilizador)
         _registar_auth(request, "login", utilizador, utilizador.username)
         return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
 

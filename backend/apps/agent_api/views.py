@@ -60,6 +60,7 @@ from apps.agent_api.serializers import (
     AgentTicketVerifySerializer,
 )
 from apps.devices.models import Device
+from apps.users.tokens import token_para
 from apps.fares.services import NoFareFoundError, quote_fare
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.guest_checkouts.ticket_codes import ticket_reference
@@ -233,7 +234,7 @@ class AgentLoginView(APIView):
             # Dispositivos livres: a alocacao administrativa e opcional e nao
             # restringe quem pode entrar no terminal.
 
-        refresh = RefreshToken.for_user(user)
+        refresh = token_para(user)
         refresh["agent_id"] = agent.id
         refresh["phone"] = user.phone
 

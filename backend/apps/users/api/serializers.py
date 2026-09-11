@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.users.tokens import marcar
 from apps.users.models import Role, User, UserRole
 from apps.users.role_profiles import sincronizar_perfis_operacionais
 
@@ -8,7 +9,9 @@ from apps.users.role_profiles import sincronizar_perfis_operacionais
 class BuzUpTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
-        token = super().get_token(user)
+        # Carimbo com a marca da senha antes de tudo o resto: sem ele o token
+        # sobrevivia a uma mudanca de senha durante os seus 30 minutos.
+        token = marcar(super().get_token(user), user)
         token["name"] = user.get_full_name() or user.username
         token["capabilities"] = user.get_capabilities()
         roles = list(user.user_roles.values_list("code", flat=True))

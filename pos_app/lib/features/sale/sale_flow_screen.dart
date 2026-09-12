@@ -462,7 +462,18 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     } on DioException catch (e) {
       // Timeout ou 5xx: a venda pode ter sido criada no servidor. Mantem-se a
       // chave para que a repeticao devolva essa venda em vez de criar outra.
-      if (!isAmbiguousFailure(e)) _idem.rotate();
+      if (isAmbiguousFailure(e)) {
+        // Nao se sabe se a venda passou — e dizer "falhou" a quem talvez ja
+        // tenha pago e a pior resposta possivel. Pergunta-se ao servidor com
+        // a MESMA chave: ele devolve a venda que ja fez, em vez de criar
+        // outra. Se ela existir, segue-se para a espera normal do pagamento.
+        if (await _recuperarVendaEmVoo()) {
+          if (mounted) setState(() {});
+          return;
+        }
+      } else {
+        _idem.rotate();
+      }
       setState(() {
         _error = ApiClient.extractError(e);
         _step = _Step.payment;
@@ -474,6 +485,85 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       }
     }
     if (mounted) setState(() {});
+  }
+
+  /// Pergunta ao servidor se a venda chegou a passar, usando a mesma chave.
+  ///
+  /// Existe por causa de 2026-09-12, 06:32: a operadora respondeu aos 30,6 s,
+  /// a aplicacao tinha desistido aos 25, e o agente viu um erro enquanto o
+  /// passageiro recebia o bilhete e era debitado. O tempo de espera da venda
+  /// subiu para 80 s e isso resolve o caso comum — isto e a rede de seguranca
+  /// para tudo o resto: rede que cai a meio, 502 do nginx, terminal que perde
+  /// o sinal entre a pergunta e a resposta.
+  ///
+  /// Repetir com a mesma chave e seguro: o servidor procura-a antes de fazer
+  /// seja o que for e devolve a venda existente com `duplicate: true`, sem
+  /// pedir um segundo PIN nem cobrar de novo.
+  ///
+  /// Devolve `true` quando encontrou a venda e o ecra ja segue o seu caminho.
+  Future<bool> _recuperarVendaEmVoo() async {
+    try {
+      final store = ref.read(secureStoreProvider);
+      final serial = await store.getDeviceSerial();
+      final res = await ref.read(agentApiProvider).createSale(
+            tripId: _selectedTrip!['id'] as int,
+            originStopId: _originId!,
+            destinationStopId: _destinationId!,
+            paymentMethod: _paymentMethod,
+            passengerPhone:
+                (_paymentMethod == 'mobile_money' || _paymentMethod == 'cash') ? _phone : null,
+            cardUid: _paymentMethod == 'card' ? _cardUid : null,
+            qrToken: _paymentMethod == 'card' ? _qrToken : null,
+            quantity: _quantity,
+            deviceSerial: serial,
+            displayCurrency: _currency,
+            seats: _seatsRequired ? List<String>.from(_pickedSeats) : const [],
+            emergencyName: _seatsRequired ? _emergNameCtrl.text.trim() : '',
+            emergencyPhone: _seatsRequired ? _emergPhoneCtrl.text.trim() : '',
+            passengers: _pedeIdentidade
+                ? [for (final p in _passageiros) p.toJson()]
+                : const [],
+            // A MESMA chave. `key` devolve a da tentativa em curso e so
+            // muda quando alguem chama `rotate`. Rodar aqui criaria uma
+            // segunda venda — exactamente o que este metodo evita.
+            idempotencyKey: _idem.key,
+          );
+
+      _idem.rotate();
+      _saleRef = res['sale_reference'] as String?;
+      final payment = res['payment'] as Map?;
+      _paymentRef = payment?['reference'] as String?;
+      _paymentStatus = (payment?['status'] as String?) ?? 'pending';
+
+      if (_paymentStatus == 'confirmed') {
+        final bilhetes = res['tickets'];
+        if (bilhetes is List) _tickets = bilhetes;
+        await _afterConfirmed();
+        return true;
+      }
+      if (_paymentStatus == 'failed') {
+        setState(() {
+          _error = (payment?['detail'] as String?) ?? 'Pagamento falhado.';
+          _step = _Step.payment;
+        });
+        return true;
+      }
+      if (_paymentRef != null && _paymentRef!.isNotEmpty) {
+        // Ficou pendente: o ecra volta a "a aguardar" e a sondagem trata do
+        // resto. E o que o agente precisa de ver — nao um erro.
+        setState(() {
+          _error = null;
+          _step = _Step.processing;
+        });
+        _startPolling();
+        return true;
+      }
+      return false;
+    } catch (_) {
+      // A recuperacao falhou tambem. Cai-se no erro normal, que e o que o
+      // chamador faz a seguir — nunca esconder a falha original.
+      return false;
+    }
   }
 
   /// Recarrega a planta e larga os lugares que entretanto ficaram ocupados.

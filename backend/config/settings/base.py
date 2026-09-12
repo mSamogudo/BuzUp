@@ -152,13 +152,29 @@ PAYMENT_GATEWAY_WEBHOOK_SECRET = config("PAYMENT_GATEWAY_WEBHOOK_SECRET", defaul
 # (fail-closed). Default False para nao quebrar dev/test; forcado True em prod.
 PAYMENT_WEBHOOK_REQUIRE_SIGNATURE = config("PAYMENT_WEBHOOK_REQUIRE_SIGNATURE", default=False, cast=bool)
 PAYMENT_MOBILE_WALLET_METHODS = config("PAYMENT_MOBILE_WALLET_METHODS", default="MPESA,EMOLA")
-# A cadeia de timeouts tem de ser CRESCENTE do exterior para o interior:
-# gateway (25s) < nginx proxy_read (60s) < gunicorn --timeout (120s).
-# Estava invertida — o gateway tinha 180s: o POS recebia 504 do nginx aos 60s,
-# o agente repetia, o gunicorn matava o worker aos 120s levando consigo as
-# validacoes em voo, e a resposta do gateway (que chegaria aos 150s) era
-# perdida deixando o pagamento PENDING para sempre. Ver docker-compose.prod.yml
-# e docker/prod/nginx.conf.
+# ---------------------------------------------------------------------------
+# A CADEIA DE TIMEOUTS. Quem mexer num destes numeros mexe nos outros.
+#
+#   cobranca 45-60s  <  nginx 75s  <  POS 80s  <  gunicorn 200s
+#   (aqui)              (nginx.conf)  (pos_app)   (docker-compose.prod.yml)
+#
+# A regra e uma so: **quem espera pela resposta tem de desistir DEPOIS de
+# quem a produz**. O POS e o ultimo a desistir de proposito — assim um 504 do
+# nginx chega-lhe como resposta, e nao como silencio.
+#
+# Ja falhou nos dois sentidos:
+#
+#  - invertida ao contrario (gateway 180s): o POS recebia 504 do nginx aos
+#    60s, o agente repetia, o gunicorn matava o worker aos 120s levando
+#    consigo as validacoes em voo, e a resposta do gateway (que chegaria aos
+#    150s) perdia-se deixando o pagamento PENDING para sempre;
+#  - invertida deste lado (POS 25s, cobranca 60s), a 2026-09-12 as 06:32: a
+#    operadora respondeu aos 30,6s, o POS tinha desistido aos 25, e o agente
+#    viu um erro enquanto o passageiro recebia o bilhete e era debitado.
+#
+# `test_cadeia_de_timeouts.py` trava a regra. Ver tambem
+# `pos_app/lib/core/config.dart`, docker/prod/nginx.conf e
+# docker-compose.prod.yml.
 # Prazo que o passageiro tem para confirmar na carteira. E o valor que a
 # aplicacao mostra, nao o tempo que o servidor fica a segurar a ligacao.
 PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS", default=25, cast=int)
@@ -179,6 +195,13 @@ PAYMENT_MOBILE_WALLET_TIMEOUT_SECONDS = config("PAYMENT_MOBILE_WALLET_TIMEOUT_SE
 # minutos depois, com o agente e o passageiro a espera no balcao. 45s cabe na
 # maioria dos PINs e fica abaixo dos 75s do nginx (docker/prod/nginx.conf);
 # com o volume actual, uma thread presa 45s nao custa nada.
+#
+# **Nao encurtar o EMOLA a contar com a reconciliacao.** Para o M-Pesa isso
+# funciona, porque ha `/search/mpesa/c2b`. Para o e-Mola nao ha para onde
+# perguntar — `/search/emola/c2b` da 404, `EMOLA_QUERY_URL` esta vazio, e a
+# operadora nao nos chama de volta (os 18 `PaymentCallback` em producao dizem
+# todos `source: immediate_confirm`, i.e. fomos nos a escreve-los). Largar
+# cedo aqui nao adia o desfecho: perde-o.
 PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA", default=45, cast=int)
 PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA", default=60, cast=int)
 # A consulta de estado e um GET, nao espera por ninguem.

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart' show DioException, Options;
 
 import 'api_client.dart';
+import 'config.dart';
 
 /// Maps each backend endpoint under /api/agent/* to a Dart method.
 /// Returns raw JSON maps; feature layers convert into models.
@@ -17,6 +18,18 @@ class AgentApi {
   /// nova a cada repetição e anulava a protecção.
   Options? _idempotent(String? key) =>
       (key == null || key.isEmpty) ? null : Options(headers: {'Idempotency-Key': key});
+
+  /// Como `_idempotent`, mas com o tempo de espera da VENDA.
+  ///
+  /// O tempo global (25 s) serve a esmagadora maioria dos pedidos e é o que
+  /// permite dizer depressa ao agente que não há rede. A venda é a excepção:
+  /// espera pelo PIN do passageiro e não pode desligar antes do servidor.
+  /// Ver `AppConfig.saleTimeout`.
+  Options _idempotentDaVenda(String? key) => Options(
+        headers: (key == null || key.isEmpty) ? null : {'Idempotency-Key': key},
+        receiveTimeout: AppConfig.saleTimeout,
+        sendTimeout: AppConfig.saleTimeout,
+      );
 
   // ----- App update (OTA) -----
 
@@ -292,7 +305,7 @@ class AgentApi {
         if (emergencyPhone.isNotEmpty) 'emergency_contact_phone': emergencyPhone,
         if (passengers.isNotEmpty) 'passengers': passengers,
       },
-      options: _idempotent(idempotencyKey),
+      options: _idempotentDaVenda(idempotencyKey),
     );
     return res.data ?? const {};
   }

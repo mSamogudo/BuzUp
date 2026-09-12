@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:pos_app/core/agent_api.dart';
 import 'package:pos_app/core/api_client.dart';
 import 'package:pos_app/core/providers.dart';
@@ -164,6 +165,60 @@ class _FakeApi extends AgentApi {
   @override
   Future<Map<String, dynamic>> paymentStatus(String reference) async =>
       {'status': 'confirmed', 'tickets': _bilhetesEmitidos};
+}
+
+
+/// A API que reproduz 2026-09-12, 06:32: o primeiro pedido estoura por timeout
+/// e o segundo — com a MESMA chave — devolve a venda que o servidor ja fez.
+class _ApiQueEstouraEDepoisResponde extends _FakeApi {
+  _ApiQueEstouraEDepoisResponde() : super(seated: false);
+
+  /// As chaves de idempotencia usadas, por ordem. Tem de ser todas iguais:
+  /// uma chave nova na segunda tentativa criaria uma segunda venda e cobraria
+  /// o passageiro outra vez.
+  final List<String?> chaves = [];
+
+  int tentativas = 0;
+
+  @override
+  Future<Map<String, dynamic>> createSale({
+    required int tripId,
+    required int originStopId,
+    required int destinationStopId,
+    String paymentMethod = 'mobile_money',
+    String? passengerPhone,
+    String? cardUid,
+    String? qrToken,
+    int quantity = 1,
+    String? deviceSerial,
+    bool autoRequestPayment = true,
+    String? idempotencyKey,
+    String displayCurrency = 'MZN',
+    List<String> seats = const [],
+    String emergencyName = '',
+    String emergencyPhone = '',
+    List<Map<String, String>> passengers = const [],
+  }) async {
+    chaves.add(idempotencyKey);
+    tentativas += 1;
+    if (tentativas == 1) {
+      // O que a aplicacao via aos 25 s enquanto o servidor continuava.
+      throw DioException(
+        requestOptions: RequestOptions(path: '/api/agent/sales/'),
+        type: DioExceptionType.receiveTimeout,
+      );
+    }
+    // O servidor reconheceu a chave e devolveu a venda que ja tinha feito.
+    return {
+      'sale_reference': 'S-1',
+      'payment': {'reference': 'P-1', 'status': 'pending', 'duplicate': true},
+      'duplicate': true,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> paymentStatus(String reference) async =>
+      {'status': 'pending'};
 }
 
 /// O armazenamento seguro assenta em canais de plataforma que não existem num
@@ -647,5 +702,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('PASSO 3 DE 5'), findsOneWidget);
     expect(_actionLabel(tester), 'AVANCAR COM 2C');
+  });
+
+  testWidgets(
+      'um pedido que estoura nao vira erro: recupera a venda com a mesma chave',
+      (tester) async {
+    // 2026-09-12, 06:32. A operadora respondeu aos 30,6 s, a aplicacao tinha
+    // desistido aos 25, e o agente viu um erro enquanto o passageiro recebia
+    // o bilhete e era debitado 1.650 MT.
+    final api = _ApiQueEstouraEDepoisResponde();
+    await _pump(tester, api);
+    await _ateTrajecto(tester);
+    await tester.tap(find.byType(FilledButton).last);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).last, '841234567');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton).last);
+    // `pumpAndSettle` nao serve daqui para a frente: o ecra de espera tem a
+    // animacao do autocarro a repetir e a arvore nunca assenta.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Tentou duas vezes: a que estourou e a que recuperou.
+    expect(api.tentativas, 2);
+
+    // E o que impede a dupla cobranca: a segunda tentativa leva a MESMA
+    // chave. Se esta asercao cair, o passageiro paga duas vezes.
+    expect(api.chaves.length, 2);
+    expect(api.chaves[0], isNotNull);
+    expect(api.chaves[1], api.chaves[0]);
+
+    // O agente ve "a aguardar", nao um erro.
+    expect(find.text('A AGUARDAR'), findsOneWidget);
+    expect(find.textContaining('timeout'), findsNothing);
   });
 }

@@ -2168,11 +2168,17 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
 
   String _stopName(int? id) {
     if (id == null) return '-';
-    final hit = _stops.firstWhere(
-      (e) => (e is Map) && (e['id'] == id),
-      orElse: () => null,
-    );
-    if (hit is Map && hit['name'] is String) return hit['name'] as String;
+    // `firstWhere(..., orElse: () => null)` rebentava com um erro de tipo
+    // sempre que a paragem nao estivesse na lista: o `orElse` tem de devolver
+    // o tipo dos elementos, e `null` nao serve. Nunca se via, porque a
+    // paragem esta sempre la — ate ao dia em que a lista fosse recarregada e
+    // a escolhida ja nao existisse. Ai era ecra branco a meio do pagamento.
+    // `cast` + `where` nao tem `orElse` nenhum para enganar.
+    for (final e in _stops) {
+      if (e is Map && e['id'] == id && e['name'] is String) {
+        return e['name'] as String;
+      }
+    }
     return '-';
   }
 

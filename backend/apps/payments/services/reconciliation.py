@@ -283,3 +283,163 @@ def reconcile_pending_payments(
             logger.exception("reconciliacao: erro inesperado em %s", payment_intent.reference)
 
     return report
+
+
+# ---------------------------------------------------------------------------
+# Segunda volta: os que ja foram dados como falhados
+# ---------------------------------------------------------------------------
+#
+# A reconciliacao acima so olha para PENDING. Assim que um pagamento e marcado
+# FAILED, ninguem volta a olhar para ele — nunca mais.
+#
+# Isso seria inofensivo se "falhado" quisesse sempre dizer "nao pago". Nao
+# quer. Ate 2026-09-10 o nosso proprio timeout marcava FAILED, e a operadora
+# podia estar a debitar o passageiro nesse preciso momento. A 2026-09-14 uma
+# auditoria a mao encontrou **dois** pagamentos assim: 1.650 MZN de 28/08 e
+# 3.300 MZN de 31/08, ambos cobrados, nenhum com bilhete. Estiveram 17 e 14
+# dias sem ninguem dar por nada, e so foram encontrados porque alguem se
+# lembrou de perguntar.
+#
+# Esta funcao e essa pergunta, feita sozinha e todos os dias.
+#
+# **Nao confirma nada.** O checkout de um pagamento falhado ja foi cancelado e
+# o lugar devolvido a lotacao; a viagem pode ter partido ha semanas. Emitir um
+# bilhete por cima disso cria dois passageiros no mesmo lugar, ou um bilhete
+# para um autocarro que ja foi. Marca para revisao e avisa — a escolha entre
+# reemitir e devolver o dinheiro e de quem conhece o caso.
+
+#: Ha quantos dias para tras se procura. Sete cobre com folga o intervalo
+#: entre a venda e a reclamacao; mais do que isso e arqueologia e repete
+#: consultas a operadora sem ganho.
+DIAS_A_REVER = 7
+
+#: Nao repetir a pergunta sobre o mesmo pagamento todos os dias para sempre.
+#: Tres passagens chegam: se a operadora nao mudou de ideias em tres dias, nao
+#: muda mais.
+MAXIMO_DE_AUDITORIAS = 3
+
+
+@dataclass
+class AuditoriaReport:
+    verificados: int = 0
+    mesmo_falhados: int = 0
+    pagos_sem_bilhete: int = 0
+    sem_consulta: int = 0
+    ja_auditados: int = 0
+    erros: list[str] = field(default_factory=list)
+
+    def as_line(self) -> str:
+        return (
+            f"verificados={self.verificados} confirmados_falhados={self.mesmo_falhados} "
+            f"PAGOS_SEM_BILHETE={self.pagos_sem_bilhete} sem_consulta={self.sem_consulta} "
+            f"ja_auditados={self.ja_auditados} erros={len(self.erros)}"
+        )
+
+
+def _ja_auditado_vezes(payment_intent: PaymentIntent) -> int:
+    return int(((payment_intent.metadata or {}).get("auditoria") or {}).get("vezes", 0))
+
+
+def _registar_auditoria(payment_intent: PaymentIntent, veredicto: str) -> None:
+    metadata = dict(payment_intent.metadata or {})
+    anterior = metadata.get("auditoria") or {}
+    metadata["auditoria"] = {
+        "vezes": int(anterior.get("vezes", 0)) + 1,
+        "ultima": timezone.now().isoformat(),
+        "veredicto": veredicto,
+    }
+    PaymentIntent.objects.filter(pk=payment_intent.pk).update(
+        metadata=metadata, updated_at=timezone.now(),
+    )
+
+
+def _avisar_dinheiro_encontrado(payment_intent: PaymentIntent, provider_reference: str) -> None:
+    """Um SMS, uma vez, por pagamento.
+
+    Isto nao e um alerta de infraestrutura: dispara duas vezes em mes e meio, e
+    quando dispara ha dinheiro de alguem parado. A contencao esta em so avisar
+    quando a operadora confirma que cobrou, e em nunca repetir pelo mesmo
+    pagamento.
+    """
+    from django.conf import settings
+
+    numeros = [
+        n.strip()
+        for n in str(getattr(settings, "PAYMENT_REVIEW_ALERT_NUMBERS", "") or "").split(",")
+        if n.strip()
+    ]
+    if not numeros:
+        return
+
+    corpo = (
+        f"BuzUp: pagamento {payment_intent.amount} MZN de {payment_intent.payer_phone} "
+        f"foi COBRADO mas ficou sem bilhete ({payment_intent.reference}). "
+        "Precisa de decisao: reemitir ou devolver."
+    )
+    from apps.sms.services.sender import send_sms
+
+    for numero in numeros:
+        try:
+            send_sms(numero, corpo, purpose="PAYMENT_REVIEW")
+        except Exception:  # pragma: no cover - avisar nunca pode partir a auditoria
+            logger.exception("nao consegui avisar %s sobre %s", numero, payment_intent.reference)
+
+
+def auditar_pagamentos_falhados(
+    *, dias: int = DIAS_A_REVER, limit: int = 100,
+) -> AuditoriaReport:
+    """Pergunta a operadora se algum "falhado" recente foi afinal cobrado."""
+    report = AuditoriaReport()
+    desde = timezone.now() - timedelta(days=dias)
+
+    falhados = (
+        PaymentIntent.objects
+        .select_related("guest_checkout")
+        .filter(status=PaymentIntent.Status.FAILED, created_at__gte=desde)
+        .order_by("-created_at")[: limit * 3]
+    )
+
+    for pi in falhados:
+        if report.verificados >= limit:
+            break
+        if _ja_auditado_vezes(pi) >= MAXIMO_DE_AUDITORIAS:
+            report.ja_auditados += 1
+            continue
+        try:
+            gateway = get_payment_gateway(payer_phone=pi.payer_phone)
+            referencia = referencia_para_consulta(pi)
+            resultado = gateway.query_payment(referencia)
+        except Exception as exc:
+            report.erros.append(f"{pi.reference}: {exc.__class__.__name__}: {exc}")
+            continue
+
+        report.verificados += 1
+
+        # O e-Mola nao tem consulta. Nao e um erro nosso — e um facto do canal,
+        # e a unica forma de o resolver e a operadora passar a oferecer uma.
+        if not resultado.success and str(resultado.error or "").lower().startswith("query not supported"):
+            report.sem_consulta += 1
+            continue
+
+        if resultado.success:
+            report.pagos_sem_bilhete += 1
+            _mark_for_review(
+                pi,
+                resultado.provider_reference or referencia,
+                "a operadora diz que este pagamento foi COBRADO, mas foi dado como falhado "
+                "e nao emitiu bilhete",
+            )
+            if _ja_auditado_vezes(pi) == 0:
+                _avisar_dinheiro_encontrado(pi, resultado.provider_reference or referencia)
+            _registar_auditoria(pi, "pago")
+            logger.error(
+                "[auditoria] PAGO SEM BILHETE ref=%s valor=%s telefone=%s operadora=%s",
+                pi.reference, pi.amount, pi.payer_phone,
+                resultado.provider_reference or referencia,
+            )
+            continue
+
+        report.mesmo_falhados += 1
+        _registar_auditoria(pi, "nao pago")
+
+    return report

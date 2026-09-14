@@ -206,6 +206,12 @@ PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_MPES
 PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA = config("PAYMENT_WALLET_CHARGE_TIMEOUT_EMOLA", default=60, cast=int)
 # A consulta de estado e um GET, nao espera por ninguem.
 PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS = config("PAYMENT_WALLET_QUERY_TIMEOUT_SECONDS", default=15, cast=int)
+# Quem e avisado quando a auditoria encontra um pagamento que foi cobrado e
+# ficou sem bilhete. Separado do `ALERT_SMS_NUMBERS` de infraestrutura de
+# proposito: os alertas de contentores foram desligados por gastarem creditos,
+# e este nao pode ser desligado com eles — dispara duas vezes em mes e meio, e
+# quando dispara ha dinheiro de alguem parado.
+PAYMENT_REVIEW_ALERT_NUMBERS = config("PAYMENT_REVIEW_ALERT_NUMBERS", default="")
 PAYLESS_BASE_URL = config("PAYLESS_BASE_URL", default="https://payless.bluteki.com/api/v2.0")
 PAYLESS_BEARER_TOKEN = config("PAYLESS_BEARER_TOKEN", default="")
 

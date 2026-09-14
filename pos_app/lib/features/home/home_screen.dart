@@ -26,8 +26,10 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   Timer? _heartbeatTimer;
+  Timer? _actualizacaoTimer;
   String? _deviceSerial;
   Map<String, dynamic>? _summary;
   LocationReadiness _location = LocationReadiness.ok;
@@ -45,13 +47,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _sendHeartbeat();
       _loadSummary();
     });
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) checkForAppUpdate(context, ref);
+      // Este ecra e criado uma vez e vive enquanto o terminal estiver ligado.
+      // A verificacao nao pode viver so aqui: ver `vigiarActualizacoes`.
+      if (mounted) _actualizacaoTimer = vigiarActualizacoes(context, ref);
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    // O momento em que o operador volta a app e o melhor que ha para
+    // perguntar: esta a olhar para o ecra e ainda nao comecou uma venda.
+    if (estado == AppLifecycleState.resumed && mounted) {
+      checkForAppUpdate(context, ref, automatica: true);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _actualizacaoTimer?.cancel();
     _heartbeatTimer?.cancel();
     super.dispose();
   }

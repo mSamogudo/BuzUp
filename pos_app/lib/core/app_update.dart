@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'logger.dart';
@@ -13,10 +16,72 @@ import 'providers.dart';
 
 const _installerChannel = MethodChannel('buzup/installer');
 
+/// De quanto em quanto tempo se volta a perguntar ao servidor.
+///
+/// A verificacao corria **uma unica vez**, no `initState` da pagina inicial.
+/// Num SUNMI que fica semanas ligado isso e uma vez por reinicio da app: quem
+/// carregasse em "Agora nao" — ou estivesse sem rede naquele segundo — nunca
+/// mais era perguntado. Foi assim que o 1.9.1, que corrige a cobranca que
+/// parecia falhar ao operador, ficou dois dias publicado sem chegar a um
+/// unico terminal.
+const _intervaloDeVerificacao = Duration(hours: 4);
+
+/// Quanto tempo se respeita um "Agora nao".
+///
+/// Insistir de quatro em quatro horas ensina o operador a fechar a caixa sem
+/// ler, e a proxima — a que importa — fecha-se igual. Nao insistir nunca deixa
+/// a correccao no servidor. Um dia de trabalho e o meio-termo. As obrigatorias
+/// ignoram isto: nao ha "Agora nao" para dar.
+const _adiamento = Duration(hours: 12);
+
+const _chaveAdiada = 'actualizacao_adiada';
+
+/// Duas verificacoes ao mesmo tempo abrem duas caixas por cima uma da outra —
+/// e a de baixo fica presa. Acontece quando o temporizador dispara no mesmo
+/// instante em que a app volta ao ecra.
+bool _aVerificar = false;
+
+@visibleForTesting
+Future<bool> estaAdiada(int versionCode) async {
+  try {
+    final p = await SharedPreferences.getInstance();
+    final marca = p.getString(_chaveAdiada);
+    if (marca == null) return false;
+    final partes = marca.split('|');
+    if (partes.length != 2 || int.tryParse(partes[0]) != versionCode) return false;
+    final quando = DateTime.tryParse(partes[1]);
+    if (quando == null) return false;
+    return DateTime.now().difference(quando) < _adiamento;
+  } catch (_) {
+    // Sem preferencias, pergunta-se. Mais vale insistir do que calar.
+    return false;
+  }
+}
+
+@visibleForTesting
+Future<void> adiar(int versionCode) async {
+  try {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_chaveAdiada, '$versionCode|${DateTime.now().toIso8601String()}');
+  } catch (e) {
+    Log.warn('nao foi possivel guardar o adiamento', error: e);
+  }
+}
+
 /// Asks the backend if a newer published POS release exists and, if so, shows
 /// an update prompt. Mandatory updates cannot be dismissed. Failures are
 /// swallowed so a check never blocks the terminal.
-Future<void> checkForAppUpdate(BuildContext context, WidgetRef ref) async {
+///
+/// [automatica] distingue quem perguntou. A verificacao que corre sozinha
+/// respeita um "Agora nao" recente; a que o operador pede no menu mostra
+/// sempre, porque foi ele que a pediu.
+Future<void> checkForAppUpdate(
+  BuildContext context,
+  WidgetRef ref, {
+  bool automatica = false,
+}) async {
+  if (_aVerificar) return;
+  _aVerificar = true;
   try {
     final info = await PackageInfo.fromPlatform();
     // Split-per-ABI builds offset the versionCode (abi*1000 + buildNumber),
@@ -25,11 +90,26 @@ Future<void> checkForAppUpdate(BuildContext context, WidgetRef ref) async {
     final code = (int.tryParse(info.buildNumber) ?? 0) % 1000;
     final res = await ref.read(agentApiProvider).checkUpdate(currentVersionCode: code);
     if (res['update_available'] != true) return;
+    final obrigatoria = res['is_mandatory'] == true || res['force_update'] == true;
+    final nova = (res['version_code'] as num?)?.toInt() ?? 0;
+    if (automatica && !obrigatoria && await estaAdiada(nova)) return;
     if (!context.mounted) return;
     await _showUpdateDialog(context, res, info.version);
   } catch (e) {
     Log.warn('app update check failed', error: e);
+  } finally {
+    _aVerificar = false;
   }
+}
+
+/// Liga a vigia de actualizacoes a um ecra: verifica agora, de
+/// [_intervaloDeVerificacao] em [_intervaloDeVerificacao], e sempre que a app
+/// volta ao ecra. Devolve o temporizador para quem o criou o poder cancelar.
+Timer vigiarActualizacoes(BuildContext context, WidgetRef ref) {
+  checkForAppUpdate(context, ref, automatica: true);
+  return Timer.periodic(_intervaloDeVerificacao, (_) {
+    if (context.mounted) checkForAppUpdate(context, ref, automatica: true);
+  });
 }
 
 Future<List<int>> _downloadApk(String url, void Function(int, int) onProgress) async {
@@ -156,7 +236,15 @@ Future<void> _showUpdateDialog(
             actions: [
               if (!mandatory)
                 TextButton(
-                  onPressed: busy ? null : () => Navigator.pop(ctx),
+                  onPressed: busy
+                      ? null
+                      : () {
+                          // Guarda-se ANTES de fechar: a caixa volta a ser
+                          // oferecida daqui a `_adiamento`, nao a proxima vez
+                          // que o temporizador disparar.
+                          adiar((r['version_code'] as num?)?.toInt() ?? 0);
+                          Navigator.pop(ctx);
+                        },
                   child: const Text('Agora nao'),
                 ),
               FilledButton(

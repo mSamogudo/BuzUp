@@ -533,6 +533,43 @@ run_pos_app() {
   "
 }
 
+# Confere que a APK que saiu tem mesmo a identidade do perfil.
+#
+# A 2026-09-14 publicou-se como "TPM-TUR 1.9.1" uma APK generica do BuzUp:
+# package `mz.coupdigital.pos_app` em vez de `...tpmtur`, rotulo "BuzUp POS" e
+# a apontar para buzup.updigital.co.mz. Para o Android era outra aplicacao, por
+# isso nunca podia instalar-se por cima da que os terminais tinham — e como a
+# actualizacao ia marcada obrigatoria, os agentes ficaram presos numa caixa sem
+# botao de dispensar, sem poder vender.
+#
+# Nada no processo se queixou. Passa a queixar-se aqui.
+assert_apk_identity() {
+  profile="$1"
+  apk_path="$2"
+  esperado="${BUZUP_POS_APPLICATION_ID:-}"
+  [ -n "$esperado" ] || return 0
+
+  aapt=$(ls "$HOME"/Library/Android/sdk/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)
+  if [ -z "$aapt" ]; then
+    echo "[pos] AVISO: aapt2 nao encontrado — identidade da APK NAO conferida" >&2
+    return 0
+  fi
+
+  obtido=$("$aapt" dump badging "$apk_path" 2>/dev/null \
+    | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
+  if [ "$obtido" != "$esperado" ]; then
+    echo "[pos] A APK tem a identidade ERRADA e nao pode ser distribuida." >&2
+    echo "[pos]   perfil  : $profile" >&2
+    echo "[pos]   esperado: $esperado" >&2
+    echo "[pos]   obtido  : ${obtido:-(nao foi possivel ler)}" >&2
+    echo "[pos] Uma APK com outro package instala-se como aplicacao NOVA em vez" >&2
+    echo "[pos] de actualizar: o terminal fica com as duas e a errada aponta" >&2
+    echo "[pos] para outro servidor." >&2
+    exit 1
+  fi
+  echo "[pos] identidade conferida: $obtido"
+}
+
 build_pos_apk() {
   profile="$1"
   load_profile_config "$profile"
@@ -544,6 +581,7 @@ build_pos_apk() {
 
   flutter_build_apk_internal "$profile"
   apk_path=$(copy_named_apk "$profile")
+  assert_apk_identity "$profile" "$apk_path"
   output_name=$(basename "$apk_path")
   publish_pos_release_artifacts "$profile" "$apk_path"
 

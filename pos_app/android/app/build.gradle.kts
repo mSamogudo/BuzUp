@@ -45,7 +45,31 @@ android {
     defaultConfig {
         // applicationId vem do perfil de build (BUZUP_POS_APPLICATION_ID,
         // exportado pelos scripts): dev=.dev, staging=.staging, prod=base.
-        applicationId = System.getenv("BUZUP_POS_APPLICATION_ID") ?: "mz.coupdigital.pos_app"
+        //
+        // O valor por omissao so serve para builds de DEBUG na maquina de quem
+        // desenvolve. Num release tem de vir do perfil, e a falta dele e erro:
+        // a 2026-09-14 saiu um APK 1.9.1 com o identificador base em vez do
+        // `.tpmtur`, e para o Android isso e outra aplicacao — a instalacao
+        // NUNCA podia suceder. Como a actualizacao estava marcada obrigatoria,
+        // os terminais ficaram presos numa caixa sem botao de dispensar.
+        //
+        // Um valor por omissao que produz um APK valido mas com a identidade
+        // errada e pior do que nao ter valor nenhum. Aqui grita.
+        val idDoPerfil: String? = System.getenv("BUZUP_POS_APPLICATION_ID")
+        val vaiAssinar = gradle.startParameter.taskNames.any {
+            it.contains("Release", ignoreCase = true)
+        }
+        if (vaiAssinar && idDoPerfil.isNullOrBlank()) {
+            throw GradleException(
+                "BUZUP_POS_APPLICATION_ID nao esta definido e isto e um build de release.\n" +
+                "  Compile pelos scripts, que carregam o perfil:\n" +
+                "    scripts/pos-build-apk-tpmtur.sh   (TPM-TUR, .tpmtur)\n" +
+                "    scripts/pos-build-apk-prod.sh     (BuzUp, identificador base)\n" +
+                "  Um APK com o identificador errado instala-se como aplicacao\n" +
+                "  nova em vez de actualizar, e o terminal fica com as duas."
+            )
+        }
+        applicationId = idDoPerfil ?: "mz.coupdigital.pos_app"
         // Nome sob o icone. Vem do perfil de build porque a mesma app
         // serve varios operadores: um terminal da TPM-TUR com "BuzUp POS"
         // escrito por baixo do icone e a primeira coisa que o cliente ve.

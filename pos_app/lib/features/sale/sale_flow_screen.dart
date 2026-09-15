@@ -86,6 +86,14 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   Timer? _pollTimer;
   List<dynamic> _tickets = [];
 
+  /// Quando a cobranca partiu, e um tique de segundo a segundo para a contagem
+  /// decrescente. O passageiro tem ~42s (e-Mola) ou 45s (M-Pesa) para
+  /// introduzir o PIN — ver `AppConfig.janelaDoPin`. Ate agora esse relogio
+  /// corria escondido: o ecra dizia so «a aguardar confirmacao do passageiro»
+  /// e ninguem sabia que havia pressa.
+  DateTime? _cobrancaEm;
+  Timer? _tique;
+
   // Moeda de exibicao (rand nas rotas p/ Africa do Sul). So visual — a
   // cobranca e sempre em MZN; a escolha fica registada no bilhete.
   Map<String, double> _rates = const {};
@@ -167,6 +175,7 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _tique?.cancel();
     NfcCardReader.stop();
     _emergNameCtrl.dispose();
     _emergPhoneCtrl.dispose();
@@ -404,7 +413,9 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
       _error = null;
       _step = _Step.processing;
       _paymentStatus = 'pending';
+      _cobrancaEm = DateTime.now();
     });
+    _arrancarContagem();
     try {
       final store = ref.read(secureStoreProvider);
       final serial = await store.getDeviceSerial();
@@ -587,6 +598,139 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
     } catch (_) {
       // Falhar a recarregar a planta nao pode esconder o erro da venda.
     }
+  }
+
+  /// Repete a cobranca sem desfazer a venda.
+  ///
+  /// Nao reutiliza a chave de idempotencia: o `rotate()` que se faz quando o
+  /// servidor responde limpou-a, por isso `keyFor` gera uma nova. E o que tem
+  /// de acontecer — a tentativa anterior terminou de forma CONHECIDA (o
+  /// passageiro nao marcou o PIN, nada se moveu) e esta e genuinamente nova.
+  /// Reutilizar a chave fazia o servidor devolver o pagamento falhado antigo e
+  /// o agente ficava a olhar para a mesma recusa.
+  Future<void> _repetirCobranca() async {
+    _pollTimer?.cancel();
+    _tique?.cancel();
+    setState(() {
+      _error = null;
+      _paymentStatus = '';
+      _paymentRef = null;
+      _saleRef = null;
+      _tickets = [];
+      _cobrancaEm = null;
+    });
+    await _requestPayment();
+  }
+
+  /// O relogio que o agente ve enquanto o passageiro marca o PIN.
+  ///
+  /// Substitui a legenda «a aguardar confirmacao do passageiro», que era
+  /// verdadeira e inutil: nao dizia que havia tempo a esgotar-se nem o que
+  /// fazer com essa informacao. A frase por baixo do numero e para ser DITA em
+  /// voz alta — e a unica coisa que aumenta a hipotese de o pagamento passar.
+  Widget _relogioDoPin(Color fg, Color muted) {
+    final janela = AppConfig.janelaDoPin(_phone).inSeconds;
+    final restam = _segundosQueRestam();
+    final carteira = AppConfig.carteiraDoNumero(_phone);
+    final fechou = restam <= 0;
+
+    // Verde enquanto ha folga, ambar no ultimo terco, vermelho no fim. A cor
+    // muda antes do numero ficar pequeno, para o agente reagir a tempo.
+    final cor = fechou
+        ? muted
+        : restam > janela * 0.5
+            ? BuzUpColors.success
+            : restam > janela * 0.2
+                ? BuzUpColors.orange
+                : BuzUpColors.danger;
+
+    return Column(children: [
+      SizedBox(
+        width: 168,
+        height: 168,
+        child: Stack(alignment: Alignment.center, children: [
+          SizedBox(
+            width: 168,
+            height: 168,
+            child: CircularProgressIndicator(
+              value: fechou ? 1 : (janela - restam) / janela,
+              strokeWidth: 9,
+              backgroundColor: cor.withValues(alpha: 0.16),
+              valueColor: AlwaysStoppedAnimation<Color>(cor),
+            ),
+          ),
+          Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(
+              fechou ? '—' : '$restam',
+              style: TextStyle(
+                fontSize: 54,
+                fontWeight: FontWeight.w800,
+                height: 1,
+                color: cor,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              fechou ? 'janela fechada' : 'segundos',
+              style: TextStyle(fontSize: 12, color: muted, letterSpacing: 0.6),
+            ),
+          ]),
+        ]),
+      ),
+      const SizedBox(height: 14),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Text(
+          fechou
+              ? 'O tempo do PIN esgotou-se. O pedido continua de pe — quem '
+                  'decide agora e a operadora.'
+              : carteira.isEmpty
+                  ? 'Diga ao passageiro para confirmar no telemovel, ja.'
+                  : 'Diga em voz alta: «vai receber um pedido do $carteira no '
+                      'telemovel — marque o PIN agora.»',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14.5,
+            height: 1.4,
+            color: fechou ? muted : fg,
+            fontWeight: fechou ? FontWeight.w400 : FontWeight.w600,
+          ),
+        ),
+      ),
+    ]);
+  }
+
+  /// Faz o ecra respirar de segundo a segundo enquanto se espera o PIN.
+  ///
+  /// Para sozinho quando a janela fecha: passado esse ponto o numero deixa de
+  /// dizer alguma coisa util e so aumentava a ansiedade de quem esta ao
+  /// balcao. O pedido continua de pe — quem manda no desfecho e a operadora.
+  void _arrancarContagem() {
+    _tique?.cancel();
+    _tique = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || _cobrancaEm == null) {
+        t.cancel();
+        return;
+      }
+      if (_paymentStatus == 'confirmed' || _paymentStatus == 'failed') {
+        t.cancel();
+        return;
+      }
+      if (_segundosQueRestam() <= 0) {
+        t.cancel();
+      }
+      setState(() {});
+    });
+  }
+
+  /// Quantos segundos faltam para a carteira desistir. Negativo quando ja
+  /// passou — quem chama trata disso.
+  int _segundosQueRestam() {
+    if (_cobrancaEm == null) return 0;
+    final janela = AppConfig.janelaDoPin(_phone).inSeconds;
+    final passados = DateTime.now().difference(_cobrancaEm!).inSeconds;
+    return janela - passados;
   }
 
   void _startPolling() {
@@ -1527,17 +1671,20 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               const SizedBox(height: 8),
-              // Bus animation
-              Center(
-                child: BusLoader(
-                  size: 180,
-                  label: isConfirmed
-                      ? 'Pagamento confirmado!'
-                      : isFailed
-                          ? 'Pagamento nao concluido'
-                          : 'A aguardar confirmacao do passageiro',
+              // Enquanto se espera pelo PIN mostra-se o RELOGIO, nao o
+              // autocarro: e a unica coisa que o agente pode usar para agir.
+              // Nos outros estados a animacao volta, que ai ja nao ha pressa.
+              if (!isConfirmed && !isFailed)
+                _relogioDoPin(fg, muted)
+              else
+                Center(
+                  child: BusLoader(
+                    size: 180,
+                    label: isConfirmed
+                        ? 'Pagamento confirmado!'
+                        : 'Pagamento nao concluido',
+                  ),
                 ),
-              ),
               const SizedBox(height: 14),
               // Status pill + reference
               Center(
@@ -1612,6 +1759,46 @@ class _SaleFlowScreenState extends ConsumerState<SaleFlowScreen> {
                 ]),
               ),
               const SizedBox(height: 14),
+              // Quando falha, o ecra ficava VAZIO: o botao de actualizar
+              // desaparecia e nao ficava nada no lugar dele. O agente tinha de
+              // sair e refazer a venda toda — viagem, paragens, quantidade e
+              // numero. Em 60 dias, sete de onze vendas repetidas acabaram
+              // perdidas assim.
+              if (isFailed) ...[
+                Row(children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Tentar de novo'),
+                      onPressed: _repetirCobranca,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Corrigir numero'),
+                      onPressed: () {
+                        _pollTimer?.cancel();
+                        _tique?.cancel();
+                        setState(() {
+                          _error = null;
+                          _paymentStatus = '';
+                          _cobrancaEm = null;
+                          _step = _Step.payment;
+                        });
+                      },
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                Text(
+                  'A venda mantem-se: rota, paragens, quantidade e numero ja '
+                  'estao preenchidos. Repetir cobra de novo, uma so vez.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: muted, height: 1.35),
+                ),
+              ],
               if (!isConfirmed && !isFailed)
                 TextButton.icon(
                   icon: const Icon(Icons.refresh),

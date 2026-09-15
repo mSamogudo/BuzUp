@@ -46,4 +46,41 @@ class AppConfig {
   static const Duration paymentPollTimeout = Duration(seconds: 180);
 
   static const Duration heartbeatInterval = Duration(minutes: 1);
+
+  // --------------------------------------------------------------- carteiras
+
+  /// Qual carteira vai cobrar, deduzida do prefixo do número.
+  ///
+  /// É a mesma regra que o servidor aplica em `_detect_provider`: 84 e 85 são
+  /// Vodacom (M-Pesa), 86 e 87 são Movitel (e-Mola). Repete-se aqui porque o
+  /// terminal precisa de a saber **antes** de cobrar, para dizer ao operador
+  /// qual app vai tocar no telemóvel do passageiro.
+  static String carteiraDoNumero(String telefone) {
+    var d = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (d.startsWith('258')) d = d.substring(3);
+    if (d.startsWith('84') || d.startsWith('85')) return 'M-Pesa';
+    if (d.startsWith('86') || d.startsWith('87')) return 'e-Mola';
+    return '';
+  }
+
+  /// Quanto tempo o passageiro tem, de facto, para introduzir o PIN.
+  ///
+  /// Não é um número escolhido: é o que se mediu em produção a 2026-09-14. As
+  /// **12 falhas de e-Mola** dos 60 dias anteriores registaram-se todas entre
+  /// 42,2 e 42,9 segundos, com a mesma frase do broker — *Customer did not
+  /// enter PIN*. Não é dispersão, é um limite.
+  ///
+  /// No M-Pesa quem desiste primeiro somos nós, aos 45 segundos
+  /// (`PAYMENT_WALLET_CHARGE_TIMEOUT_MPESA`), por isso é esse o relógio que
+  /// conta para o passageiro.
+  ///
+  /// Este número existe para ser MOSTRADO. Enquanto o terminal dizia apenas
+  /// «a aguardar confirmação do passageiro», ninguém — nem o agente, nem o
+  /// passageiro — sabia que havia relógio a correr. Dois em cada três
+  /// pagamentos por carteira falhavam.
+  static Duration janelaDoPin(String telefone) {
+    return carteiraDoNumero(telefone) == 'e-Mola'
+        ? const Duration(seconds: 42)
+        : const Duration(seconds: 45);
+  }
 }

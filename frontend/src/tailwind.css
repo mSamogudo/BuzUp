@@ -16,11 +16,18 @@
  */
 @layer theme, base, components, utilities;
 
+/* O portal alterna o tema em `html[data-theme="dark"]`; o shadcn espera `.dark`.
+ * Esta variante ensina o Tailwind a reconhecer os dois, para que os componentes
+ * novos respondam ao alternador que ja existe sem ninguem mexer nele. */
+@custom-variant dark (&:is([data-theme=dark] *, .dark *));
+
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
 
-/* O portal alterna o tema em `html[data-theme="dark"]`; o shadcn espera `.dark`.
- * Esta variante ensina o Tailwind a reconhecer os dois, para que os componentes
- * novos respondam ao alternador que ja existe sem ninguem mexer nele. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+/* Inter e Manrope, alojadas localmente. */
+@import "./themes/fontes.css";
+
+/* Os tokens da identidade TPM-TUR e o mapa para os nomes do shadcn. */
+@import "./themes/tpm-tur.css";
+

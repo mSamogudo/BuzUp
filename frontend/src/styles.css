@@ -1,4 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800;900&display=swap");
+/* As fontes deixaram de vir do Google: estao alojadas na propria aplicacao,
+ * em src/themes/fontes.css, carregado pelo tailwind.css. Um pedido a menos
+ * a um terceiro, e um bloqueio de render a menos em ligacoes lentas. */
 
 /* ==========================================================================
    1. CSS Variables — Light Theme (Zinc Executive Palette)

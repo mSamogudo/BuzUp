@@ -1,0 +1,9 @@
+node_modules/
+playwright/.auth/
+playwright-report/
+test-results/
+
+# As capturas posteriores regeneram-se correndo o script outra vez.
+# A base `antes/` NAO se regenera depois de a migracao comecar — fica versionada.
+capturas/*
+!capturas/antes/

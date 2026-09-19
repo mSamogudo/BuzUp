@@ -54,3 +54,11 @@ postgres_*_data/
 
 # Dev notes
 prompt
+
+# Companion visual do brainstorming (mockups locais)
+.superpowers/
+
+# Artefactos de trabalho e ferramentas locais
+output/
+.playwright-mcp/
+.impeccable/

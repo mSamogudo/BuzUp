@@ -1,0 +1,26 @@
+/* Tailwind 4 a conviver com o styles.css existente.
+ *
+ * Importa-se por partes, de proposito. O `@import "tailwindcss"` completo traz
+ * o preflight — um reset que zera margens, tamanhos de titulo, estilos de lista
+ * e de formulario. Aplicado a uma aplicacao com 7 245 linhas de CSS proprio a
+ * mandar em tudo, mudava o aspecto de 80 paginas de uma vez, sem ninguem pedir.
+ *
+ * Aqui entram so o tema (as variaveis) e os utilitarios. O preflight e a camada
+ * base entram quando as paginas comecarem a converter para shadcn, pagina a
+ * pagina e com screenshots a confirmar.
+ *
+ * Nota sobre precedencia: `styles.css` nao esta em nenhuma camada, e CSS sem
+ * camada ganha sempre a CSS em camada. Isso torna esta fase segura — nada do
+ * Tailwind consegue sobrepor-se ao que la esta — mas tera de ser resolvido
+ * quando quisermos o contrario.
+ */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+
+/* O portal alterna o tema em `html[data-theme="dark"]`; o shadcn espera `.dark`.
+ * Esta variante ensina o Tailwind a reconhecer os dois, para que os componentes
+ * novos respondam ao alternador que ja existe sem ninguem mexer nele. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));

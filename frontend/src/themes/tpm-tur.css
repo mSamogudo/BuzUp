@@ -65,6 +65,8 @@
    * #a1a1aa sobre #18181b — 5% de saturacao, cinzento lavado sobre cor. */
   --sidebar-foreground: #9dbbdd;
   --sidebar-primary: #087d99;
+  /* O mesmo teal em triplo, para os rgba() que o CSS antigo ainda usa. */
+  --sidebar-primary-rgb: 8, 125, 153;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #1b3f66;
   --sidebar-accent-foreground: #e8eef5;
@@ -114,6 +116,7 @@
   --sidebar: #050f1a;
   --sidebar-foreground: #8fb0d4;
   --sidebar-primary: #35b9d8;
+  --sidebar-primary-rgb: 53, 185, 216;
   --sidebar-primary-foreground: #062330;
   --sidebar-accent: #12293f;
   --sidebar-accent-foreground: #e8eef5;

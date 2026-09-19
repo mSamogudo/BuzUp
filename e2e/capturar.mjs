@@ -76,6 +76,20 @@ async function estabilizar(page) {
     }
     window.scrollTo(0, 0)
   })
+  // As imagens `loading="lazy"` so comecam a descarregar perto da janela, e os
+  // cartoes da landing so sao montados por um IntersectionObserver. Esperar por
+  // elas nao chega — e preciso obriga-las a comecar.
+  //
+  // (Uma primeira versao desta espera aceitava `currentSrc === ''` como
+  // "completa", o que dava por carregada precisamente a imagem que ainda nem
+  // tinha comecado. Dois cartoes da landing sairam vazios por causa disso.)
+  await page.evaluate(() => {
+    for (const img of document.images) img.loading = 'eager'
+  })
+  await page
+    .waitForFunction(() => [...document.images].every((i) => i.complete), null, { timeout: 30_000 })
+    .catch(() => {})
+
   // Os graficos Recharts animam as barras a crescer (~1500ms). Esperar um
   // tempo fixo apanha-os a meio e produz "diferencas" que sao so animacao —
   // foi assim que o dashboard apareceu com barras a 20% do valor real.

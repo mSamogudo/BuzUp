@@ -27,6 +27,9 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, StatusBadge } from "../ui/common";
 import { showToast } from "../lib/toast";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface ActivePackage {
   id: number;
@@ -454,30 +457,32 @@ export default function PassengerPortalPage() {
           </h2>
 
           <form className="co-form" onSubmit={handleSearch}>
-            <select
-              className="co-select"
+            <CampoSelect
+              aria-label={t(locale, "origin")}
+              className="co-field"
+              onChange={(v) => { setOriginId(v); if (v && v === destId) setDestId(""); }}
               value={originId}
-              onChange={(e) => { const v = e.target.value; setOriginId(v); if (v && v === destId) setDestId(""); }}
             >
               <option value="">{t(locale, "origin")}</option>
               {stops.filter((s) => String(s.id) !== destId).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
-            </select>
+            </CampoSelect>
 
-            <select
-              className="co-select"
+            <CampoSelect
+              aria-label={t(locale, "destination")}
+              className="co-field"
+              onChange={(v) => { setDestId(v); if (v && v === originId) setOriginId(""); }}
               value={destId}
-              onChange={(e) => { const v = e.target.value; setDestId(v); if (v && v === originId) setOriginId(""); }}
             >
               <option value="">{t(locale, "destination")}</option>
               {stops.filter((s) => String(s.id) !== originId).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
-            </select>
+            </CampoSelect>
 
             <div className="co-row">
-              <label className={`co-btn-outline${direction === "outbound" ? " " : ""}`} style={direction === "outbound" ? { borderColor: "#1D5FA7", color: "#1D5FA7", fontWeight: 700 } : undefined}>
+              <label className={`co-btn-outline${direction === "outbound" ? " co-btn-outline-on" : ""}`}>
                 <input
                   type="radio"
                   name="dir"
@@ -488,7 +493,7 @@ export default function PassengerPortalPage() {
                 />
                 <ArrowRight size={16} /> {t(locale, "outboundCaps")}
               </label>
-              <label className={`co-btn-outline${direction === "inbound" ? " " : ""}`} style={direction === "inbound" ? { borderColor: "#1D5FA7", color: "#1D5FA7", fontWeight: 700 } : undefined}>
+              <label className={`co-btn-outline${direction === "inbound" ? " co-btn-outline-on" : ""}`}>
                 <input
                   type="radio"
                   name="dir"
@@ -588,15 +593,16 @@ export default function PassengerPortalPage() {
 
                     {(data?.active_packages || []).length > 0 && (
                       <div className="portal-package-picker">
-                        <label className="portal-payment-toggle">
-                          <input type="checkbox" checked={usePackage} onChange={(e) => setUsePackage(e.target.checked)} />
-                          <span>{t(locale, "useSpecialPackage")}</span>
-                        </label>
+                        <div className="portal-payment-toggle">
+                          <Checkbox checked={usePackage} id="usar-pacote" onCheckedChange={(v) => setUsePackage(v === true)} />
+                          <Label htmlFor="usar-pacote">{t(locale, "useSpecialPackage")}</Label>
+                        </div>
                         {usePackage && (
-                          <select
+                          <CampoSelect
+                            aria-label={t(locale, "useSpecialPackage")}
                             className="portal-package-select"
+                            onChange={(v) => setSelectedPackageId(v ? Number(v) : null)}
                             value={selectedPackageId === null ? "" : String(selectedPackageId)}
-                            onChange={(e) => setSelectedPackageId(e.target.value ? Number(e.target.value) : null)}
                           >
                             <option value="">{t(locale, "autoBestOption")}</option>
                             {(data?.active_packages || []).map((p) => (
@@ -604,7 +610,7 @@ export default function PassengerPortalPage() {
                                 {p.package_name} {(p.trips_remaining || 0) > 0 ? `· ${p.trips_remaining} viagens` : p.special_balance ? `· ${formatCurrency(p.special_balance)} saldo` : ""}
                               </option>
                             ))}
-                          </select>
+                          </CampoSelect>
                         )}
                       </div>
                     )}
@@ -762,8 +768,8 @@ export default function PassengerPortalPage() {
                         style={{
                           display: "flex", flexDirection: "column",
                           alignItems: "center", gap: 10, marginTop: 12,
-                          padding: 14, background: "#fff", borderRadius: 12,
-                          border: "1px solid #E7E1D4",
+                          padding: 14, background: "var(--card)", borderRadius: 12,
+                          border: "1px solid var(--border)",
                         }}
                       >
                         <img
@@ -771,7 +777,7 @@ export default function PassengerPortalPage() {
                           alt="QR do meu cartao"
                           style={{ width: 220, height: 220 }}
                         />
-                        <small style={{ color: "#6B6356", textAlign: "center" }}>
+                        <small style={{ color: "var(--muted-foreground)", textAlign: "center" }}>
                           {t(locale, "showQrHint")}
                         </small>
                         <Button size="lg"

@@ -174,11 +174,11 @@ export default function DriverPortalPage() {
                   <span style={{
                     display: "inline-flex", alignItems: "center", gap: 4,
                     marginTop: 6, fontSize: 11, fontWeight: 600,
-                    color: "#22c55e",
+                    color: "var(--success)",
                   }}>
                     <span style={{
                       display: "inline-block", width: 6, height: 6, borderRadius: "50%",
-                      background: "#22c55e",
+                      background: "var(--success)",
                     }} />
                     Receita actual: {formatCurrency(liveSummary.total_revenue)}
                   </span>

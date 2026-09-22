@@ -141,3 +141,80 @@ class AsLarguras(TestCase):
         linhas = [{f"c{i}": "x" * 20 for i in range(8)} | {"amount": "1650.00"}]
         larguras = _larguras_das_colunas(self.TelaFalsa(), colunas, linhas, 800.0)
         self.assertLessEqual(sum(larguras), 800.0 + 0.5)
+
+
+class OQueCadaRelatorioConta(TestCase):
+    """Cada relatorio diz o que conta e o que deixa de fora.
+
+    O cliente comparou o total de um relatorio com o cartao «Receita de
+    transporte» do painel e encontrou 10 900,00 MZN de diferenca. Nao era
+    erro: o painel soma bilhetes MAIS validacoes de cartao, e o relatorio so
+    cobre um dos dois.
+
+    Um numero que nao diz o que conta obriga quem o le a desconfiar de todos
+    os outros.
+    """
+
+    def test_todos_os_relatorios_declaram_o_escopo(self):
+        from apps.reports.builder import REGISTRY
+
+        for chave, spec in REGISTRY.items():
+            self.assertTrue(getattr(spec, "escopo", ""),
+                            f"o relatorio «{chave}» nao diz o que conta")
+
+    def test_o_escopo_diz_o_que_NAO_conta(self):
+        """A metade que importa. «Conta bilhetes» nao ajuda ninguem a
+        perceber porque e que o painel mostra mais."""
+        from apps.reports.builder import REGISTRY
+
+        for chave in ("sales", "tickets", "topups", "validations"):
+            self.assertIn("Nao", REGISTRY[chave].escopo,
+                          f"o escopo de «{chave}» nao diz o que fica de fora")
+
+    def test_o_escopo_chega_ao_documento(self):
+        from apps.reports.builder import REGISTRY
+        from apps.reports.exporters import render_xlsx
+        import io as _io
+        from openpyxl import load_workbook
+
+        spec = REGISTRY["sales"]
+        dados = render_xlsx(
+            title=spec.title, period_from="01/09/2026", period_to="30/09/2026",
+            columns=spec.columns, rows=[], totals={}, escopo=spec.escopo,
+        )
+        wb = load_workbook(_io.BytesIO(dados))
+        ws = wb["Resumo"]
+        self.assertEqual(ws["A5"].value, spec.escopo)
+        self.assertTrue(str(ws["A4"].value or "").startswith("Gerado em"),
+                        "o «gerado em» nao pode ser apagado pelo escopo")
+
+
+class AEscolhaDeColunas(TestCase):
+    def setUp(self):
+        from apps.reports.api.views import _colunas_pedidas
+        from apps.reports.builder import REGISTRY
+
+        self.escolher = _colunas_pedidas
+        self.spec = REGISTRY["sales"]
+
+    def test_sem_pedido_vao_todas(self):
+        """Quem ja tem um link guardado recebe o mesmo de sempre."""
+        self.assertEqual(self.escolher(self.spec, None), self.spec.columns)
+        self.assertEqual(self.escolher(self.spec, ""), self.spec.columns)
+
+    def test_a_ordem_e_a_do_relatorio_e_nao_a_do_pedido(self):
+        """Se fosse a do pedido, duas pessoas com as mesmas colunas recebiam
+        documentos diferentes e ninguem os podia comparar."""
+        escolhidas = self.escolher(self.spec, "status,created_at,amount")
+        chaves = [k for k, _ in escolhidas]
+        ordem_original = [k for k, _ in self.spec.columns if k in set(chaves)]
+        self.assertEqual(chaves, ordem_original)
+
+    def test_uma_coluna_que_ja_nao_existe_ignora_se(self):
+        """O pedido vem de um URL que alguem guardou nos favoritos."""
+        escolhidas = self.escolher(self.spec, "created_at,coluna_que_morreu")
+        self.assertEqual([k for k, _ in escolhidas], ["created_at"])
+
+    def test_nenhuma_valida_devolve_tudo(self):
+        """Um documento vazio nao se distingue de «nao houve movimento»."""
+        self.assertEqual(self.escolher(self.spec, "nada,disto,existe"), self.spec.columns)

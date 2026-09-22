@@ -506,16 +506,50 @@ class ReportSpec:
     title: str
     columns: list[tuple[str, str]]
     build_rows: Callable[[dict], list[dict]]
+    #: O que este relatorio conta, e o que NAO conta.
+    #:
+    #: Existe porque o cliente comparou o total de um relatorio com o cartao
+    #: «Receita de transporte» do painel e encontrou 10 900,00 MZN de
+    #: diferenca. Nao era erro: o painel soma bilhetes MAIS validacoes de
+    #: cartao, e este relatorio so cobre um dos dois.
+    #:
+    #: Um numero que nao diz o que conta obriga quem o le a desconfiar de
+    #: todos os outros. A frase vai dentro do documento, onde a pergunta
+    #: aparece — e nao numa pagina de ajuda que ninguem abre.
+    escopo: str = ""
 
 
 REGISTRY: dict[str, ReportSpec] = {
-    SALES[0]: ReportSpec(SALES[0], SALES[1], SALES[2], _rows_sales),
-    TOPUPS[0]: ReportSpec(TOPUPS[0], TOPUPS[1], TOPUPS[2], _rows_topups),
-    VALIDATIONS[0]: ReportSpec(VALIDATIONS[0], VALIDATIONS[1], VALIDATIONS[2], _rows_validations),
-    ONBOARDING[0]: ReportSpec(ONBOARDING[0], ONBOARDING[1], ONBOARDING[2], _rows_onboardings),
-    RECOVERIES[0]: ReportSpec(RECOVERIES[0], RECOVERIES[1], RECOVERIES[2], _rows_recoveries),
-    TICKETS[0]: ReportSpec(TICKETS[0], TICKETS[1], TICKETS[2], _rows_tickets),
+    SALES[0]: ReportSpec(
+        *SALES, _rows_sales,
+        escopo="Conta os PAGAMENTOS de bilhetes comprados sem conta (guest). "
+               "Nao inclui validacoes de cartao nem recargas de saldo.",
+    ),
+    TOPUPS[0]: ReportSpec(
+        *TOPUPS, _rows_topups,
+        escopo="Conta recargas de saldo, pacotes e emissoes de cartao. "
+               "Nao inclui bilhetes.",
+    ),
+    VALIDATIONS[0]: ReportSpec(
+        *VALIDATIONS, _rows_validations,
+        escopo="Conta as validacoes de cartao a bordo. "
+               "Nao inclui bilhetes comprados sem conta.",
+    ),
+    ONBOARDING[0]: ReportSpec(
+        *ONBOARDING, _rows_onboardings,
+        escopo="Conta registos de passageiros com cartao. Nao e receita de transporte.",
+    ),
+    RECOVERIES[0]: ReportSpec(
+        *RECOVERIES, _rows_recoveries,
+        escopo="Conta recuperacoes de cartao perdido. Nao e receita de transporte.",
+    ),
+    TICKETS[0]: ReportSpec(
+        *TICKETS, _rows_tickets,
+        escopo="Uma linha por passageiro que viaja. Uma ida-e-volta e UMA linha "
+               "com as duas datas. Nao inclui validacoes de cartao.",
+    ),
 }
+
 
 
 def aggregate_totals(spec: ReportSpec, rows: list[dict]) -> dict:

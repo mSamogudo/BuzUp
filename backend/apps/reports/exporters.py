@@ -333,6 +333,7 @@ def render_pdf(
     rows: list[dict],
     totals: dict | None = None,
     filters_summary: str = "",
+    escopo: str = "",
 ) -> bytes:
     buf = io.BytesIO()
     page = landscape(A4)
@@ -353,6 +354,15 @@ def render_pdf(
 
     if totals:
         y = _draw_totals(c, width, y, totals)
+
+    # O que este relatorio conta, e o que nao conta. Vai debaixo dos cartoes
+    # porque e ali que a pergunta nasce: alguem le o total, compara com o
+    # painel, e nao bate certo. A resposta tem de estar na mesma folha.
+    if escopo:
+        c.setFillColor(GREY)
+        c.setFont("Helvetica-Oblique", 8)
+        c.drawString(10 * mm, y, _fit_text(c, escopo, "Helvetica-Oblique", 8, width - 20 * mm))
+        y -= 5 * mm
 
     sample = rows[:200]
     avail = width - 20 * mm
@@ -534,13 +544,21 @@ def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
     # Os valores repetem-se muito (estado, rota, tipo, datas do mesmo dia),
     # por isso guarda-se o resultado por (texto, largura da coluna). A cache
     # vive so durante este documento: nao ha risco de ficar desactualizada.
-    cell_cache: dict[tuple[str, int], tuple[str, bool]] = {}
+    cell_cache: dict[tuple[str, int, bool], tuple[str, bool]] = {}
 
-    def _cell(txt: str, w: float):
-        key = (txt, int(w))
+    #: Colunas que NUNCA se alinham a direita, mesmo quando o valor so tem
+    #: digitos. Um codigo de bilhete como «425692» nao e uma quantidade — e
+    #: alinha-lo a direita, ao lado de «4B1DAA» a esquerda, faz a coluna
+    #: parecer partida.
+    nunca_a_direita = {"bilhete", "reference", "sale_reference", "card_uid",
+                       "documento", "msisdn", "payer", "short_code"}
+
+    def _cell(txt: str, w: float, key_col: str = ""):
+        key = (txt, int(w), key_col in nunca_a_direita)
         hit = cell_cache.get(key)
         if hit is None:
-            hit = (_fit_text(c, txt, "Helvetica", 8, w - 4), _is_numeric_cell(txt))
+            numerico = _is_numeric_cell(txt) and key_col not in nunca_a_direita
+            hit = (_fit_text(c, txt, "Helvetica", 8, w - 4), numerico)
             cell_cache[key] = hit
         return hit
 
@@ -561,7 +579,7 @@ def _draw_table(c, *, x_left, y, width, columns, col_widths, rows, page_size,
         x = x_left
         baseline = y - line_h + 1.8 * mm
         for (key, _), w in zip(columns, col_widths):
-            fitted, numeric = _cell(_stringify(_apresentar(key, row.get(key))), w)
+            fitted, numeric = _cell(_stringify(_apresentar(key, row.get(key))), w, key)
             if numeric:
                 c.drawRightString(x + w - 2, baseline, fitted)
             else:
@@ -607,6 +625,7 @@ def render_xlsx(
     rows: list[dict],
     totals: dict | None = None,
     filters_summary: str = "",
+    escopo: str = "",
 ) -> bytes:
     wb = Workbook()
     ws = wb.active
@@ -616,7 +635,10 @@ def render_xlsx(
     ws["A1"].font = Font(size=14, bold=True, color="071E49")
     ws["A2"] = f"Periodo: {period_from} a {period_to}"
     ws["A3"] = f"Filtros: {filters_summary}" if filters_summary else ""
-    ws["A4"] = f"Gerado em: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    ws["A4"] = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    # O que este relatorio conta, e o que nao conta. Ver `render_pdf`.
+    # (A4 ja era do «Gerado em» — escrever aqui por cima apagava-o.)
+    ws["A5"] = escopo or ""
 
     if totals:
         ws["A6"] = "Totais"

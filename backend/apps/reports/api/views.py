@@ -780,6 +780,7 @@ class ReportBuilderRunView(APIView):
                 title=spec.title, period_from=period_from, period_to=period_to,
                 columns=colunas, rows=rows,
                 totals=totals, filters_summary=filters_summary,
+                escopo=getattr(spec, "escopo", ""),
             )
             resp = HttpResponse(pdf, content_type="application/pdf")
             resp["X-Report-Truncated"] = "1" if truncated else "0"
@@ -791,6 +792,7 @@ class ReportBuilderRunView(APIView):
                 title=spec.title, period_from=period_from, period_to=period_to,
                 columns=colunas, rows=rows,
                 totals=totals, filters_summary=filters_summary,
+                escopo=getattr(spec, "escopo", ""),
             )
             resp = HttpResponse(data, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             resp["X-Report-Truncated"] = "1" if truncated else "0"

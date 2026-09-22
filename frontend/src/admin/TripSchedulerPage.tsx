@@ -14,6 +14,7 @@ import TripCalendar from "./TripCalendar";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface RouteOpt { id: number; code: string; name: string; service_type?: string }
 interface VehicleOpt { id: number; registration: string; seated_capacity?: number }
@@ -220,15 +221,12 @@ export default function TripSchedulerPage() {
             <>
               <div className="bzsched-card">
                 <h3 className="bzsched-h3"><RouteIcon size={14} /> {t(lc, "departure")}</h3>
-                <label className="field">
-                  <span>{t(lc, "route")}</span>
-                  <select value={rota} onChange={(e) => setRota(e.target.value)} required>
-                    <option value="">{t(lc, "choose")}</option>
-                    {(routes || []).map((r) => (
-                      <option key={r.id} value={r.id}>{r.code} — {r.name}</option>
-                    ))}
-                  </select>
-                </label>
+                <CampoSelect label={t(lc, "route")} value={rota} onChange={(valor) => setRota(valor)} required>
+                  <option value="">{t(lc, "choose")}</option>
+                  {(routes || []).map((r) => (
+                    <option key={r.id} value={r.id}>{r.code} — {r.name}</option>
+                  ))}
+                </CampoSelect>
                 <div className="field">
                   <span>{t(lc, "direction")}</span>
                   {/* A ida e a volta são duas programações. Fazê-las de uma vez,
@@ -246,24 +244,18 @@ export default function TripSchedulerPage() {
                     ))}
                   </div>
                 </div>
-                <label className="field">
-                  <span><Bus size={12} style={{ verticalAlign: -2 }} /> {t(lc, "bus")}</span>
-                  <select value={viatura} onChange={(e) => setViatura(e.target.value)}>
-                    <option value="">{t(lc, "noBusAssigned")}</option>
-                    {(vehicles || []).map((v) => (
-                      <option key={v.id} value={v.id}>{v.registration}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span><UserRound size={12} style={{ verticalAlign: -2 }} /> {t(lc, "driver")}</span>
-                  <select value={motorista} onChange={(e) => setMotorista(e.target.value)}>
-                    <option value="">{t(lc, "noDriverAssigned")}</option>
-                    {(drivers || []).map((d) => (
-                      <option key={d.id} value={d.id}>{d.full_name}</option>
-                    ))}
-                  </select>
-                </label>
+                <CampoSelect label={<><Bus size={12} style={{ verticalAlign: -2 }} /> {t(lc, "bus")}</>} value={viatura} onChange={(valor) => setViatura(valor)}>
+                  <option value="">{t(lc, "noBusAssigned")}</option>
+                  {(vehicles || []).map((v) => (
+                    <option key={v.id} value={v.id}>{v.registration}</option>
+                  ))}
+                </CampoSelect>
+                <CampoSelect label={<><UserRound size={12} style={{ verticalAlign: -2 }} /> {t(lc, "driver")}</>} value={motorista} onChange={(valor) => setMotorista(valor)}>
+                  <option value="">{t(lc, "noDriverAssigned")}</option>
+                  {(drivers || []).map((d) => (
+                    <option key={d.id} value={d.id}>{d.full_name}</option>
+                  ))}
+                </CampoSelect>
               </div>
 
               <div className="bzsched-card">
@@ -310,17 +302,14 @@ export default function TripSchedulerPage() {
                 </p>
               ) : (
                 <>
-                  <label className="field">
-                    <span>{t(lc, "which")}</span>
-                    <select value={horarioId} onChange={(e) => setHorarioId(e.target.value)}>
-                      <option value="all">Todos os activos ({activos})</option>
-                      {(schedules || []).map((s) => (
-                        <option key={s.id} value={s.id} disabled={s.status !== "active"}>
-                          {s.route_code} · {s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <CampoSelect label={t(lc, "which")} value={horarioId} onChange={(valor) => setHorarioId(valor)}>
+                    <option value="all">Todos os activos ({activos})</option>
+                    {(schedules || []).map((s) => (
+                      <option key={s.id} value={s.id} disabled={s.status !== "active"}>
+                        {s.route_code} · {s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}
+                      </option>
+                    ))}
+                  </CampoSelect>
                   <label className="field">
                     <span>{t(lc, "startingFrom")}</span>
                     <CampoData onChange={(v) => setDesde(v || todayISO())} value={desde} min={todayISO()} />

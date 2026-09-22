@@ -11,6 +11,7 @@ import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge,
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface Pkg { id: number; uuid: string; name: string; description: string; discount_type: string; discount_value: string; price: string; validity_days: number; max_trips: number; status: string; routes: { route_id: number; route_code: string; route_name: string }[]; }
 interface Sub { id: number; uuid: string; passenger_name: string; passenger_phone: string; package_name: string; discount_type: string; special_balance: string; trips_used: number; trips_remaining: number; status: string; activated_at: string; expires_at: string; passenger_account_id: number; package_id: number; }
@@ -116,13 +117,11 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "name")}</span><input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "discountType")}</span>
-              <select value={form.discount_type} onChange={(e) => f("discount_type", e.target.value)}>
-                <option value="percentage">{t(lc, "percentage")}</option>
-                <option value="fixed_amount">{t(lc, "fixedAmount")}</option>
-                <option value="free_trips">{t(lc, "freeTrips")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "discountType")} value={form.discount_type} onChange={(valor) => f("discount_type", valor)}>
+              <option value="percentage">{t(lc, "percentage")}</option>
+              <option value="fixed_amount">{t(lc, "fixedAmount")}</option>
+              <option value="free_trips">{t(lc, "freeTrips")}</option>
+            </CampoSelect>
 
             {dt === "percentage" && (
               <label className="field"><span>{t(lc, "discountPct")}</span>
@@ -148,12 +147,10 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "validityDays")}</span>
               <input type="number" min="1" value={form.validity_days} onChange={(e) => f("validity_days", e.target.value)} />
             </label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={form.status} onChange={(e) => f("status", e.target.value)}>
-                <option value="active">{t(lc, "active")}</option>
-                <option value="inactive">{t(lc, "inactive")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}>
+              <option value="active">{t(lc, "active")}</option>
+              <option value="inactive">{t(lc, "inactive")}</option>
+            </CampoSelect>
             <div className="field admin-field-span-full">
               <span>{t(lc, "packageRoutes")} ({selectedRoutes.size === 0 ? t(lc, "allRoutes") : selectedRoutes.size})</span>
               <div className="perm-grid" style={{ maxHeight: 180 }}>
@@ -177,18 +174,14 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={subModal} onClose={() => setSubModal(false)} title={t(lc, "subscribe")}>
         <form className="admin-form" onSubmit={submitSub}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "passenger")}</span>
-              <select required value={subForm.passenger_id} onChange={(e) => setSubForm((p) => ({ ...p, passenger_id: e.target.value }))}>
-                <option value="">{t(lc, "select")}</option>
-                {(passengers || []).map((p) => <option key={p.id} value={p.id}>{p.full_name} — {p.phone_number}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "packages")}</span>
-              <select required value={subForm.package_id} onChange={(e) => setSubForm((p) => ({ ...p, package_id: e.target.value }))}>
-                <option value="">{t(lc, "select")}</option>
-                {(pkgs || []).filter((p) => p.status === "active").map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(p.price)}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "passenger")} required value={subForm.passenger_id} onChange={(valor) => setSubForm((p) => ({ ...p, passenger_id: valor }))}>
+              <option value="">{t(lc, "select")}</option>
+              {(passengers || []).map((p) => <option key={p.id} value={p.id}>{p.full_name} — {p.phone_number}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "packages")} required value={subForm.package_id} onChange={(valor) => setSubForm((p) => ({ ...p, package_id: valor }))}>
+              <option value="">{t(lc, "select")}</option>
+              {(pkgs || []).filter((p) => p.status === "active").map((p) => <option key={p.id} value={p.id}>{p.name} — {formatCurrency(p.price)}</option>)}
+            </CampoSelect>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : t(lc, "subscribe")}</Button>

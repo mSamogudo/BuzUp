@@ -10,6 +10,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { t, type Locale } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface GuestCheckout {
   id: number;
@@ -232,19 +233,13 @@ export default function GuestCheckoutsPage() {
       {modalImportacao}
       <SectionCard title={t(lc, "purchases")} description={t(lc, "guestCheckoutsHint")}>
         <div className="admin-toolbar" style={{ marginBottom: 12 }}>
-          <label className="field" style={{ maxWidth: 260 }}>
-            <span>{t(lc, "status")}</span>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              {estados(lc).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </label>
-          <label className="field" style={{ maxWidth: 200 }}>
-            <span>{t(lc, "displayCurrency")}</span>
-            <select value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value)}>
-              <option value="all">{t(lc, "allCurrencies")}</option>
-              {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
+          <CampoSelect label={t(lc, "status")} value={statusFilter} onChange={(valor) => setStatusFilter(valor)}>
+            {estados(lc).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </CampoSelect>
+          <CampoSelect label={t(lc, "displayCurrency")} value={currencyFilter} onChange={(valor) => setCurrencyFilter(valor)}>
+            <option value="all">{t(lc, "allCurrencies")}</option>
+            {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
+          </CampoSelect>
         </div>
         <DataTable columns={[
           { header: t(lc, "reference"), sortKey: "reference", render: (r: GuestCheckout) => <TablePrimaryCell title={r.reference} subtitle={r.buyer_name || "-"} /> },

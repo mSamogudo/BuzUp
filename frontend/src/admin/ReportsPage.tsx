@@ -11,6 +11,7 @@ import { useUi } from "../ui/UiPreferences";
 import { ButtonSpinner, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell, useAsyncData, type TableColumn } from "../ui/common";
 import { SkeletonCard } from "../ui/Skeleton";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface RevenueData {
   validations: { total_count: number; total_revenue: string; by_route: { route__code: string; route__name: string; count: number; total: string }[] };
@@ -289,47 +290,38 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             </div>
           )}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 10 }}>
-            <label className="field">
-              <span>{t(lc, "reportType")}</span>
-              <select value={kind} onChange={(e) => { setKind(e.target.value); setResult(null); }}>
-                {specs.length === 0 && <option value="">(nenhum disponivel)</option>}
-                {specs.map((s) => <option key={s.key} value={s.key}>{s.title}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "reportType")} value={kind} onChange={(valor) => { setKind(valor); setResult(null); }}>
+              {specs.length === 0 && <option value="">(nenhum disponivel)</option>}
+              {specs.map((s) => <option key={s.key} value={s.key}>{s.title}</option>)}
+            </CampoSelect>
             <label className="field"><span>{t(lc, "from")}</span>
               <CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} /></label>
             <label className="field"><span>{t(lc, "to")}</span>
               <CampoData onChange={(v) => setDateTo(v)} value={dateTo} /></label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="">{t(lc, "all")}</option>
-                <option value="confirmed">{t(lc, "confirmed")}</option>
-                <option value="pending">{t(lc, "pending")}</option>
-                <option value="failed">{t(lc, "failed")}</option>
-                <option value="expired">{t(lc, "expired")}</option>
-                <option value="reversed">{t(lc, "reversed")}</option>
-                <option value="approved">{t(lc, "approved")}</option>
-                <option value="denied">{t(lc, "denied")}</option>
-                <option value="active">{t(lc, "active")}</option>
-                <option value="used">{t(lc, "used")}</option>
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "origin")}</span>
-              <select value={source} onChange={(e) => setSource(e.target.value)}>
-                <option value="">{t(lc, "allRoutes")}</option>
-                <option value="MOBILE">{t(lc, "appPassenger")}</option>
-                <option value="POS">{t(lc, "agentPos")}</option>
-                <option value="PORTAL">{t(lc, "portalGuest")}</option>
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "route")}</span>
-              <select value={routeId} onChange={(e) => setRouteId(e.target.value)}>
-                <option value="">Todas as rotas ({routes.length})</option>
-                {routes.map((r) => (
-                  <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>
-                ))}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "status")} value={status} onChange={(valor) => setStatus(valor)}>
+              <option value="">{t(lc, "all")}</option>
+              <option value="confirmed">{t(lc, "confirmed")}</option>
+              <option value="pending">{t(lc, "pending")}</option>
+              <option value="failed">{t(lc, "failed")}</option>
+              <option value="expired">{t(lc, "expired")}</option>
+              <option value="reversed">{t(lc, "reversed")}</option>
+              <option value="approved">{t(lc, "approved")}</option>
+              <option value="denied">{t(lc, "denied")}</option>
+              <option value="active">{t(lc, "active")}</option>
+              <option value="used">{t(lc, "used")}</option>
+            </CampoSelect>
+            <CampoSelect label={t(lc, "origin")} value={source} onChange={(valor) => setSource(valor)}>
+              <option value="">{t(lc, "allRoutes")}</option>
+              <option value="MOBILE">{t(lc, "appPassenger")}</option>
+              <option value="POS">{t(lc, "agentPos")}</option>
+              <option value="PORTAL">{t(lc, "portalGuest")}</option>
+            </CampoSelect>
+            <CampoSelect label={t(lc, "route")} value={routeId} onChange={(valor) => setRouteId(valor)}>
+              <option value="">Todas as rotas ({routes.length})</option>
+              {routes.map((r) => (
+                <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>
+              ))}
+            </CampoSelect>
             <label className="field" style={{ position: "relative" }}>
               <span>{t(lc, "agent")}</span>
               <input
@@ -401,15 +393,13 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               )}
             </label>
             {kind === "topups" && (
-              <label className="field"><span>{t(lc, "subType")}</span>
-                <select value={extraKind} onChange={(e) => setExtraKind(e.target.value)}>
-                  <option value="">{t(lc, "all")}</option>
-                  <option value="wallet">{t(lc, "walletTopUp")}</option>
-                  <option value="package">{t(lc, "package")}</option>
-                  <option value="card_issuance">{t(lc, "cardIssue")}</option>
-                  <option value="card_recovery">{t(lc, "cardRecovery")}</option>
-                </select>
-              </label>
+              <CampoSelect label={t(lc, "subType")} value={extraKind} onChange={(valor) => setExtraKind(valor)}>
+                <option value="">{t(lc, "all")}</option>
+                <option value="wallet">{t(lc, "walletTopUp")}</option>
+                <option value="package">{t(lc, "package")}</option>
+                <option value="card_issuance">{t(lc, "cardIssue")}</option>
+                <option value="card_recovery">{t(lc, "cardRecovery")}</option>
+              </CampoSelect>
             )}
           </div>
           <div style={{ marginBottom: 14, display: "flex", justifyContent: "flex-end" }}>
@@ -502,12 +492,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
           <div className="admin-form-grid" style={{ marginBottom: 12 }}>
             <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setOpFrom(v)} value={opFrom} /></label>
             <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setOpTo(v)} value={opTo} /></label>
-            <label className="field"><span>{t(lc, "route")}</span>
-              <select value={opRouteId} onChange={(e) => setOpRouteId(e.target.value)}>
-                <option value="">{t(lc, "allRoutes")}</option>
-                {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "route")} value={opRouteId} onChange={(valor) => setOpRouteId(valor)}>
+              <option value="">{t(lc, "allRoutes")}</option>
+              {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
+            </CampoSelect>
             <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
               <Button size="lg" type="button" onClick={reloadOp}>{t(lc, "apply")}</Button>
             </div>
@@ -563,12 +551,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
           <div className="admin-form-grid" style={{ marginBottom: 12 }}>
             <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setValFrom(v)} value={valFrom} /></label>
             <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setValTo(v)} value={valTo} /></label>
-            <label className="field"><span>{t(lc, "route")}</span>
-              <select value={valRouteId} onChange={(e) => setValRouteId(e.target.value)}>
-                <option value="">{t(lc, "allRoutes")}</option>
-                {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "route")} value={valRouteId} onChange={(valor) => setValRouteId(valor)}>
+              <option value="">{t(lc, "allRoutes")}</option>
+              {routes.map((r) => <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>)}
+            </CampoSelect>
             <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
               <Button size="lg" type="button" onClick={reloadV}>{t(lc, "apply")}</Button>
             </div>

@@ -10,6 +10,7 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TabBar, Tab
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface UserRecord { id: number; uuid: string; username: string; email: string; phone: string; first_name: string; last_name: string; is_active: boolean; roles: { id: number; role_id: number; role_name: string; role_code: string }[]; created_at: string; }
 interface RoleRecord { id: number; uuid: string; name: string; code: string; permissions: string[]; description: string; is_system: boolean; }
@@ -169,7 +170,7 @@ function UsersTab() {
             <label className="field"><span>{t(lc, "name")}</span><input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "lastName")}</span><input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "phone")}</span><input value={form.phone} onChange={(e) => f("phone", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "status")}</span><select value={form.is_active ? "active" : "inactive"} onChange={(e) => f("is_active", e.target.value === "active")}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option></select></label>
+            <CampoSelect label={t(lc, "status")} value={form.is_active ? "active" : "inactive"} onChange={(valor) => f("is_active", valor === "active")}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option></CampoSelect>
             <label className="field"><span>{t(lc, "password")}</span><input required={!editId} type="password" minLength={8} placeholder={editId ? "Deixar vazio para manter" : ""} value={form.password} onChange={(e) => f("password", e.target.value)} /></label>
           </div>
           <div style={{ margin: "12px 0 8px" }}>

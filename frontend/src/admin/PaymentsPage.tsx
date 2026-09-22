@@ -9,6 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface PI {
   id: number;
@@ -147,33 +148,33 @@ export default function PaymentsPage() {
             placeholder={t(lc, "searchPaymentsHint")}
             value={fSearch}
             onChange={(e) => setFSearch(e.target.value)}
-            style={{ minWidth: 220, padding: "6px 10px", fontSize: 13, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)" }}
+            className="admin-filtro-campo"
           />
-          <select value={fSource} onChange={(e) => setFSource(e.target.value)}
-            style={{ padding: "6px 10px", fontSize: 13, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)" }}>
+          <CampoSelect aria-label={t(lc, "sourceAll")} className="admin-filtro-campo" compacto
+            onChange={setFSource} value={fSource}>
             <option value="">{t(lc, "sourceAll")}</option>
             <option value="MOBILE">{t(lc, "appPassenger")}</option>
             <option value="POS">{t(lc, "agentPos")}</option>
             <option value="PORTAL">{t(lc, "portalGuest")}</option>
-          </select>
-          <select value={fProvider} onChange={(e) => setFProvider(e.target.value)}
-            style={{ padding: "6px 10px", fontSize: 13, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)" }}>
+          </CampoSelect>
+          <CampoSelect aria-label={t(lc, "channelAll")} className="admin-filtro-campo" compacto
+            onChange={setFProvider} value={fProvider}>
             <option value="">{t(lc, "channelAll")}</option>
             <option value="mpesa">M-Pesa</option>
             <option value="emola">E-Mola</option>
             <option value="mock">{t(lc, "testMock")}</option>
             <option value="card">{t(lc, "card")}</option>
             <option value="cash">{t(lc, "cash")}</option>
-          </select>
-          <select value={fStatus} onChange={(e) => setFStatus(e.target.value)}
-            style={{ padding: "6px 10px", fontSize: 13, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)" }}>
+          </CampoSelect>
+          <CampoSelect aria-label={t(lc, "statusAll")} className="admin-filtro-campo" compacto
+            onChange={setFStatus} value={fStatus}>
             <option value="">{t(lc, "statusAll")}</option>
             <option value="confirmed">{t(lc, "confirmed")}</option>
             <option value="pending">{t(lc, "pending")}</option>
             <option value="failed">{t(lc, "failed")}</option>
             <option value="expired">{t(lc, "expired")}</option>
             <option value="reversed">{t(lc, "reversed")}</option>
-          </select>
+          </CampoSelect>
           <CampoData onChange={(v) => setFFrom(v)} value={fFrom} />
           <span style={{ opacity: 0.5 }}>→</span>
           <CampoData onChange={(v) => setFTo(v)} value={fTo} />

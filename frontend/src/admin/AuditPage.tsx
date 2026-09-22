@@ -9,6 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import { DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface AuditEntry {
   id: number; actor: number | null; actor_name: string; action: string;
@@ -59,12 +60,10 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
       action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>}>
       <SectionCard title={t(lc, "audit")}>
         <div className="admin-form-grid" style={{ marginBottom: 12 }}>
-          <label className="field"><span>{t(lc, "action")}</span>
-            <select value={action} onChange={(e) => setAction(e.target.value)}>
-              <option value="">{t(lc, "all")}</option>
-              {actionOptions.map((a) => <option key={a} value={a}>{ACTIONS.includes(a) ? t(lc, `audit_${a}` as never) : a}</option>)}
-            </select>
-          </label>
+          <CampoSelect label={t(lc, "action")} value={action} onChange={(valor) => setAction(valor)}>
+            <option value="">{t(lc, "all")}</option>
+            {actionOptions.map((a) => <option key={a} value={a}>{ACTIONS.includes(a) ? t(lc, `audit_${a}` as never) : a}</option>)}
+          </CampoSelect>
           <label className="field"><span>{t(lc, "search")}</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t(lc, "auditSearchHint")} /></label>
           <label className="field"><span>{t(lc, "actor")}</span><input value={actor} onChange={(e) => setActor(e.target.value)} placeholder={t(lc, "actorName")} /></label>
           <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} /></label>

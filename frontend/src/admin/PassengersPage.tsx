@@ -12,6 +12,7 @@ import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge,
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface Passenger { id: number; uuid: string; full_name: string; phone_number: string; email: string; document_type: string; document_number: string; status: string; has_user_account: boolean; created_at: string; }
 interface CardInfo { id: number; card_number: string; card_type: string; status: string; balance: string | null; card_uid?: string; created_at?: string; }
@@ -349,14 +350,12 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "fullName")}</span><input required value={form.full_name} onChange={(e) => f("full_name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "phone")}</span><input required value={form.phone_number} onChange={(e) => f("phone_number", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "email")}</span><input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "documentType")}</span>
-              <select value={form.document_type} onChange={(e) => f("document_type", e.target.value)}>
-                <option value="">{t(lc, "select")}</option>
-                <option value="bi">{t(lc, "documentBi")}</option>
-                <option value="passport">{t(lc, "documentPassport")}</option>
-                <option value="driving_license">{t(lc, "documentDrivingLicense")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "documentType")} value={form.document_type} onChange={(valor) => f("document_type", valor)}>
+              <option value="">{t(lc, "select")}</option>
+              <option value="bi">{t(lc, "documentBi")}</option>
+              <option value="passport">{t(lc, "documentPassport")}</option>
+              <option value="driving_license">{t(lc, "documentDrivingLicense")}</option>
+            </CampoSelect>
             <label className="field"><span>{t(lc, "document")}</span><input value={form.document_number} onChange={(e) => f("document_number", e.target.value)} /></label>
             {!editId && (
               <>

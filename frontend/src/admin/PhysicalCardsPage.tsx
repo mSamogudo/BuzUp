@@ -10,6 +10,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SegmentedControl, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface CardRecord { id: number; uuid: string; card_type: string; card_uid: string; card_number: string; card_technology: string; status: string; passenger_name: string; passenger_phone: string; balance: string | null; issued_batch: string; batch_serial: string; manufacturer: string; activated_at: string | null; created_at: string; }
 interface PassengerOpt { id: number; full_name: string; phone_number: string; }
@@ -116,12 +117,10 @@ export default function PhysicalCardsPage() {
           <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>
             {t(lc, "card")} <strong>{assignCard?.card_number}</strong> sera activado e vinculado ao passageiro.
           </p>
-          <label className="field"><span>{t(lc, "passenger")}</span>
-            <select value={assignPassenger} onChange={(e) => setAssignPassenger(e.target.value)}>
-              <option value="">{t(lc, "select")}</option>
-              {(passengers || []).map((p) => <option key={p.id} value={p.id}>{p.full_name} — {p.phone_number}</option>)}
-            </select>
-          </label>
+          <CampoSelect label={t(lc, "passenger")} value={assignPassenger} onChange={(valor) => setAssignPassenger(valor)}>
+            <option value="">{t(lc, "select")}</option>
+            {(passengers || []).map((p) => <option key={p.id} value={p.id}>{p.full_name} — {p.phone_number}</option>)}
+          </CampoSelect>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy || !assignPassenger} onClick={doAssign} type="button">{busy ? t(lc, "saving") : "Atribuir e Activar"}</Button>
             <Button variant="outline" size="lg" onClick={() => setAssignModal(false)} type="button">{t(lc, "cancel")}</Button>

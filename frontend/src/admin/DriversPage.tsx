@@ -10,6 +10,7 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableAction
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface Driver { id: number; uuid: string; user_id: number | null; user_display: string; full_name: string; phone: string; license_number: string; status: string; username?: string; email?: string; first_name?: string; last_name?: string; is_active?: boolean; }
 
@@ -90,13 +91,13 @@ export default function DriversPage() {
             <label className="field"><span>{t(lc, "fullName")}</span><input required value={form.full_name} onChange={(e) => f("full_name", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "phone")}</span><input required value={form.phone} onChange={(e) => f("phone", e.target.value)} placeholder="84/85/86/87..." /></label>
             <label className="field"><span>{t(lc, "license")}</span><input value={form.license_number} onChange={(e) => f("license_number", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "status")}</span><select value={form.status} onChange={(e) => f("status", e.target.value)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option><option value="suspended">{t(lc, "suspended")}</option></select></label>
-            <label className="field"><span>{t(lc, "username")}</span><input value={form.username} onChange={(e) => f("username", e.target.value)} placeholder="ex: motorista.joao" /></label>
-            <label className="field"><span>{t(lc, "email")}</span><input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "firstName")}</span><input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "lastName")}</span><input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
-            <label className="field"><span>{editId ? t(lc, "newPasswordOptional") : t(lc, "password")}</span><input type="password" autoComplete="new-password" value={form.password} onChange={(e) => f("password", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "active")}</span><select value={form.is_active ? "1" : "0"} onChange={(e) => f("is_active", e.target.value === "1")}><option value="1">{t(lc, "yes")}</option><option value="0">{t(lc, "no")}</option></select></label>
+            <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option><option value="suspended">{t(lc, "suspended")}</option></CampoSelect>
+              <label className="field"><span>{t(lc, "username")}</span><input value={form.username} onChange={(e) => f("username", e.target.value)} placeholder="ex: motorista.joao" /></label>
+              <label className="field"><span>{t(lc, "email")}</span><input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
+              <label className="field"><span>{t(lc, "firstName")}</span><input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
+              <label className="field"><span>{t(lc, "lastName")}</span><input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
+              <label className="field"><span>{editId ? t(lc, "newPasswordOptional") : t(lc, "password")}</span><input type="password" autoComplete="new-password" value={form.password} onChange={(e) => f("password", e.target.value)} /></label>
+            <CampoSelect label={t(lc, "active")} value={form.is_active ? "1" : "0"} onChange={(valor) => f("is_active", valor === "1")}><option value="1">{t(lc, "yes")}</option><option value="0">{t(lc, "no")}</option></CampoSelect>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okDriverUpdated") : t(lc, "okDriverCreated")}</Button>

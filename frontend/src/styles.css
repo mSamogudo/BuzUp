@@ -1801,8 +1801,33 @@ body::-webkit-scrollbar,
   gap: 8px;
 }
 
-.admin-table-page-size select {
-  min-width: 72px;
+.admin-table-page-size [data-slot=select-trigger] {
+  width: auto;
+  min-width: 78px;
+}
+
+/* A etiqueta do tamanho de pagina fica em linha, nao por cima: nao e um
+   campo de formulario, e um controlo da barra da tabela. */
+.admin-table-page-size [data-slot=label] {
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Filtros de barra: sem etiqueta visivel, largura pelo conteudo. */
+.admin-filtro-campo {
+  display: inline-flex;
+}
+
+.admin-filtro-campo[data-slot=input],
+.admin-filtro-campo [data-slot=select-trigger] {
+  width: auto;
+  min-width: 150px;
+}
+
+.fare-matrix-metodo [data-slot=select-trigger] {
+  width: auto;
+  min-width: 170px;
 }
 
 .admin-table {
@@ -2112,7 +2137,16 @@ body::-webkit-scrollbar,
   gap: 8px;
 }
 
-.field span {
+/* A etiqueta de um campo e um `<span>` quando o `<label>` envolve o
+   controlo, e um `[data-slot=label]` quando o controlo e do shadcn e precisa
+   de `htmlFor` (o gatilho do Radix e um botao, que nao e rotulavel). As duas
+   formas tem de ler-se igual. */
+/* Filhos directos, e nao descendentes: o gatilho do Select do shadcn tem um
+   `<span data-slot=select-value>` la dentro, e a versao descendente vestia o
+   valor escolhido com a tipografia da etiqueta — "Activo" saia em maiusculas
+   de 11px, como se fosse o nome do campo. */
+.field > span,
+.field > [data-slot=label] {
   color: var(--app-text-muted);
   font-size: 11px;
   font-weight: 700;
@@ -5261,15 +5295,7 @@ html[data-theme="dark"] .otp-digit:focus {
   align-items: center;
 }
 
-.fare-matrix-tools select {
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--app-border);
-  border-radius: 8px;
-  background: var(--app-surface);
-  color: var(--app-text);
-  font-size: 13px;
-}
+
 
 .fare-matrix-wrap {
   overflow: auto;

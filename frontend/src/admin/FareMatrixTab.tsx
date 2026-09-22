@@ -9,6 +9,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 /** Tabela de preços de uma rota: uma grelha origem × destino.
  *
@@ -206,12 +207,10 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
       description={t(lc, "priceTableHint")}
     >
       <div className="admin-form-grid" style={{ marginBottom: 14 }}>
-        <label className="field"><span>{t(lc, "route")}</span>
-          <select value={routeId} onChange={(e) => trocarRota(e.target.value)}>
-            <option value="">{t(lc, "chooseRoute")}</option>
-            {routes.map((r) => <option key={r.id} value={r.id}>{r.code} · {r.name}</option>)}
-          </select>
-        </label>
+        <CampoSelect label={t(lc, "route")} value={routeId} onChange={(valor) => trocarRota(valor)}>
+          <option value="">{t(lc, "chooseRoute")}</option>
+          {routes.map((r) => <option key={r.id} value={r.id}>{r.code} · {r.name}</option>)}
+        </CampoSelect>
         <label className="field"><span>{t(lc, "fallbackPrice")}</span>
           <input
             value={fallback}
@@ -253,9 +252,9 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
 
           <div className="admin-toolbar">
             <div className="fare-matrix-tools">
-              <select value={method} onChange={(e) => setMethod(e.target.value)} aria-label={t(lc, "templateMethod")}>
+              <CampoSelect aria-label={t(lc, "templateMethod")} className="fare-matrix-metodo" compacto onChange={setMethod} value={method}>
                 {metodos(lc).map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
-              </select>
+              </CampoSelect>
               <Button variant="outline" onClick={descarregarModelo} type="button">
                 <Download size={15} /><span>{t(lc, "excelTemplate")}</span>
               </Button>

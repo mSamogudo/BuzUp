@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { PageFrame, SectionCard, useAsyncData } from "../ui/common";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 type RouteDirection = "outbound" | "inbound";
 
@@ -161,24 +162,18 @@ export default function RouteStopsPage() {
           <p className="route-stop-hint">{t(lc, "dragStopsHint")}</p>
 
           <div className="admin-form-grid admin-form-grid-wide">
-            <label className="field">
-              <span>{t(lc, "stops")}</span>
-              <select value={stopDraft.stop_id} onChange={(e) => setStopDraft((p) => ({ ...p, stop_id: e.target.value }))}>
-                <option value="">{t(lc, "select")}</option>
-                {(stopOptions || []).map((stop) => <option key={stop.id} value={stop.id}>{stop.code} - {stop.name}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "stops")} value={stopDraft.stop_id} onChange={(valor) => setStopDraft((p) => ({ ...p, stop_id: valor }))}>
+              <option value="">{t(lc, "select")}</option>
+              {(stopOptions || []).map((stop) => <option key={stop.id} value={stop.id}>{stop.code} - {stop.name}</option>)}
+            </CampoSelect>
             <label className="field">
               <span>{t(lc, "distanceKm")}</span>
               <input min="0" step="0.01" type="number" value={stopDraft.distance_from_start_km} onChange={(e) => setStopDraft((p) => ({ ...p, distance_from_start_km: e.target.value }))} />
             </label>
-            <label className="field">
-              <span>{t(lc, "direction")}</span>
-              <select value={stopDraft.direction} onChange={(e) => setStopDraft((p) => ({ ...p, direction: e.target.value as RouteDirection }))}>
-                <option value="outbound">{t(lc, "outbound")}</option>
-                <option value="inbound">{t(lc, "inbound")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "direction")} value={stopDraft.direction} onChange={(valor) => setStopDraft((p) => ({ ...p, direction: valor as RouteDirection }))}>
+              <option value="outbound">{t(lc, "outbound")}</option>
+              <option value="inbound">{t(lc, "inbound")}</option>
+            </CampoSelect>
             <div className="route-stop-add-action">
               <Button variant="outline" size="lg" onClick={addRouteStop} type="button"><Plus size={15} /> {t(lc, "addStop")}</Button>
             </div>

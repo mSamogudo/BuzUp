@@ -4,6 +4,7 @@ import { t, type Locale } from "../../lib/i18n";
 import { useUi } from "../../ui/UiPreferences";
 import type { DashFilters, Lookup } from "./types";
 import { ISO_TODAY, isoDaysAgo, isoMonthStart, providerLabel } from "./theme";
+import { CampoSelect } from "../../ui/CampoSelect";
 
 /** Filtros que valem para TUDO no painel — os mesmos parâmetros são aplicados
  * a cartões, gráficos e tabelas pelo backend, por isso os números batem certo
@@ -104,42 +105,30 @@ export default function FilterBar({
           <span>{t(lc, "to")}</span>
           <CampoData onChange={(v) => set({ dateTo: v })} value={value.dateTo} min={value.dateFrom} />
         </label>
-        <label className="field">
-          <span>{t(lc, "route")}</span>
-          <select onChange={(e) => set({ routeId: e.target.value })} value={value.routeId}>
-            <option value="">Todas ({routes.length})</option>
-            {routes.map((r) => (
-              <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>{t(lc, "driver")}</span>
-          <select onChange={(e) => set({ driverId: e.target.value })} value={value.driverId}>
-            <option value="">Todos ({drivers.length})</option>
-            {drivers.map((d) => (
-              <option key={d.id} value={d.id}>{d.full_name || `Motorista #${d.id}`}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>{t(lc, "agent")}</span>
-          <select onChange={(e) => set({ agentId: e.target.value })} value={value.agentId}>
-            <option value="">Todos ({agents.length})</option>
-            {agents.map((a) => (
-              <option key={a.id} value={a.id}>{a.full_name || `Agente #${a.id}`}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>{t(lc, "paymentMethod")}</span>
-          <select onChange={(e) => set({ provider: e.target.value })} value={value.provider}>
-            <option value="">{t(lc, "all")}</option>
-            {providers.map((p) => (
-              <option key={p} value={p}>{providerLabel(p)}</option>
-            ))}
-          </select>
-        </label>
+        <CampoSelect label={t(lc, "route")} onChange={(valor) => set({ routeId: valor })} value={value.routeId}>
+          <option value="">Todas ({routes.length})</option>
+          {routes.map((r) => (
+            <option key={r.id} value={r.id}>{r.code ? `${r.code} · ${r.name}` : r.name}</option>
+          ))}
+        </CampoSelect>
+        <CampoSelect label={t(lc, "driver")} onChange={(valor) => set({ driverId: valor })} value={value.driverId}>
+          <option value="">Todos ({drivers.length})</option>
+          {drivers.map((d) => (
+            <option key={d.id} value={d.id}>{d.full_name || `Motorista #${d.id}`}</option>
+          ))}
+        </CampoSelect>
+        <CampoSelect label={t(lc, "agent")} onChange={(valor) => set({ agentId: valor })} value={value.agentId}>
+          <option value="">Todos ({agents.length})</option>
+          {agents.map((a) => (
+            <option key={a.id} value={a.id}>{a.full_name || `Agente #${a.id}`}</option>
+          ))}
+        </CampoSelect>
+        <CampoSelect label={t(lc, "paymentMethod")} onChange={(valor) => set({ provider: valor })} value={value.provider}>
+          <option value="">{t(lc, "all")}</option>
+          {providers.map((p) => (
+            <option key={p} value={p}>{providerLabel(p)}</option>
+          ))}
+        </CampoSelect>
       </div>
 
       <p className="dash-filter-note">

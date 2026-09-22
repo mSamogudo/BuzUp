@@ -14,6 +14,7 @@ import { humanizeStatus } from "../lib/format";
 import { showToast } from "../lib/toast";
 import { useUi } from "./UiPreferences";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "./CampoSelect";
 
 export type TableColumn<T> = {
   header: string;
@@ -213,12 +214,15 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
         <span className="admin-table-result-count">
           {filtered.length > 0 ? `${si + 1}-${Math.min(si + visible.length, filtered.length)} ${t(locale, "of")} ${filtered.length}` : `0 ${t(locale, "of")} 0`}
         </span>
-        <label className="admin-table-page-size">
-          <span>{t(locale, "perPage")}</span>
-          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
+        <CampoSelect
+            className="admin-table-page-size"
+            compacto
+            label={t(locale, "perPage")}
+            onChange={(v) => { setPageSize(Number(v)); setPage(1); }}
+            value={String(pageSize)}
+          >
             {[10, 25, 50, 100].map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </label>
+        </CampoSelect>
       </div>
       <table className="admin-table">
         <thead><tr>{columns.map((c) => (

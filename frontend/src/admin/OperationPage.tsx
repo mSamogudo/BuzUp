@@ -15,6 +15,7 @@ import {
 import { useConfirm } from "../ui/ConfirmDialog";
 import SchedulesPage from "./SchedulesPage";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface Trip {
   id: number; uuid: string;
@@ -296,29 +297,21 @@ export default function OperationPage() {
         description={t(lc, "newTripHint")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "route")}</span>
-              <select required value={form.route} onChange={(e) => f("route", e.target.value)}>
-                <option value="">{t(lc, "select")}</option>
-                {(routeOpts || []).map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "vehicles")}</span>
-              <select value={form.vehicle} onChange={(e) => f("vehicle", e.target.value)}>
-                <option value="">{t(lc, "select")}</option>
-                {(vehicleOpts || []).map((v) => <option key={v.id} value={v.id}>{v.registration}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "drivers")}</span>
-              <select value={form.driver} onChange={(e) => f("driver", e.target.value)}>
-                <option value="">{t(lc, "select")}</option>
-                {(driverOpts || []).map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "direction")}</span>
-              <select value={form.direction} onChange={(e) => f("direction", e.target.value)}>
-                {sentidos(lc).map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "route")} required value={form.route} onChange={(valor) => f("route", valor)}>
+              <option value="">{t(lc, "select")}</option>
+              {(routeOpts || []).map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "vehicles")} value={form.vehicle} onChange={(valor) => f("vehicle", valor)}>
+              <option value="">{t(lc, "select")}</option>
+              {(vehicleOpts || []).map((v) => <option key={v.id} value={v.id}>{v.registration}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "drivers")} value={form.driver} onChange={(valor) => f("driver", valor)}>
+              <option value="">{t(lc, "select")}</option>
+              {(driverOpts || []).map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "direction")} value={form.direction} onChange={(valor) => f("direction", valor)}>
+              {sentidos(lc).map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+            </CampoSelect>
             <label className="field"><span>{t(lc, "plannedDeparture")}</span>
               <input type="datetime-local" value={form.planned_departure_at}
                 onChange={(e) => f("planned_departure_at", e.target.value)} />
@@ -327,16 +320,14 @@ export default function OperationPage() {
               <input type="datetime-local" value={form.planned_arrival_at}
                 onChange={(e) => f("planned_arrival_at", e.target.value)} />
             </label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={form.status} onChange={(e) => f("status", e.target.value)}>
-                <option value="scheduled">{t(lc, "scheduled")}</option>
-                <option value="boarding">{t(lc, "running")}</option>
-                <option value="departed">{t(lc, "onTheRoad")}</option>
-                <option value="paused">{t(lc, "idle")}</option>
-                <option value="completed">{t(lc, "completed")}</option>
-                <option value="cancelled">{t(lc, "cancelledF")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}>
+              <option value="scheduled">{t(lc, "scheduled")}</option>
+              <option value="boarding">{t(lc, "running")}</option>
+              <option value="departed">{t(lc, "onTheRoad")}</option>
+              <option value="paused">{t(lc, "idle")}</option>
+              <option value="completed">{t(lc, "completed")}</option>
+              <option value="cancelled">{t(lc, "cancelledF")}</option>
+            </CampoSelect>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">

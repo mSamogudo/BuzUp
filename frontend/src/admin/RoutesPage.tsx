@@ -12,6 +12,7 @@ import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge,
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 type RouteDirection = "outbound" | "inbound";
 
@@ -139,8 +140,8 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "name")}</span><input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "status")}</span><select value={form.status} onChange={(e) => f("status", e.target.value)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option><option value="suspended">{t(lc, "suspended")}</option></select></label>
-            <label className="field"><span>{t(lc, "serviceType")}</span><select value={form.service_type} onChange={(e) => f("service_type", e.target.value)}><option value="urban">{t(lc, "urbanIntercity")}</option><option value="interprovincial">{t(lc, "interprovincial")}</option><option value="international">{t(lc, "international")}</option></select></label>
+            <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option><option value="suspended">{t(lc, "suspended")}</option></CampoSelect>
+            <CampoSelect label={t(lc, "serviceType")} value={form.service_type} onChange={(valor) => f("service_type", valor)}><option value="urban">{t(lc, "urbanIntercity")}</option><option value="interprovincial">{t(lc, "interprovincial")}</option><option value="international">{t(lc, "international")}</option></CampoSelect>
             <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
           </div>
           <p className="dash-kpi-note" style={{ marginTop: 4 }}>

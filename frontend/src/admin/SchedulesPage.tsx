@@ -9,6 +9,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface Schedule {
   id: number;
@@ -197,39 +198,29 @@ export default function SchedulesPage({
       <AdminModal open={modalOpen} onClose={reset} title={editId ? "Editar horário" : t(lc, "newSchedule")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "route")}</span>
-              <select required value={form.route_id} onChange={(e) => f("route_id", e.target.value)}>
-                <option value="">{t(lc, "select")}</option>
-                {routes.map((r) => <option key={r.id} value={r.id}>{r.code} - {r.name}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "vehicle")}</span>
-              <select value={form.vehicle_id} onChange={(e) => f("vehicle_id", e.target.value)}>
-                <option value="">{t(lc, "noVehicle")}</option>
-                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.registration}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "driverOptional")}</span>
-              <select value={form.driver_id} onChange={(e) => f("driver_id", e.target.value)}>
-                <option value="">{t(lc, "noDriver")}</option>
-                {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "agentOptional")}</span>
-              <select value={form.agent_id} onChange={(e) => f("agent_id", e.target.value)}>
-                <option value="">{t(lc, "noAgent")}</option>
-                {agents.map((a) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "route")} required value={form.route_id} onChange={(valor) => f("route_id", valor)}>
+              <option value="">{t(lc, "select")}</option>
+              {routes.map((r) => <option key={r.id} value={r.id}>{r.code} - {r.name}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "vehicle")} value={form.vehicle_id} onChange={(valor) => f("vehicle_id", valor)}>
+              <option value="">{t(lc, "noVehicle")}</option>
+              {vehicles.map((v) => <option key={v.id} value={v.id}>{v.registration}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "driverOptional")} value={form.driver_id} onChange={(valor) => f("driver_id", valor)}>
+              <option value="">{t(lc, "noDriver")}</option>
+              {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "agentOptional")} value={form.agent_id} onChange={(valor) => f("agent_id", valor)}>
+              <option value="">{t(lc, "noAgent")}</option>
+              {agents.map((a) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
+            </CampoSelect>
             <label className="field"><span>{t(lc, "startTime")}</span><input required type="time" value={form.start_time} onChange={(e) => f("start_time", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "endTime")}</span><input required type="time" value={form.end_time} onChange={(e) => f("end_time", e.target.value)} /></label>
             <label className="field"><span>{t(lc, "frequencyMinutes")}</span><input required type="number" min={1} step={1} value={form.frequency_minutes} onChange={(e) => f("frequency_minutes", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={form.status} onChange={(e) => f("status", e.target.value)}>
-                <option value="active">{t(lc, "active")}</option>
-                <option value="inactive">{t(lc, "inactive")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}>
+              <option value="active">{t(lc, "active")}</option>
+              <option value="inactive">{t(lc, "inactive")}</option>
+            </CampoSelect>
           </div>
           <div className="field">
             <span>{t(lc, "weekdays")}</span>

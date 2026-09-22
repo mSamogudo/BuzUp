@@ -12,6 +12,7 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import FareMatrixTab from "./FareMatrixTab";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface FareProduct { id: number; uuid: string; name: string; product_type: string; status: string; }
 interface FareRule { id: number; uuid: string; fare_product_id: number; fare_product_name: string; route_id: number | null; route_code: string; origin_stop_name: string; destination_stop_name: string; calculation_method: string; fixed_amount: string; amount_per_km: string; min_amount: string; max_amount: string; distance_min_km: string | null; distance_max_km: string | null; passenger_class: string; priority: number; origin_stop_id: number | null; destination_stop_id: number | null; }
@@ -335,21 +336,17 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <input required type="number" min="0.0001" step="0.0001" value={fxForm.rate_to_mzn} placeholder="ex: 4.1000"
                      onChange={(e) => setFxForm((f) => ({ ...f, rate_to_mzn: e.target.value }))} />
             </label>
-            <label className="field"><span>{t(lc, "roundTo")}</span>
-              <select value={fxForm.rounding_step}
-                      onChange={(e) => setFxForm((f) => ({ ...f, rounding_step: e.target.value }))}>
-                <option value="1">{t(lc, "roundUnit")}</option>
-                <option value="5">{t(lc, "roundFives")}</option>
-                <option value="10">{t(lc, "roundTens")}</option>
-                <option value="0.01">{t(lc, "roundNone")}</option>
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={fxForm.is_active ? "1" : "0"} onChange={(e) => setFxForm((f) => ({ ...f, is_active: e.target.value === "1" }))}>
-                <option value="1">{t(lc, "activeF")}</option>
-                <option value="0">{t(lc, "inactiveF")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "roundTo")} value={fxForm.rounding_step}
+                    onChange={(valor) => setFxForm((f) => ({ ...f, rounding_step: valor }))}>
+              <option value="1">{t(lc, "roundUnit")}</option>
+              <option value="5">{t(lc, "roundFives")}</option>
+              <option value="10">{t(lc, "roundTens")}</option>
+              <option value="0.01">{t(lc, "roundNone")}</option>
+            </CampoSelect>
+            <CampoSelect label={t(lc, "status")} value={fxForm.is_active ? "1" : "0"} onChange={(valor) => setFxForm((f) => ({ ...f, is_active: valor === "1" }))}>
+              <option value="1">{t(lc, "activeF")}</option>
+              <option value="0">{t(lc, "inactiveF")}</option>
+            </CampoSelect>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>{t(lc, "notes")}</span>
               <input value={fxForm.notes} placeholder={t(lc, "egNotes")} onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -388,33 +385,25 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={ruleModal} onClose={() => setRuleModal(false)} title={editR ? t(lc, "editRule") : t(lc, "newRule")}>
         <form className="admin-form" onSubmit={submitR}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "fareProducts")}</span>
-              <select required value={rForm.fare_product} onChange={(e) => setRForm((f) => ({ ...f, fare_product: e.target.value }))}>
-                <option value="">{t(lc, "select")}</option>
-                {(products || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "route")}</span>
-              <select required value={rForm.route} onChange={(e) => setRForm((f) => ({ ...f, route: e.target.value, origin_stop: "", destination_stop: "" }))}>
-                <option value="">{t(lc, "select")}</option>
-                {(routeOpts || []).map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "method")}</span>
-              <select value={rForm.calculation_method} onChange={(e) => setRForm((f) => ({ ...f, calculation_method: e.target.value }))}>
-                <option value="fixed">{t(lc, "fixedMethod")}</option>
-                <option value="origin_destination">{t(lc, "originDestMethod")}</option>
-                <option value="distance">{t(lc, "distanceMethod")}</option>
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "passengerClass")}</span>
-              <select value={rForm.passenger_class} onChange={(e) => setRForm((f) => ({ ...f, passenger_class: e.target.value }))}>
-                <option value="standard">{t(lc, "standard")}</option>
-                <option value="student">{t(lc, "student")}</option>
-                <option value="senior">{t(lc, "senior")}</option>
-                <option value="child">{t(lc, "child")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "fareProducts")} required value={rForm.fare_product} onChange={(valor) => setRForm((f) => ({ ...f, fare_product: valor }))}>
+              <option value="">{t(lc, "select")}</option>
+              {(products || []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "route")} required value={rForm.route} onChange={(valor) => setRForm((f) => ({ ...f, route: valor, origin_stop: "", destination_stop: "" }))}>
+              <option value="">{t(lc, "select")}</option>
+              {(routeOpts || []).map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
+            </CampoSelect>
+            <CampoSelect label={t(lc, "method")} value={rForm.calculation_method} onChange={(valor) => setRForm((f) => ({ ...f, calculation_method: valor }))}>
+              <option value="fixed">{t(lc, "fixedMethod")}</option>
+              <option value="origin_destination">{t(lc, "originDestMethod")}</option>
+              <option value="distance">{t(lc, "distanceMethod")}</option>
+            </CampoSelect>
+            <CampoSelect label={t(lc, "passengerClass")} value={rForm.passenger_class} onChange={(valor) => setRForm((f) => ({ ...f, passenger_class: valor }))}>
+              <option value="standard">{t(lc, "standard")}</option>
+              <option value="student">{t(lc, "student")}</option>
+              <option value="senior">{t(lc, "senior")}</option>
+              <option value="child">{t(lc, "child")}</option>
+            </CampoSelect>
 
             {(method === "fixed" || method === "origin_destination") && (
               <label className="field"><span>{t(lc, "fixedPrice")} (MZN)</span>
@@ -447,18 +436,14 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
 
             {method === "origin_destination" && (
               <>
-                <label className="field"><span>{t(lc, "origin")}</span>
-                  <select disabled={!rForm.route} required value={rForm.origin_stop} onChange={(e) => setRForm((f) => ({ ...f, origin_stop: e.target.value }))}>
-                    <option value="">{rForm.route ? t(lc, "select") : t(lc, "route")}</option>
-                    {routeStopOpts.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
-                  </select>
-                </label>
-                <label className="field"><span>{t(lc, "destination")}</span>
-                  <select disabled={!rForm.route} required value={rForm.destination_stop} onChange={(e) => setRForm((f) => ({ ...f, destination_stop: e.target.value }))}>
-                    <option value="">{rForm.route ? t(lc, "select") : t(lc, "route")}</option>
-                    {routeStopOpts.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
-                  </select>
-                </label>
+                <CampoSelect label={t(lc, "origin")} disabled={!rForm.route} required value={rForm.origin_stop} onChange={(valor) => setRForm((f) => ({ ...f, origin_stop: valor }))}>
+                  <option value="">{rForm.route ? t(lc, "select") : t(lc, "route")}</option>
+                  {routeStopOpts.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
+                </CampoSelect>
+                <CampoSelect label={t(lc, "destination")} disabled={!rForm.route} required value={rForm.destination_stop} onChange={(valor) => setRForm((f) => ({ ...f, destination_stop: valor }))}>
+                  <option value="">{rForm.route ? t(lc, "select") : t(lc, "route")}</option>
+                  {routeStopOpts.map((s) => <option key={s.id} value={s.id}>{s.code} — {s.name}</option>)}
+                </CampoSelect>
               </>
             )}
           </div>
@@ -475,20 +460,16 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         <form className="admin-form" onSubmit={submitP}>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "name")}</span><input required value={pForm.name} onChange={(e) => setPForm((f) => ({ ...f, name: e.target.value }))} /></label>
-            <label className="field"><span>{t(lc, "type")}</span>
-              <select value={pForm.product_type} onChange={(e) => setPForm((f) => ({ ...f, product_type: e.target.value }))}>
-                <option value="single_trip">{t(lc, "singleTrip")}</option>
-                <option value="daily_pass">{t(lc, "dailyPass")}</option>
-                <option value="weekly_pass">{t(lc, "weeklyPass")}</option>
-                <option value="monthly_pass">{t(lc, "monthlyPass")}</option>
-              </select>
-            </label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={pForm.status} onChange={(e) => setPForm((f) => ({ ...f, status: e.target.value }))}>
-                <option value="active">{t(lc, "active")}</option>
-                <option value="inactive">{t(lc, "inactive")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "type")} value={pForm.product_type} onChange={(valor) => setPForm((f) => ({ ...f, product_type: valor }))}>
+              <option value="single_trip">{t(lc, "singleTrip")}</option>
+              <option value="daily_pass">{t(lc, "dailyPass")}</option>
+              <option value="weekly_pass">{t(lc, "weeklyPass")}</option>
+              <option value="monthly_pass">{t(lc, "monthlyPass")}</option>
+            </CampoSelect>
+            <CampoSelect label={t(lc, "status")} value={pForm.status} onChange={(valor) => setPForm((f) => ({ ...f, status: valor }))}>
+              <option value="active">{t(lc, "active")}</option>
+              <option value="inactive">{t(lc, "inactive")}</option>
+            </CampoSelect>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editP ? t(lc, "okProductUpdated") : t(lc, "okProductCreated")}</Button>
@@ -526,14 +507,12 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "name")}</span>
               <input required value={feeForm.name} onChange={(e) => setFeeForm((f) => ({ ...f, name: e.target.value }))} />
             </label>
-            <label className="field"><span>{t(lc, "type")}</span>
-              <select value={feeForm.kind} onChange={(e) => setFeeForm((f) => ({ ...f, kind: e.target.value }))}>
-                <option value="card_issuance">{t(lc, "cardIssueFee")}</option>
-                <option value="card_recovery">{t(lc, "cardRecoveryFee")}</option>
-                <option value="fine">{t(lc, "penalty")}</option>
-                <option value="other">{t(lc, "other")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "type")} value={feeForm.kind} onChange={(valor) => setFeeForm((f) => ({ ...f, kind: valor }))}>
+              <option value="card_issuance">{t(lc, "cardIssueFee")}</option>
+              <option value="card_recovery">{t(lc, "cardRecoveryFee")}</option>
+              <option value="fine">{t(lc, "penalty")}</option>
+              <option value="other">{t(lc, "other")}</option>
+            </CampoSelect>
             <label className="field"><span>{t(lc, "amount")}</span>
               <input required type="number" min="0" step="0.01" value={feeForm.amount}
                      onChange={(e) => setFeeForm((f) => ({ ...f, amount: e.target.value }))} />
@@ -541,12 +520,10 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "currency")}</span>
               <input value={feeForm.currency} maxLength={3} onChange={(e) => setFeeForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
             </label>
-            <label className="field"><span>{t(lc, "status")}</span>
-              <select value={feeForm.is_active ? "1" : "0"} onChange={(e) => setFeeForm((f) => ({ ...f, is_active: e.target.value === "1" }))}>
-                <option value="1">{t(lc, "activeF")}</option>
-                <option value="0">{t(lc, "inactiveF")}</option>
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "status")} value={feeForm.is_active ? "1" : "0"} onChange={(valor) => setFeeForm((f) => ({ ...f, is_active: valor === "1" }))}>
+              <option value="1">{t(lc, "activeF")}</option>
+              <option value="0">{t(lc, "inactiveF")}</option>
+            </CampoSelect>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>{t(lc, "description")}</span>
               <input value={feeForm.description} onChange={(e) => setFeeForm((f) => ({ ...f, description: e.target.value }))} />

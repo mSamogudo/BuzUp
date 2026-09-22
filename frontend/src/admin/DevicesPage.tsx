@@ -11,6 +11,7 @@ import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge,
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { CampoSelect } from "../ui/CampoSelect";
 
 interface Device {
   id: number; uuid: string; serial_number: string; device_type: string;
@@ -222,15 +223,12 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
             O codigo aparece na proxima janela.
           </p>
           <div className="admin-form-grid">
-            <label className="field admin-field-span-full">
-              <span>{t(lc, "agent")}</span>
-              <select required value={allocateAgentId} onChange={(e) => setAllocateAgentId(e.target.value)}>
-                <option value="">{t(lc, "select")}</option>
-                {(agents || []).filter((a) => a.status === "active" && a.user_id).map((a) => (
-                  <option key={a.id} value={a.id}>{a.full_name} · {a.phone}</option>
-                ))}
-              </select>
-            </label>
+            <CampoSelect label={t(lc, "agent")} className="field admin-field-span-full" required value={allocateAgentId} onChange={(valor) => setAllocateAgentId(valor)}>
+              <option value="">{t(lc, "select")}</option>
+              {(agents || []).filter((a) => a.status === "active" && a.user_id).map((a) => (
+                <option key={a.id} value={a.id}>{a.full_name} · {a.phone}</option>
+              ))}
+            </CampoSelect>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy || !allocateAgentId} type="submit">

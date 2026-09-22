@@ -13,6 +13,9 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface Passenger { id: number; uuid: string; full_name: string; phone_number: string; email: string; document_type: string; document_number: string; status: string; has_user_account: boolean; created_at: string; }
 interface CardInfo { id: number; card_number: string; card_type: string; status: string; balance: string | null; card_uid?: string; created_at?: string; }
@@ -347,20 +350,20 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editPassenger") : t(lc, "newPassenger")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "fullName")}</span><input required value={form.full_name} onChange={(e) => f("full_name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "phone")}</span><input required value={form.phone_number} onChange={(e) => f("phone_number", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "email")}</span><input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "fullName")}</span><Input required value={form.full_name} onChange={(e) => f("full_name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "phone")}</span><Input required value={form.phone_number} onChange={(e) => f("phone_number", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "email")}</span><Input type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
             <CampoSelect label={t(lc, "documentType")} value={form.document_type} onChange={(valor) => f("document_type", valor)}>
               <option value="">{t(lc, "select")}</option>
               <option value="bi">{t(lc, "documentBi")}</option>
               <option value="passport">{t(lc, "documentPassport")}</option>
               <option value="driving_license">{t(lc, "documentDrivingLicense")}</option>
             </CampoSelect>
-            <label className="field"><span>{t(lc, "document")}</span><input value={form.document_number} onChange={(e) => f("document_number", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "document")}</span><Input value={form.document_number} onChange={(e) => f("document_number", e.target.value)} /></label>
             {!editId && (
               <>
-                <label className="admin-check-row"><input type="checkbox" checked={form.create_account} onChange={(e) => f("create_account", e.target.checked)} /><span>{t(lc, "createLogin")}</span></label>
-                <label className="admin-check-row"><input type="checkbox" checked={form.notify_by_sms} onChange={(e) => f("notify_by_sms", e.target.checked)} disabled={!form.create_account} /><span>{t(lc, "notifyBySms")}</span></label>
+                <div className="admin-check-row"><Checkbox checked={form.create_account} id="criar-conta" onCheckedChange={(v) => f("create_account", v === true)} /><Label htmlFor="criar-conta">{t(lc, "createLogin")}</Label></div>
+                <div className="admin-check-row"><Checkbox checked={form.notify_by_sms} disabled={!form.create_account} id="avisar-sms" onCheckedChange={(v) => f("notify_by_sms", v === true)} /><Label htmlFor="avisar-sms">{t(lc, "notifyBySms")}</Label></div>
               </>
             )}
           </div>

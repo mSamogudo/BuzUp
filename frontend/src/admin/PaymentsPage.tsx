@@ -10,6 +10,7 @@ import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TableAction
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface PI {
   id: number;
@@ -143,7 +144,7 @@ export default function PaymentsPage() {
         {/* Filter bar */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12, alignItems: "center" }}>
           <Filter size={14} style={{ opacity: 0.6 }} />
-          <input
+          <Input
             type="text"
             placeholder={t(lc, "searchPaymentsHint")}
             value={fSearch}

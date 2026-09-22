@@ -12,6 +12,10 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface Pkg { id: number; uuid: string; name: string; description: string; discount_type: string; discount_value: string; price: string; validity_days: number; max_trips: number; status: string; routes: { route_id: number; route_code: string; route_name: string }[]; }
 interface Sub { id: number; uuid: string; passenger_name: string; passenger_phone: string; package_name: string; discount_type: string; special_balance: string; trips_used: number; trips_remaining: number; status: string; activated_at: string; expires_at: string; passenger_account_id: number; package_id: number; }
@@ -116,7 +120,7 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editPackage") : t(lc, "newPackage")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "name")}</span><input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "name")}</span><Input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
             <CampoSelect label={t(lc, "discountType")} value={form.discount_type} onChange={(valor) => f("discount_type", valor)}>
               <option value="percentage">{t(lc, "percentage")}</option>
               <option value="fixed_amount">{t(lc, "fixedAmount")}</option>
@@ -125,27 +129,27 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
 
             {dt === "percentage" && (
               <label className="field"><span>{t(lc, "discountPct")}</span>
-                <input required type="number" step="1" min="0" max="100" value={form.discount_value} onChange={(e) => f("discount_value", e.target.value)} />
+                <Input required type="number" step="1" min="0" max="100" value={form.discount_value} onChange={(e) => f("discount_value", e.target.value)} />
               </label>
             )}
 
             {dt === "fixed_amount" && (
               <label className="field"><span>{t(lc, "specialBalanceAmount")}</span>
-                <input required type="number" step="0.01" min="0" value={form.discount_value} onChange={(e) => f("discount_value", e.target.value)} />
+                <Input required type="number" step="0.01" min="0" value={form.discount_value} onChange={(e) => f("discount_value", e.target.value)} />
               </label>
             )}
 
             {dt === "free_trips" && (
               <label className="field"><span>{t(lc, "maxTrips")}</span>
-                <input required type="number" min="1" value={form.max_trips} onChange={(e) => f("max_trips", e.target.value)} />
+                <Input required type="number" min="1" value={form.max_trips} onChange={(e) => f("max_trips", e.target.value)} />
               </label>
             )}
 
             <label className="field"><span>{t(lc, "packagePrice")} (MZN)</span>
-              <input required type="number" step="0.01" min="0" value={form.price} onChange={(e) => f("price", e.target.value)} />
+              <Input required type="number" step="0.01" min="0" value={form.price} onChange={(e) => f("price", e.target.value)} />
             </label>
             <label className="field"><span>{t(lc, "validityDays")}</span>
-              <input type="number" min="1" value={form.validity_days} onChange={(e) => f("validity_days", e.target.value)} />
+              <Input type="number" min="1" value={form.validity_days} onChange={(e) => f("validity_days", e.target.value)} />
             </label>
             <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}>
               <option value="active">{t(lc, "active")}</option>
@@ -155,14 +159,14 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
               <span>{t(lc, "packageRoutes")} ({selectedRoutes.size === 0 ? t(lc, "allRoutes") : selectedRoutes.size})</span>
               <div className="perm-grid" style={{ maxHeight: 180 }}>
                 {(routeOpts || []).map((r) => (
-                  <label key={r.id} className="perm-check">
-                    <input type="checkbox" checked={selectedRoutes.has(r.id)} onChange={() => toggleRoute(r.id)} />
-                    <span>{r.code} — {r.name}</span>
-                  </label>
+                  <div key={r.id} className="perm-check">
+                    <Checkbox checked={selectedRoutes.has(r.id)} id={`rota-${r.id}`} onCheckedChange={() => toggleRoute(r.id)} />
+                    <Label htmlFor={`rota-${r.id}`}>{r.code} — {r.name}</Label>
+                  </div>
                 ))}
               </div>
             </div>
-            <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><Textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okPackageUpdated") : t(lc, "okPackageCreated")}</Button>

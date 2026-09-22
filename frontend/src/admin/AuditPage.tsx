@@ -10,6 +10,7 @@ import { DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, Tabl
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface AuditEntry {
   id: number; actor: number | null; actor_name: string; action: string;
@@ -64,8 +65,8 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
             <option value="">{t(lc, "all")}</option>
             {actionOptions.map((a) => <option key={a} value={a}>{ACTIONS.includes(a) ? t(lc, `audit_${a}` as never) : a}</option>)}
           </CampoSelect>
-          <label className="field"><span>{t(lc, "search")}</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t(lc, "auditSearchHint")} /></label>
-          <label className="field"><span>{t(lc, "actor")}</span><input value={actor} onChange={(e) => setActor(e.target.value)} placeholder={t(lc, "actorName")} /></label>
+          <label className="field"><span>{t(lc, "search")}</span><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t(lc, "auditSearchHint")} /></label>
+          <label className="field"><span>{t(lc, "actor")}</span><Input value={actor} onChange={(e) => setActor(e.target.value)} placeholder={t(lc, "actorName")} /></label>
           <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} /></label>
           <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setDateTo(v)} value={dateTo} /></label>
           <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>

@@ -11,6 +11,7 @@ import { t, type Locale } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface GuestCheckout {
   id: number;
@@ -168,7 +169,7 @@ export default function GuestCheckoutsPage() {
         <div className="admin-form">
           <label className="field">
             <span>{t(lc, "excelFile")}</span>
-            <input type="file" accept=".xlsx"
+            <Input type="file" accept=".xlsx"
               onChange={(e) => setFicheiro(e.target.files?.[0] || null)} />
           </label>
           <p className="dash-kpi-note">

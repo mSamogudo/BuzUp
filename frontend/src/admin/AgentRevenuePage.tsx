@@ -23,6 +23,7 @@ import {
   type TableColumn,
 } from "../ui/common";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface DayCloseRow {
   id: number;
@@ -274,7 +275,7 @@ export default function AgentRevenuePage() {
             <span>{t(lc, "search")}</span>
             {/* Era "ID do agente". Ninguem sabe de cor o id do motorista — a
                 operacao fala destes fechos por nome e por rota. */}
-            <input type="text" value={agentFilter} style={{ minWidth: 220 }}
+            <Input type="text" value={agentFilter} style={{ minWidth: 220 }}
               onChange={(e) => setAgentFilter(e.target.value)}
               placeholder={t(lc, "searchAgentHint")} />
           </label>

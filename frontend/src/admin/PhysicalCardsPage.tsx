@@ -11,6 +11,7 @@ import { AdminModal, DataTable, MetricCard, PageFrame, SegmentedControl, StatusB
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface CardRecord { id: number; uuid: string; card_type: string; card_uid: string; card_number: string; card_technology: string; status: string; passenger_name: string; passenger_phone: string; balance: string | null; issued_batch: string; batch_serial: string; manufacturer: string; activated_at: string | null; created_at: string; }
 interface PassengerOpt { id: number; full_name: string; phone_number: string; }
@@ -132,7 +133,7 @@ export default function PhysicalCardsPage() {
         <div className="admin-form">
           <p style={{ fontSize: 13, color: "var(--app-text-muted)", marginBottom: 12 }}>{t(lc, "importCardsHint")}</p>
           <label className="field"><span>{t(lc, "excelFileShort")}</span>
-            <input type="file" accept=".xlsx,.xls" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+            <Input type="file" accept=".xlsx,.xls" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
           </label>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy || !importFile} onClick={doImport} type="button">{busy ? "A importar..." : t(lc, "importAction")}</Button>

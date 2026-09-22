@@ -10,6 +10,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 /** Tabela de preços de uma rota: uma grelha origem × destino.
  *
@@ -212,7 +213,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
           {routes.map((r) => <option key={r.id} value={r.id}>{r.code} · {r.name}</option>)}
         </CampoSelect>
         <label className="field"><span>{t(lc, "fallbackPrice")}</span>
-          <input
+          <Input
             value={fallback}
             disabled={!data}
             placeholder="ex: 1000"
@@ -293,7 +294,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
                         const valor = prices[chave] ?? "";
                         return (
                           <td key={destino.id}>
-                            <input
+                            <Input
                               value={valor}
                               inputMode="decimal"
                               placeholder={fallback ? fallback : "—"}
@@ -322,11 +323,11 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
           </p>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "basePrice")}</span>
-              <input value={fill.base} inputMode="decimal" placeholder="ex: 100"
+              <Input value={fill.base} inputMode="decimal" placeholder="ex: 100"
                      onChange={(e) => setFill((f) => ({ ...f, base: e.target.value }))} />
             </label>
             <label className="field"><span>{t(lc, "perExtraStop")}</span>
-              <input value={fill.per_stop} inputMode="decimal" placeholder="ex: 50"
+              <Input value={fill.per_stop} inputMode="decimal" placeholder="ex: 50"
                      onChange={(e) => setFill((f) => ({ ...f, per_stop: e.target.value }))} />
             </label>
           </div>
@@ -343,7 +344,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
             Descarregue o modelo, preencha a coluna do preço e volte a enviá-lo. O ficheiro é primeiro pré-visualizado: nada muda até confirmar.
           </p>
           <label className="field"><span>{t(lc, "excelFile")}</span>
-            <input ref={fileRef} type="file" accept=".xlsx"
+            <Input ref={fileRef} type="file" accept=".xlsx"
                    onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); }} />
           </label>
           {preview ? (

@@ -8,6 +8,7 @@ import { AdminModal } from "../ui/common";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 const LIMITE = 320;
 
@@ -105,7 +106,7 @@ export default function BroadcastModal({
 
         <label className="field">
           <span>{t(lc, "message")}</span>
-          <textarea rows={4} value={texto} maxLength={LIMITE} required
+          <Textarea rows={4} value={texto} maxLength={LIMITE} required
             placeholder={t(lc, "broadcastExample")}
             onChange={(e) => setTexto(e.target.value)} />
           <small style={{ opacity: 0.7 }}>

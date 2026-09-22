@@ -12,6 +12,7 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface StopRouteLink { route_id: number; route_code: string; route_name: string; sequence: number; distance_from_start_km: string; direction: "outbound" | "inbound"; }
 interface Stop { id: number; uuid: string; code: string; name: string; latitude: string | null; longitude: string | null; status: string; route_count: number; route_links?: StopRouteLink[]; created_at: string; }
@@ -103,9 +104,9 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editStop") : t(lc, "newStop")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "name")}</span><input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "latitude")}</span><input type="number" step="any" value={form.latitude} onChange={(e) => f("latitude", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "longitude")}</span><input type="number" step="any" value={form.longitude} onChange={(e) => f("longitude", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "name")}</span><Input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "latitude")}</span><Input type="number" step="any" value={form.latitude} onChange={(e) => f("latitude", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "longitude")}</span><Input type="number" step="any" value={form.longitude} onChange={(e) => f("longitude", e.target.value)} /></label>
             <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option></CampoSelect>
           </div>
           <div className="admin-form-actions">

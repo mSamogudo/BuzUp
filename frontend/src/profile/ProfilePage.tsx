@@ -9,6 +9,7 @@ import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface MeData {
   username: string;
@@ -149,19 +150,19 @@ export default function ProfilePage() {
                 <div className="admin-form-grid">
                   <label className="field">
                     <span>{t(locale, "name")}</span>
-                    <input value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} />
+                    <Input value={form.first_name} onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))} />
                   </label>
                   <label className="field">
                     <span>{t(locale, "lastName")}</span>
-                    <input value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} />
+                    <Input value={form.last_name} onChange={(e) => setForm((p) => ({ ...p, last_name: e.target.value }))} />
                   </label>
                   <label className="field">
                     <span>{t(locale, "email")}</span>
-                    <input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+                    <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
                   </label>
                   <label className="field">
                     <span>{t(locale, "phone")}</span>
-                    <input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+                    <Input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
                   </label>
                 </div>
                 <div className="admin-form-actions">
@@ -183,15 +184,15 @@ export default function ProfilePage() {
                 <div className="admin-form-grid">
                   <label className="field admin-field-span-full">
                     <span>{t(locale, "currentPassword")}</span>
-                    <input type="password" value={pwd.current_password} onChange={(e) => setPwd((p) => ({ ...p, current_password: e.target.value }))} autoComplete="current-password" />
+                    <Input type="password" value={pwd.current_password} onChange={(e) => setPwd((p) => ({ ...p, current_password: e.target.value }))} autoComplete="current-password" />
                   </label>
                   <label className="field">
                     <span>{t(locale, "newPassword")}</span>
-                    <input type="password" minLength={8} value={pwd.new_password} onChange={(e) => setPwd((p) => ({ ...p, new_password: e.target.value }))} autoComplete="new-password" />
+                    <Input type="password" minLength={8} value={pwd.new_password} onChange={(e) => setPwd((p) => ({ ...p, new_password: e.target.value }))} autoComplete="new-password" />
                   </label>
                   <label className="field">
                     <span>{t(locale, "confirmNewPassword")}</span>
-                    <input type="password" minLength={8} value={pwd.confirm_password} onChange={(e) => setPwd((p) => ({ ...p, confirm_password: e.target.value }))} autoComplete="new-password" />
+                    <Input type="password" minLength={8} value={pwd.confirm_password} onChange={(e) => setPwd((p) => ({ ...p, confirm_password: e.target.value }))} autoComplete="new-password" />
                   </label>
                 </div>
                 <div className="admin-form-actions">

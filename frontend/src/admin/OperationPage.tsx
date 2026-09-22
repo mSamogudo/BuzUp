@@ -16,6 +16,7 @@ import { useConfirm } from "../ui/ConfirmDialog";
 import SchedulesPage from "./SchedulesPage";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface Trip {
   id: number; uuid: string;
@@ -313,11 +314,11 @@ export default function OperationPage() {
               {sentidos(lc).map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
             </CampoSelect>
             <label className="field"><span>{t(lc, "plannedDeparture")}</span>
-              <input type="datetime-local" value={form.planned_departure_at}
+              <Input type="datetime-local" value={form.planned_departure_at}
                 onChange={(e) => f("planned_departure_at", e.target.value)} />
             </label>
             <label className="field"><span>{t(lc, "plannedArrival")}</span>
-              <input type="datetime-local" value={form.planned_arrival_at}
+              <Input type="datetime-local" value={form.planned_arrival_at}
                 onChange={(e) => f("planned_arrival_at", e.target.value)} />
             </label>
             <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}>

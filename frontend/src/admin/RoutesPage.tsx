@@ -13,6 +13,8 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 type RouteDirection = "outbound" | "inbound";
 
@@ -139,10 +141,10 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editRoute") : t(lc, "newRoute")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "name")}</span><input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "name")}</span><Input required value={form.name} onChange={(e) => f("name", e.target.value)} /></label>
             <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option><option value="suspended">{t(lc, "suspended")}</option></CampoSelect>
             <CampoSelect label={t(lc, "serviceType")} value={form.service_type} onChange={(valor) => f("service_type", valor)}><option value="urban">{t(lc, "urbanIntercity")}</option><option value="interprovincial">{t(lc, "interprovincial")}</option><option value="international">{t(lc, "international")}</option></CampoSelect>
-            <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><Textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
           </div>
           <p className="dash-kpi-note" style={{ marginTop: 4 }}>
             O tipo de serviço decide se o passageiro escolhe lugar: nas carreiras urbanas ninguém escolhe, nas interprovinciais e internacionais a planta do autocarro é mostrada na compra. Escolher mal faz o passo desaparecer ou aparecer onde não devia.

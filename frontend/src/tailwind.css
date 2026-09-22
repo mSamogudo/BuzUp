@@ -40,6 +40,22 @@
   ::before {
     border-color: var(--border);
   }
+
+  /* O shadcn conta com o preflight para zerar o fundo dos botoes. Sem ele, um
+   * `<button>` sem utilitario de fundo fica com o `buttonface` do sistema —
+   * cinzento #efefef. Apanhou o X de fechar do dialogo e as caixas de
+   * seleccao por marcar, que parecem assim marcadas a cinzento.
+   *
+   * Vai em `@layer base` de proposito: os utilitarios do Tailwind estao numa
+   * camada acima e continuam a ganhar (`bg-primary` pinta na mesma), e o
+   * `styles.css`, que nao esta em camada nenhuma, ganha a ambos. */
+  button,
+  [type="button"],
+  [type="reset"],
+  [type="submit"] {
+    background-color: transparent;
+    background-image: none;
+  }
 }
 
 /* Inter e Manrope, alojadas localmente. */

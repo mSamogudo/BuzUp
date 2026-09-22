@@ -10,6 +10,9 @@ import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface Schedule {
   id: number;
@@ -214,9 +217,9 @@ export default function SchedulesPage({
               <option value="">{t(lc, "noAgent")}</option>
               {agents.map((a) => <option key={a.id} value={a.id}>{a.full_name}</option>)}
             </CampoSelect>
-            <label className="field"><span>{t(lc, "startTime")}</span><input required type="time" value={form.start_time} onChange={(e) => f("start_time", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "endTime")}</span><input required type="time" value={form.end_time} onChange={(e) => f("end_time", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "frequencyMinutes")}</span><input required type="number" min={1} step={1} value={form.frequency_minutes} onChange={(e) => f("frequency_minutes", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "startTime")}</span><Input required type="time" value={form.start_time} onChange={(e) => f("start_time", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "endTime")}</span><Input required type="time" value={form.end_time} onChange={(e) => f("end_time", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "frequencyMinutes")}</span><Input required type="number" min={1} step={1} value={form.frequency_minutes} onChange={(e) => f("frequency_minutes", e.target.value)} /></label>
             <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => f("status", valor)}>
               <option value="active">{t(lc, "active")}</option>
               <option value="inactive">{t(lc, "inactive")}</option>
@@ -226,10 +229,10 @@ export default function SchedulesPage({
             <span>{t(lc, "weekdays")}</span>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "0.35rem" }}>
               {DAY_LABELS.map((label, idx) => (
-                <label key={label} style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", cursor: "pointer" }}>
-                  <input type="checkbox" checked={form.days.includes(idx)} onChange={() => toggleDay(idx)} />
-                  <span>{label}</span>
-                </label>
+                <div key={label} style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                  <Checkbox checked={form.days.includes(idx)} id={`dia-${idx}`} onCheckedChange={() => toggleDay(idx)} />
+                  <Label htmlFor={`dia-${idx}`}>{label}</Label>
+                </div>
               ))}
             </div>
             <small style={{ opacity: 0.7 }}>{t(lc, "noDaysHint")}</small>

@@ -15,6 +15,7 @@ import { showToast } from "../lib/toast";
 import { useUi } from "./UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "./CampoSelect";
+import { Input } from "@/components/ui/input";
 
 export type TableColumn<T> = {
   header: string;
@@ -206,7 +207,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
             <span>{t(locale, "search")}</span>
             <div className="admin-table-filter-row">
               <Search aria-hidden="true" className="admin-table-filter-icon" size={15} />
-              <input placeholder={t(locale, "searchPlaceholder")} type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
+              <Input placeholder={t(locale, "searchPlaceholder")} type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
               {query ? <Button variant="outline" size="icon" className="admin-table-filter-clear" onClick={() => setQuery("")} type="button"><X size={15} /></Button> : null}
             </div>
           </label>

@@ -15,6 +15,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface RouteOpt { id: number; code: string; name: string; service_type?: string }
 interface VehicleOpt { id: number; registration: string; seated_capacity?: number }
@@ -263,7 +264,7 @@ export default function TripSchedulerPage() {
                 <div className="bzsched-times">
                   {horas.map((h, i) => (
                     <div className="bzsched-time" key={i}>
-                      <input type="time" value={h} required
+                      <Input type="time" value={h} required
                         onChange={(e) => setHoras(horas.map((x, j) => (j === i ? e.target.value : x)))} />
                       {horas.length > 1 ? (
                         <button type="button" className="bzsched-time-x" aria-label={t(lc, "removeTime")}
@@ -286,7 +287,7 @@ export default function TripSchedulerPage() {
                 </p>
                 <label className="field">
                   <span>{t(lc, "tripDuration")}</span>
-                  <input type="number" min={1} max={2880} placeholder="ex.: 270"
+                  <Input type="number" min={1} max={2880} placeholder="ex.: 270"
                     value={duracao} onChange={(e) => setDuracao(e.target.value)} />
                 </label>
               </div>

@@ -12,6 +12,7 @@ import SeatLayoutPreview from "./SeatLayoutPreview";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface Vehicle { id: number; uuid: string; registration: string; make: string; model_name: string; seated_capacity: number; standing_capacity: number; seat_layout?: string; last_row_seats?: number; status: string; livrete_url?: string; }
 
@@ -91,13 +92,13 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "editVehicle") : t(lc, "newVehicle")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "registration")}</span><input required value={form.registration} onChange={(e) => setForm((p) => ({ ...p, registration: e.target.value }))} /></label>
-            <label className="field"><span>{t(lc, "make")}</span><input value={form.make} onChange={(e) => setForm((p) => ({ ...p, make: e.target.value }))} /></label>
-            <label className="field"><span>{t(lc, "model")}</span><input value={form.model_name} onChange={(e) => setForm((p) => ({ ...p, model_name: e.target.value }))} /></label>
-            <label className="field"><span>{t(lc, "seatedCapacity")}</span><input type="number" min="0" value={form.seated_capacity} onChange={(e) => setForm((p) => ({ ...p, seated_capacity: e.target.value }))} /></label>
-            <label className="field"><span>{t(lc, "standingCapacity")}</span><input type="number" min="0" value={form.standing_capacity} onChange={(e) => setForm((p) => ({ ...p, standing_capacity: e.target.value }))} /></label>
+            <label className="field"><span>{t(lc, "registration")}</span><Input required value={form.registration} onChange={(e) => setForm((p) => ({ ...p, registration: e.target.value }))} /></label>
+            <label className="field"><span>{t(lc, "make")}</span><Input value={form.make} onChange={(e) => setForm((p) => ({ ...p, make: e.target.value }))} /></label>
+            <label className="field"><span>{t(lc, "model")}</span><Input value={form.model_name} onChange={(e) => setForm((p) => ({ ...p, model_name: e.target.value }))} /></label>
+            <label className="field"><span>{t(lc, "seatedCapacity")}</span><Input type="number" min="0" value={form.seated_capacity} onChange={(e) => setForm((p) => ({ ...p, seated_capacity: e.target.value }))} /></label>
+            <label className="field"><span>{t(lc, "standingCapacity")}</span><Input type="number" min="0" value={form.standing_capacity} onChange={(e) => setForm((p) => ({ ...p, standing_capacity: e.target.value }))} /></label>
             <CampoSelect label={t(lc, "seatLayout")} value={form.seat_layout} onChange={(valor) => setForm((p) => ({ ...p, seat_layout: valor }))}><option value="1+1">1+1 — um banco de cada lado</option><option value="1+2">1+2 — um à esquerda, dois à direita</option><option value="2+1">2+1 — dois à esquerda, um à direita</option><option value="2+2">2+2 — dois de cada lado</option><option value="2+3">2+3</option><option value="3+2">3+2</option></CampoSelect>
-              <label className="field"><span>{t(lc, "backRowSeats")}</span><input type="number" min="0" value={form.last_row_seats} onChange={(e) => setForm((p) => ({ ...p, last_row_seats: e.target.value }))} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "backRowHint")}</small></label>
+              <label className="field"><span>{t(lc, "backRowSeats")}</span><Input type="number" min="0" value={form.last_row_seats} onChange={(e) => setForm((p) => ({ ...p, last_row_seats: e.target.value }))} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "backRowHint")}</small></label>
               {/* Ver antes de gravar: a planta que o passageiro vai encontrar a
                   bordo. Escolher "2+2" numa lista sem ver o resultado é onde os
                   minibus acabavam com uma planta que não existe. */}
@@ -110,7 +111,7 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
                 />
               </div>
             <CampoSelect label={t(lc, "status")} value={form.status} onChange={(valor) => setForm((p) => ({ ...p, status: valor }))}><option value="active">{t(lc, "active")}</option><option value="maintenance">{t(lc, "maintenance")}</option><option value="retired">{t(lc, "retired")}</option></CampoSelect>
-            <label className="field admin-field-span-full"><span>{t(lc, "livrete")}</span><input type="file" accept="application/pdf,image/*" onChange={(e) => setLivrete(e.target.files?.[0] ?? null)} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "livreteHint")}</small></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "livrete")}</span><Input type="file" accept="application/pdf,image/*" onChange={(e) => setLivrete(e.target.files?.[0] ?? null)} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "livreteHint")}</small></label>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okVehicleUpdated") : t(lc, "okVehicleCreated")}</Button>

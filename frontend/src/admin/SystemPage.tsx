@@ -11,6 +11,10 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface UserRecord { id: number; uuid: string; username: string; email: string; phone: string; first_name: string; last_name: string; is_active: boolean; roles: { id: number; role_id: number; role_name: string; role_code: string }[]; created_at: string; }
 interface RoleRecord { id: number; uuid: string; name: string; code: string; permissions: string[]; description: string; is_system: boolean; }
@@ -165,23 +169,23 @@ function UsersTab() {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "edit") : t(lc, "create")}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "username")}</span><input required value={form.username} onChange={(e) => f("username", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "email")}</span><input required type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "name")}</span><input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "lastName")}</span><input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "phone")}</span><input value={form.phone} onChange={(e) => f("phone", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "username")}</span><Input required value={form.username} onChange={(e) => f("username", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "email")}</span><Input required type="email" value={form.email} onChange={(e) => f("email", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "name")}</span><Input value={form.first_name} onChange={(e) => f("first_name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "lastName")}</span><Input value={form.last_name} onChange={(e) => f("last_name", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "phone")}</span><Input value={form.phone} onChange={(e) => f("phone", e.target.value)} /></label>
             <CampoSelect label={t(lc, "status")} value={form.is_active ? "active" : "inactive"} onChange={(valor) => f("is_active", valor === "active")}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option></CampoSelect>
-            <label className="field"><span>{t(lc, "password")}</span><input required={!editId} type="password" minLength={8} placeholder={editId ? "Deixar vazio para manter" : ""} value={form.password} onChange={(e) => f("password", e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "password")}</span><Input required={!editId} type="password" minLength={8} placeholder={editId ? "Deixar vazio para manter" : ""} value={form.password} onChange={(e) => f("password", e.target.value)} /></label>
           </div>
           <div style={{ margin: "12px 0 8px" }}>
             <strong style={{ fontSize: 13 }}>Roles ({form.role_ids.length})</strong>
           </div>
           <div className="perm-grid">
             {(roleOpts || []).map((role) => (
-              <label key={role.id} className="perm-check">
-                <input type="checkbox" checked={form.role_ids.includes(role.id)} onChange={() => toggleRole(role.id)} />
-                <span>{role.name}</span>
-              </label>
+              <div key={role.id} className="perm-check">
+                <Checkbox checked={form.role_ids.includes(role.id)} id={`papel-${role.id}`} onCheckedChange={() => toggleRole(role.id)} />
+                <Label htmlFor={`papel-${role.id}`}>{role.name}</Label>
+              </div>
             ))}
           </div>
           <div className="admin-form-actions">
@@ -260,8 +264,8 @@ function RolesTab() {
       <AdminModal open={modalOpen} onClose={reset} title={editId ? t(lc, "edit") + " Role" : "Nova Role"}>
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
-            <label className="field admin-field-span-full"><span>{t(lc, "name")}</span><input required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t(lc, "egRoleName")} /></label>
-            <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} /></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "name")}</span><Input required value={formName} onChange={(e) => setFormName(e.target.value)} placeholder={t(lc, "egRoleName")} /></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><Textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} /></label>
           </div>
           <div style={{ margin: "12px 0 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <strong style={{ fontSize: 13 }}>Permissoes ({selectedPerms.size})</strong>
@@ -272,10 +276,10 @@ function RolesTab() {
           </div>
           <div className="perm-grid">
             {permissoes(lc).map((p) => (
-              <label key={p.key} className="perm-check">
-                <input type="checkbox" checked={selectedPerms.has(p.key)} onChange={() => togglePerm(p.key)} />
-                <span>{p.label}</span>
-              </label>
+              <div key={p.key} className="perm-check">
+                <Checkbox checked={selectedPerms.has(p.key)} id={`perm-${p.key}`} onCheckedChange={() => togglePerm(p.key)} />
+                <Label htmlFor={`perm-${p.key}`}>{p.label}</Label>
+              </div>
             ))}
           </div>
           <div className="admin-form-actions" style={{ marginTop: 16 }}>

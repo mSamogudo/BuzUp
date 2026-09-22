@@ -12,6 +12,7 @@ import { ButtonSpinner, DataTable, MetricCard, PageFrame, SectionCard, StatusBad
 import { SkeletonCard } from "../ui/Skeleton";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface RevenueData {
   validations: { total_count: number; total_revenue: string; by_route: { route__code: string; route__name: string; count: number; total: string }[] };
@@ -324,7 +325,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             </CampoSelect>
             <label className="field" style={{ position: "relative" }}>
               <span>{t(lc, "agent")}</span>
-              <input
+              <Input
                 type="text"
                 value={agentId
                   ? (agents.find((a) => String(a.id) === agentId)?.full_name || `#${agentId}`)
@@ -359,7 +360,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             </label>
             <label className="field" style={{ position: "relative" }}>
               <span>{t(lc, "passenger")}</span>
-              <input
+              <Input
                 type="text"
                 value={passengerId
                   ? (passengers.find((p) => String(p.id) === passengerId)?.full_name || `#${passengerId}`)

@@ -11,6 +11,8 @@ import TermsDialog from "../public/booking/TermsDialog";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Seccao { title: string; items: string[] }
 
@@ -157,27 +159,27 @@ export default function TermsPage() {
         description={t(lc, "supportPhoneHint")}>
         <div className="admin-form-grid">
           <label className="field"><span>{t(lc, "companyName")}</span>
-            <input value={empresa.company_name} placeholder="TPM-TUR (PTY) — Transporte e Turismo"
+            <Input value={empresa.company_name} placeholder="TPM-TUR (PTY) — Transporte e Turismo"
               onChange={(e) => setEmpresa((p) => ({ ...p, company_name: e.target.value }))} />
           </label>
           <label className="field"><span>{t(lc, "website")}</span>
-            <input value={empresa.company_website} placeholder="www.tpmtur.co.mz"
+            <Input value={empresa.company_website} placeholder="www.tpmtur.co.mz"
               onChange={(e) => setEmpresa((p) => ({ ...p, company_website: e.target.value }))} />
           </label>
           <label className="field" style={{ gridColumn: "1 / -1" }}><span>{t(lc, "address")}</span>
-            <input value={empresa.company_address} placeholder="Rua da Resistência, Parcela 24, 1º Andar, Maputo"
+            <Input value={empresa.company_address} placeholder="Rua da Resistência, Parcela 24, 1º Andar, Maputo"
               onChange={(e) => setEmpresa((p) => ({ ...p, company_address: e.target.value }))} />
           </label>
           <label className="field"><span>{t(lc, "supportEmail")}</span>
-            <input type="email" value={empresa.support_email} placeholder="info@tpmtur.co.mz"
+            <Input type="email" value={empresa.support_email} placeholder="info@tpmtur.co.mz"
               onChange={(e) => setEmpresa((p) => ({ ...p, support_email: e.target.value }))} />
           </label>
           <label className="field"><span>{t(lc, "supportPhoneLabel")}</span>
-            <input value={empresa.support_phone}
+            <Input value={empresa.support_phone}
               onChange={(e) => setEmpresa((p) => ({ ...p, support_phone: e.target.value }))} />
           </label>
           <label className="field"><span>{t(lc, "emergencyLine")}</span>
-            <input value={empresa.emergency_phone}
+            <Input value={empresa.emergency_phone}
               onChange={(e) => setEmpresa((p) => ({ ...p, emergency_phone: e.target.value }))} />
             <small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>
               {t(lc, "emergencyLineHint")}
@@ -188,7 +190,7 @@ export default function TermsPage() {
             <div className="bzterms-phones">
               {telefones.map((n, i) => (
                 <div className="bzterms-phone" key={i}>
-                  <input value={n} placeholder="+258 …"
+                  <Input value={n} placeholder="+258 …"
                     onChange={(e) => setTelefones(telefones.map((x, j) => (j === i ? e.target.value : x)))} />
                   <button type="button" className="bzsched-time-x" aria-label={t(lc, "remove")}
                     onClick={() => setTelefones(telefones.filter((_, j) => j !== i))}>
@@ -228,7 +230,7 @@ export default function TermsPage() {
         ) : null}
 
         <label className="field"><span>{t(lc, "intro")}</span>
-          <textarea rows={2} value={introActual}
+          <Textarea rows={2} value={introActual}
             placeholder={pt
               ? "Os passageiros embarcam sujeitos a certos requerimentos das nossas condições de embarque."
               : "Passengers are subject to the following terms:"}
@@ -240,7 +242,7 @@ export default function TermsPage() {
             <div className="bzterms-editor" key={i}>
               <div className="bzterms-editor-head">
                 <span className="bzterms-num">{i + 1}</span>
-                <input className="bzterms-title" value={s.title} placeholder={t(lc, "sectionTitleHint")}
+                <Input className="bzterms-title" value={s.title} placeholder={t(lc, "sectionTitleHint")}
                   onChange={(e) => mexerSeccao(i, { title: e.target.value })} />
                 <div className="bzterms-editor-actions">
                   <button type="button" className="bzsched-time-x" aria-label={t(lc, "moveUp")}
@@ -253,7 +255,7 @@ export default function TermsPage() {
               </div>
               {s.items.map((item, j) => (
                 <div className="bzterms-item" key={j}>
-                  <textarea rows={2} value={item} placeholder={t(lc, "paragraph")}
+                  <Textarea rows={2} value={item} placeholder={t(lc, "paragraph")}
                     onChange={(e) => mexerSeccao(i, {
                       items: s.items.map((x, k) => (k === j ? e.target.value : x)),
                     })} />
@@ -279,7 +281,7 @@ export default function TermsPage() {
         </Button>
 
         <label className="field" style={{ marginTop: 16 }}><span>{t(lc, "closing")}</span>
-          <input value={fechoActual}
+          <Input value={fechoActual}
             placeholder={pt
               ? "A TPM-TUR deseja-lhe uma viagem segura e confortável."
               : "We wish you a safe and pleasant journey."}

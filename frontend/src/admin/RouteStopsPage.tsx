@@ -10,6 +10,7 @@ import { useUi } from "../ui/UiPreferences";
 import { PageFrame, SectionCard, useAsyncData } from "../ui/common";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 type RouteDirection = "outbound" | "inbound";
 
@@ -168,7 +169,7 @@ export default function RouteStopsPage() {
             </CampoSelect>
             <label className="field">
               <span>{t(lc, "distanceKm")}</span>
-              <input min="0" step="0.01" type="number" value={stopDraft.distance_from_start_km} onChange={(e) => setStopDraft((p) => ({ ...p, distance_from_start_km: e.target.value }))} />
+              <Input min="0" step="0.01" type="number" value={stopDraft.distance_from_start_km} onChange={(e) => setStopDraft((p) => ({ ...p, distance_from_start_km: e.target.value }))} />
             </label>
             <CampoSelect label={t(lc, "direction")} value={stopDraft.direction} onChange={(valor) => setStopDraft((p) => ({ ...p, direction: valor as RouteDirection }))}>
               <option value="outbound">{t(lc, "outbound")}</option>

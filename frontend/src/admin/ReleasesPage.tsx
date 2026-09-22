@@ -11,6 +11,8 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TabBar, Tab
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Release { id: number; uuid: string; app_type: string; version_name: string; version_code: number; is_mandatory: boolean; min_supported_version_code?: number; status: string; release_notes: string; published_at: string | null; download_url?: string; file_size_bytes?: number; }
 
@@ -150,19 +152,19 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
         <form className="admin-form" onSubmit={submit}>
           <div className="admin-form-grid">
             <CampoSelect label={t(lc, "type")} value={form.app_type} onChange={(valor) => f("app_type", valor)}><option value="pos">{t(lc, "pos")}</option><option value="passenger">{t(lc, "passengerApp")}</option></CampoSelect>
-              <label className="field"><span>{t(lc, "versionName")}</span><input required placeholder="1.0.0" value={form.version_name} onChange={(e) => f("version_name", e.target.value)} /></label>
-              <label className="field"><span>{t(lc, "versionCode")}</span><input required type="number" min="1" value={form.version_code} onChange={(e) => f("version_code", e.target.value)} /></label>
+              <label className="field"><span>{t(lc, "versionName")}</span><Input required placeholder="1.0.0" value={form.version_name} onChange={(e) => f("version_name", e.target.value)} /></label>
+              <label className="field"><span>{t(lc, "versionCode")}</span><Input required type="number" min="1" value={form.version_code} onChange={(e) => f("version_code", e.target.value)} /></label>
             <CampoSelect label={t(lc, "mandatory")} value={form.is_mandatory} onChange={(valor) => f("is_mandatory", valor)}><option value="false">{t(lc, "no")}</option><option value="true">{t(lc, "yes")}</option></CampoSelect>
-            <label className="field"><span>{t(lc, "minSupportedVersion")}</span><input type="number" min="0" value={form.min_supported_version_code} onChange={(e) => f("min_supported_version_code", e.target.value)} /><small className="field-hint">{t(lc, "minSupportedVersionHint")}</small></label>
+            <label className="field"><span>{t(lc, "minSupportedVersion")}</span><Input type="number" min="0" value={form.min_supported_version_code} onChange={(e) => f("min_supported_version_code", e.target.value)} /><small className="field-hint">{t(lc, "minSupportedVersionHint")}</small></label>
             {!editId && (
               <label className="field admin-field-span-full">
                 <span>{t(lc, "apkFile")}</span>
-                <input ref={apkInputRef} type="file" required accept=".apk,application/vnd.android.package-archive"
+                <Input ref={apkInputRef} type="file" required accept=".apk,application/vnd.android.package-archive"
                   onChange={(e) => setApkFile(e.target.files?.[0] ?? null)} />
                 <small className="field-hint">{t(lc, "apkFileHint")}</small>
               </label>
             )}
-            <label className="field admin-field-span-full"><span>{t(lc, "releaseNotes")}</span><textarea value={form.release_notes} onChange={(e) => f("release_notes", e.target.value)} /></label>
+            <label className="field admin-field-span-full"><span>{t(lc, "releaseNotes")}</span><Textarea value={form.release_notes} onChange={(e) => f("release_notes", e.target.value)} /></label>
           </div>
           <div className="admin-form-actions">
             <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>

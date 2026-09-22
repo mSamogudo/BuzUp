@@ -13,6 +13,7 @@ import FareMatrixTab from "./FareMatrixTab";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface FareProduct { id: number; uuid: string; name: string; product_type: string; status: string; }
 interface FareRule { id: number; uuid: string; fare_product_id: number; fare_product_name: string; route_id: number | null; route_code: string; origin_stop_name: string; destination_stop_name: string; calculation_method: string; fixed_amount: string; amount_per_km: string; min_amount: string; max_amount: string; distance_min_km: string | null; distance_max_km: string | null; passenger_class: string; priority: number; origin_stop_id: number | null; destination_stop_id: number | null; }
@@ -285,15 +286,15 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
           }}>
             <div className="admin-form-grid">
               <label className="field"><span>{t(lc, "emergencyPhone")}</span>
-                <input value={contacts.emergency_phone} placeholder={t(lc, "egSupportPhone")}
+                <Input value={contacts.emergency_phone} placeholder={t(lc, "egSupportPhone")}
                        onChange={(e) => setContacts((c) => ({ ...c, emergency_phone: e.target.value }))} />
               </label>
               <label className="field"><span>{t(lc, "supportPhone")}</span>
-                <input value={contacts.support_phone} placeholder={t(lc, "egPhone")}
+                <Input value={contacts.support_phone} placeholder={t(lc, "egPhone")}
                        onChange={(e) => setContacts((c) => ({ ...c, support_phone: e.target.value }))} />
               </label>
               <label className="field"><span>{t(lc, "supportEmail")}</span>
-                <input type="email" value={contacts.support_email} placeholder={t(lc, "egEmail")}
+                <Input type="email" value={contacts.support_email} placeholder={t(lc, "egEmail")}
                        onChange={(e) => setContacts((c) => ({ ...c, support_email: e.target.value }))} />
               </label>
             </div>
@@ -329,11 +330,11 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         }}>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "currencyIso")}</span>
-              <input required value={fxForm.currency} maxLength={3} placeholder="ZAR"
+              <Input required value={fxForm.currency} maxLength={3} placeholder="ZAR"
                      onChange={(e) => setFxForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
             </label>
             <label className="field"><span>Quantos MZN vale 1 {fxForm.currency || "ZAR"}</span>
-              <input required type="number" min="0.0001" step="0.0001" value={fxForm.rate_to_mzn} placeholder="ex: 4.1000"
+              <Input required type="number" min="0.0001" step="0.0001" value={fxForm.rate_to_mzn} placeholder="ex: 4.1000"
                      onChange={(e) => setFxForm((f) => ({ ...f, rate_to_mzn: e.target.value }))} />
             </label>
             <CampoSelect label={t(lc, "roundTo")} value={fxForm.rounding_step}
@@ -349,7 +350,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             </CampoSelect>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>{t(lc, "notes")}</span>
-              <input value={fxForm.notes} placeholder={t(lc, "egNotes")} onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
+              <Input value={fxForm.notes} placeholder={t(lc, "egNotes")} onChange={(e) => setFxForm((f) => ({ ...f, notes: e.target.value }))} />
             </label>
           </div>
           {fxForm.rate_to_mzn && Number(fxForm.rate_to_mzn) > 0 && (() => {
@@ -407,29 +408,29 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
 
             {(method === "fixed" || method === "origin_destination") && (
               <label className="field"><span>{t(lc, "fixedPrice")} (MZN)</span>
-                <input required type="number" step="0.01" min="0" value={rForm.fixed_amount} onChange={(e) => setRForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
+                <Input required type="number" step="0.01" min="0" value={rForm.fixed_amount} onChange={(e) => setRForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
               </label>
             )}
 
             {method === "distance" && (
               <>
                 <label className="field"><span>{t(lc, "minDistanceKm")}</span>
-                  <input required type="number" step="0.1" min="0" value={rForm.distance_min_km} onChange={(e) => setRForm((f) => ({ ...f, distance_min_km: e.target.value }))} />
+                  <Input required type="number" step="0.1" min="0" value={rForm.distance_min_km} onChange={(e) => setRForm((f) => ({ ...f, distance_min_km: e.target.value }))} />
                 </label>
                 <label className="field"><span>{t(lc, "maxDistanceKm")}</span>
-                  <input required type="number" step="0.1" min="0" value={rForm.distance_max_km} onChange={(e) => setRForm((f) => ({ ...f, distance_max_km: e.target.value }))} />
+                  <Input required type="number" step="0.1" min="0" value={rForm.distance_max_km} onChange={(e) => setRForm((f) => ({ ...f, distance_max_km: e.target.value }))} />
                 </label>
                 <label className="field"><span>{t(lc, "amountPerKm")}</span>
-                  <input type="number" step="0.01" min="0" value={rForm.amount_per_km} onChange={(e) => setRForm((f) => ({ ...f, amount_per_km: e.target.value }))} />
+                  <Input type="number" step="0.01" min="0" value={rForm.amount_per_km} onChange={(e) => setRForm((f) => ({ ...f, amount_per_km: e.target.value }))} />
                 </label>
                 <label className="field"><span>{t(lc, "fixedPrice")}</span>
-                  <input type="number" step="0.01" min="0" value={rForm.fixed_amount} onChange={(e) => setRForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
+                  <Input type="number" step="0.01" min="0" value={rForm.fixed_amount} onChange={(e) => setRForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
                 </label>
                 <label className="field"><span>{t(lc, "minAmount")}</span>
-                  <input type="number" step="0.01" min="0" value={rForm.min_amount} onChange={(e) => setRForm((f) => ({ ...f, min_amount: e.target.value }))} />
+                  <Input type="number" step="0.01" min="0" value={rForm.min_amount} onChange={(e) => setRForm((f) => ({ ...f, min_amount: e.target.value }))} />
                 </label>
                 <label className="field"><span>{t(lc, "maxAmount")}</span>
-                  <input type="number" step="0.01" min="0" value={rForm.max_amount} onChange={(e) => setRForm((f) => ({ ...f, max_amount: e.target.value }))} />
+                  <Input type="number" step="0.01" min="0" value={rForm.max_amount} onChange={(e) => setRForm((f) => ({ ...f, max_amount: e.target.value }))} />
                 </label>
               </>
             )}
@@ -459,7 +460,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
       <AdminModal open={prodModal} onClose={() => setProdModal(false)} title={editP ? t(lc, "editProduct") : t(lc, "newProduct")}>
         <form className="admin-form" onSubmit={submitP}>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "name")}</span><input required value={pForm.name} onChange={(e) => setPForm((f) => ({ ...f, name: e.target.value }))} /></label>
+            <label className="field"><span>{t(lc, "name")}</span><Input required value={pForm.name} onChange={(e) => setPForm((f) => ({ ...f, name: e.target.value }))} /></label>
             <CampoSelect label={t(lc, "type")} value={pForm.product_type} onChange={(valor) => setPForm((f) => ({ ...f, product_type: valor }))}>
               <option value="single_trip">{t(lc, "singleTrip")}</option>
               <option value="daily_pass">{t(lc, "dailyPass")}</option>
@@ -502,10 +503,10 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
         }}>
           <div className="admin-form-grid">
             <label className="field"><span>{t(lc, "codeSlug")}</span>
-              <input required value={feeForm.code} onChange={(e) => setFeeForm((f) => ({ ...f, code: e.target.value }))} placeholder={t(lc, "egSlug")} />
+              <Input required value={feeForm.code} onChange={(e) => setFeeForm((f) => ({ ...f, code: e.target.value }))} placeholder={t(lc, "egSlug")} />
             </label>
             <label className="field"><span>{t(lc, "name")}</span>
-              <input required value={feeForm.name} onChange={(e) => setFeeForm((f) => ({ ...f, name: e.target.value }))} />
+              <Input required value={feeForm.name} onChange={(e) => setFeeForm((f) => ({ ...f, name: e.target.value }))} />
             </label>
             <CampoSelect label={t(lc, "type")} value={feeForm.kind} onChange={(valor) => setFeeForm((f) => ({ ...f, kind: valor }))}>
               <option value="card_issuance">{t(lc, "cardIssueFee")}</option>
@@ -514,11 +515,11 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               <option value="other">{t(lc, "other")}</option>
             </CampoSelect>
             <label className="field"><span>{t(lc, "amount")}</span>
-              <input required type="number" min="0" step="0.01" value={feeForm.amount}
+              <Input required type="number" min="0" step="0.01" value={feeForm.amount}
                      onChange={(e) => setFeeForm((f) => ({ ...f, amount: e.target.value }))} />
             </label>
             <label className="field"><span>{t(lc, "currency")}</span>
-              <input value={feeForm.currency} maxLength={3} onChange={(e) => setFeeForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
+              <Input value={feeForm.currency} maxLength={3} onChange={(e) => setFeeForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))} />
             </label>
             <CampoSelect label={t(lc, "status")} value={feeForm.is_active ? "1" : "0"} onChange={(valor) => setFeeForm((f) => ({ ...f, is_active: valor === "1" }))}>
               <option value="1">{t(lc, "activeF")}</option>
@@ -526,7 +527,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             </CampoSelect>
             <label className="field" style={{ gridColumn: "1 / -1" }}>
               <span>{t(lc, "description")}</span>
-              <input value={feeForm.description} onChange={(e) => setFeeForm((f) => ({ ...f, description: e.target.value }))} />
+              <Input value={feeForm.description} onChange={(e) => setFeeForm((f) => ({ ...f, description: e.target.value }))} />
             </label>
           </div>
           <div className="admin-form-actions">

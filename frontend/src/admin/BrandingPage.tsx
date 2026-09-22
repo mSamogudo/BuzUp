@@ -9,6 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import { useBranding, type Branding } from "../lib/branding";
 import { PageFrame, SectionCard } from "../ui/common";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Slot = { key: keyof Branding; urlKey: keyof Branding; label: string; hint: string };
 
@@ -84,7 +85,7 @@ export default function BrandingPage() {
         <SectionCard title={t(lc, "identity")}>
           <label className="field" style={{ maxWidth: 360 }}>
             <span>{t(lc, "platformName")}</span>
-            <input
+            <Input
               value={name ?? branding.platform_name ?? ""}
               onChange={(e) => setName(e.target.value)}
               placeholder="BusUp"
@@ -109,7 +110,7 @@ export default function BrandingPage() {
                     <label className="branding-slot-upload">
                       <Upload size={14} />
                       <span>{files[slot.urlKey] ? files[slot.urlKey].name : "Escolher ficheiro"}</span>
-                      <input
+                      <Input
                         type="file"
                         accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/x-icon"
                         onChange={(e) => pickFile(slot.urlKey, e.target.files?.[0] ?? null)}

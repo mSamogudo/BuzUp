@@ -1891,13 +1891,7 @@ body::-webkit-scrollbar,
 
 .admin-table-filter-row input {
   width: 100%;
-  min-height: 42px;
-  padding-left: 44px;
-  padding-right: 40px;
-}
-
-.field .admin-table-filter-row input {
-  min-height: 42px;
+  height: 42px;
   padding-left: 44px;
   padding-right: 40px;
 }
@@ -2154,53 +2148,6 @@ body::-webkit-scrollbar,
   letter-spacing: 0.04em;
 }
 
-.field input {
-  width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--app-border-strong);
-  border-radius: 8px;
-  background: var(--app-surface);
-  color: var(--app-text);
-  outline: none;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.field select,
-.field textarea {
-  width: 100%;
-  border: 1px solid var(--app-border-strong);
-  border-radius: 8px;
-  background: var(--app-surface);
-  color: var(--app-text);
-  outline: none;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.field select {
-  min-height: 48px;
-  padding: 0 14px;
-}
-
-.field textarea {
-  min-height: 112px;
-  padding: 12px 14px;
-  resize: vertical;
-}
-
-.field input:focus,
-.field select:focus,
-.field textarea:focus {
-  border-color: var(--app-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 15%, transparent);
-}
-
-.field input::placeholder,
-.field textarea::placeholder {
-  color: var(--app-text-muted);
-  opacity: 0.5;
-}
-
 .admin-form-actions,
 .admin-inline-actions {
   display: flex;
@@ -2233,15 +2180,16 @@ body::-webkit-scrollbar,
 
 .perm-check:hover { background: var(--app-surface); }
 
-.perm-check input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--app-accent);
-  cursor: pointer;
+.perm-check [data-slot=checkbox] {
   flex-shrink: 0;
 }
 
-.perm-check span { color: var(--app-text); }
+.perm-check [data-slot=label] {
+  color: var(--app-text);
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+}
 
 .admin-check-row {
   display: flex;
@@ -2262,8 +2210,10 @@ body::-webkit-scrollbar,
   border-color: color-mix(in srgb, var(--app-accent) 20%, transparent);
 }
 
-.admin-check-row input {
-  accent-color: var(--app-accent);
+.admin-check-row [data-slot=label] {
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .route-stop-builder {
@@ -3253,17 +3203,6 @@ html[data-theme="dark"] .admin-tab-active strong {
   color: var(--app-accent-strong);
 }
 
-html[data-theme="dark"] .admin-table-filter-row input,
-html[data-theme="dark"] .admin-table-page-size select {
-  border-color: #3f3f46;
-  background: #18181b;
-  color: var(--app-text);
-}
-
-html[data-theme="dark"] .admin-table-filter-row input::placeholder {
-  color: rgba(161, 161, 170, 0.50);
-}
-
 html[data-theme="dark"] .admin-status {
   box-shadow: none;
 }
@@ -3336,16 +3275,6 @@ html[data-theme="dark"] .admin-check-row {
 
 html[data-theme="dark"] .field input,
 html[data-theme="dark"] .field select,
-html[data-theme="dark"] .field textarea {
-  border-color: #3f3f46;
-  background: #18181b;
-  color: var(--app-text);
-}
-
-html[data-theme="dark"] .field input::placeholder,
-html[data-theme="dark"] .field textarea::placeholder {
-  color: rgba(161, 161, 170, 0.40);
-}
 
 html[data-theme="dark"] .admin-user-tile,
 html[data-theme="dark"] .admin-user-chip {
@@ -5294,8 +5223,6 @@ html[data-theme="dark"] .otp-digit:focus {
   gap: 8px;
   align-items: center;
 }
-
-
 
 .fare-matrix-wrap {
   overflow: auto;

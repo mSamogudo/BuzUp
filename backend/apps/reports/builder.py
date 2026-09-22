@@ -69,6 +69,75 @@ def _date_range(filters: dict):
     return df, dt
 
 
+
+def _metodo(provider: str, fallback: str = "") -> str:
+    """O nome por que o financeiro conhece o metodo de pagamento.
+
+    Antes saia `mobile_money` e `cash` — identificadores do codigo. Pior:
+    `mobile_money` nem sequer diz QUAL carteira, e a carteira esta noutro
+    campo que o relatorio nao mostrava. Quem concilia precisa de saber se
+    entrou por M-Pesa ou por e-Mola, porque as contas sao diferentes.
+
+    A tabela e a mesma que o painel ja usava (`analytics.PROVIDER_LABELS`) —
+    de proposito: dois sitios a traduzir a mesma coisa acabam sempre a
+    traduzi-la de maneira diferente.
+    """
+    from apps.reports.analytics import PROVIDER_LABELS
+
+    chave = (provider or "").strip().upper()
+    if chave in PROVIDER_LABELS:
+        return PROVIDER_LABELS[chave][0]
+    if chave:
+        return chave.title()
+    # Sem provedor: diz-se o que se sabe, e nunca o nome da variavel.
+    return {"cash": "Dinheiro", "mobile_money": "Carteira movel"}.get(fallback, fallback or "—")
+
+
+
+#: O que se comprou.
+TIPOS = {
+    "wallet": "Recarga de saldo",
+    "package": "Pacote",
+    "card_issuance": "Emissao de cartao",
+    "card_recovery": "Recuperacao de cartao",
+}
+
+
+def _legivel(valor: str, tabela: dict) -> str:
+    """Traduz, e quando nao souber traduzir devolve algo que ainda se le.
+
+    Nunca devolve vazio: uma celula em branco num relatorio le-se como «nao
+    houve», e aqui quer dizer «nao soubemos dizer».
+    """
+    v = (valor or "").strip()
+    if not v:
+        return "—"
+    return tabela.get(v.lower(), v.replace("_", " ").capitalize())
+
+
+_NOMES_DE_AGENTE: dict[int, str] = {}
+
+
+def _agente(user_id) -> str:
+    """O nome de quem vendeu, e nao o numero dele na base de dados.
+
+    Um relatorio que diz «6» obriga quem o le a ir perguntar quem e o 6. Fica
+    em cache por relatorio: sao meia duzia de agentes em milhares de linhas, e
+    uma consulta por linha era uma consulta por linha.
+    """
+    if not user_id:
+        return ""
+    if user_id not in _NOMES_DE_AGENTE:
+        from django.contrib.auth import get_user_model
+
+        u = get_user_model().objects.filter(pk=user_id).first()
+        nome = ""
+        if u:
+            nome = (u.get_full_name() or "").strip() or u.get_username()
+        _NOMES_DE_AGENTE[user_id] = nome or f"#{user_id}"
+    return _NOMES_DE_AGENTE[user_id]
+
+
 # ---------------------------------------------------------------------------
 # Report definitions
 # ---------------------------------------------------------------------------
@@ -106,11 +175,11 @@ def _rows_sales(filters: dict) -> list[dict]:
             "destination": gc.destination_stop if gc else "",
             "amount": str(pi.amount),
             "quantity": gc.quantity if gc else 0,
-            "method": meta.get("payment_method", "mobile_money"),
-            "agent_user_id": meta.get("agent_user_id"),
+            "method": _metodo(pi.provider, meta.get("payment_method", "")),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "device_serial": meta.get("device_serial", ""),
             "payer": _mask(pi.payer_phone),
-            "provider": pi.provider or "",
+            "provider": _metodo(pi.provider),
             "status": pi.status,
         })
     return _capped(out)
@@ -160,12 +229,12 @@ def _rows_topups(filters: dict) -> list[dict]:
         out.append({
             "created_at": pi.created_at,
             "reference": pi.reference,
-            "kind": kind,
+            "kind": _legivel(kind, TIPOS),
             "card_uid": meta.get("card_uid", ""),
             "amount": str(pi.amount),
-            "agent_user_id": meta.get("agent_user_id"),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "payer": _mask(pi.payer_phone),
-            "provider": pi.provider or "",
+            "provider": _metodo(pi.provider),
             "status": pi.status,
         })
     return _capped(out)
@@ -258,7 +327,7 @@ def _rows_onboardings(filters: dict) -> list[dict]:
             "passenger_id": meta.get("passenger_id"),
             "card_uid": meta.get("card_uid", ""),
             "amount": str(pi.amount),
-            "agent_user_id": meta.get("agent_user_id"),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "device": meta.get("device_serial", ""),
             "payer": _mask(pi.payer_phone),
             "status": pi.status,
@@ -306,7 +375,7 @@ def _rows_recoveries(filters: dict) -> list[dict]:
             "blocked_cards": meta.get("blocked_cards", 0),
             "amount": str(pi.amount),
             "reason": meta.get("reason", ""),
-            "agent_user_id": meta.get("agent_user_id"),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "status": pi.status,
         })
     return _capped(out)

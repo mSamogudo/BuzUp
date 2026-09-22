@@ -1,8 +1,13 @@
 /* Compra pública de bilhetes — scoped por .bzbk (não vaza para o portal).
    Mesma linguagem da landing: navy/azul BusUp, superfícies calmas, um acento. */
 
-.bzbk{--navy:#0D3B66;--navy2:#0A2E50;--blue:#2D8CF0;--blue2:#1D5FA7;--ink:#0F1B2D;--muted:#5B6B7F;
-  --line:#E4EBF3;--bg:#F6F9FD;--ok:#2A9D8F;--danger:#D62828;
+/* Os nomes ficam, as cores vem do preset do operador. `--muted` passa a
+   `--muted-ink`: aqui era cor de texto, no shadcn e fundo. */
+.bzbk{--navy:var(--sidebar);--navy2:color-mix(in srgb, var(--sidebar) 84%, black);
+  --blue:var(--primary);--blue2:var(--primary-ink);--ink:var(--foreground);
+  --muted-ink:var(--muted-foreground);
+  --line:var(--border);--bg:var(--background);--ok:var(--success);--danger:var(--destructive);
+  --on-navy:var(--sidebar-accent-foreground);--on-navy-soft:var(--sidebar-foreground);
   /* `--navy` faz DOIS papéis: é o fundo do cabeçalho e a cor dos títulos.
      No claro coincidem; no escuro não podem — escurecer o fundo apagava os
      títulos, que ficavam quase pretos sobre quase preto. `--heading` é o papel
@@ -16,7 +21,7 @@
 .bzbk-wrap{width:100%;max-width:940px;margin:0 auto;padding:0 20px}
 
 /* Cabeçalho */
-.bzbk-top{background:linear-gradient(155deg,var(--navy) 0%,var(--navy2) 70%,#08243f 100%);color:#fff;
+.bzbk-top{background:linear-gradient(155deg,var(--navy) 0%,var(--navy2) 70%,color-mix(in srgb, var(--navy) 78%, black) 100%);color:#fff;
   padding:18px 0 64px;position:relative;overflow:hidden}
 /* Telemóvel: cabeçalho compacto — o passo seguinte tem de caber no ecrã sem rolar. */
 @media(max-width:720px){
@@ -26,11 +31,11 @@
   .bzbk-wrap{padding:0 14px}
 }
 .bzbk-top::after{content:"";position:absolute;right:-10%;top:-60%;width:460px;height:460px;
-  background:radial-gradient(circle,rgba(45,140,240,.38),transparent 62%)}
+  background:radial-gradient(circle,color-mix(in srgb, var(--primary) 38%, transparent),transparent 62%)}
 .bzbk-top-in{display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative;z-index:2}
-.bzbk-kicker{font-size:11px;font-weight:800;letter-spacing:.26em;text-transform:uppercase;color:#7ec8ff}
+.bzbk-kicker{font-size:11px;font-weight:800;letter-spacing:.26em;text-transform:uppercase;color:var(--blue-bright, var(--on-navy))}
 .bzbk-title{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:8px 0 0}
-.bzbk-sub{font-size:14px;color:#d6e4f5;margin:6px 0 0}
+.bzbk-sub{font-size:14px;color:var(--on-navy);margin:6px 0 0}
 
 /* Passos */
 .bzbk-steps{display:flex;gap:8px;margin:18px 0 0;position:relative;z-index:2;flex-wrap:wrap}
@@ -42,21 +47,21 @@
   .bzbk-steps::-webkit-scrollbar{display:none}
   .bzbk-step{flex:0 0 auto;font-size:11.5px;padding:6px 11px}
 }
-.bzbk-step{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#a9c2dc;
+.bzbk-step{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--on-navy-soft);
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:30px;padding:7px 14px}
-.bzbk-step.is-active{color:#fff;background:rgba(45,140,240,.28);border-color:rgba(125,185,255,.55)}
-.bzbk-step.is-done{color:#7ec8ff}
+.bzbk-step.is-active{color:#fff;background:color-mix(in srgb, var(--primary) 28%, transparent);border-color:color-mix(in srgb, var(--primary) 55%, white)}
+.bzbk-step.is-done{color:var(--blue-bright, var(--on-navy))}
 .bzbk-step b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;
   background:rgba(255,255,255,.16);font-size:11px}
 
 /* Painel — overflow visível: com hidden, o dropdown de origem/destino era
    decapitado no limite inferior do cartão. */
-.bzbk-card{background:#fff;border:1px solid var(--line);border-radius:18px;
-  box-shadow:0 18px 44px rgba(13,59,102,.10);margin-top:-40px;position:relative;z-index:3}
+.bzbk-card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 18px 44px color-mix(in srgb, var(--sidebar) 10%, transparent);margin-top:-40px;position:relative;z-index:3}
 .bzbk-card-in{padding:24px}
 @media(max-width:640px){.bzbk-card-in{padding:18px}}
 .bzbk-h2{font-size:19px;font-weight:800;color:var(--heading);margin:0 0 4px}
-.bzbk-lead{font-size:13.5px;color:var(--muted);margin:0 0 18px}
+.bzbk-lead{font-size:13.5px;color:var(--muted-ink);margin:0 0 18px}
 
 /* Formulário */
 .bzbk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -80,47 +85,47 @@
    selector de data no tamanho que lhe apetece e ignora a coluna. */
 .bzbk-input[type="date"],.bzbk-input[type="time"]{
   -webkit-appearance:none;appearance:none;min-width:0;max-width:100%}
-.bzbk-label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.bzbk-label{font-size:12px;font-weight:700;color:var(--muted-ink);letter-spacing:.02em}
 .bzbk-input,.bzbk-select{width:100%;font-size:16px;font-family:inherit;color:var(--ink);
-  background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:12px 13px;min-height:48px;
+  background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:12px 13px;min-height:48px;
   transition:border-color .15s,box-shadow .15s}
-.bzbk-input:focus,.bzbk-select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(45,140,240,.16)}
-.bzbk-input:disabled,.bzbk-select:disabled{background:#F3F6FA;color:var(--muted)}
-.bzbk-hint{font-size:12px;color:var(--muted)}
+.bzbk-input:focus,.bzbk-select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent)}
+.bzbk-input:disabled,.bzbk-select:disabled{background:var(--muted);color:var(--muted-ink)}
+.bzbk-hint{font-size:12px;color:var(--muted-ink)}
 /* Campo com valor que o servidor recusaria. Cor E `aria-invalid` no input:
    quem usa leitor de ecra nao ve a moldura vermelha. */
-.bzbk-input-error{border-color:var(--danger,#D64545)}
-.bzbk-input-error:focus{border-color:var(--danger,#D64545);box-shadow:0 0 0 3px rgba(214,69,69,.16)}
-.bzbk-hint-error{color:var(--danger,#D64545);font-weight:600}
+.bzbk-input-error{border-color:var(--danger,var(--destructive))}
+.bzbk-input-error:focus{border-color:var(--danger,var(--destructive));box-shadow:0 0 0 3px color-mix(in srgb, var(--destructive) 16%, transparent)}
+.bzbk-hint-error{color:var(--danger,var(--destructive));font-weight:600}
 
 /* Botões */
-.bzbk-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:var(--blue);color:#fff;
+.bzbk-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:var(--blue);color:var(--primary-foreground);
   font-weight:700;font-size:15px;font-family:inherit;padding:13px 22px;border:none;border-radius:12px;cursor:pointer;
   min-height:48px;transition:background .15s,transform .12s,box-shadow .15s;
-  box-shadow:0 1px 3px rgba(29,95,167,.3)}
-.bzbk-btn:hover:not(:disabled){background:var(--blue2);transform:translateY(-1px);box-shadow:0 6px 16px -4px rgba(29,95,167,.42)}
+  box-shadow:0 1px 3px color-mix(in srgb, var(--primary) 30%, transparent)}
+.bzbk-btn:hover:not(:disabled){background:var(--blue2);transform:translateY(-1px);box-shadow:0 6px 16px -4px color-mix(in srgb, var(--primary) 42%, transparent)}
 .bzbk-btn:active:not(:disabled){transform:translateY(1px)}
 .bzbk-btn:disabled{opacity:.5;cursor:not-allowed}
 .bzbk-btn.ghost{background:transparent;color:var(--blue2);border:1.5px solid var(--line);box-shadow:none}
-.bzbk-btn.ghost:hover:not(:disabled){background:#EAF3FF;border-color:var(--blue)}
+.bzbk-btn.ghost:hover:not(:disabled){background:color-mix(in srgb, var(--primary) 10%, var(--card));border-color:var(--blue)}
 .bzbk-btn.block{width:100%}
 .bzbk-actions{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}
 .bzbk *:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 /* Partidas */
 .bzbk-trip{display:flex;align-items:center;gap:16px;border:1.5px solid var(--line);border-radius:14px;
-  padding:14px 16px;margin-bottom:10px;background:#fff;text-align:left;width:100%;font-family:inherit;cursor:pointer;
+  padding:14px 16px;margin-bottom:10px;background:var(--card);text-align:left;width:100%;font-family:inherit;cursor:pointer;
   transition:border-color .15s,box-shadow .15s,transform .12s}
-.bzbk-trip:hover:not(:disabled){border-color:var(--blue);box-shadow:0 8px 22px rgba(13,59,102,.09);transform:translateY(-1px)}
-.bzbk-trip:disabled{cursor:not-allowed;background:#FAFBFD}
+.bzbk-trip:hover:not(:disabled){border-color:var(--blue);box-shadow:0 8px 22px color-mix(in srgb, var(--sidebar) 9%, transparent);transform:translateY(-1px)}
+.bzbk-trip:disabled{cursor:not-allowed;background:var(--muted)}
 .bzbk-trip-time{font-size:22px;font-weight:800;color:var(--heading);min-width:74px}
 .bzbk-trip-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .bzbk-trip-route{display:block;font-size:14.5px;font-weight:700;color:var(--ink)}
-.bzbk-trip-meta{display:block;font-size:12.5px;color:var(--muted)}
+.bzbk-trip-meta{display:block;font-size:12.5px;color:var(--muted-ink)}
 .bzbk-trip-price{font-size:17px;font-weight:800;color:var(--heading);text-align:right;white-space:nowrap}
-.bzbk-trip-price small{display:block;font-size:11.5px;font-weight:600;color:var(--muted)}
+.bzbk-trip-price small{display:block;font-size:11.5px;font-weight:600;color:var(--muted-ink)}
 .bzbk-seats-left{color:var(--ok);font-weight:700}
-.bzbk-seats-few{color:#B58900;font-weight:700}
+.bzbk-seats-few{color:var(--warning-foreground);font-weight:700}
 .bzbk-seats-none{color:var(--danger);font-weight:700}
 /* Ecrã estreito: hora + preço na primeira linha, rota e detalhes por baixo a
    toda a largura — senão o meio partia em quatro linhas apertadas. */
@@ -134,7 +139,7 @@
 /* Barra de acção fixa em telemóvel: o botão principal está sempre ao polegar,
    sem obrigar a rolar até ao fim da planta de lugares. */
 @media(max-width:720px){
-  .bzbk-actions{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 34%);
+  .bzbk-actions{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,var(--card) 34%);
     padding:14px 0 10px;margin-top:14px;border-top:1px solid var(--line);gap:8px;z-index:5}
   .bzbk-actions .bzbk-btn{flex:1;padding:13px 14px;font-size:14.5px}
   .bzbk-actions .bzbk-btn.ghost{flex:0 0 auto}
@@ -157,7 +162,7 @@
   border:1.5px solid var(--line);border-radius:18px;padding:14px;background:var(--bg);
   width:max-content;max-width:100%;margin:0 auto}
 .bzbk-bus-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;
-  font-weight:700;color:var(--muted);padding:0 4px 12px;border-bottom:1px dashed var(--line);margin-bottom:12px}
+  font-weight:700;color:var(--muted-ink);padding:0 4px 12px;border-bottom:1px dashed var(--line);margin-bottom:12px}
 /* minmax(0,1fr): com `1fr` o piso min-content dos botões (aspect-ratio)
    inflava as colunas e a planta rebentava a largura em telemóvel. */
 /* As colunas vem do componente (o layout muda com o autocarro: 2+2, 1+2,
@@ -173,14 +178,14 @@
    nao empurrarem os bancos para o meio; num minibus de 12 ou 15 lugares e a
    diferenca entre uma planta e um monte de quadrados. */
 .bzbk-seat-void{width:var(--seat);height:var(--seat)}
-.bzbk-aisle{font-size:10px;color:#B7C4D3;text-align:center}
+.bzbk-aisle{font-size:10px;color:var(--muted-ink);text-align:center}
 .bzbk-seat{width:var(--seat);height:var(--seat);min-width:0;padding:0;display:flex;align-items:center;justify-content:center;
   font-size:clamp(9.5px,calc(var(--seat) * .3),13px);font-weight:700;
-  border:1.5px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);cursor:pointer;font-family:inherit;
+  border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);cursor:pointer;font-family:inherit;
   transition:background .13s,border-color .13s,color .13s,box-shadow .13s}
 .bzbk-seat:hover:not(:disabled){border-color:var(--blue);color:var(--blue2)}
-.bzbk-seat.is-taken{background:#E7ECF2;color:#A9B7C6;border-color:#E7ECF2;cursor:not-allowed}
-.bzbk-seat.is-picked{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 10px rgba(45,140,240,.35)}
+.bzbk-seat.is-taken{background:var(--accent);color:var(--muted-ink);border-color:var(--accent);cursor:not-allowed}
+.bzbk-seat.is-picked{background:var(--blue);border-color:var(--blue);color:var(--primary-foreground);box-shadow:0 4px 10px color-mix(in srgb, var(--primary) 35%, transparent)}
 /* A caixa tem exactamente a altura para que o banco foi calculado: no caso
    normal não rola nada. Fica rolável na mesma para quando o banco bate no
    mínimo de 26px (autocarros muito longos em ecrãs baixos). */
@@ -190,26 +195,26 @@
   .bzbk-bus{--avail:min(64vh,600px);padding:12px}
   .bzbk-seat{border-radius:8px}
 }
-.bzbk-legend{display:flex;gap:16px;justify-content:center;margin-top:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.bzbk-legend{display:flex;gap:16px;justify-content:center;margin-top:14px;font-size:12px;color:var(--muted-ink);flex-wrap:wrap}
 .bzbk-legend i{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:6px;vertical-align:-2px;
-  border:1.5px solid var(--line);background:#fff}
-.bzbk-legend i.taken{background:#E7ECF2;border-color:#E7ECF2}
+  border:1.5px solid var(--line);background:var(--card)}
+.bzbk-legend i.taken{background:var(--accent);border-color:var(--accent)}
 .bzbk-legend i.picked{background:var(--blue);border-color:var(--blue)}
 
 /* Passageiros */
-.bzbk-pax{border:1.5px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;background:#fff}
+.bzbk-pax{border:1.5px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;background:var(--card)}
 .bzbk-pax-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .bzbk-pax-seat{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:30px;padding:0 10px;
-  border-radius:8px;background:#E7F1FD;color:var(--blue2);font-weight:800;font-size:13px}
+  border-radius:8px;background:color-mix(in srgb, var(--primary) 12%, var(--card));color:var(--blue2);font-weight:800;font-size:13px}
 .bzbk-pax-title{font-size:14px;font-weight:800;color:var(--heading)}
 
 /* Resumo */
 .bzbk-summary{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:18px}
-.bzbk-sum-row{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:5px 0;color:var(--muted)}
+.bzbk-sum-row{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:5px 0;color:var(--muted-ink)}
 .bzbk-sum-row b{color:var(--ink);font-weight:700;text-align:right}
 .bzbk-sum-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:10px;
   padding-top:12px;border-top:1px dashed var(--line)}
-.bzbk-sum-total span{font-size:13px;font-weight:700;color:var(--muted)}
+.bzbk-sum-total span{font-size:13px;font-weight:700;color:var(--muted-ink)}
 .bzbk-sum-total b{font-size:26px;font-weight:800;color:var(--heading)}
 
 /* Pagamento */
@@ -217,59 +222,59 @@
 @media(max-width:760px){.bzbk-methods{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.bzbk-methods{grid-template-columns:1fr}}
 .bzbk-method{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:14px;
-  background:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink);transition:all .15s}
+  background:var(--card);cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink);transition:all .15s}
 .bzbk-method:hover{border-color:var(--blue)}
-.bzbk-method.is-on{border-color:var(--blue);background:#EAF3FF;box-shadow:0 0 0 3px rgba(45,140,240,.12)}
+.bzbk-method.is-on{border-color:var(--blue);background:color-mix(in srgb, var(--primary) 10%, var(--card));box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent)}
 .bzbk-method img{height:22px;display:block}
 .bzbk-method .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto}
-.bzbk-method.is-on .dot{border-color:var(--blue);background:var(--blue);box-shadow:inset 0 0 0 3px #fff}
+.bzbk-method.is-on .dot{border-color:var(--blue);background:var(--blue);box-shadow:inset 0 0 0 3px var(--card)}
 
 /* Avisos */
 .bzbk-notice{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:12px 14px;font-size:13.5px;
   line-height:1.5;margin-bottom:16px}
-.bzbk-notice.info{background:#EAF3FF;color:#12456F;border:1px solid #CFE3FA}
-.bzbk-notice.warn{background:#FFF7E6;color:#7A5A00;border:1px solid #F5E2B0}
-.bzbk-notice.error{background:#FDECEC;color:#8E1B1B;border:1px solid #F6C9C9}
-.bzbk-notice.ok{background:#E9F7F4;color:#1C6B60;border:1px solid #C2E7E0}
+.bzbk-notice.info{background:color-mix(in srgb, var(--primary) 10%, var(--card));color:var(--primary-ink);border:1px solid color-mix(in srgb, var(--primary) 26%, var(--card))}
+.bzbk-notice.warn{background:color-mix(in srgb, var(--warning) 14%, var(--card));color:var(--warning-foreground);border:1px solid color-mix(in srgb, var(--warning) 34%, var(--card))}
+.bzbk-notice.error{background:color-mix(in srgb, var(--destructive) 10%, var(--card));color:var(--destructive);border:1px solid color-mix(in srgb, var(--destructive) 28%, var(--card))}
+.bzbk-notice.ok{background:color-mix(in srgb, var(--success) 12%, var(--card));color:var(--success);border:1px solid color-mix(in srgb, var(--success) 28%, var(--card))}
 
 /* Estado final */
 .bzbk-done{text-align:center;padding:12px 0}
-.bzbk-done-mark{width:76px;height:76px;border-radius:50%;background:#E9F7F4;color:var(--ok);
+.bzbk-done-mark{width:76px;height:76px;border-radius:50%;background:color-mix(in srgb, var(--success) 12%, var(--card));color:var(--ok);
   display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
 .bzbk-done h2{font-size:22px;font-weight:800;color:var(--heading);margin:0 0 6px}
-.bzbk-done p{font-size:14px;color:var(--muted);margin:0 auto 20px;max-width:440px;line-height:1.55}
+.bzbk-done p{font-size:14px;color:var(--muted-ink);margin:0 auto 20px;max-width:440px;line-height:1.55}
 .bzbk-ref{display:inline-block;background:var(--bg);border:1px dashed var(--line);border-radius:10px;
   padding:10px 16px;font-size:17px;font-weight:800;letter-spacing:.06em;color:var(--heading);margin-bottom:20px}
 
 /* Spinner */
 .bzbk-spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
   animation:bzbk-rot .7s linear infinite}
-.bzbk-spin.dark{border-color:rgba(45,140,240,.25);border-top-color:var(--blue)}
+.bzbk-spin.dark{border-color:color-mix(in srgb, var(--primary) 25%, transparent);border-top-color:var(--blue)}
 @keyframes bzbk-rot{to{transform:rotate(360deg)}}
 .bzbk-center{display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 0;text-align:center}
 
-.bzbk-foot{text-align:center;font-size:12.5px;color:var(--muted);padding:26px 0 40px}
+.bzbk-foot{text-align:center;font-size:12.5px;color:var(--muted-ink);padding:26px 0 40px}
 .bzbk-foot a{color:var(--blue2);font-weight:600}
 
 /* Selector de moeda de exibição (MZN/ZAR nas rotas p/ África do Sul) */
 .bzbk-h2-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .bzbk-currency{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
 .bzbk-currency-btn{border:0;background:transparent;border-radius:999px;padding:5px 13px;font-size:12.5px;
-  font-weight:700;color:var(--muted);cursor:pointer;min-height:30px}
+  font-weight:700;color:var(--muted-ink);cursor:pointer;min-height:30px}
 .bzbk-currency-btn.is-on{background:var(--navy);color:#fff}
 .bzbk-sum-fx{border-top:1px dashed var(--line);margin-top:4px;padding-top:8px}
 
 /* Combobox de origem/destino: escreve e a lista filtra */
 .bzbk-combo{position:relative}
 .bzbk-combo-list{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;max-height:264px;overflow-y:auto;
-  margin:0;padding:5px;list-style:none;background:#fff;border:1px solid var(--line);border-radius:12px;
+  margin:0;padding:5px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:12px;
   box-shadow:0 12px 32px rgba(7,30,73,.14)}
 .bzbk-combo-opt{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   padding:9px 11px;border-radius:8px;font-size:14px;color:var(--ink);cursor:pointer}
-.bzbk-combo-opt small{font-size:11px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;flex:0 0 auto}
+.bzbk-combo-opt small{font-size:11px;color:var(--muted-ink);letter-spacing:.04em;white-space:nowrap;flex:0 0 auto}
 .bzbk-combo-opt.is-hi{background:var(--bg)}
 .bzbk-combo-opt.is-sel{font-weight:700;color:var(--heading)}
-.bzbk-combo-empty{padding:12px 11px;font-size:13px;color:var(--muted)}
+.bzbk-combo-empty{padding:12px 11px;font-size:13px;color:var(--muted-ink)}
 
 @media (prefers-reduced-motion: reduce){
   .bzbk *{transition:none!important;animation-duration:.01ms!important}
@@ -277,21 +282,21 @@
 
 /* Contacto de emergência: mesmo cartão dos passageiros, com um tom que o
    distingue — não é mais um passageiro, é informação sobre a viagem toda. */
-.bzbk-pax-emergency { background: #FFF9F0; border-color: #F2DDBB; }
+.bzbk-pax-emergency { background: color-mix(in srgb, var(--warning) 8%, var(--card)); border-color: color-mix(in srgb, var(--warning) 30%, var(--card)); }
 
 /* Só ida ou ida e volta.
    Uma escolha explícita, e não um campo de data deixado em branco: o passageiro
    diz o que quer antes de lhe pedirmos a data do regresso — e quem só vai não
    leva com uma pergunta a mais. */
 .bzbk-triptype{display:inline-flex;gap:4px;margin:0 0 18px;padding:4px;
-  border-radius:999px;background:#EDF2F9;border:1px solid var(--line)}
+  border-radius:999px;background:var(--muted);border:1px solid var(--line)}
 .bzbk-triptype-opt{display:inline-flex;align-items:center;gap:7px;min-height:36px;
   padding:0 18px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700;
-  border:0;border-radius:999px;background:none;color:var(--muted);
+  border:0;border-radius:999px;background:none;color:var(--muted-ink);
   transition:background .16s,color .16s,box-shadow .16s}
 .bzbk-triptype-opt:hover{color:var(--ink)}
-.bzbk-triptype-opt.is-on{background:#fff;color:#0D3B66;
-  box-shadow:0 1px 3px rgba(13,59,102,.18)}
+.bzbk-triptype-opt.is-on{background:var(--card);color:var(--navy);
+  box-shadow:0 1px 3px color-mix(in srgb, var(--sidebar) 18%, transparent)}
 .bzbk-triptype-opt svg{flex:none}
 @media(max-width:520px){
   .bzbk-triptype{display:flex;width:100%}
@@ -302,10 +307,10 @@
    A caixa está aqui para o passageiro poder LER antes de dizer que sim — a
    barreira real está no servidor, que recusa a compra sem aceitação. */
 .bzbk-accept{display:flex;align-items:flex-start;gap:11px;margin:4px 0 18px;padding:14px 16px;
-  border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;
+  border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;
   font-size:13.5px;line-height:1.5;transition:border-color .16s,background .16s}
 .bzbk-accept:hover{border-color:var(--blue)}
-.bzbk-accept:has(input:checked){border-color:var(--blue);background:#F4F9FF}
+.bzbk-accept:has(input:checked){border-color:var(--blue);background:color-mix(in srgb, var(--primary) 6%, var(--card))}
 .bzbk-accept input{width:19px;height:19px;flex:none;margin-top:1px;accent-color:var(--blue);cursor:pointer}
 .bzbk-terms-link{padding:0;border:0;background:none;font:inherit;font-weight:700;
   color:var(--blue2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
@@ -313,7 +318,7 @@
 
 /* Rodapé: quem faz a viagem, e como se fala com eles. */
 .bzbk-foot{display:flex;flex-direction:column;align-items:center;gap:6px;
-  margin:26px 0 34px;text-align:center;font-size:12.5px;color:var(--muted)}
+  margin:26px 0 34px;text-align:center;font-size:12.5px;color:var(--muted-ink)}
 .bzbk-foot-main{display:flex;flex-direction:column;gap:2px}
 .bzbk-foot-main b{color:var(--ink);font-size:13.5px}
 .bzbk-foot-contacts{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px}
@@ -329,25 +334,25 @@
   animation:bzterms-in .16s ease-out}
 @keyframes bzterms-in{from{opacity:0}to{opacity:1}}
 .bzterms{display:flex;flex-direction:column;width:100%;max-width:680px;max-height:88vh;
-  border-radius:18px;background:#fff;overflow:hidden;
+  border-radius:18px;background:var(--card);overflow:hidden;
   box-shadow:0 24px 64px rgba(10,26,45,.32);animation:bzterms-up .2s cubic-bezier(.2,.8,.3,1)}
 @keyframes bzterms-up{from{transform:translateY(14px)}to{transform:translateY(0)}}
 .bzterms-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
   padding:20px 22px 16px;border-bottom:1px solid var(--line)}
 .bzterms-head h2{margin:0;font-size:19px;color:var(--heading)}
-.bzterms-company{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+.bzterms-company{margin:3px 0 0;font-size:12.5px;color:var(--muted-ink)}
 .bzterms-x{display:grid;place-items:center;width:34px;height:34px;flex:none;cursor:pointer;
-  border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--muted)}
+  border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--muted-ink)}
 .bzterms-x:hover{border-color:var(--blue);color:var(--blue2)}
 .bzterms-body{padding:18px 22px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .bzterms-intro{margin:0 0 18px;font-size:14px;line-height:1.6;color:var(--ink)}
 .bzterms-list{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:18px}
 .bzterms-section h3{margin:0 0 7px;font-size:14px;color:var(--heading)}
 .bzterms-section ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px}
-.bzterms-section li{font-size:13.5px;line-height:1.6;color:#33404F}
+.bzterms-section li{font-size:13.5px;line-height:1.6;color:var(--muted-ink)}
 .bzterms-closing{margin:22px 0 0;padding-top:16px;border-top:1px dashed var(--line);
   font-size:14px;font-weight:700;color:var(--heading);text-align:center}
-.bzterms-version{margin:14px 0 0;font-size:11.5px;color:var(--muted);text-align:center}
+.bzterms-version{margin:14px 0 0;font-size:11.5px;color:var(--muted-ink);text-align:center}
 .bzterms-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
 @media(max-width:520px){
   .bzterms-backdrop{padding:0;align-items:flex-end}
@@ -362,13 +367,13 @@
    marca continua do mesmo tamanho visual porque so o padding aumenta. */
 .bzbk-lang button{min-width:38px;height:34px;padding:0 10px;cursor:pointer;font:inherit;
   font-size:11.5px;font-weight:800;letter-spacing:.4px;border:0;border-radius:999px;
-  background:none;color:#a9c2dc;transition:background .15s,color .15s}
+  background:none;color:var(--on-navy-soft);transition:background .15s,color .15s}
 .bzbk-lang button:hover{color:#fff}
 /* Pastilha branca fixa sobre o cabeçalho escuro: o texto é escuro nos DOIS
    temas, senão desaparecia no escuro (claro sobre branco). */
-.bzbk-lang button[aria-pressed="true"]{background:#fff;color:#0D3B66}
+.bzbk-lang button[aria-pressed="true"]{background:#fff;color:var(--navy)}
 .bzbk-theme{display:grid;place-items:center;width:38px;height:38px;cursor:pointer;
-  border-radius:999px;border:0;background:rgba(255,255,255,.12);color:#e8f1fa;
+  border-radius:999px;border:0;background:rgba(255,255,255,.12);color:var(--on-navy);
   transition:background .15s}
 .bzbk-theme:hover{background:rgba(255,255,255,.22)}
 @media(max-width:520px){
@@ -384,53 +389,52 @@
    Segue o `data-theme` que o resto da aplicação define — quem escolheu escuro
    no portal não devia levar com branco ao clicar em "comprar". */
 :root[data-theme="dark"] .bzbk{
-  --navy:#0B1220;--navy2:#070D18;--blue:#4DA3FF;--blue2:#7FBEFF;
-  --ink:#E8EDF5;--muted:#94A3B8;--line:#22304A;--bg:#0F1626;
-  --ok:#34D399;--danger:#F87171;
-  /* O papel de texto separa-se do de fundo: aqui tem de ser CLARO. */
-  --heading:#E8EDF5;
+  /* Todos os outros nomes ja trocam sozinhos: apontam para tokens do preset,
+     e o preset troca-os em `[data-theme=dark]`. So o papel de texto do navy
+     tem de ser dito, porque no escuro nao pode ser o fundo. */
+  --heading:var(--foreground);
 }
 /* Lista de paragens: fundo branco fixo com texto que passa a claro — era o
    sítio onde a escrita desaparecia por completo ao procurar uma paragem. */
-:root[data-theme="dark"] .bzbk-combo-list{background:#151E30;border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-combo-list{background:var(--card);border-color:var(--line)}
 :root[data-theme="dark"] .bzbk-combo-opt{color:var(--ink)}
-:root[data-theme="dark"] .bzbk-combo-opt.is-hi{background:#1D2B44}
-:root[data-theme="dark"] .bzbk-card{background:#151E30;border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-combo-opt.is-hi{background:var(--accent)}
+:root[data-theme="dark"] .bzbk-card{background:var(--card);border-color:var(--line)}
 :root[data-theme="dark"] .bzbk-input,
 :root[data-theme="dark"] .bzbk-select,
-:root[data-theme="dark"] .bzbk textarea{background:#0F1626;border-color:var(--line);color:var(--ink)}
-:root[data-theme="dark"] .bzbk-trip{background:#151E30;border-color:var(--line)}
+:root[data-theme="dark"] .bzbk textarea{background:var(--background);border-color:var(--line);color:var(--ink)}
+:root[data-theme="dark"] .bzbk-trip{background:var(--card);border-color:var(--line)}
 :root[data-theme="dark"] .bzbk-trip:hover:not(:disabled){border-color:var(--blue)}
-:root[data-theme="dark"] .bzbk-bus{background:#0F1626;border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-seat{background:#151E30;border-color:var(--line);color:var(--ink)}
-:root[data-theme="dark"] .bzbk-seat.is-taken{background:#1B2537;color:#5A6B82;border-color:#1B2537}
-:root[data-theme="dark"] .bzbk-legend i{background:#151E30;border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-legend i.taken{background:#1B2537;border-color:#1B2537}
-:root[data-theme="dark"] .bzbk-pax{background:#151E30;border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-summary{background:#151E30;border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-method{background:#151E30;border-color:var(--line);color:var(--ink)}
-:root[data-theme="dark"] .bzbk-accept{background:#151E30;border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-accept:has(input:checked){background:#16243A;border-color:var(--blue)}
+:root[data-theme="dark"] .bzbk-bus{background:var(--background);border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-seat{background:var(--card);border-color:var(--line);color:var(--ink)}
+:root[data-theme="dark"] .bzbk-seat.is-taken{background:var(--accent);color:var(--muted-ink);border-color:var(--accent)}
+:root[data-theme="dark"] .bzbk-legend i{background:var(--card);border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-legend i.taken{background:var(--accent);border-color:var(--accent)}
+:root[data-theme="dark"] .bzbk-pax{background:var(--card);border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-summary{background:var(--card);border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-method{background:var(--card);border-color:var(--line);color:var(--ink)}
+:root[data-theme="dark"] .bzbk-accept{background:var(--card);border-color:var(--line)}
+:root[data-theme="dark"] .bzbk-accept:has(input:checked){background:color-mix(in srgb, var(--primary) 12%, var(--card));border-color:var(--blue)}
 :root[data-theme="dark"] .bzbk-triptype{background:rgba(255,255,255,.06);border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-triptype-opt{color:var(--muted)}
-:root[data-theme="dark"] .bzbk-triptype-opt.is-on{background:#1D2B44;color:#fff;box-shadow:none}
-:root[data-theme="dark"] .bzbk-step{color:var(--muted)}
+:root[data-theme="dark"] .bzbk-triptype-opt{color:var(--muted-ink)}
+:root[data-theme="dark"] .bzbk-triptype-opt.is-on{background:var(--accent);color:#fff;box-shadow:none}
+:root[data-theme="dark"] .bzbk-step{color:var(--muted-ink)}
 /* Diálogo dos termos */
-:root[data-theme="dark"] .bzterms{background:#151E30}
+:root[data-theme="dark"] .bzterms{background:var(--card)}
 :root[data-theme="dark"] .bzterms-head,
 :root[data-theme="dark"] .bzterms-foot{border-color:var(--line)}
-:root[data-theme="dark"] .bzterms-head h2{color:#E8EDF5}
-:root[data-theme="dark"] .bzterms-x{background:#0F1626;border-color:var(--line);color:var(--muted)}
-:root[data-theme="dark"] .bzterms-section h3{color:#CBD9EC}
-:root[data-theme="dark"] .bzterms-section li{color:#B4C2D4}
-:root[data-theme="dark"] .bzterms-closing{color:#E8EDF5;border-color:var(--line)}
+:root[data-theme="dark"] .bzterms-head h2{color:var(--ink)}
+:root[data-theme="dark"] .bzterms-x{background:var(--background);border-color:var(--line);color:var(--muted-ink)}
+:root[data-theme="dark"] .bzterms-section h3{color:var(--ink)}
+:root[data-theme="dark"] .bzterms-section li{color:var(--muted-ink)}
+:root[data-theme="dark"] .bzterms-closing{color:var(--ink);border-color:var(--line)}
 
 /* Avisos com paleta clara fixa: no escuro ficavam ilhas brancas. */
-:root[data-theme="dark"] .bzbk-notice.info{background:#13233A;border-color:#1E3555;color:#BBD3F0}
-:root[data-theme="dark"] .bzbk-notice.warn{background:#2B2413;border-color:#4A3D18;color:#EBD9A5}
-:root[data-theme="dark"] .bzbk-notice.error{background:#2C1618;border-color:#4D2226;color:#F2B8BC}
-:root[data-theme="dark"] .bzbk-hint-error{color:#F2B8BC}
-:root[data-theme="dark"] .bzbk-done-mark{background:#14301F;color:#34D399}
+:root[data-theme="dark"] .bzbk-notice.info{background:color-mix(in srgb, var(--primary) 10%, var(--card));border-color:color-mix(in srgb, var(--primary) 26%, var(--card));color:var(--primary-ink)}
+:root[data-theme="dark"] .bzbk-notice.warn{background:color-mix(in srgb, var(--warning) 14%, var(--card));border-color:color-mix(in srgb, var(--warning) 34%, var(--card));color:var(--warning)}
+:root[data-theme="dark"] .bzbk-notice.error{background:color-mix(in srgb, var(--destructive) 10%, var(--card));border-color:color-mix(in srgb, var(--destructive) 28%, var(--card));color:var(--destructive)}
+:root[data-theme="dark"] .bzbk-hint-error{color:var(--destructive)}
+:root[data-theme="dark"] .bzbk-done-mark{background:color-mix(in srgb, var(--success) 12%, var(--card));color:var(--success)}
 
 /* "Voltar ao site" e um link de navegacao, nao uma palavra no meio de uma
    frase: tinha 17px de altura tocavel. Ganha area sem mudar de sitio. */

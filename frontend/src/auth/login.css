@@ -3,61 +3,75 @@
    ícones esbatidos, coluna centrada (max 420px), bloco de cabeçalho com tile de
    marca, cartão translúcido com sombra "premium" e formulário denso.
 
-   Neutros = rampa zinc do CondVisit. O acento é o mesmo nos dois produtos
-   (#1D5FA7 / #2D8CF0 / #0D3B66), por isso a marca BusUp entra sem desvio.
+   Os neutros e o acento vem agora do preset do operador (themes/tpm-tur.css)
+   pelos nomes privados aqui em baixo; a rampa zinc e o azul do CondVisit que
+   estavam escritos a mao sairam.
    Os valores em px são os do CondVisit já resolvidos: o root de lá é 15.25px,
    por isso rem × 15.25 (ex.: p-6 = 1.5rem = 23px; max-w-md = 28rem = 427px). */
 
+/* Os nomes privados desta pagina ficam, as cores vem do preset.
+ *
+ * Reescrevem-se as definicoes e nao os ~300 usos, que e a mesma ponte usada
+ * nos `--app-*` do styles.css. Assim esta pagina muda de operador quando o
+ * preset muda, sem lhe tocar.
+ *
+ * Dois nomes tiveram de mudar: `--muted` e `--ring` aqui eram cor de texto e
+ * sombra de foco, mas no shadcn sao fundo e cor de anel. Mantidos, sombravam
+ * os tokens para todo o componente montado dentro da pagina.
+ *
+ * O bloco escuro so redefine o que difere: `--acc*` e `--ok` apontam para
+ * tokens do preset, e o proprio preset ja troca de valores em
+ * `[data-theme=dark]` — que casa com a `.bzau` tal como casa com o `html`. */
 .bzau {
-  /* Acento — accent / accent-strong / accent-deep / accent-bright */
-  --acc: #1D5FA7;
-  --acc-strong: #2D8CF0;
-  --acc-deep: #0D3B66;
-  --acc-bright: #5BA3F5;
+  /* Acento — teal do operador, nas suas quatro profundidades. */
+  --acc: var(--primary);
+  --acc-strong: color-mix(in srgb, var(--primary) 82%, white);
+  --acc-deep: var(--sidebar);
+  --acc-bright: color-mix(in srgb, var(--primary) 58%, white);
 
-  /* Neutros (light.*) */
-  --bg: #F4F4F5;
-  --bg2: #FAFAFA;
-  --bg3: #E4E4E7;
-  --surface: #FFFFFF;
-  --surface-hover: #F4F4F5;
-  --line: #E4E4E7;
-  --line-2: #D4D4D8;
-  --text: #18181B;
-  --text2: #52525B;
-  --muted: #71717A;
-  --err: #D62828;
-  --ok: #2A9D8F;
+  /* Neutros, tingidos de navy. */
+  --bg: var(--background);
+  --bg2: var(--muted);
+  --bg3: var(--accent);
+  --surface: var(--card);
+  --surface-hover: var(--muted);
+  --line: var(--border);
+  --line-2: var(--input);
+  --text: var(--foreground);
+  --text2: var(--muted-foreground);
+  --muted-ink: var(--muted-foreground);
+  --err: var(--destructive);
+  --ok: var(--success);
 
   /* Fundo da página — dois glows radiais sobre um degradé vertical. */
   --page-bg:
-    radial-gradient(circle at top left, rgba(29, 95, 167, .08), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(45, 140, 240, .06), transparent 34%),
-    linear-gradient(180deg, #FAFAFA, #F4F4F5);
-  --sheen: linear-gradient(120deg, rgba(255, 255, 255, .16), transparent 36%, rgba(113, 113, 122, .05), transparent 72%);
-  --ghost-ico: rgba(24, 24, 27, .05);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 10%, transparent), transparent 30%),
+    radial-gradient(circle at bottom right, color-mix(in srgb, var(--sidebar) 8%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--muted), var(--background));
+  --sheen: linear-gradient(120deg, rgba(255, 255, 255, .16), transparent 36%, color-mix(in srgb, var(--foreground) 5%, transparent), transparent 72%);
+  --ghost-ico: color-mix(in srgb, var(--foreground) 5%, transparent);
 
   /* Superfícies compostas */
-  --card-bg: linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(255, 255, 255, .88));
-  --card-line: rgba(228, 228, 231, .7);
+  --card-bg: linear-gradient(180deg, color-mix(in srgb, var(--card) 88%, transparent), color-mix(in srgb, var(--card) 88%, transparent));
+  --card-line: color-mix(in srgb, var(--border) 70%, transparent);
   --card-shadow:
-    0 18px 38px -26px rgba(13, 59, 102, .22),
-    0 2px 10px -4px rgba(13, 59, 102, .08),
-    0 0 0 1px rgba(13, 59, 102, .04);
+    0 18px 38px -26px color-mix(in srgb, var(--sidebar) 22%, transparent),
+    0 2px 10px -4px color-mix(in srgb, var(--sidebar) 8%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sidebar) 4%, transparent);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
-  --ring: rgba(29, 95, 167, .15);
+  --ring-soft: color-mix(in srgb, var(--primary) 15%, transparent);
 
-  --tabs-bg: rgba(228, 228, 231, .9);
-  --tabs-line: rgba(228, 228, 231, .7);
-  --tab-on-bg: #FFFFFF;
-  --notice-bg: rgba(250, 250, 250, .6);
-  --notice-line: rgba(228, 228, 231, .7);
-  --pill-bg: rgba(255, 255, 255, .7);
-  --input-bg: #FFFFFF;
-  --ghost-hover: rgba(228, 228, 231, .6);
-  --lang-bg: rgba(250, 250, 250, .88);
-  --lang-line: rgba(228, 228, 231, .8);
-  --lang-on-bg: #FFFFFF;
+  --tabs-bg: color-mix(in srgb, var(--accent) 90%, transparent);
+  --tabs-line: color-mix(in srgb, var(--border) 70%, transparent);
+  --tab-on-bg: var(--card);
+  --notice-bg: color-mix(in srgb, var(--muted) 60%, transparent);
+  --notice-line: color-mix(in srgb, var(--border) 70%, transparent);
+  --pill-bg: color-mix(in srgb, var(--card) 70%, transparent);
+  --input-bg: var(--card);
+  --ghost-hover: color-mix(in srgb, var(--accent) 60%, transparent);
+  --lang-bg: color-mix(in srgb, var(--muted) 88%, transparent);
+  --lang-line: color-mix(in srgb, var(--border) 80%, transparent);
+  --lang-on-bg: var(--card);
 
   /* Sem `overflow: hidden` aqui: o recorte dos ícones do fundo é feito pelo
      .bzau-bg, e assim um ecrã baixo continua a poder deslizar. */
@@ -68,92 +82,44 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Escuro por preferência do sistema (quando o visitante não escolheu)... */
-@media (prefers-color-scheme: dark) {
-  .bzau:not([data-theme="light"]) {
-    --bg: #09090B;
-    --bg2: #0F0F12;
-    --bg3: #27272A;
-    --surface: #18181B;
-    --surface-hover: #3F3F46;
-    --line: #27272A;
-    --line-2: #3F3F46;
-    --text: #F4F4F5;
-    --text2: #D4D4D8;
-    --muted: #A1A1AA;
-    --err: #F87171;
+/* O bloco `@media (prefers-color-scheme: dark)` que aqui estava era codigo
+   morto: a pagina escreve sempre `data-theme={theme}` a partir do contexto, e
+   esse nunca e indefinido (`"light"` por omissao). O selector
+   `.bzau:not([data-theme="light"])` so podia casar com o tema escuro, e ai
+   perdia para o bloco explicito logo abaixo.
 
-    --page-bg:
-      radial-gradient(circle at top left, rgba(29, 95, 167, .16), transparent 32%),
-      radial-gradient(circle at bottom right, rgba(13, 59, 102, .28), transparent 34%),
-      linear-gradient(180deg, #0F0F12, #09090B);
-    --sheen: linear-gradient(120deg, rgba(255, 255, 255, .05), transparent 34%, rgba(29, 95, 167, .12), transparent 72%);
-    --ghost-ico: rgba(244, 244, 245, .06);
-
-    --card-bg: linear-gradient(180deg, rgba(24, 24, 27, .94), rgba(15, 15, 18, .9));
-    --card-line: rgba(255, 255, 255, .12);
-    --card-shadow:
-      0 18px 40px -24px rgba(0, 0, 0, .52),
-      0 2px 12px -6px rgba(0, 0, 0, .34),
-      0 0 0 1px rgba(255, 255, 255, .04);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, .30), 0 1px 2px rgba(0, 0, 0, .22);
-    --ring: rgba(45, 140, 240, .2);
-
-    --tabs-bg: rgba(24, 24, 27, .92);
-    --tabs-line: rgba(39, 39, 42, .7);
-    --tab-on-bg: #27272A;
-    --notice-bg: rgba(39, 39, 42, .72);
-    --notice-line: rgba(39, 39, 42, .85);
-    --pill-bg: rgba(15, 15, 18, .8);
-    --input-bg: #0F0F12;
-    --ghost-hover: #3F3F46;
-    --lang-bg: rgba(15, 15, 18, .92);
-    --lang-line: rgba(39, 39, 42, .85);
-    --lang-on-bg: #3F3F46;
-  }
-}
+   Pior: nao casava com o `[data-theme=dark]` do preset, portanto teria posto
+   a paleta clara do operador dentro de uma pagina escura. */
 
 /* ...ou por escolha explícita guardada no portal. */
 .bzau[data-theme="dark"] {
-  --bg: #09090B;
-  --bg2: #0F0F12;
-  --bg3: #27272A;
-  --surface: #18181B;
-  --surface-hover: #3F3F46;
-  --line: #27272A;
-  --line-2: #3F3F46;
-  --text: #F4F4F5;
-  --text2: #D4D4D8;
-  --muted: #A1A1AA;
-  --err: #F87171;
-
+  /* Quase tudo vem ja certo do preset, porque `[data-theme=dark]` do
+   * tpm-tur.css casa com esta propria caixa. Aqui fica so o que muda de
+   * composicao no escuro: os glows carregam, as sombras aprofundam. */
   --page-bg:
-    radial-gradient(circle at top left, rgba(29, 95, 167, .16), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(13, 59, 102, .28), transparent 34%),
-    linear-gradient(180deg, #0F0F12, #09090B);
-  --sheen: linear-gradient(120deg, rgba(255, 255, 255, .05), transparent 34%, rgba(29, 95, 167, .12), transparent 72%);
-  --ghost-ico: rgba(244, 244, 245, .06);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 16%, transparent), transparent 32%),
+    radial-gradient(circle at bottom right, color-mix(in srgb, var(--sidebar) 28%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--card), var(--background));
+  --sheen: linear-gradient(120deg, rgba(255, 255, 255, .05), transparent 34%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 72%);
+  --ghost-ico: color-mix(in srgb, var(--foreground) 6%, transparent);
 
-  --card-bg: linear-gradient(180deg, rgba(24, 24, 27, .94), rgba(15, 15, 18, .9));
+  --card-bg: linear-gradient(180deg, color-mix(in srgb, var(--card) 94%, transparent), color-mix(in srgb, var(--background) 90%, transparent));
   --card-line: rgba(255, 255, 255, .12);
   --card-shadow:
     0 18px 40px -24px rgba(0, 0, 0, .52),
     0 2px 12px -6px rgba(0, 0, 0, .34),
     0 0 0 1px rgba(255, 255, 255, .04);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, .30), 0 1px 2px rgba(0, 0, 0, .22);
-  --ring: rgba(45, 140, 240, .2);
+  --ring-soft: color-mix(in srgb, var(--primary) 20%, transparent);
 
-  --tabs-bg: rgba(24, 24, 27, .92);
-  --tabs-line: rgba(39, 39, 42, .7);
-  --tab-on-bg: #27272A;
-  --notice-bg: rgba(39, 39, 42, .72);
-  --notice-line: rgba(39, 39, 42, .85);
-  --pill-bg: rgba(15, 15, 18, .8);
-  --input-bg: #0F0F12;
-  --ghost-hover: #3F3F46;
-  --lang-bg: rgba(15, 15, 18, .92);
-  --lang-line: rgba(39, 39, 42, .85);
-  --lang-on-bg: #3F3F46;
+  --tabs-bg: color-mix(in srgb, var(--card) 92%, transparent);
+  --tab-on-bg: var(--accent);
+  --notice-bg: color-mix(in srgb, var(--accent) 72%, transparent);
+  --notice-line: color-mix(in srgb, var(--accent) 85%, transparent);
+  --pill-bg: color-mix(in srgb, var(--background) 80%, transparent);
+  --lang-bg: color-mix(in srgb, var(--background) 92%, transparent);
+  --lang-on-bg: var(--accent);
+  --ghost-hover: var(--accent);
 }
 
 .bzau *,
@@ -172,7 +138,7 @@
 @media (prefers-color-scheme: dark) {
   .bzau:not([data-theme="light"]) :focus-visible { outline-color: var(--acc-strong); }
 }
-.bzau ::selection { background: rgba(29, 95, 167, .2); color: var(--acc); }
+.bzau ::selection { background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary-ink); }
 
 /* ───────────────────── Fundo: brilho diagonal + ícones ───────────────────── */
 
@@ -281,7 +247,6 @@
 @media (min-width: 640px) {
   .bzau-hero-logo { height: 88px; max-width: 360px; }
 }
-
 
 /* text-2xl → sm:text-3xl, no tipo de corpo (o h1 do CondVisit não usa a display
    font — fica em Inter, como aqui por herança). */
@@ -399,7 +364,7 @@
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--muted-ink);
 }
 @media (min-width: 640px) {
   .bzau-label { margin-bottom: 8px; font-size: 11px; }
@@ -415,7 +380,7 @@
   left: 13px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--muted);
+  color: var(--muted-ink);
   pointer-events: none;
   transition: color .2s;
 }
@@ -439,11 +404,11 @@
   .bzau-input input { font-size: 14px; padding: 10px 13px 10px 42px; }
   .bzau-input .bzau-input-ico { left: 15px; }
 }
-.bzau-input input::placeholder { color: var(--muted); }
+.bzau-input input::placeholder { color: var(--muted-ink); }
 .bzau-input input:focus {
   outline: none;
   border-color: var(--acc);
-  box-shadow: 0 0 0 3px var(--ring);
+  box-shadow: 0 0 0 3px var(--ring-soft);
 }
 .bzau-input input:focus ~ .bzau-input-ico { color: var(--acc); }
 .bzau[data-theme="dark"] .bzau-input input:focus { border-color: var(--acc-strong); }
@@ -473,7 +438,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-ink);
   cursor: pointer;
   transition: background .2s, color .2s;
 }
@@ -523,7 +488,9 @@
   border: 1px solid var(--acc);
   border-radius: 8px;
   background: var(--acc);
-  color: #fff;
+  /* Era `#fff` fixo. No escuro o teal clareia para #35b9d8 e branco por
+     cima da 2,04:1 — o preset ja traz a tinta certa para cada tema. */
+  color: var(--primary-foreground);
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 600;
@@ -531,30 +498,28 @@
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
-  box-shadow: 0 1px 3px rgba(29, 95, 167, .3);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--primary) 30%, transparent);
   transition: all .2s cubic-bezier(.4, 0, .2, 1);
 }
 .bzau-btn:hover:not(:disabled) {
   background: var(--acc-deep);
   border-color: var(--acc-deep);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px rgba(29, 95, 167, .35);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .bzau-btn:active:not(:disabled) { transform: translateY(1px); }
 .bzau-btn:disabled {
   cursor: not-allowed;
-  background: rgba(29, 95, 167, .5);
+  background: color-mix(in srgb, var(--primary) 50%, transparent);
   border-color: transparent;
   box-shadow: none;
   transform: none;
 }
 .bzau[data-theme="dark"] .bzau-btn { background: var(--acc-strong); border-color: var(--acc-strong); }
 .bzau[data-theme="dark"] .bzau-btn:hover:not(:disabled) { background: var(--acc); border-color: var(--acc); }
-.bzau[data-theme="dark"] .bzau-btn:disabled { background: rgba(45, 140, 240, .5); border-color: transparent; }
 @media (prefers-color-scheme: dark) {
   .bzau:not([data-theme="light"]) .bzau-btn { background: var(--acc-strong); border-color: var(--acc-strong); }
   .bzau:not([data-theme="light"]) .bzau-btn:hover:not(:disabled) { background: var(--acc); border-color: var(--acc); }
-  .bzau:not([data-theme="light"]) .bzau-btn:disabled { background: rgba(45, 140, 240, .5); border-color: transparent; }
 }
 
 /* Variante fantasma — acções secundárias por baixo do botão primário. */
@@ -641,7 +606,7 @@
 .bzau-otp-grid input:focus {
   outline: none;
   border-color: var(--acc);
-  box-shadow: 0 0 0 3px var(--ring);
+  box-shadow: 0 0 0 3px var(--ring-soft);
 }
 
 /* ─────────────────────── Rodapé: powered by UpDigital ─────────────────────── */
@@ -786,7 +751,7 @@
   border: 1px solid var(--line-2);
   border-radius: 8px;
   background: transparent;
-  color: var(--muted);
+  color: var(--muted-ink);
   cursor: pointer;
   transition: background .2s, color .2s;
 }
@@ -853,7 +818,7 @@
   border-radius: 999px;
   border: 1px solid var(--lang-line);
   background: var(--lang-bg);
-  color: var(--tx, inherit);
+  color: var(--text);
   cursor: pointer;
   box-shadow: 0 10px 24px -16px rgba(15, 23, 42, .45);
   transition: background .18s ease, color .18s ease, transform .18s ease;
@@ -867,6 +832,6 @@
   margin: 0 0 4px;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--mu, #52697F);
+  color: var(--muted-ink);
 }
-.bzau-2fa-hint strong { color: var(--tx, inherit); white-space: nowrap; }
+.bzau-2fa-hint strong { color: var(--text); white-space: nowrap; }

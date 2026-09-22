@@ -46,6 +46,12 @@
   --destructive: #b3261e;
   --destructive-foreground: #ffffff;
 
+  /* Teal para TEXTO, nao para fundo. O --primary da 4,77:1 sobre branco mas
+   * so 4,27:1 sobre o #eef3f8 da pagina, que chumba AA em corpo de texto.
+   * Cinco por cento mais escuro passa nos dois (5,24:1 e 4,69:1).
+   * Por color-mix, para acompanhar qualquer preset e nao so este. */
+  --primary-ink: color-mix(in srgb, var(--primary) 95%, black);
+
   --border: #dbe5ee;
   --input: #c3d2e0;
   --ring: #087d99;
@@ -85,6 +91,7 @@
 
   /* Teal clareado: o #087d99 sobre fundo escuro perde-se. */
   --primary: #35b9d8;
+  --primary-ink: var(--primary);
   --primary-foreground: #062330;
   --secondary: #16314f;
   --secondary-foreground: #e8eef5;

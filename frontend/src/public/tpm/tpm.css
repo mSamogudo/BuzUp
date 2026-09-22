@@ -1,58 +1,50 @@
 /* Landing TPM-TUR — a mesma lingua de desenho da landing BusUp (bzlp-*),
- * vestida com a marca do operador: navy #102d4f, teal #087d99 e dourado
- * #e9ac35. Só se redefinem as variáveis e os poucos blocos que a BusUp
+ * vestida com a marca do operador. As cores vem todas do preset
+ * (themes/tpm-tur.css). Só se redefinem as variáveis e os poucos blocos que a BusUp
  * não tem (hero fotográfico, frota, FAQ). O resto herda de landing.css,
  * que esta página importa ANTES deste ficheiro — a cascata faz o resto.
  *
  * Regra de contraste herdada do preset: texto sobre dourado é sempre navy
- * escuro — branco sobre #e9ac35 da 2,02:1 e chumba WCAG AA. */
+ * escuro — branco sobre o dourado da 2,02:1 e chumba WCAG AA. */
 
 .bzlp-tpm {
-  --navy: #102d4f;
-  --navy2: #0b2340;
-  --blue: #087d99;
-  --blue2: #0a6076;
-  --blue-bright: #35b9d8;
-  --gold: #e9ac35;
-  --gold-ink: #3a2a06;
-  --ink: #102d4f;
-  --muted: #5c6f83;
-  --line: #dbe5ee;
-  --line-soft: #e8eff5;
-  --bg: #eef3f8;
-  --surface: #fff;
+  /* Os valores estavam escritos a mao e eram os certos, mas so para este
+     operador: a pagina nao acompanhava o preset. Agora acompanha, e o que
+     o personalizador de tema mudar muda tambem aqui.
+
+     O `--muted` da landing ja se chama `--muted-ink`; aqui so ha que nao
+     reintroduzir o nome colidente. */
+  --navy: var(--sidebar);
+  --navy2: color-mix(in srgb, var(--sidebar) 84%, black);
+  --blue: var(--primary);
+  --blue2: var(--primary-ink);
+  --blue-bright: color-mix(in srgb, var(--primary) 58%, white);
+  --gold: var(--warning);
+  --gold-ink: var(--warning-foreground);
+  --ink: var(--foreground);
+  --muted-ink: var(--muted-foreground);
+  --line: var(--border);
+  --line-soft: color-mix(in srgb, var(--border) 55%, var(--background));
+  --bg: var(--background);
+  --surface: var(--card);
 }
-.bzlp-tpm[data-theme="dark"] {
-  --ink: #e8eef5;
-  --muted: #93aac3;
-  --line: #22405e;
-  --line-soft: #163049;
-  --bg: #081624;
-  --surface: #102943;
-  --blue2: #35b9d8;
-}
-@media (prefers-color-scheme: dark) {
-  .bzlp-tpm:not([data-theme="light"]) {
-    --ink: #e8eef5;
-    --muted: #93aac3;
-    --line: #22405e;
-    --line-soft: #163049;
-    --bg: #081624;
-    --surface: #102943;
-    --blue2: #35b9d8;
-  }
-}
+
+/* Sem bloco escuro: o `[data-theme=dark]` do preset casa com esta propria
+   caixa e troca os tokens debaixo destes nomes. O `@media
+   (prefers-color-scheme)` que aqui estava era codigo morto — a pagina
+   escreve sempre `data-theme`, resolvido ja em JS. */
+
 
 /* Botão dourado: a única cor "loud" da marca, reservada a acções principais. */
 .bzlp-tpm .bzlp-btn.gold {
   background: var(--gold);
   color: var(--gold-ink);
-  box-shadow: 0 1px 3px rgba(233, 172, 53, 0.35);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--gold) 35%, transparent);
 }
 .bzlp-tpm .bzlp-btn.gold:hover {
-  background: #f0bc55;
+  background: color-mix(in srgb, var(--gold) 88%, white);
 }
-.bzlp-tpm[data-theme="dark"] .bzlp-btn.gold { color: #2b1f04; }
+/* A tinta sobre dourado ja vem do preset em ambos os temas (--warning-foreground). */
 
 /* HERO fotográfico — a frota é o produto; o texto vem por cima do navy. */
 .tpm-hero {
@@ -86,9 +78,9 @@
   padding: 160px 22px 72px;
 }
 .tpm-hero .bzlp-badge {
-  background: rgba(233, 172, 53, 0.16);
-  border-color: rgba(233, 172, 53, 0.45);
-  color: #ffd98a;
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  color: color-mix(in srgb, var(--gold) 62%, white);
 }
 .tpm-hero h1 {
   font-size: clamp(34px, 5.4vw, 58px);
@@ -158,7 +150,7 @@
   margin-bottom: 14px;
 }
 .tpm-step h3 { font-size: 17.5px; margin: 0 0 8px; }
-.tpm-step p { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0; }
+.tpm-step p { font-size: 14px; line-height: 1.6; color: var(--muted-ink); margin: 0; }
 
 /* Serviços B2B + particulares. */
 .tpm-services {
@@ -181,7 +173,7 @@
 .tpm-service img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
 .tpm-service-body { padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .tpm-service-body h3 { margin: 0; font-size: 17px; }
-.tpm-service-body p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--muted); flex: 1; }
+.tpm-service-body p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--muted-ink); flex: 1; }
 .tpm-service-body a {
   display: inline-flex;
   align-items: center;
@@ -200,7 +192,7 @@
   margin-top: 26px;
   align-items: center;
 }
-.tpm-services-extra > span { font-size: 13px; color: var(--muted); margin-right: 4px; }
+.tpm-services-extra > span { font-size: 13px; color: var(--muted-ink); margin-right: 4px; }
 .tpm-services-extra a {
   display: inline-flex;
   align-items: center;
@@ -293,7 +285,7 @@
 .tpm-sobre h2 { font-size: clamp(24px, 3vw, 34px); margin: 10px 0 0; letter-spacing: -0.02em; line-height: 1.16; }
 .tpm-sobre h2 span { color: var(--blue); }
 .bzlp-tpm[data-theme="dark"] .tpm-sobre h2 span { color: var(--blue-bright); }
-.tpm-sobre-copy p { color: var(--muted); line-height: 1.7; margin: 0 0 14px; font-size: 15px; }
+.tpm-sobre-copy p { color: var(--muted-ink); line-height: 1.7; margin: 0 0 14px; font-size: 15px; }
 .tpm-sobre-partners {
   display: flex;
   gap: 10px;
@@ -304,7 +296,7 @@
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--muted-ink);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 7px 14px;
@@ -336,12 +328,12 @@
   content: "+";
   font-size: 20px;
   font-weight: 400;
-  color: var(--muted);
+  color: var(--muted-ink);
   transition: transform 0.18s ease;
   flex: none;
 }
 .tpm-faq details[open] summary::after { transform: rotate(45deg); color: var(--blue); }
-.tpm-faq details p { margin: 0; padding: 0 0 18px; font-size: 14px; line-height: 1.65; color: var(--muted); max-width: 64ch; }
+.tpm-faq details p { margin: 0; padding: 0 0 18px; font-size: 14px; line-height: 1.65; color: var(--muted-ink); max-width: 64ch; }
 .tpm-faq details a { color: var(--blue); font-weight: 600; }
 
 /* CTA final — o terceiro momento "loud": dourado a fundo, texto navy. */

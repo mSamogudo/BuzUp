@@ -17,7 +17,13 @@ for (const nome of readdirSync(a).filter((f) => f.endsWith('.png'))) {
     linhas.push([Infinity, nome, `${pa.width}x${pa.height} -> ${pb.width}x${pb.height}`])
     continue
   }
-  const n = pixelmatch(pa.data, pb.data, null, pa.width, pa.height, { threshold: 0.12 })
+  // 0.03, e nao o 0.12 de antes. O pixelmatch mede a diferenca em YIQ, onde
+  // pesa sobretudo a luminancia: o azul #1d5fa7 e o teal #087d99 tem quase a
+  // mesma, e a 0.12 a pagina de login inteira aparecia com ZERO pixeis
+  // diferentes depois de trocar a paleta toda. Calibrado contra quatro pares
+  // conhecidos: identicas dao 0,00%, a troca de paleta da 9,27%, e as
+  // diferencas pequenas reais ficam em 0,01% — sem falsos positivos.
+  const n = pixelmatch(pa.data, pb.data, null, pa.width, pa.height, { threshold: 0.03 })
   linhas.push([(n / (pa.width * pa.height)) * 100, nome, ''])
 }
 

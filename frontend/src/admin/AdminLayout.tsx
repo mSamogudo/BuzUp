@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, ChevronDown, ChevronLeft, ChevronRight, LogOut, Menu, Moon, Power, Sun, UserCircle2, UserCog, X } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Moon, Power, Sun, UserCircle2, UserCog, X } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
@@ -7,20 +7,46 @@ import { getInitials } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
 import ThemeCustomizer from "../themes/ThemeCustomizer";
-import { StatusBadge } from "../ui/common";
 import { useBranding, pickLogo } from "../lib/branding";
 import { NAV_ITEMS, visibleNavItems } from "./navigation";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 interface MeData { username: string; email: string; phone: string; first_name: string; last_name: string; is_superuser: boolean; roles: { name: string; code: string }[]; capabilities: string[]; }
 
 export default function AdminLayout() {
+  return (
+    <SidebarProvider className="admin-shell">
+      <Casca />
+    </SidebarProvider>
+  );
+}
+
+/** Separado do provider porque precisa de `useSidebar()`, que so existe
+ *  dentro dele. */
+function Casca() {
   const { logout, token } = useAuth();
   const { locale, setLocale, theme, toggleTheme } = useUi();
   const { branding } = useBranding();
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const recolhida = state === "collapsed" && !isMobile;
+
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
@@ -49,111 +75,103 @@ export default function AdminLayout() {
   const pageTitle = active ? t(locale, active.i18nKey) : "BusUp";
   const displayName = me ? `${me.first_name} ${me.last_name}`.trim() || me.username : "Admin";
   const roleLabel = me?.roles?.[0]?.name || t(locale, "administration");
-  const sidebarBrandSrc = collapsed
+  const marcaSrc = recolhida
     ? pickLogo(branding.sidebar_mark_url, "/assets/busup/mark.png")
     : pickLogo(branding.sidebar_logo_url, branding.primary_logo_url, "/assets/busup/logo-dark.png");
 
+  /** No telemóvel a barra é uma gaveta: navegar tem de a fechar. */
+  const fecharSeMovel = () => { if (isMobile) setOpenMobile(false); };
+
   return (
-    <div className="admin-shell">
-      <aside className={`admin-sidebar${collapsed ? " admin-sidebar-collapsed" : ""}`}>
-        <div className="admin-sidebar-head">
+    <>
+      <Sidebar collapsible="icon" className="admin-sidebar">
+        <SidebarHeader className="admin-sidebar-head">
           <div className="admin-sidebar-brand">
-            <img alt="BusUp" className={collapsed ? "sidebar-logo-collapsed" : "sidebar-logo"} src={sidebarBrandSrc} />
+            <img alt="BusUp" className={recolhida ? "sidebar-logo-collapsed" : "sidebar-logo"} src={marcaSrc} />
           </div>
-          {!collapsed && (
-            <button className="icon-button desktop-only sidebar-collapse-btn" onClick={() => setCollapsed((c) => !c)} type="button">
-              <ChevronLeft size={16} />
-            </button>
-          )}
-          {collapsed && (
-            <button className="icon-button desktop-only sidebar-expand-btn" onClick={() => setCollapsed((c) => !c)} type="button">
-              <ChevronRight size={16} />
-            </button>
-          )}
-        </div>
+        </SidebarHeader>
 
-        <nav className="admin-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const itemLabel = t(locale, item.i18nKey);
-            const isActive = item.end ? location.pathname === item.path : location.pathname.startsWith(item.path);
-            const hasChildren = item.children && item.children.length > 0;
-            const isExpanded = expandedMenus.has(item.path) || (hasChildren && item.children!.some((c) => location.pathname.startsWith(c.path)));
+        <SidebarContent>
+          {/* O Sidebar do shadcn nao traz marco de navegacao: e uma div com
+              uma ul la dentro. O <nav> nomeado devolve o landmark que a casca
+              antiga tinha — quem navega por leitor de ecra salta para ca. */}
+          <nav aria-label={t(locale, "portal")}>
+          <SidebarMenu className="admin-nav">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const itemLabel = t(locale, item.i18nKey);
+              const isActive = item.end ? location.pathname === item.path : location.pathname.startsWith(item.path);
+              const hasChildren = item.children && item.children.length > 0;
+              const isExpanded = expandedMenus.has(item.path)
+                || (hasChildren && item.children!.some((c) => location.pathname.startsWith(c.path)));
 
-            if (hasChildren) {
+              if (hasChildren) {
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      aria-expanded={isExpanded}
+                      isActive={isActive}
+                      onClick={() => toggleMenu(item.path)}
+                      tooltip={itemLabel}
+                    >
+                      <Icon size={18} />
+                      <span>{itemLabel}</span>
+                      <ChevronDown className={`nav-chevron${isExpanded ? " nav-chevron-open" : ""}`} size={14} />
+                    </SidebarMenuButton>
+                    {isExpanded && !recolhida && (
+                      <SidebarMenuSub>
+                        {item.children!.map((child) => {
+                          const ChildIcon = child.icon;
+                          const childLabel = t(locale, child.i18nKey);
+                          return (
+                            <SidebarMenuSubItem key={child.path}>
+                              <SidebarMenuSubButton asChild isActive={location.pathname.startsWith(child.path)}>
+                                <NavLink onClick={fecharSeMovel} to={child.path}>
+                                  <ChildIcon size={15} />
+                                  <span>{childLabel}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    )}
+                  </SidebarMenuItem>
+                );
+              }
+
               return (
-                <div key={item.path} className="admin-nav-group">
-                  <button
-                    aria-label={itemLabel}
-                    className={`admin-nav-item admin-nav-parent${isExpanded ? " admin-nav-parent-open" : ""}`}
-                    data-tooltip={collapsed ? itemLabel : undefined}
-                    onClick={() => toggleMenu(item.path)}
-                    title={collapsed ? itemLabel : undefined}
-                    type="button"
-                  >
-                    <Icon size={18} />
-                    {!collapsed ? <><span>{itemLabel}</span><ChevronDown size={14} className={`nav-chevron${isExpanded ? " nav-chevron-open" : ""}`} /></> : null}
-                  </button>
-                  {isExpanded && !collapsed && (
-                    <div className="admin-nav-children">
-                      {item.children!.map((child) => {
-                        const ChildIcon = child.icon;
-                        const childLabel = t(locale, child.i18nKey);
-                        const childActive = location.pathname.startsWith(child.path);
-                        return (
-                          <NavLink
-                            aria-label={childLabel}
-                            className={`admin-nav-item admin-nav-child${childActive ? " admin-nav-item-active" : ""}`}
-                            key={child.path}
-                            title={childLabel}
-                            to={child.path}
-                          >
-                            <ChildIcon size={15} />
-                            <span>{childLabel}</span>
-                          </NavLink>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton asChild isActive={isActive} tooltip={itemLabel}>
+                    <NavLink onClick={fecharSeMovel} to={item.path}>
+                      <Icon size={18} />
+                      <span>{itemLabel}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               );
-            }
+            })}
+          </SidebarMenu>
+          </nav>
+        </SidebarContent>
 
-            return (
-              <NavLink
-                aria-label={itemLabel}
-                className={`admin-nav-item${isActive ? " admin-nav-item-active" : ""}`}
-                data-tooltip={collapsed ? itemLabel : undefined}
-                key={item.path}
-                title={collapsed ? itemLabel : undefined}
-                to={item.path}
-              >
-                <Icon size={18} />
-                {!collapsed ? <span>{itemLabel}</span> : null}
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        <div className="admin-sidebar-footer">
+        <SidebarFooter className="admin-sidebar-footer">
           <div className="admin-user-tile">
             <div className="admin-user-tile-main">
               <div className="admin-user-identity">
                 <div className="admin-avatar">{getInitials(displayName)}</div>
-                {!collapsed ? (
+                {!recolhida ? (
                   <div className="admin-user-copy-button">
                     <strong>{displayName}</strong>
                     <small>{roleLabel}</small>
                   </div>
                 ) : null}
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button className="admin-power-button" onClick={logout} title={t(locale, "signOut")} type="button">
-                  <Power size={18} />
-                </button>
-              </div>
+              <button className="admin-power-button" onClick={logout} title={t(locale, "signOut")} type="button">
+                <Power size={18} />
+              </button>
             </div>
-            {!collapsed ? (
+            {!recolhida ? (
               <div className="admin-user-tile-footer">
                 <div className="admin-sidebar-signature">
                   <small className="admin-version-label">v0.1.0</small>
@@ -165,15 +183,15 @@ export default function AdminLayout() {
               </div>
             ) : null}
           </div>
-        </div>
-      </aside>
+        </SidebarFooter>
+      </Sidebar>
 
-      <div className={`admin-main${collapsed ? " admin-main-collapsed" : ""}`}>
-        <header className={`admin-topbar${collapsed ? " admin-topbar-collapsed" : ""}`}>
+      <SidebarInset className="admin-main">
+        <header className="admin-topbar">
           <div className="admin-topbar-left">
-            <button className="icon-button mobile-only" onClick={() => setMobileOpen(true)} type="button">
-              <Menu size={18} />
-            </button>
+            {/* Um so gatilho para as duas coisas: recolhe no desktop, abre a
+                gaveta no telemovel. Antes eram dois botoes e dois estados. */}
+            <SidebarTrigger className="icon-button" />
             <div>
               <div className="admin-breadcrumbs">
                 <span>{t(locale, "portal")}</span>
@@ -256,39 +274,11 @@ export default function AdminLayout() {
             <Outlet />
           </div>
         </main>
-      </div>
+      </SidebarInset>
 
-      {(profileOpen || notifOpen) && <div style={{ position: "fixed", inset: 0, zIndex: 8998 }} onClick={() => { setProfileOpen(false); setNotifOpen(false); }} />}
-
-      <div className={`admin-mobile-overlay${mobileOpen ? " admin-mobile-overlay-open" : ""}`} onClick={() => setMobileOpen(false)} />
-      <aside className={`admin-mobile-drawer${mobileOpen ? " admin-mobile-drawer-open" : ""}`}>
-        <div className="admin-mobile-head">
-          <div>
-            <p className="admin-kicker">BusUp</p>
-            <strong>{t(locale, "cashlessTransport")}</strong>
-          </div>
-          <button className="icon-button" onClick={() => setMobileOpen(false)} type="button"><X size={18} /></button>
-        </div>
-        <nav className="admin-mobile-nav-grid">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.end ? location.pathname === item.path : location.pathname.startsWith(item.path);
-            return (
-              <NavLink className={`admin-mobile-nav-item${isActive ? " admin-mobile-nav-item-active" : ""}`} key={item.path} onClick={() => setMobileOpen(false)} to={item.path}>
-                <Icon size={18} />
-                <span>{t(locale, item.i18nKey)}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-        <div className="admin-mobile-footer">
-          <div className="admin-powered-by">
-            <span>{t(locale, "poweredBy")}</span>
-            <strong>UpDigital</strong>
-          </div>
-          <button className="admin-power-button" onClick={logout} type="button"><Power size={18} /></button>
-        </div>
-      </aside>
-    </div>
+      {(profileOpen || notifOpen) && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 8998 }} onClick={() => { setProfileOpen(false); setNotifOpen(false); }} />
+      )}
+    </>
   );
 }

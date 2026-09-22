@@ -25,6 +25,23 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
 
+/* A unica regra base que os componentes shadcn precisam.
+ *
+ * No Tailwind 4 a classe `border` so define largura; a cor cai em
+ * `currentColor`. O sidebar.tsx tem quatro bordas assim, o sheet.tsx outras
+ * quatro — numa barra navy com texto azul-claro sairiam bordas azul-claras.
+ *
+ * E seguro aplicar a tudo: das 207 declaracoes de borda no CSS proprio, so
+ * uma nao traz cor explicita, e e `border: none !important`. Medido, nao
+ * assumido. O resto do preflight continua de fora. */
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--border);
+  }
+}
+
 /* Inter e Manrope, alojadas localmente. */
 @import "./themes/fontes.css";
 

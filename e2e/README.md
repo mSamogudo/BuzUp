@@ -91,6 +91,21 @@ uma asserção de imagem falharia sempre. São artefactos para comparar a olho.
 `capturas/antes/` está versionado porque deixa de ser reproduzível assim que a
 migração começar. As restantes pastas são ignoradas — regeneram-se.
 
+## A base envelhece
+
+As viagens de demonstração são criadas com datas relativas (`agora + 1 dia`).
+Ao fim de alguns dias deixam de ser futuras, e então:
+
+- `/app/trips` mostra menos linhas e a captura fica mais curta;
+- o dashboard muda os agregados;
+- `/comprar` pode ficar sem paragens, porque a API só oferece as de rotas com
+  partidas agendadas futuras.
+
+Comparar `capturas/antes/` com uma captura tirada dias depois mostra
+diferenças que **não** são regressões — são o calendário. Antes de comparar,
+recriar as partidas futuras (ver secção anterior) e, se possível, capturar as
+duas pontas no mesmo dia.
+
 ## Aviso conhecido que deve desaparecer
 
 `publicas.spec.ts` tolera o aviso `React does not recognize the fetchPriority prop`,

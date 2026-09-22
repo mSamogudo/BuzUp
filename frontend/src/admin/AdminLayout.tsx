@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { getInitials } from "../lib/format";
 import { t } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
+import ThemeCustomizer from "../themes/ThemeCustomizer";
 import { StatusBadge } from "../ui/common";
 import { useBranding, pickLogo } from "../lib/branding";
 import { NAV_ITEMS, visibleNavItems } from "./navigation";
@@ -189,6 +190,7 @@ export default function AdminLayout() {
             <button className="icon-button" onClick={toggleTheme} title={theme === "dark" ? t(locale, "lightMode") : t(locale, "darkMode")} type="button">
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
+            <ThemeCustomizer />
             <div style={{ position: "relative" }}>
               <button className="icon-button" onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }} title={t(locale, "notifications")} type="button">
                 <Bell size={16} />

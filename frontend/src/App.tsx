@@ -14,6 +14,7 @@ import AdminLayout from "./admin/AdminLayout";
 // O que fica ansioso e so o que se ve sempre: o login, a moldura do portal e
 // o arranque.
 const LandingPage = lazy(() => import("./public/LandingPage"));
+const TpmTurLandingPage = lazy(() => import("./public/tpm/TpmTurLandingPage"));
 const BookingPage = lazy(() => import("./public/booking/BookingPage"));
 const DashboardPage = lazy(() => import("./admin/DashboardPage"));
 const RoutesPage = lazy(() => import("./admin/RoutesPage"));
@@ -84,6 +85,7 @@ function AppContent() {
       <Suspense fallback={<SplashScreen />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/tpm-tur" element={<TpmTurLandingPage />} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/comprar" element={<BookingPage />} />

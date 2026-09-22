@@ -1,0 +1,93 @@
+import type { ThemePreset } from "../tipos";
+
+/** O preset da TPM-TUR no formato do customizador.
+ *
+ * Gerado a partir de `themes/tpm-tur.css`, que continua a ser a fonte de
+ * verdade: e de la que sai o estado inicial da aplicacao. Este objecto existe
+ * para o customizador poder VOLTAR a este tema depois de experimentar outro.
+ *
+ * Os valores tem de acompanhar o CSS. Se divergirem, o botao "repor" deixa de
+ * repor o que a aplicacao arranca — por isso vivem os dois no mesmo sitio e
+ * este ficheiro regenera-se do outro.
+ */
+export const tpmTurPreset: ThemePreset = {
+  label: "TPM-TUR",
+  styles: {
+    light: {
+        background: "#eef3f8",
+        foreground: "#102d4f",
+        card: "#ffffff",
+        "card-foreground": "#102d4f",
+        popover: "#ffffff",
+        "popover-foreground": "#102d4f",
+        primary: "#087d99",
+        "primary-foreground": "#ffffff",
+        secondary: "#e2ebf3",
+        "secondary-foreground": "#102d4f",
+        muted: "#f1f6fa",
+        "muted-foreground": "#5c6f83",
+        accent: "#e4ecf4",
+        "accent-foreground": "#102d4f",
+        warning: "#e9ac35",
+        "warning-foreground": "#3a2a06",
+        success: "#1d7a5f",
+        "success-foreground": "#ffffff",
+        destructive: "#b3261e",
+        "destructive-foreground": "#ffffff",
+        border: "#dbe5ee",
+        input: "#c3d2e0",
+        ring: "#087d99",
+        "chart-1": "#087d99",
+        "chart-2": "#bd8a1a",
+        "chart-3": "#1d7a5f",
+        "chart-4": "#5b5aa8",
+        "chart-5": "#c0603a",
+        sidebar: "#102d4f",
+        "sidebar-foreground": "#9dbbdd",
+        "sidebar-primary": "#087d99",
+        "sidebar-primary-foreground": "#ffffff",
+        "sidebar-accent": "#1b3f66",
+        "sidebar-accent-foreground": "#e8eef5",
+        "sidebar-border": "#1e3a58",
+        "sidebar-ring": "#35b9d8",
+    },
+    dark: {
+        background: "#081624",
+        foreground: "#e8eef5",
+        card: "#102943",
+        "card-foreground": "#e8eef5",
+        popover: "#102943",
+        "popover-foreground": "#e8eef5",
+        primary: "#35b9d8",
+        "primary-foreground": "#062330",
+        secondary: "#16314f",
+        "secondary-foreground": "#e8eef5",
+        muted: "#0d2137",
+        "muted-foreground": "#93aac3",
+        accent: "#16314f",
+        "accent-foreground": "#e8eef5",
+        warning: "#f0bc55",
+        "warning-foreground": "#2b1f04",
+        success: "#4cc79f",
+        "success-foreground": "#04241a",
+        destructive: "#ff6b6b",
+        "destructive-foreground": "#2a0a0a",
+        border: "#22405e",
+        input: "#2c4d6f",
+        ring: "#35b9d8",
+        "chart-1": "#35b9d8",
+        "chart-2": "#f0bc55",
+        "chart-3": "#4cc79f",
+        "chart-4": "#9b95e0",
+        "chart-5": "#e08a63",
+        sidebar: "#050f1a",
+        "sidebar-foreground": "#8fb0d4",
+        "sidebar-primary": "#35b9d8",
+        "sidebar-primary-foreground": "#062330",
+        "sidebar-accent": "#12293f",
+        "sidebar-accent-foreground": "#e8eef5",
+        "sidebar-border": "#1a3550",
+        "sidebar-ring": "#35b9d8",
+    },
+  },
+};

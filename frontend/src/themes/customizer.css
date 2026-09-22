@@ -1,0 +1,337 @@
+/* Personalizador de tema — painel lateral direito, por cima de tudo.
+ * Segue os tokens --app-* de propósito: o proprio painel e um teste ao vivo
+ * do tema que se esta a experimentar. Os cantos usam var(--radius) pela
+ * mesma razao — mexer no arredondamento ve-se logo aqui. */
+
+.tc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9010; /* acima dos popovers da topbar (8998) */
+  background: rgba(9, 9, 11, 0.50);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: tc-entrar-fundo 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tc-painel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9011;
+  width: min(390px, 100vw);
+  background: var(--app-surface);
+  border-left: 1px solid var(--app-border);
+  box-shadow: -8px 0 32px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  color: var(--app-text);
+  animation: tc-entrar-painel 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes tc-entrar-fundo {
+  from { opacity: 0; }
+}
+
+@keyframes tc-entrar-painel {
+  from { transform: translateX(40px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-overlay,
+  .tc-painel { animation: none; }
+}
+
+.tc-cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--app-border);
+  position: sticky;
+  top: 0;
+  background: var(--app-surface);
+  z-index: 1;
+}
+
+.tc-cabeca strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tc-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-muted);
+  margin: 0 0 2px;
+}
+
+.tc-seccao {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--app-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tc-rotulo {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tc-nota {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+  margin: 0;
+}
+
+/* ——— Selector de tema com amostras de cor ——— */
+
+.tc-listbox { position: relative; }
+
+.tc-listbox-botao {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: calc(var(--radius, 0.5rem) + 2px);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.tc-listbox-botao:hover { border-color: var(--app-accent); }
+.tc-listbox-botao:focus-visible {
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 18%, transparent);
+}
+
+.tc-listbox-nome { flex: 1; text-align: left; }
+
+.tc-pontos {
+  display: inline-flex;
+  gap: 4px;
+  flex: none;
+}
+
+.tc-pontos i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  display: block;
+}
+
+.tc-listbox-lista {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--app-popover, var(--app-surface));
+  border: 1px solid var(--app-border);
+  border-radius: calc(var(--radius, 0.5rem) + 2px);
+  box-shadow: var(--app-shadow-lg);
+  z-index: 2;
+}
+
+.tc-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius, 0.5rem);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--app-text);
+}
+
+.tc-opcao span:last-of-type { flex: 1; }
+
+.tc-opcao:hover { background: var(--app-surface-soft); }
+
+.tc-opcao-activa {
+  color: var(--app-accent);
+  font-weight: 600;
+}
+
+.tc-opcao-activa:hover { background: var(--app-accent-soft); }
+
+/* ——— Modo claro/escuro ——— */
+
+.tc-modo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tc-modo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 0;
+  border: 1px solid var(--app-border);
+  border-radius: calc(var(--radius, 0.5rem) + 2px);
+  background: var(--app-surface);
+  color: var(--app-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tc-modo-btn:hover { border-color: var(--app-accent); color: var(--app-text); }
+
+.tc-modo-btn.tc-modo-activo {
+  background: var(--app-accent-soft);
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+}
+
+/* ——— Cores de marca ——— */
+
+.tc-cores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.tc-cor {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--app-text);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.tc-cor input[type="color"] {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-surface);
+  padding: 2px;
+  cursor: pointer;
+  flex: none;
+}
+
+/* ——— Arredondamento ——— */
+
+.tc-raios {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.tc-raio {
+  padding: 8px 0;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius, 0.5rem);
+  background: var(--app-surface);
+  color: var(--app-text-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.tc-raio:hover { border-color: var(--app-accent); color: var(--app-text); }
+
+.tc-raio-activo,
+.tc-raio-activo:hover {
+  background: var(--app-accent-soft);
+  border-color: var(--app-accent);
+  color: var(--app-accent);
+}
+
+/* ——— Importar ——— */
+
+.tc-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 84px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: calc(var(--radius, 0.5rem) + 2px);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tc-textarea:focus {
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 18%, transparent);
+}
+
+/* ——— Botoes e rodape ——— */
+
+.tc-erro {
+  margin: 0;
+  font-size: 12px;
+  color: var(--app-danger);
+}
+
+.tc-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: calc(var(--radius, 0.5rem) + 2px);
+  background: var(--app-accent);
+  color: var(--primary-foreground, #ffffff);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease, transform 140ms ease;
+}
+
+.tc-botao:hover:not(:disabled) { background: var(--app-accent-strong); }
+.tc-botao:active:not(:disabled) { transform: translateY(1px); }
+.tc-botao:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.tc-rodape {
+  padding: 16px 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.tc-repor {
+  background: transparent;
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+}
+
+.tc-repor:hover:not(:disabled) {
+  background: var(--app-surface-soft);
+  border-color: var(--app-danger);
+  color: var(--app-danger);
+}

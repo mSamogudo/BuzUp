@@ -1,4 +1,5 @@
-"""Report builder: a small registry that exposes every supported report
+"""
+Report builder: a small registry that exposes every supported report
 under a single API. Each entry defines:
 
   - title (human-readable)
@@ -324,7 +325,109 @@ RECOVERIES = ("recoveries", "Recuperacao de cartoes", [
 ])
 
 
-# ---------------------------------------------------------------------------
+def _rows_tickets(filters: dict) -> list[dict]:
+    """Um bilhete por linha, do ponto de vista do PASSAGEIRO.
+
+    O relatorio de Vendas conta PAGAMENTOS: uma familia de tres e uma linha so,
+    e o nome de quem viaja nao aparece em lado nenhum. Quem opera a carreira
+    nao trabalha assim — trabalha com a lista de quem vai no autocarro, que e
+    exactamente a folha que a TPM-TUR mantinha a mao ao lado do sistema.
+
+    **Uma linha por passageiro, e nao por perna.** No sistema, uma ida-e-volta
+    sao dois bilhetes (05:00 e 15:30, com codigos proprios); na folha do
+    operador e uma linha com as duas datas e o valor das duas. Junta-se aqui,
+    porque e assim que ele confere — e o valor bate com o que o passageiro
+    pagou, que e o numero que interessa quando alguem reclama.
+
+    As duas pernas emparelham-se pelo nome E pelo documento. So pelo nome,
+    dois irmaos com o mesmo nome proprio numa mesma compra apareciam fundidos
+    numa linha.
+    """
+    from apps.guest_checkouts.models import DigitalTravelPass
+
+    df, dt = _date_range(filters)
+    qs = (
+        DigitalTravelPass.objects
+        .select_related("guest_checkout", "guest_checkout__return_trip", "trip", "trip__route")
+        .filter(created_at__gte=df, created_at__lt=dt)
+        .order_by("-created_at", "guest_checkout_id", "passenger_name", "leg")
+    )
+    if filters.get("status"):
+        qs = qs.filter(status=filters["status"])
+    if filters.get("route_id"):
+        qs = qs.filter(trip__route_id=int(filters["route_id"]))
+
+    # O tecto conta LINHAS, e cada linha pode vir de duas pernas. Pede-se o
+    # dobro para o `_capped` continuar a distinguir "sao mesmo 5000" de "sao
+    # mais de 5000" depois de juntar.
+    linhas: dict[tuple, dict] = {}
+    for p in qs[: (MAX_ROWS + 1) * 2]:
+        gc = p.guest_checkout
+        chave = (p.guest_checkout_id, p.passenger_name.strip().lower(), p.document_number)
+
+        linha = linhas.get(chave)
+        if linha is None:
+            linha = linhas[chave] = {
+                "created_at": p.created_at,
+                "bilhete": "",
+                "passageiro": p.passenger_name or "",
+                "documento": p.document_number or "",
+                "tipo_de_viagem": "Ida e volta" if (gc and gc.return_trip_id) else "So ida",
+                "ida_at": None,
+                "regresso_at": None,
+                "rota": p.route_name or p.route_code or "",
+                "partida": p.origin_stop or "",
+                "destino": p.destination_stop or "",
+                "fare_amount": Decimal("0.00"),
+                "status": p.status,
+                # Guardados por perna e nao por ordem de chegada: as duas sao
+                # criadas no mesmo instante, e a ordenacao por data punha o
+                # codigo do regresso a frente do da ida. Quem le o bilhete le
+                # a ida primeiro.
+                "_codigos": {},
+            }
+
+        if p.leg == DigitalTravelPass.Leg.RETURN:
+            linha["regresso_at"] = p.departure_at
+        else:
+            linha["ida_at"] = p.departure_at
+            # A data da compra e a do bilhete de ida: e a da venda.
+            linha["created_at"] = p.created_at
+
+        linha["fare_amount"] += p.fare_amount or Decimal("0.00")
+        if p.short_code:
+            linha["_codigos"][p.leg] = p.short_code
+
+        # Um bilhete cancelado numa das pernas nao pode passar por activo na
+        # linha inteira: fica o estado mais grave dos dois.
+        if p.status != DigitalTravelPass.Status.ACTIVE:
+            linha["status"] = p.status
+
+    out = []
+    for linha in linhas.values():
+        codigos = linha.pop("_codigos")
+        linha["bilhete"] = " / ".join(
+            codigos[perna] for perna in ("outbound", "return") if perna in codigos
+        )
+        linha["fare_amount"] = str(linha["fare_amount"])
+        out.append(linha)
+    return _capped(out)
+
+
+TICKETS = ("tickets", "Bilhetes por passageiro", [
+    ("created_at", "Data da compra"),
+    ("bilhete", "Nr do bilhete"),
+    ("passageiro", "Nome do passageiro"),
+    ("documento", "Documento"),
+    ("tipo_de_viagem", "Tipo de viagem"),
+    ("ida_at", "Ida"),
+    ("regresso_at", "Regresso"),
+    ("rota", "Rota"),
+    ("fare_amount", "Valor do bilhete"),
+    ("status", "Estado"),
+])
+
+  # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
@@ -342,13 +445,22 @@ REGISTRY: dict[str, ReportSpec] = {
     VALIDATIONS[0]: ReportSpec(VALIDATIONS[0], VALIDATIONS[1], VALIDATIONS[2], _rows_validations),
     ONBOARDING[0]: ReportSpec(ONBOARDING[0], ONBOARDING[1], ONBOARDING[2], _rows_onboardings),
     RECOVERIES[0]: ReportSpec(RECOVERIES[0], RECOVERIES[1], RECOVERIES[2], _rows_recoveries),
+    TICKETS[0]: ReportSpec(TICKETS[0], TICKETS[1], TICKETS[2], _rows_tickets),
 }
 
 
 def aggregate_totals(spec: ReportSpec, rows: list[dict]) -> dict:
     """Compute headline totals for the report header. Specific per kind."""
     totals = {"count": len(rows)}
-    if spec.key in {"sales", "topups", "onboarding", "recoveries"}:
+    if spec.key == "tickets":
+        # Cancelados e reembolsados nao somam: um bilhete devolvido nao e
+        # receita, e um total que os conte da sempre mais do que a conta.
+        validos = [r for r in rows if r.get("status") in {"active", "used", "expired"}]
+        totals["confirmed_count"] = len(validos)
+        totals["total_amount"] = str(
+            sum((Decimal(r["fare_amount"]) for r in validos), Decimal("0.00"))
+        )
+    elif spec.key in {"sales", "topups", "onboarding", "recoveries"}:
         ok = [r for r in rows if r.get("status") == "confirmed"]
         totals["confirmed_count"] = len(ok)
         totals["total_amount"] = str(sum((Decimal(r["amount"]) for r in ok), Decimal("0.00")))

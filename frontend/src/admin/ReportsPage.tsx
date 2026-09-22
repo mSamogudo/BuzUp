@@ -229,7 +229,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
     if (key.endsWith("amount") || key.endsWith("debited") || key === "total") {
       return `${formatCurrency(String(value))} MZN`;
     }
-    if (key === "created_at" && typeof value === "string") {
+    // Qualquer campo que acabe em `_at` e uma data. Antes so o `created_at`
+    // era tratado, e o relatorio de bilhetes — que traz a ida e o regresso —
+    // mostrava "2026-09-25T13:30:00Z" ao lado de "2026-09-21 13:25".
+    if ((key === "created_at" || key.endsWith("_at")) && typeof value === "string") {
       return value.replace("T", " ").substring(0, 16);
     }
     return String(value);

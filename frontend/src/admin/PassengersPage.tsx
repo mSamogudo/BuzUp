@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { CampoData } from "../ui/CampoData";
 import { Eye, FileText, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { apiFetch, apiPost, apiPatch, apiDelete } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
@@ -331,8 +332,8 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
             {t(lc, "statementPeriodHint")} <strong>{viewing?.full_name}</strong>.
           </p>
           <div className="admin-form-grid">
-            <label className="field"><span>{t(lc, "dateFrom")}</span><input type="date" value={extractFrom} onChange={(e) => setExtractFrom(e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "dateTo")}</span><input type="date" value={extractTo} onChange={(e) => setExtractTo(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "dateFrom")}</span><CampoData onChange={(v) => setExtractFrom(v)} value={extractFrom} /></label>
+            <label className="field"><span>{t(lc, "dateTo")}</span><CampoData onChange={(v) => setExtractTo(v)} value={extractTo} /></label>
           </div>
           <div className="admin-form-actions">
             <button className="primary-button" onClick={downloadExtract} type="button"><FileText size={15} /> {t(lc, "generatePdf")}</button>

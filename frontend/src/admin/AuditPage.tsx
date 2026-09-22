@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { CampoData } from "../ui/CampoData";
 import { Eye, RefreshCw } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { formatDateTime } from "../lib/format";
@@ -65,8 +66,8 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
           </label>
           <label className="field"><span>{t(lc, "search")}</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t(lc, "auditSearchHint")} /></label>
           <label className="field"><span>{t(lc, "actor")}</span><input value={actor} onChange={(e) => setActor(e.target.value)} placeholder={t(lc, "actorName")} /></label>
-          <label className="field"><span>{t(lc, "from")}</span><input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
-          <label className="field"><span>{t(lc, "to")}</span><input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
+          <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} /></label>
+          <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setDateTo(v)} value={dateTo} /></label>
           <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
             <button className="primary-button" type="button" onClick={reload}>{t(lc, "filter")}</button>
           </div>

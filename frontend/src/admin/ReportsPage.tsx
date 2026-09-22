@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CampoData } from "../ui/CampoData";
 import { Download, FileSpreadsheet, FileText, RefreshCw, Search, Sliders } from "lucide-react";
 import { apiDownload, apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
@@ -295,9 +296,9 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               </select>
             </label>
             <label className="field"><span>{t(lc, "from")}</span>
-              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></label>
+              <CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} /></label>
             <label className="field"><span>{t(lc, "to")}</span>
-              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></label>
+              <CampoData onChange={(v) => setDateTo(v)} value={dateTo} /></label>
             <label className="field"><span>{t(lc, "status")}</span>
               <select value={status} onChange={(e) => setStatus(e.target.value)}>
                 <option value="">{t(lc, "all")}</option>
@@ -498,8 +499,8 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
       {tab === "operational" && (
         <SectionCard title={t(lc, "operationalRevenue")} description={t(lc, "operationalRevenueHint")}>
           <div className="admin-form-grid" style={{ marginBottom: 12 }}>
-            <label className="field"><span>{t(lc, "from")}</span><input type="date" value={opFrom} onChange={(e) => setOpFrom(e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "to")}</span><input type="date" value={opTo} onChange={(e) => setOpTo(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setOpFrom(v)} value={opFrom} /></label>
+            <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setOpTo(v)} value={opTo} /></label>
             <label className="field"><span>{t(lc, "route")}</span>
               <select value={opRouteId} onChange={(e) => setOpRouteId(e.target.value)}>
                 <option value="">{t(lc, "allRoutes")}</option>
@@ -559,8 +560,8 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
       {tab === "validations" && (
         <SectionCard title={t(lc, "validationsReport")} description={t(lc, "validationsReportHint")}>
           <div className="admin-form-grid" style={{ marginBottom: 12 }}>
-            <label className="field"><span>{t(lc, "from")}</span><input type="date" value={valFrom} onChange={(e) => setValFrom(e.target.value)} /></label>
-            <label className="field"><span>{t(lc, "to")}</span><input type="date" value={valTo} onChange={(e) => setValTo(e.target.value)} /></label>
+            <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setValFrom(v)} value={valFrom} /></label>
+            <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setValTo(v)} value={valTo} /></label>
             <label className="field"><span>{t(lc, "route")}</span>
               <select value={valRouteId} onChange={(e) => setValRouteId(e.target.value)}>
                 <option value="">{t(lc, "allRoutes")}</option>

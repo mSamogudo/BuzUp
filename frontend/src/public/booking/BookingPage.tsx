@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { CampoData } from "../../ui/CampoData";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Bus, Calendar, CheckCircle2, Download, MapPin, Moon,
@@ -742,8 +743,7 @@ export default function BookingPage() {
                   </div>
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="dt"><Calendar size={12} style={{ verticalAlign: -2 }} /> {tr("outboundDate")}</label>
-                    <input id="dt" className="bzbk-input" type="date" value={date} min={today} required
-                      onChange={(e) => setDate(e.target.value)} />
+                    <CampoData onChange={(v) => setDate(v)} value={date} min={today} />
                   </div>
                   {/* Só aparece depois de o passageiro pedir ida e volta:
                       um campo de data a quem só quer ir é uma pergunta a mais. */}
@@ -752,9 +752,7 @@ export default function BookingPage() {
                       <label className="bzbk-label" htmlFor="dtv">
                         <Calendar size={12} style={{ verticalAlign: -2 }} /> Data de volta
                       </label>
-                      <input id="dtv" className="bzbk-input" type="date" value={returnDate}
-                        min={date || today} required
-                        onChange={(e) => setReturnDate(e.target.value)} />
+                      <CampoData onChange={(v) => setReturnDate(v)} value={returnDate} min={date || today} />
                     </div>
                   ) : null}
                   <div className="bzbk-field">

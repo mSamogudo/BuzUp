@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { CampoData } from "../ui/CampoData";
 import { Eye, RefreshCw, Filter, X } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
@@ -172,11 +173,9 @@ export default function PaymentsPage() {
             <option value="expired">{t(lc, "expired")}</option>
             <option value="reversed">{t(lc, "reversed")}</option>
           </select>
-          <input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)}
-            style={{ padding: "6px 10px", fontSize: 13, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)" }} />
+          <CampoData onChange={(v) => setFFrom(v)} value={fFrom} />
           <span style={{ opacity: 0.5 }}>→</span>
-          <input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)}
-            style={{ padding: "6px 10px", fontSize: 13, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)" }} />
+          <CampoData onChange={(v) => setFTo(v)} value={fTo} />
           {anyFilter && (
             <button type="button" onClick={clearFilters}
               style={{ display: "inline-flex", gap: 4, alignItems: "center", padding: "6px 10px", fontSize: 12, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)", background: "transparent", cursor: "pointer" }}>

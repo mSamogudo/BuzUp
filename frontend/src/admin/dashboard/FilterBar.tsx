@@ -1,4 +1,5 @@
 import { SlidersHorizontal, X } from "lucide-react";
+import { CampoData } from "../../ui/CampoData";
 import { t, type Locale } from "../../lib/i18n";
 import { useUi } from "../../ui/UiPreferences";
 import type { DashFilters, Lookup } from "./types";
@@ -97,11 +98,11 @@ export default function FilterBar({
       <div className="dash-filter-grid">
         <label className="field">
           <span>{t(lc, "from")}</span>
-          <input max={value.dateTo} onChange={(e) => set({ dateFrom: e.target.value })} type="date" value={value.dateFrom} />
+          <CampoData onChange={(v) => set({ dateFrom: v })} value={value.dateFrom} max={value.dateTo} />
         </label>
         <label className="field">
           <span>{t(lc, "to")}</span>
-          <input min={value.dateFrom} onChange={(e) => set({ dateTo: e.target.value })} type="date" value={value.dateTo} />
+          <CampoData onChange={(v) => set({ dateTo: v })} value={value.dateTo} min={value.dateFrom} />
         </label>
         <label className="field">
           <span>{t(lc, "route")}</span>

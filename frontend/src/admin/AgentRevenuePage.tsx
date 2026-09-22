@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { CampoData } from "../ui/CampoData";
 import { Coins, Eye, FileSpreadsheet, FileText, RefreshCw, Search, X } from "lucide-react";
 import { apiDownload, apiFetch } from "../lib/api";
 import { showToast } from "../lib/toast";
@@ -258,11 +259,11 @@ export default function AgentRevenuePage() {
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
           <label className="field">
             <span>{t(lc, "from")}</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} />
           </label>
           <label className="field">
             <span>{t(lc, "to")}</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <CampoData onChange={(v) => setDateTo(v)} value={dateTo} />
           </label>
           <label className="field">
             <span>{t(lc, "search")}</span>

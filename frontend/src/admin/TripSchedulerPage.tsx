@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CampoData } from "../ui/CampoData";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Bus, CalendarClock, CalendarDays, CheckCircle2, Clock, Loader2,
@@ -321,8 +322,7 @@ export default function TripSchedulerPage() {
                   </label>
                   <label className="field">
                     <span>{t(lc, "startingFrom")}</span>
-                    <input type="date" value={desde} min={todayISO()}
-                      onChange={(e) => setDesde(e.target.value || todayISO())} />
+                    <CampoData onChange={(v) => setDesde(v || todayISO())} value={desde} min={todayISO()} />
                   </label>
                   <label className="field">
                     <span>{t(lc, "horizon")}</span>

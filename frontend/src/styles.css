@@ -5706,3 +5706,79 @@ html[data-theme="dark"] .fare-matrix td input.fare-matrix-empty { background: co
   margin: 0 0 16px; font-size: 13.5px; line-height: 1.55; color: var(--app-text-muted);
 }
 .bus-pay-handoff .bus-pay-btn { margin-top: 6px; text-decoration: none; }
+
+/* ==========================================================================
+   Campo de data
+   ========================================================================== */
+
+/* Herda a caixa dos outros campos do formulário para não destoar: o
+ * `.field input` define altura, borda e raio, e isto acompanha-o. */
+.campo-data {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.campo-data-botao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 8px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.campo-data-botao:hover:not(:disabled) {
+  border-color: var(--app-accent);
+}
+
+.campo-data-botao:focus-visible,
+.campo-data-botao[data-state="open"] {
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 18%, transparent);
+}
+
+.campo-data-botao:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.campo-data-botao svg {
+  flex: none;
+  color: var(--app-text-muted);
+}
+
+.campo-data-vazio {
+  color: var(--app-text-muted);
+}
+
+.campo-data-limpar {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.campo-data-limpar:hover {
+  background: var(--app-surface-soft);
+  color: var(--app-text);
+}

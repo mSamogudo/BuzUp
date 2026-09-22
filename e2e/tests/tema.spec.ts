@@ -90,3 +90,36 @@ test('o painel abre inteiro, e nao preso na barra de topo', async ({ page }) => 
   )
   expect(pai).toBe('BODY')
 })
+
+test('as opcoes de barra lateral aplicam-se, e o lado troca a folga', async ({ page }) => {
+  const geometria = () =>
+    page.evaluate(() => {
+      const sb = document.querySelector('[data-slot=sidebar]')!
+      const ix = document.querySelector('[data-slot=sidebar-inset]')!.getBoundingClientRect()
+      return {
+        lado: sb.getAttribute('data-side'),
+        variante: sb.getAttribute('data-variant'),
+        esquerda: Math.round(ix.x),
+        direita: Math.round(window.innerWidth - ix.right),
+      }
+    })
+
+  await page.locator('.tc-opcao-btn', { hasText: 'Flutuante' }).click()
+  await expect.poll(async () => (await geometria()).variante, { timeout: 10_000 }).toBe('floating')
+
+  // A ordem no DOM decide de que lado fica a folga: o Sidebar reserva o espaco
+  // com uma div irma. Declarado antes do conteudo mas posto a direita, deixava
+  // um vazio a esquerda e tapava o conteudo do outro lado.
+  await page.locator('.tc-modo-btn', { hasText: 'Direita' }).click()
+  await expect.poll(async () => (await geometria()).lado, { timeout: 10_000 }).toBe('right')
+  const direita = await geometria()
+  expect(direita.direita).toBeGreaterThan(200)
+  expect(direita.esquerda).toBe(0)
+
+  await page.getByRole('button', { name: /repor tpm-tur/i }).click()
+  await expect.poll(async () => (await geometria()).lado, { timeout: 10_000 }).toBe('left')
+  const esquerda = await geometria()
+  expect(esquerda.esquerda).toBeGreaterThan(200)
+  expect(esquerda.direita).toBe(0)
+  expect(esquerda.variante).toBe('sidebar')
+})

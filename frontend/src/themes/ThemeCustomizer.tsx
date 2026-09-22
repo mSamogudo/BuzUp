@@ -5,6 +5,7 @@ import { useUi } from "../ui/UiPreferences";
 import { useGestorDeTema } from "./useGestorDeTema";
 import { CORES_DE_MARCA, RAIOS, type TemaDeCor } from "./tipos";
 import { tpmTurPreset } from "./presets/tpm-tur";
+import { LADOS, RECOLHAS, VARIANTES, useLayoutBarra } from "./useLayoutBarra";
 import "./customizer.css";
 
 /** Os 51 presets do template sao ~140KB de dados. Carregam-se so quando o
@@ -44,6 +45,7 @@ export default function ThemeCustomizer() {
   const [erroImport, setErroImport] = useState("");
   const g = useGestorDeTema();
   const { toggleTheme } = useUi();
+  const { layout, definir: definirLayout, repor: reporLayout } = useLayoutBarra();
 
   useEffect(() => {
     if (!aberto || temas.length > 0 || aCarregar) return;
@@ -171,6 +173,54 @@ export default function ThemeCustomizer() {
             </section>
 
             <section className="tc-seccao">
+              <span className="tc-rotulo">Barra lateral</span>
+              <div className="tc-opcoes">
+                {VARIANTES.map((v) => (
+                  <button
+                    key={v.valor}
+                    type="button"
+                    aria-pressed={layout.variante === v.valor}
+                    className={`tc-opcao-btn${layout.variante === v.valor ? " tc-opcao-activa" : ""}`}
+                    onClick={() => definirLayout({ variante: v.valor })}
+                  >
+                    <strong>{v.nome}</strong>
+                    <small>{v.nota}</small>
+                  </button>
+                ))}
+              </div>
+
+              <span className="tc-rotulo tc-rotulo-solto">Ao recolher</span>
+              <div className="tc-opcoes">
+                {RECOLHAS.map((r) => (
+                  <button
+                    key={r.valor}
+                    type="button"
+                    aria-pressed={layout.recolha === r.valor}
+                    className={`tc-opcao-btn${layout.recolha === r.valor ? " tc-opcao-activa" : ""}`}
+                    onClick={() => definirLayout({ recolha: r.valor })}
+                  >
+                    <strong>{r.nome}</strong>
+                    <small>{r.nota}</small>
+                  </button>
+                ))}
+              </div>
+
+              <span className="tc-rotulo tc-rotulo-solto">Lado</span>
+              <div className="tc-modo" role="group" aria-label="Lado da barra lateral">
+                {LADOS.map((l) => (
+                  <button
+                    key={l.valor}
+                    type="button"
+                    className={`tc-modo-btn${layout.lado === l.valor ? " tc-modo-activo" : ""}`}
+                    onClick={() => definirLayout({ lado: l.valor })}
+                  >
+                    {l.nome}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="tc-seccao">
               <label className="tc-rotulo" htmlFor="tc-import">
                 <Upload size={13} /> Importar tema
               </label>
@@ -191,6 +241,7 @@ export default function ThemeCustomizer() {
             <footer className="tc-rodape">
               <button className="tc-botao tc-repor" type="button" onClick={() => {
                 g.repor();
+                reporLayout();
                 setImportado("");
                 setErroImport("");
               }}>

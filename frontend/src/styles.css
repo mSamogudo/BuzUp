@@ -690,7 +690,6 @@ html,
 body,
 .admin-content,
 .admin-nav,
-.admin-mobile-drawer,
 .portal-page {
   scrollbar-width: none;
 }
@@ -699,7 +698,6 @@ html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 .admin-content::-webkit-scrollbar,
 .admin-nav::-webkit-scrollbar,
-.admin-mobile-drawer::-webkit-scrollbar,
 .portal-page::-webkit-scrollbar {
   display: none;
   width: 0;
@@ -736,9 +734,7 @@ body::-webkit-scrollbar,
 .admin-topbar-left,
 .admin-topbar-right,
 .admin-user-chip,
-.admin-user-tile,
-.admin-mobile-head,
-.admin-mobile-user {
+.admin-user-tile {
   display: flex;
   align-items: center;
 }
@@ -767,16 +763,14 @@ body::-webkit-scrollbar,
   object-fit: contain;
 }
 
+/* A barra recolhida do shadcn tem 48px (--sidebar-width-icon), nao os 92px
+ * da casca antiga. Os 58px de largura que aqui estavam transbordavam e a
+ * marca saia cortada. */
 .sidebar-logo-collapsed {
-  width: 58px;
+  width: 28px;
   height: auto;
-  max-height: 38px;
+  max-height: 28px;
   object-fit: contain;
-}
-
-.sidebar-collapse-btn,
-.sidebar-expand-btn {
-  flex-shrink: 0;
 }
 
 .powered-by-logo {
@@ -828,7 +822,6 @@ body::-webkit-scrollbar,
 .admin-brand-copy,
 .admin-brand-name-fallback,
 .admin-user-copy,
-.admin-mobile-user div,
 .desktop-only-inline {
   display: grid;
   gap: 2px;
@@ -856,7 +849,6 @@ body::-webkit-scrollbar,
 }
 
 .admin-user-tile strong,
-.admin-mobile-user strong,
 .desktop-only-inline strong {
   display: block;
   font-size: 12px;
@@ -867,7 +859,6 @@ body::-webkit-scrollbar,
 }
 
 .admin-user-tile small,
-.admin-mobile-user small,
 .desktop-only-inline small {
   display: block;
   color: var(--app-text-muted);
@@ -915,9 +906,7 @@ body::-webkit-scrollbar,
   display: none;
 }
 
-.admin-nav-item,
-.admin-mobile-nav-item,
-.admin-bottom-nav-item {
+.admin-nav-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -985,12 +974,6 @@ body::-webkit-scrollbar,
   color: var(--app-sidebar-text-strong);
 }
 
-.admin-mobile-nav-item:hover,
-.admin-bottom-nav-item:hover {
-  background: color-mix(in srgb, var(--app-accent) 6%, transparent);
-  color: var(--app-text);
-}
-
 .admin-nav-item-active {
   color: #ffffff;
   background: color-mix(in srgb, var(--app-accent) 12%, transparent);
@@ -1001,21 +984,6 @@ body::-webkit-scrollbar,
   background: color-mix(in srgb, var(--app-accent) 16%, transparent);
 }
 
-.admin-nav-group { display: flex; flex-direction: column; }
-
-.admin-nav-parent { background: transparent !important; box-shadow: none !important; }
-.admin-nav-parent-open { color: rgba(255, 255, 255, 0.9); }
-
-.admin-nav-group > button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  text-align: left;
-  border: none;
-  cursor: pointer;
-}
-
 .nav-chevron {
   margin-left: auto;
   opacity: 0.5;
@@ -1023,28 +991,6 @@ body::-webkit-scrollbar,
 }
 
 .nav-chevron-open { transform: rotate(180deg); opacity: 1; }
-
-.admin-nav-children {
-  display: flex;
-  flex-direction: column;
-  padding-left: 16px;
-  animation: fadeIn 200ms ease;
-}
-
-.admin-nav-child {
-  min-height: 36px !important;
-  padding: 0 12px 0 20px !important;
-  font-size: 12px !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.admin-mobile-nav-item-active,
-.admin-bottom-nav-item-active {
-  color: var(--app-accent);
-  border-color: color-mix(in srgb, var(--app-accent) 14%, transparent);
-  background: color-mix(in srgb, var(--app-accent) 8%, transparent);
-  box-shadow: inset 3px 0 0 var(--app-accent);
-}
 
 /* Sidebar Footer */
 
@@ -1080,8 +1026,7 @@ body::-webkit-scrollbar,
   color: var(--app-sidebar-text-muted);
 }
 
-.admin-user-chip,
-.admin-mobile-user {
+.admin-user-chip {
   gap: 12px;
   padding: 9px;
   border-radius: 10px;
@@ -1093,7 +1038,6 @@ body::-webkit-scrollbar,
 
 .admin-user-tile-main,
 .admin-user-tile-footer,
-.admin-mobile-footer,
 .admin-header-actions,
 .locale-flag-toggle,
 .admin-inline-grid {
@@ -1198,11 +1142,6 @@ body::-webkit-scrollbar,
 /* ==========================================================================
    10. Sidebar Collapsed
    ========================================================================== */
-
-.admin-sidebar-collapsed {
-  width: 92px;
-  overflow: visible;
-}
 
 .admin-sidebar-collapsed .admin-sidebar-brand {
   justify-content: center;
@@ -3211,152 +3150,19 @@ body::-webkit-scrollbar,
    36. Mobile Drawer & Bottom Nav
    ========================================================================== */
 
-.admin-mobile-overlay,
-.admin-mobile-drawer,
 .desktop-only,
 .desktop-only-inline {
   display: none;
 }
 
-.admin-mobile-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 22;
-  background: rgba(9, 9, 11, 0.50);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-mobile-overlay-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 /* A gaveta e a barra lateral no telemovel: leva o mesmo navy.
  * Redefinir os tokens aqui aproveita a heranca — as regras de dentro
  * (itens, separadores, hover) seguem sem serem tocadas. */
-.admin-mobile-drawer {
-  --app-surface: var(--app-sidebar);
-  --app-surface-soft: var(--sidebar-accent);
-  --app-border: var(--app-sidebar-separator);
-  --app-text: var(--app-sidebar-text-strong);
-  --app-text-muted: var(--app-sidebar-text);
-  --app-accent: var(--sidebar-primary);
-
-  /* `color` herda-se ja computado: redefinir --app-text aqui nao altera a cor
-   * que o body calculou e passou para baixo. Tem de ser declarada. Sem isto,
-   * o "Transporte Cashless" no cabecalho ficava a #18181b sobre navy — 1,27:1. */
-  color: var(--app-sidebar-text);
-
-  position: fixed;
-  inset: 0 auto 0 0;
-  z-index: 23;
-  display: grid;
-  gap: 14px;
-  width: 300px;
-  max-width: 85vw;
-  padding: 18px;
-  border-radius: 0 12px 12px 0;
-  border: 1px solid var(--app-border);
-  border-left: 0;
-  background: var(--app-surface);
-  box-shadow: var(--app-shadow-lg);
-  transform: translateX(-105%);
-  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  align-content: start;
-  overflow-y: auto;
-}
-
-.admin-mobile-drawer-open {
-  transform: translateX(0);
-}
-
-.admin-mobile-head {
-  justify-content: space-between;
-}
-
-.admin-mobile-nav-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.admin-mobile-nav-item {
-  min-height: 54px;
-  justify-content: center;
-  text-align: center;
-  padding: 12px;
-  background: var(--app-surface-soft);
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
-  flex-direction: column;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-mobile-nav-item:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 18%, transparent);
-  background: color-mix(in srgb, var(--app-accent) 4%, transparent);
-}
 
 /* O teal escuro da accao nao serve para texto sobre navy: da 2,92:1.
  * Nos rotulos dentro da gaveta usa-se o teal claro, que da 6,01:1. */
 .admin-mobile-drawer .admin-kicker {
   color: var(--sidebar-ring);
-}
-
-.admin-mobile-drawer .admin-mobile-head strong {
-  color: var(--app-sidebar-text-strong);
-}
-
-.admin-mobile-nav-item-active {
-  color: #ffffff;
-  background: color-mix(in srgb, var(--app-accent) 16%, transparent);
-  border-color: color-mix(in srgb, var(--app-accent) 40%, transparent);
-}
-
-.admin-mobile-footer {
-  border-top: 1px solid var(--app-border);
-  padding-top: 12px;
-  gap: 10px;
-}
-
-.admin-bottom-nav {
-  position: fixed;
-  inset: auto 14px 14px;
-  z-index: 18;
-  display: none;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
-  padding: 8px;
-  border-radius: 12px;
-  border: 1px solid var(--app-border);
-  background: var(--app-surface);
-  box-shadow:
-    0 -2px 16px -4px rgba(9, 9, 11, 0.10),
-    var(--app-shadow);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.admin-bottom-nav-item {
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  min-height: 56px;
-  padding: 6px 4px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-bottom-nav-item span {
-  font-size: 10px;
-  font-weight: 600;
 }
 
 .mobile-only {
@@ -3391,10 +3197,7 @@ body::-webkit-scrollbar,
     display: inline-flex;
   }
 
-  .mobile-only,
-  .admin-bottom-nav,
-  .admin-mobile-drawer,
-  .admin-mobile-overlay {
+  .mobile-only {
     display: none;
   }
 }
@@ -3468,10 +3271,6 @@ body::-webkit-scrollbar,
   .admin-topbar-right .desktop-only-inline,
   .admin-topbar-right .desktop-only {
     display: none;
-  }
-
-  .admin-bottom-nav {
-    display: grid;
   }
   .dashboard-chart-grid { grid-template-columns: 1fr; }
   .dashboard-route-bar-wrap { display: none; }
@@ -3631,19 +3430,6 @@ html[data-theme="dark"] .admin-sidebar {
   border-right-color: rgba(255, 255, 255, 0.04);
 }
 
-html[data-theme="dark"] .admin-mobile-drawer {
-  border-color: #27272a;
-  background: #18181b;
-}
-
-html[data-theme="dark"] .admin-bottom-nav {
-  border-color: #27272a;
-  background: #18181b;
-  box-shadow:
-    0 -2px 16px -4px rgba(0, 0, 0, 0.40),
-    0 1px 3px rgba(0, 0, 0, 0.30);
-}
-
 html[data-theme="dark"] .admin-section-head,
 html[data-theme="dark"] .admin-table th,
 html[data-theme="dark"] .admin-table td {
@@ -3664,7 +3450,6 @@ html[data-theme="dark"] .icon-text-button {
 html[data-theme="dark"] .admin-brand-copy strong,
 html[data-theme="dark"] .admin-brand-name-fallback strong,
 html[data-theme="dark"] .admin-user-tile strong,
-html[data-theme="dark"] .admin-mobile-user strong,
 html[data-theme="dark"] .desktop-only-inline strong,
 html[data-theme="dark"] .admin-page-head h2,
 html[data-theme="dark"] .admin-topbar h1,
@@ -3867,18 +3652,13 @@ html[data-theme="dark"] .field textarea::placeholder {
 }
 
 html[data-theme="dark"] .admin-user-tile,
-html[data-theme="dark"] .admin-user-chip,
-html[data-theme="dark"] .admin-mobile-user {
+html[data-theme="dark"] .admin-user-chip {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.05);
 }
 
 html[data-theme="dark"] .splash-screen {
   background: #09090b;
-}
-
-html[data-theme="dark"] .admin-mobile-drawer {
-  border-color: #27272a;
 }
 
 html[data-theme="dark"] .dashboard-chart-card {

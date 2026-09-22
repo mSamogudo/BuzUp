@@ -335,3 +335,54 @@
   border-color: var(--app-danger);
   color: var(--app-danger);
 }
+
+/* Opções de layout da barra lateral: cartões pequenos com nome e explicação,
+ * porque "Embutida" ou "Offcanvas" não dizem nada a quem só quer escolher. */
+.tc-opcoes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.tc-opcao-btn {
+  display: grid;
+  gap: 3px;
+  padding: 9px 8px;
+  text-align: left;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius);
+  background: var(--app-surface);
+  color: var(--app-text);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.tc-opcao-btn:hover {
+  border-color: var(--app-accent);
+}
+
+.tc-opcao-btn strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.tc-opcao-btn small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--app-text-muted);
+}
+
+.tc-opcao-activa,
+.tc-opcao-activa:hover {
+  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-accent) 10%, transparent);
+}
+
+.tc-opcao-activa strong {
+  color: var(--app-accent);
+}
+
+.tc-rotulo-solto {
+  margin-top: 12px;
+}

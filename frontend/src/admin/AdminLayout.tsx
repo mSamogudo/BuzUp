@@ -9,6 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import ThemeCustomizer from "../themes/ThemeCustomizer";
 import { useBranding, pickLogo } from "../lib/branding";
 import { NAV_ITEMS, visibleNavItems } from "./navigation";
+import { useLayoutBarra } from "../themes/useLayoutBarra";
 import {
   Sidebar,
   SidebarContent,
@@ -45,6 +46,7 @@ function Casca() {
   const location = useLocation();
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
+  const { layout } = useLayoutBarra();
   const recolhida = state === "collapsed" && !isMobile;
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -82,9 +84,14 @@ function Casca() {
   /** No telemóvel a barra é uma gaveta: navegar tem de a fechar. */
   const fecharSeMovel = () => { if (isMobile) setOpenMobile(false); };
 
-  return (
-    <>
-      <Sidebar collapsible="icon" className="admin-sidebar">
+  const barra = (
+    <Sidebar
+        key="barra"
+        className="admin-sidebar"
+        collapsible={layout.recolha}
+        side={layout.lado}
+        variant={layout.variante}
+      >
         <SidebarHeader className="admin-sidebar-head">
           <div className="admin-sidebar-brand">
             <img alt="BusUp" className={recolhida ? "sidebar-logo-collapsed" : "sidebar-logo"} src={marcaSrc} />
@@ -185,8 +192,10 @@ function Casca() {
           </div>
         </SidebarFooter>
       </Sidebar>
+  );
 
-      <SidebarInset className="admin-main">
+  const principal = (
+    <SidebarInset key="principal" className="admin-main">
         <header className="admin-topbar">
           <div className="admin-topbar-left">
             {/* Um so gatilho para as duas coisas: recolhe no desktop, abre a
@@ -274,7 +283,21 @@ function Casca() {
             <Outlet />
           </div>
         </main>
-      </SidebarInset>
+    </SidebarInset>
+  );
+
+  return (
+    <>
+      {/* A ordem no DOM decide de que lado fica a folga: o Sidebar reserva o
+          espaco com uma div irma, e essa div cai onde ele estiver. Com a barra
+          a direita mas declarada primeiro, o conteudo ganhava um vazio a
+          esquerda e era tapado a direita.
+          
+          As chaves nao sao decorativas: sem elas o React reconcilia por
+          posicao e, ao trocar a ordem, desmonta e remonta as duas subarvores.
+          O personalizador vive na barra de topo — perdia o estado e fechava-se
+          no exacto momento em que se mexia no layout. */}
+      {layout.lado === "right" ? [principal, barra] : [barra, principal]}
 
       {(profileOpen || notifOpen) && (
         <div style={{ position: "fixed", inset: 0, zIndex: 8998 }} onClick={() => { setProfileOpen(false); setNotifOpen(false); }} />

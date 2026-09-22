@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { t } from "../lib/i18n";
 import { mensagemDeErro } from "../lib/errors";
 import { humanizeStatus } from "../lib/format";
@@ -21,7 +30,13 @@ export function StatusBadge({ value }: { value: string }) {
   const success = new Set(["active", "confirmed", "paid", "issued", "approved", "completed", "published", "installed", "used"]);
   const danger = new Set(["blocked", "failed", "cancelled", "rejected", "denied", "lost", "retired", "expired"]);
   const tone = success.has(value) ? "success" : danger.has(value) ? "danger" : "neutral";
-  return <span className={`admin-status admin-status-${tone}`}>{humanizeStatus(value)}</span>;
+  // O Badge do shadcn da a forma; a cor do estado continua nas classes
+  // `admin-status-*`, que ja seguem os tokens e sabem distinguir os tres tons.
+  return (
+    <Badge className={`admin-status admin-status-${tone}`} variant="outline">
+      {humanizeStatus(value)}
+    </Badge>
+  );
 }
 
 export function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
@@ -80,43 +95,43 @@ export function TableActionButton({ icon, label, onClick, tone = "default", load
   icon: ReactNode; label: string; onClick: () => void; tone?: "default" | "danger"; loading?: boolean; disabled?: boolean;
 }) {
   return (
-    <button
+    <Button
       aria-label={label}
       className={`admin-inline-button admin-inline-button-icon${tone === "danger" ? " admin-inline-button-danger" : ""}`}
       disabled={disabled || loading}
       onClick={onClick}
+      size="icon"
       title={label}
       type="button"
+      variant={tone === "danger" ? "ghost" : "ghost"}
     >
       {loading ? <ButtonSpinner size={15} /> : icon}
-    </button>
+    </Button>
   );
 }
 
+/** Modal do portal. Por dentro e o Dialog do shadcn, e isso traz o que a
+ *  versao anterior nao tinha: armadilha de foco (o Tab nao sai do dialogo),
+ *  bloqueio do scroll de fundo, `aria-describedby` ligado a descricao, e
+ *  render em portal — que a versao anterior, montada onde era usada, nao
+ *  fazia. A assinatura fica igual: as 16 chamadas nao mudam. */
 export function AdminModal({ open, onClose, title, description, children }: {
   open: boolean; onClose: () => void; title: string; description?: string; children: ReactNode;
 }) {
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
   return (
-    <>
-      <div className="admin-modal-overlay" onClick={onClose} />
-      <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="admin-modal-card">
-          <div className="admin-modal-head">
-            <div><h3>{title}</h3>{description ? <p>{description}</p> : null}</div>
-            <button className="icon-button" onClick={onClose} type="button"><X size={18} /></button>
-          </div>
-          <div className="admin-modal-body">{children}</div>
-        </div>
-      </div>
-    </>
+    <Dialog open={open} onOpenChange={(aberto) => { if (!aberto) onClose(); }}>
+      {/* `sm:max-w-lg` e estreito de mais para estes formularios, que tem duas
+          colunas de campos. O resto — borda, sombra, animacao, botao de fechar
+          e o scroll quando nao cabe — vem do proprio DialogContent; as classes
+          `admin-modal-*` faziam o mesmo e lutavam com ele. */}
+      <DialogContent className="sm:max-w-[min(1040px,calc(100vw-3rem))] max-h-[calc(100vh-3rem)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -226,9 +241,9 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
       </table>
       {totalPages > 1 && (
         <div className="admin-table-pagination">
-          <button className="secondary-button" disabled={sp <= 1} onClick={() => setPage((c) => Math.max(1, c - 1))} type="button">{t(locale, "previous")}</button>
+          <Button className="secondary-button" disabled={sp <= 1} onClick={() => setPage((c) => Math.max(1, c - 1))} type="button" variant="outline">{t(locale, "previous")}</Button>
           <span>{t(locale, "page")} {sp} {t(locale, "of")} {totalPages}</span>
-          <button className="secondary-button" disabled={sp >= totalPages} onClick={() => setPage((c) => Math.min(totalPages, c + 1))} type="button">{t(locale, "next")}</button>
+          <Button className="secondary-button" disabled={sp >= totalPages} onClick={() => setPage((c) => Math.min(totalPages, c + 1))} type="button" variant="outline">{t(locale, "next")}</Button>
         </div>
       )}
     </div>

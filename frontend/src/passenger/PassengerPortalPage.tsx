@@ -20,10 +20,11 @@ import {
 import { apiBlobUrl, apiDownload, apiFetch, apiPost, apiPublic } from "../lib/api";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { mensagemDeErro } from "../lib/errors";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
-import { StatusBadge } from "../ui/common";
+import { AdminModal, StatusBadge } from "../ui/common";
 import { showToast } from "../lib/toast";
 
 interface ActivePackage {
@@ -535,20 +536,16 @@ export default function PassengerPortalPage() {
           </section>
         )}
       </div>
-
-      {selectedTrip && (
-        <>
-          <div className="admin-modal-overlay" onClick={closePaymentModal} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label={t(locale, "buyTicket")}>
-            <div className="admin-modal-card">
-              <div className="admin-modal-head">
-                <div>
-                  <h3>{t(locale, "buyTicket")}</h3>
-                  <p>{selectedTrip.route_code} - {selectedTrip.route_name}</p>
-                </div>
-                <button className="icon-button" onClick={closePaymentModal} type="button"><X size={18} /></button>
-              </div>
-              <div className="admin-modal-body">
+      {/* Escrito a mao, nao tinha armadilha de foco nem bloqueio do scroll
+          de fundo. O AdminModal ja os traz. */}
+      <AdminModal
+        description={selectedTrip ? `${selectedTrip.route_code} - ${selectedTrip.route_name}` : undefined}
+        onClose={closePaymentModal}
+        open={Boolean(selectedTrip)}
+        title={t(locale, "buyTicket")}
+      >
+        {selectedTrip ? (
+          <>
                 {paymentResult ? (
                   <div className="co-success">
                     <CheckCircle size={48} className="co-success-icon" />
@@ -632,39 +629,20 @@ export default function PassengerPortalPage() {
                     </button>
                   </form>
                 )}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+          </>
+        ) : null}
+      </AdminModal>
+      {/* Painel lateral: o primitivo certo e o Sheet, nao o Dialog. Traz o
+          mesmo que o modal ganhou — foco presa, scroll bloqueado, portal — e
+          dispensa as posicoes fixas escritas a mao que aqui estavam. */}
+      <Sheet onOpenChange={setWalletOpen} open={walletOpen}>
+        <SheetContent className="w-[min(420px,100vw)] overflow-y-auto sm:max-w-none" side="right">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Wallet size={20} /> {t(locale, "myWallet")}
+            </SheetTitle>
+          </SheetHeader>
 
-      {walletOpen && (
-        <>
-          <div className="admin-modal-overlay" onClick={() => setWalletOpen(false)} />
-          <aside
-            className="portal-wallet-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t(locale, "myWallet")}
-            style={{
-              position: "fixed",
-              top: 0,
-              right: 0,
-              bottom: 0,
-              width: "min(420px, 100%)",
-              background: "var(--app-surface-strong, #fff)",
-              boxShadow: "-12px 0 32px rgba(0,0,0,0.18)",
-              zIndex: 60,
-              overflowY: "auto",
-              padding: 20,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 700 }}>
-                <Wallet size={20} /> {t(locale, "myWallet")}
-              </h2>
-              <button className="icon-button" onClick={() => setWalletOpen(false)} type="button"><X size={18} /></button>
-            </div>
 
             <section className="admin-metric-grid" style={{ gridTemplateColumns: "1fr", marginBottom: 16 }}>
               <article className="admin-card admin-card-strong">
@@ -886,9 +864,8 @@ export default function PassengerPortalPage() {
                 ) : null}
               </div>
             </section>
-          </aside>
-        </>
-      )}
+        </SheetContent>
+      </Sheet>
     </main>
   );
 }

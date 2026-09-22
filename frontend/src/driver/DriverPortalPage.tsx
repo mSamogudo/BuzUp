@@ -7,7 +7,7 @@ import { formatCurrency, formatDateTime } from "../lib/format";
 import { t } from "../lib/i18n";
 import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
-import { StatusBadge } from "../ui/common";
+import { AdminModal, StatusBadge } from "../ui/common";
 import { useUi } from "../ui/UiPreferences";
 
 const LIVE_STATUSES = new Set(["boarding", "departed", "paused"]);
@@ -236,25 +236,18 @@ export default function DriverPortalPage() {
         </section>
       </section>
 
-      {closureModal && closureModal.closure_summary && (
-        <>
-          <div className="admin-modal-overlay" onClick={() => setClosureModal(null)} />
-          <div className="admin-modal-shell" role="dialog" aria-modal="true" aria-label={t(lc, "closureSummary")}>
-            <div className="admin-modal-card">
-              <div className="admin-modal-head">
-                <div>
-                  <h3>{t(lc, "tripClosed")}</h3>
-                  <p>{closureModal.route_code} - {closureModal.route_name}</p>
-                </div>
-                <button className="icon-button" onClick={() => setClosureModal(null)} type="button"><X size={18} /></button>
-              </div>
-              <div className="admin-modal-body">
-                <ClosureSummary summary={closureModal.closure_summary} title={t(lc, "financialSummary")} />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Escrito a mao, este modal nao tinha armadilha de foco nem bloqueio
+          do scroll de fundo. O AdminModal ja os traz. */}
+      <AdminModal
+        description={closureModal ? `${closureModal.route_code} - ${closureModal.route_name}` : undefined}
+        onClose={() => setClosureModal(null)}
+        open={Boolean(closureModal?.closure_summary)}
+        title={t(lc, "tripClosed")}
+      >
+        {closureModal?.closure_summary ? (
+          <ClosureSummary summary={closureModal.closure_summary} title={t(lc, "financialSummary")} />
+        ) : null}
+      </AdminModal>
     </main>
   );
 }

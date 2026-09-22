@@ -2003,62 +2003,6 @@ body::-webkit-scrollbar,
    19. Modal
    ========================================================================== */
 
-.admin-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 28;
-  background: rgba(9, 9, 11, 0.50);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  animation: fadeIn 200ms ease;
-}
-
-.admin-modal-shell {
-  position: fixed;
-  inset: 24px;
-  z-index: 29;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-}
-
-.admin-modal-card {
-  width: min(1040px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  pointer-events: auto;
-  border: 1px solid var(--app-border);
-  border-radius: 12px;
-  background: var(--app-surface);
-  box-shadow: 0 24px 64px -16px rgba(9, 9, 11, 0.40);
-  animation: scaleIn 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.admin-modal-head {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid var(--app-border);
-}
-
-.admin-modal-head h3 {
-  margin: 0;
-  font-family: Manrope, Inter, system-ui, sans-serif;
-  font-size: 22px;
-  color: var(--app-text);
-}
-
-.admin-modal-head p {
-  margin: 6px 0 0;
-  color: var(--app-text-muted);
-}
-
-.admin-modal-body {
-  padding: 18px;
-}
-
 /* Confirm Dialog */
 
 .confirm-dialog-overlay {
@@ -3308,14 +3252,6 @@ body::-webkit-scrollbar,
     flex-direction: column;
   }
 
-  .admin-modal-shell {
-    inset: 10px;
-  }
-
-  .admin-modal-card {
-    max-height: calc(100vh - 20px);
-  }
-
   /* Table card layout on mobile */
   .admin-table thead {
     display: none;
@@ -3456,8 +3392,7 @@ html[data-theme="dark"] .admin-topbar h1,
 html[data-theme="dark"] .admin-section-head h3,
 html[data-theme="dark"] .admin-card strong,
 html[data-theme="dark"] .admin-table td,
-html[data-theme="dark"] .admin-definition-list dd,
-html[data-theme="dark"] .admin-modal-head h3 {
+html[data-theme="dark"] .admin-definition-list dd {
   color: var(--app-text);
 }
 
@@ -3617,12 +3552,10 @@ html[data-theme="dark"] .admin-tabbar {
   border-color: #27272a;
 }
 
-html[data-theme="dark"] .admin-modal-overlay,
 html[data-theme="dark"] .confirm-dialog-overlay {
   background: rgba(0, 0, 0, 0.65);
 }
 
-html[data-theme="dark"] .admin-modal-card,
 html[data-theme="dark"] .confirm-dialog-card {
   background: #18181b;
   box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.60);
@@ -4562,16 +4495,6 @@ html[data-theme="dark"] .otp-digit:focus {
   gap: 10px;
 }
 
-.portal-wallet-drawer {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.portal-wallet-drawer::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
 .portal-package-item {
   display: grid;
   gap: 8px;
@@ -5052,7 +4975,6 @@ html[data-theme="dark"] .otp-digit:focus {
     page-break-inside: avoid;
   }
   .vehicle-qr-actions { display: none !important; }
-  .admin-modal-overlay { display: none !important; }
 }
 
 /* ==========================================================================

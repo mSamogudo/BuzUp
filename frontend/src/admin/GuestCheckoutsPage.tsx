@@ -12,6 +12,7 @@ import { useUi } from "../ui/UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "../ui/CampoSelect";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 
 interface GuestCheckout {
   id: number;
@@ -145,11 +146,11 @@ export default function GuestCheckoutsPage() {
                 não se repete.
               </p>
               <div style={{ maxHeight: 240, overflow: "auto", marginTop: 8 }}>
-                <table className="admin-table"><tbody>
+                <Table className="admin-table"><TableBody>
                   {resultado.errors.map((e, i) => (
-                    <tr key={i}><td style={{ width: 70 }}>Linha {e.row}</td><td>{e.detail}</td></tr>
+                    <TableRow key={i}><TableCell style={{ width: 70 }}>Linha {e.row}</TableCell><TableCell>{e.detail}</TableCell></TableRow>
                   ))}
-                </tbody></table>
+                </TableBody></Table>
               </div>
             </>
           ) : (

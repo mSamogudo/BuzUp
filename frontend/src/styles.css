@@ -1293,6 +1293,21 @@ body::-webkit-scrollbar,
 .admin-topbar-left {
   gap: 12px;
   min-width: 0;
+  /* `min-width: 0` deixa a caixa encolher, mas sozinho nao chega: o conteudo
+     continua a desenhar-se para fora dela. A 390px o caminho "Portal /
+     Auditoria" saia 24px por cima dos botoes de idioma. */
+  overflow: hidden;
+}
+
+.admin-topbar-left > * {
+  min-width: 0;
+}
+
+.admin-breadcrumbs,
+.admin-topbar h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-topbar-right {
@@ -2452,6 +2467,13 @@ body::-webkit-scrollbar,
 .admin-tabbar {
   display: flex;
   flex-wrap: wrap;
+  /* O TabsList do shadcn traz `h-9`, altura fixa de 36px, e nao envolve. Aqui
+     as abas tem 38px e mudam de linha em ecras estreitos: sem isto, a aba
+     activa saia 2px para fora da caixa. */
+  height: auto;
+  width: auto;
+  /* E `justify-center`, que punha as abas ao meio da barra. */
+  justify-content: flex-start;
   gap: 4px;
   padding: 4px;
   border-radius: 10px;
@@ -2462,6 +2484,10 @@ body::-webkit-scrollbar,
 .admin-tab {
   display: inline-flex;
   align-items: center;
+  /* O TabsTrigger traz `flex-1` e `h-[calc(100%-1px)]`; aqui as abas tem a
+     largura do seu texto e a altura propria. */
+  flex: 0 0 auto;
+  height: auto;
   gap: 10px;
   min-height: 38px;
   padding: 0 14px;
@@ -2542,6 +2568,12 @@ body::-webkit-scrollbar,
   gap: 4px;
   cursor: pointer;
   user-select: none;
+  /* Passou de `<span>` a `<button>` para poder receber foco e responder ao
+     Enter. O preflight que zera a moldura dos botoes nao esta importado, so
+     o pedaco do fundo, por isso a moldura do sistema vinha atras. */
+  border: 0;
+  padding: 0;
+  color: inherit;
 }
 
 .sortable-header:hover { color: var(--app-accent); }
@@ -3049,6 +3081,13 @@ body::-webkit-scrollbar,
     letter-spacing: 0.04em;
     flex-shrink: 0;
     margin-right: 12px;
+  }
+
+  /* O TableCell do shadcn traz `whitespace-nowrap`, que em ecra largo e bom
+     — a tabela fica compacta e o contentor rola. Aqui nao rola nada: cada
+     linha e um cartao, e um texto que nao quebra sai pela borda fora. */
+  .admin-table tbody td {
+    white-space: normal;
   }
 
   .admin-table-primary strong,

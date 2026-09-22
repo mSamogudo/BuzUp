@@ -80,6 +80,11 @@ export default function ThemeCustomizer() {
   return (
     <>
       <Button variant="outline" size="icon"
+        // Abaixo dos 960px a barra de topo tem seis controlos para ~358px de
+        // espaco e o grupo da direita transbordava para cima do titulo. Este
+        // e o botao que pode faltar num telemovel: e ferramenta de desenho,
+        // nao de operacao. `desktop-only` e o mecanismo que a folha ja usa.
+        className="desktop-only"
         type="button"
         aria-label="Personalizar tema"
         title="Personalizar tema"

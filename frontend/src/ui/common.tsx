@@ -16,6 +16,9 @@ import { useUi } from "./UiPreferences";
 import { Button } from "@/components/ui/button";
 import { CampoSelect } from "./CampoSelect";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 export type TableColumn<T> = {
   header: string;
@@ -225,29 +228,41 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
             {[10, 25, 50, 100].map((s) => <option key={s} value={s}>{s}</option>)}
         </CampoSelect>
       </div>
-      <table className="admin-table">
-        <thead><tr>{columns.map((c) => (
-          <th className={c.className} key={c.header}>
+      {/* A classe `admin-table` fica. O Table do shadcn rola na horizontal
+          em ecras estreitos; esta folha faz outra coisa — abaixo dos 900px
+          cada linha vira um cartao, com o nome da coluna vindo do
+          `data-label`. Trocar uma coisa pela outra era perder uma funcao num
+          produto que se usa no telemovel. */}
+      <Table className="admin-table">
+        <TableHeader><TableRow>{columns.map((c) => (
+          <TableHead
+            aria-sort={sortBy === c.sortKey ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+            className={c.className}
+            key={c.header}
+          >
             {c.sortKey ? (
-              <span className="sortable-header" onClick={() => toggleSort(c.sortKey!)}>
+              // Era um `<span onClick>`: nao recebia foco, nao respondia ao
+              // Enter e nao se anunciava como accionavel. Ordenar uma tabela
+              // pelo teclado era impossivel.
+              <button className="sortable-header" onClick={() => toggleSort(c.sortKey!)} type="button">
                 {c.header}
                 <span className={`sort-icon${sortBy === c.sortKey ? " sort-icon-active" : ""}`}>
                   {sortBy === c.sortKey && sortDir === "asc" ? <ChevronUp size={12} /> : sortBy === c.sortKey && sortDir === "desc" ? <ChevronDown size={12} /> : <ChevronUp size={10} />}
                 </span>
-              </span>
+              </button>
             ) : c.header}
-          </th>
-        ))}</tr></thead>
-        <tbody>
+          </TableHead>
+        ))}</TableRow></TableHeader>
+        <TableBody>
           {visible.length > 0 ? visible.map((row) => (
-            <tr key={rowKey(row)}>
-              {columns.map((c) => <td className={c.className} data-label={c.header} key={c.header}>{c.render(row)}</td>)}
-            </tr>
+            <TableRow key={rowKey(row)}>
+              {columns.map((c) => <TableCell className={c.className} data-label={c.header} key={c.header}>{c.render(row)}</TableCell>)}
+            </TableRow>
           )) : (
-            <tr><td className="admin-empty-state" colSpan={columns.length}>{nq ? t(locale, "noResults") : emptyMessage}</td></tr>
+            <TableRow><TableCell className="admin-empty-state" colSpan={columns.length}>{nq ? t(locale, "noResults") : emptyMessage}</TableCell></TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
       {totalPages > 1 && (
         <div className="admin-table-pagination">
           <Button size="lg" disabled={sp <= 1} onClick={() => setPage((c) => Math.max(1, c - 1))} type="button" variant="outline">{t(locale, "previous")}</Button>
@@ -261,33 +276,48 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
 
 export function TabBar({ items, value, onChange }: { items: { key: string; label: string; count?: number }[]; value: string; onChange: (key: string) => void }) {
   return (
-    <div className="admin-tabbar" role="tablist">
-      {items.map((item) => (
-        <button
-          aria-selected={item.key === value}
-          className={`admin-tab${item.key === value ? " admin-tab-active" : ""}`}
-          key={item.key}
-          onClick={() => onChange(item.key)}
-          role="tab"
-          type="button"
-        >
-          <span>{item.label}</span>
-          {typeof item.count === "number" ? <strong>{item.count}</strong> : null}
-        </button>
-      ))}
-    </div>
+    <Tabs onValueChange={onChange} value={value}>
+      <TabsList className="admin-tabbar">
+        {items.map((item) => (
+          <TabsTrigger
+            // Os paineis sao renderizados pelas paginas, fora deste
+            // componente, por isso nao ha `TabsContent` a que ligar. Um
+            // `aria-controls` a apontar para um id inexistente e pior do que
+            // a sua ausencia — a especificacao recomenda-o, nao o exige.
+            aria-controls={undefined}
+            className={`admin-tab${item.key === value ? " admin-tab-active" : ""}`}
+            key={item.key}
+            value={item.key}
+          >
+            <span>{item.label}</span>
+            {typeof item.count === "number" ? <strong>{item.count}</strong> : null}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 
 export function SegmentedControl({ items, value, onChange }: { items: { key: string; label: string }[]; value: string; onChange: (key: string) => void }) {
   return (
-    <div className="segmented-control">
+    <ToggleGroup
+      className="segmented-control"
+      // `onValueChange` da string vazia quando se carrega no que ja esta
+      // escolhido; aqui isso deixaria a lista sem filtro nenhum.
+      onValueChange={(v) => { if (v) onChange(v); }}
+      type="single"
+      value={value}
+    >
       {items.map((item) => (
-        <button key={item.key} className={`segmented-item${item.key === value ? " segmented-item-active" : ""}`} onClick={() => onChange(item.key)} type="button">
+        <ToggleGroupItem
+          className={`segmented-item${item.key === value ? " segmented-item-active" : ""}`}
+          key={item.key}
+          value={item.key}
+        >
           {item.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
 

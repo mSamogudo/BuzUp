@@ -11,6 +11,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 type RouteDirection = "outbound" | "inbound";
 
@@ -70,8 +71,8 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "routes")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newRoute")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newRoute")}</Button>
       </>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String((rows || []).length)} />
@@ -146,8 +147,8 @@ export default function RoutesPage({ embedded }: { embedded?: boolean }) {
             O tipo de serviço decide se o passageiro escolhe lugar: nas carreiras urbanas ninguém escolhe, nas interprovinciais e internacionais a planta do autocarro é mostrada na compra. Escolher mal faz o passo desaparecer ou aparecer onde não devia.
           </p>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

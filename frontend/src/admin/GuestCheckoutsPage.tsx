@@ -9,6 +9,7 @@ import { DetailDrawer } from "../ui/DetailDrawer";
 import { mensagemDeErro } from "../lib/errors";
 import { t, type Locale } from "../lib/i18n";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 interface GuestCheckout {
   id: number;
@@ -156,10 +157,10 @@ export default function GuestCheckoutsPage() {
             </p>
           )}
           <div className="admin-form-actions">
-            <button className="primary-button" type="button"
-              onClick={() => { setResultado(null); setFicheiro(null); }}>{t(lc, "importAnother")}</button>
-            <button className="secondary-button" type="button"
-              onClick={() => setImportar(false)}>{t(lc, "close")}</button>
+            <Button size="lg" type="button"
+              onClick={() => { setResultado(null); setFicheiro(null); }}>{t(lc, "importAnother")}</Button>
+            <Button variant="outline" size="lg" type="button"
+              onClick={() => setImportar(false)}>{t(lc, "close")}</Button>
           </div>
         </div>
       ) : (
@@ -174,12 +175,12 @@ export default function GuestCheckoutsPage() {
             sistema antigo é a chave: carregar o mesmo ficheiro duas vezes não duplica nada.
           </p>
           <div className="admin-form-actions">
-            <button className="primary-button" type="button"
+            <Button size="lg" type="button"
               disabled={!ficheiro || aCarregar} onClick={carregarFicheiro}>
               {aCarregar ? "A carregar…" : "Carregar"}
-            </button>
-            <button className="secondary-button" type="button"
-              onClick={() => setImportar(false)}>{t(lc, "cancel")}</button>
+            </Button>
+            <Button variant="outline" size="lg" type="button"
+              onClick={() => setImportar(false)}>{t(lc, "cancel")}</Button>
           </div>
         </div>
       )}
@@ -217,16 +218,16 @@ export default function GuestCheckoutsPage() {
     <PageFrame kicker={t(lc, "finance")} title={t(lc, "guestCheckouts")}
       description={t(lc, "guestPurchasesHint")}
       action={<>
-        <button className="icon-text-button" onClick={descarregarModelo} type="button">
+        <Button variant="outline" onClick={descarregarModelo} type="button">
           <Download size={15} /><span>{t(lc, "template")}</span>
-        </button>
-        <button className="icon-text-button" type="button"
+        </Button>
+        <Button variant="outline" type="button"
           onClick={() => { setFicheiro(null); setResultado(null); setImportar(true); }}>
           <Upload size={15} /><span>{t(lc, "importHistory")}</span>
-        </button>
-        <button className="icon-text-button" onClick={reload} type="button">
+        </Button>
+        <Button variant="outline" onClick={reload} type="button">
           <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
-        </button>
+        </Button>
       </>}>
       {modalImportacao}
       <SectionCard title={t(lc, "purchases")} description={t(lc, "guestCheckoutsHint")}>

@@ -9,6 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TabBar, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface UserRecord { id: number; uuid: string; username: string; email: string; phone: string; first_name: string; last_name: string; is_active: boolean; roles: { id: number; role_id: number; role_name: string; role_code: string }[]; created_at: string; }
 interface RoleRecord { id: number; uuid: string; name: string; code: string; permissions: string[]; description: string; is_system: boolean; }
@@ -136,8 +137,8 @@ function UsersTab() {
   return (
     <SectionCard title={t(lc, "users")}>
       <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "create")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "create")}</Button>
       </div>
       <DataTable columns={[
         { header: t(lc, "name"), sortKey: "username", render: (r: UserRecord) => <TablePrimaryCell title={`${r.first_name} ${r.last_name}`.trim() || r.username} subtitle={r.email} /> },
@@ -183,8 +184,8 @@ function UsersTab() {
             ))}
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -233,8 +234,8 @@ function RolesTab() {
   return (
     <SectionCard title={t(lc, "roles")}>
       <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "create")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "create")}</Button>
       </div>
       <DataTable columns={[
         { header: t(lc, "name"), sortKey: "name", render: (r: RoleRecord) => <TablePrimaryCell title={r.name} subtitle={r.code} /> },
@@ -264,8 +265,8 @@ function RolesTab() {
           <div style={{ margin: "12px 0 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <strong style={{ fontSize: 13 }}>Permissoes ({selectedPerms.size})</strong>
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="secondary-button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={selectAll}>{t(lc, "allRoutes")}</button>
-              <button type="button" className="secondary-button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={clearAll}>{t(lc, "clear")}</button>
+              <Button variant="outline" size="lg" type="button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={selectAll}>{t(lc, "allRoutes")}</Button>
+              <Button variant="outline" size="lg" type="button" style={{ fontSize: 11, padding: "3px 10px" }} onClick={clearAll}>{t(lc, "clear")}</Button>
             </div>
           </div>
           <div className="perm-grid">
@@ -277,8 +278,8 @@ function RolesTab() {
             ))}
           </div>
           <div className="admin-form-actions" style={{ marginTop: 16 }}>
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

@@ -8,6 +8,7 @@ import { AdminModal, SectionCard } from "../ui/common";
 import { useConfirm } from "../ui/ConfirmDialog";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 /** Tabela de preços de uma rota: uma grelha origem × destino.
  *
@@ -246,7 +247,7 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
                 <strong>{t(lc, "outboundOnly")}</strong>
                 <p>O regresso não é sequer um trajecto válido: a compra é recusada antes de se olhar para o preço. Criar o sentido de volta espelha as paragens da ida pela ordem inversa.</p>
               </div>
-              <button className="primary-button" disabled={busy} onClick={criarVolta} type="button">{t(lc, "createInbound")}</button>
+              <Button size="lg" disabled={busy} onClick={criarVolta} type="button">{t(lc, "createInbound")}</Button>
             </div>
           ) : null}
 
@@ -255,20 +256,20 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
               <select value={method} onChange={(e) => setMethod(e.target.value)} aria-label={t(lc, "templateMethod")}>
                 {metodos(lc).map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
               </select>
-              <button className="icon-text-button" onClick={descarregarModelo} type="button">
+              <Button variant="outline" onClick={descarregarModelo} type="button">
                 <Download size={15} /><span>{t(lc, "excelTemplate")}</span>
-              </button>
-              <button className="icon-text-button" onClick={() => { setFile(null); setPreview(null); setImportModal(true); }} type="button">
+              </Button>
+              <Button variant="outline" onClick={() => { setFile(null); setPreview(null); setImportModal(true); }} type="button">
                 <Upload size={15} /><span>{t(lc, "importExcel")}</span>
-              </button>
-              <button className="icon-text-button" onClick={() => setFillModal(true)} type="button">
+              </Button>
+              <Button variant="outline" onClick={() => setFillModal(true)} type="button">
                 <Sparkles size={15} /><span>{t(lc, "fillByStops")}</span>
-              </button>
+              </Button>
             </div>
             <div className="admin-toolbar-spacer" />
-            <button className="primary-button" disabled={busy || !dirty} onClick={gravar} type="button">
+            <Button size="lg" disabled={busy || !dirty} onClick={gravar} type="button">
               {busy ? "A gravar…" : "Gravar tabela"}
-            </button>
+            </Button>
           </div>
           <p className="dash-kpi-note">{metodos(lc).find((m) => m.key === method)?.hint}</p>
 
@@ -331,8 +332,8 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy || !fill.base} onClick={preencher} type="button">{t(lc, "fillGrid")}</button>
-            <button className="secondary-button" onClick={() => setFillModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy || !fill.base} onClick={preencher} type="button">{t(lc, "fillGrid")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setFillModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </div>
       </AdminModal>
@@ -354,11 +355,11 @@ export default function FareMatrixTab({ routes }: { routes: RouteOption[] }) {
           ) : null}
           <div className="admin-form-actions">
             {preview ? (
-              <button className="primary-button" disabled={busy} onClick={() => enviarExcel(true)} type="button">{t(lc, "apply")}</button>
+              <Button size="lg" disabled={busy} onClick={() => enviarExcel(true)} type="button">{t(lc, "apply")}</Button>
             ) : (
-              <button className="primary-button" disabled={busy || !file} onClick={() => enviarExcel(false)} type="button">{t(lc, "preview")}</button>
+              <Button size="lg" disabled={busy || !file} onClick={() => enviarExcel(false)} type="button">{t(lc, "preview")}</Button>
             )}
-            <button className="secondary-button" onClick={() => setImportModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button variant="outline" size="lg" onClick={() => setImportModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </div>
       </AdminModal>

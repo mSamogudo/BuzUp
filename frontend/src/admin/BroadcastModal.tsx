@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import { AdminModal } from "../ui/common";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 const LIMITE = 320;
 
@@ -157,12 +158,12 @@ export default function BroadcastModal({
         </div>
 
         <div className="admin-form-actions">
-          <button className="primary-button" type="submit" disabled={!pronto || aEnviar}>
+          <Button size="lg" type="submit" disabled={!pronto || aEnviar}>
             {aEnviar ? "A enviar…" : (
               <><Send size={16} />{previa ? ` Enviar a ${previa.recipients}` : " Enviar"}</>
             )}
-          </button>
-          <button className="secondary-button" type="button" onClick={onClose}>{t(lc, "cancel")}</button>
+          </Button>
+          <Button variant="outline" size="lg" type="button" onClick={onClose}>{t(lc, "cancel")}</Button>
         </div>
         <small style={{ opacity: 0.7 }}>
           {t(lc, "broadcastLogHint")}

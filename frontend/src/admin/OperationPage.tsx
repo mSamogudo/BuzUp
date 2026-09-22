@@ -14,6 +14,7 @@ import {
 } from "../ui/common";
 import { useConfirm } from "../ui/ConfirmDialog";
 import SchedulesPage from "./SchedulesPage";
+import { Button } from "@/components/ui/button";
 
 interface Trip {
   id: number; uuid: string;
@@ -174,27 +175,27 @@ export default function OperationPage() {
 
   const action = tab === "viagens" ? (
     <>
-      <button className="icon-text-button" onClick={reload} type="button">
+      <Button variant="outline" onClick={reload} type="button">
         <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
-      </button>
-      <button className="icon-text-button" onClick={() => navigate("/app/trips/schedule")} type="button">
+      </Button>
+      <Button variant="outline" onClick={() => navigate("/app/trips/schedule")} type="button">
         <CalendarClock size={16} /><span>{t(lc, "scheduleTrips")}</span>
-      </button>
-      <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button">
+      </Button>
+      <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button">
         <Plus size={16} /> {t(lc, "newTrip")}
-      </button>
+      </Button>
     </>
   ) : (
     <>
-      <button className="icon-text-button" onClick={() => scheduleActions?.reload()} type="button">
+      <Button variant="outline" onClick={() => scheduleActions?.reload()} type="button">
         <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
-      </button>
-      <button className="icon-text-button" onClick={() => navigate("/app/trips/schedule")} type="button">
+      </Button>
+      <Button variant="outline" onClick={() => navigate("/app/trips/schedule")} type="button">
         <CalendarClock size={16} /><span>{t(lc, "scheduleTrips")}</span>
-      </button>
-      <button className="primary-button" onClick={() => scheduleActions?.create()} type="button">
+      </Button>
+      <Button size="lg" onClick={() => scheduleActions?.create()} type="button">
         <Plus size={16} /> {t(lc, "newSchedule")}
-      </button>
+      </Button>
     </>
   );
 
@@ -338,10 +339,10 @@ export default function OperationPage() {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">
+            <Button size="lg" disabled={busy} type="submit">
               {busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}
-            </button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            </Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

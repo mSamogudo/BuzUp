@@ -8,6 +8,7 @@ import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { PageFrame, SectionCard, useAsyncData } from "../ui/common";
+import { Button } from "@/components/ui/button";
 
 type RouteDirection = "outbound" | "inbound";
 
@@ -147,12 +148,12 @@ export default function RouteStopsPage() {
       kicker={t(lc, "operation")}
       title={title}
       action={<>
-        <button className="icon-text-button" onClick={() => navigate("/app/routes")} type="button">
+        <Button variant="outline" onClick={() => navigate("/app/routes")} type="button">
           <ArrowLeft size={16} /><span>{t(lc, "back")}</span>
-        </button>
-        <button className="icon-text-button" onClick={() => void load()} type="button">
+        </Button>
+        <Button variant="outline" onClick={() => void load()} type="button">
           <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
-        </button>
+        </Button>
       </>}
     >
       <SectionCard title={t(lc, "routeStops")}>
@@ -179,7 +180,7 @@ export default function RouteStopsPage() {
               </select>
             </label>
             <div className="route-stop-add-action">
-              <button className="secondary-button" onClick={addRouteStop} type="button"><Plus size={15} /> {t(lc, "addStop")}</button>
+              <Button variant="outline" size="lg" onClick={addRouteStop} type="button"><Plus size={15} /> {t(lc, "addStop")}</Button>
             </div>
           </div>
 
@@ -219,14 +220,13 @@ export default function RouteStopsPage() {
                               <strong>{item.stop_name}</strong>
                               <span>{item.stop_code || "-"} · {item.distance_from_start_km || "0"} km</span>
                             </div>
-                            <button
-                              className="icon-button"
+                            <Button variant="outline" size="icon"
                               onClick={() => setRouteStops(resequence(routeStops.filter((s) => stopKey(s) !== key)))}
                               title={t(lc, "delete")}
                               type="button"
                             >
                               <X size={15} />
-                            </button>
+                            </Button>
                           </li>
                         );
                       })}
@@ -238,8 +238,8 @@ export default function RouteStopsPage() {
           </div>
 
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} onClick={saveRouteStops} type="button"><Save size={15} /> {busy ? t(lc, "saving") : t(lc, "saveStops")}</button>
-            <button className="secondary-button" onClick={() => navigate("/app/routes")} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} onClick={saveRouteStops} type="button"><Save size={15} /> {busy ? t(lc, "saving") : t(lc, "saveStops")}</Button>
+            <Button variant="outline" size="lg" onClick={() => navigate("/app/routes")} type="button">{t(lc, "cancel")}</Button>
           </div>
         </div>
       </SectionCard>

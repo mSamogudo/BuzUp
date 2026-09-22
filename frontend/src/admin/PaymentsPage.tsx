@@ -8,6 +8,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { Button } from "@/components/ui/button";
 
 interface PI {
   id: number;
@@ -111,7 +112,7 @@ export default function PaymentsPage() {
     <PageFrame
       kicker={t(lc, "financial")}
       title={t(lc, "payments")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>}>
 
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String(filtered.length)} />

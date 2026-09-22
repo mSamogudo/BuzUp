@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface WalletRecord { id: number; uuid: string; passenger_name: string; passenger_phone: string; balance_cached: string; currency: string; status: string; created_at: string; }
 interface WalletTx { id: number; uuid: string; type: string; direction: string; amount: string; balance_before: string; balance_after: string; reference: string; source: string; status: string; created_at: string; }
@@ -24,7 +25,7 @@ export default function WalletsPage() {
 
   return (
     <PageFrame kicker={t(lc, "financial")} title={t(lc, "wallets")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "wallets")} value={String((wallets || []).length)} />
         <MetricCard label={t(lc, "balance")} value={formatCurrency(totalBalance)} />

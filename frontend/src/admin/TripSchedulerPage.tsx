@@ -13,6 +13,7 @@ import { PageFrame, useAsyncData } from "../ui/common";
 import TripCalendar from "./TripCalendar";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 interface RouteOpt { id: number; code: string; name: string; service_type?: string }
 interface VehicleOpt { id: number; registration: string; seated_capacity?: number }
@@ -186,9 +187,9 @@ export default function TripSchedulerPage() {
       title={t(lc, "scheduleTrips")}
       description={t(lc, "schedulerHint")}
       action={
-        <button className="icon-text-button" type="button" onClick={() => navigate("/app/trips")}>
+        <Button variant="outline" type="button" onClick={() => navigate("/app/trips")}>
           <ArrowLeft size={16} /><span>{t(lc, "backToTrips")}</span>
-        </button>
+        </Button>
       }
     >
       <div className="bzsched-modes" role="tablist" aria-label={t(lc, "schedulingMode")}>
@@ -422,12 +423,12 @@ export default function TripSchedulerPage() {
             </>
           )}
         </div>
-        <button className="primary-button" type="button" disabled={!podeCriar || aCriar || aCalcular}
+        <Button size="lg" type="button" disabled={!podeCriar || aCriar || aCalcular}
           onClick={() => void criar()}>
           {aCriar ? "A programar…" : (
             <><CheckCircle2 size={16} /> {totalACriar > 0 ? ` Criar ${totalACriar} partidas` : " Criar partidas"}</>
           )}
-        </button>
+        </Button>
       </div>
     </PageFrame>
   );

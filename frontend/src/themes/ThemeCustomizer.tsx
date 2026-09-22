@@ -7,6 +7,7 @@ import { CORES_DE_MARCA, RAIOS, type TemaDeCor } from "./tipos";
 import { tpmTurPreset } from "./presets/tpm-tur";
 import { LADOS, RECOLHAS, VARIANTES, useLayoutBarra } from "./useLayoutBarra";
 import "./customizer.css";
+import { Button } from "@/components/ui/button";
 
 /** Os 51 presets do template sao ~140KB de dados. Carregam-se so quando o
  *  painel abre — nao ha razao para os pedir a quem nunca o abre. (No arranque,
@@ -78,15 +79,14 @@ export default function ThemeCustomizer() {
 
   return (
     <>
-      <button
-        className="icon-button"
+      <Button variant="outline" size="icon"
         type="button"
         aria-label="Personalizar tema"
         title="Personalizar tema"
         onClick={() => setAberto(true)}
       >
         <Palette size={18} />
-      </button>
+      </Button>
 
       {aberto && createPortal(
         /* Em portal para o <body>, e nao onde o botao vive: o `.admin-topbar`
@@ -105,9 +105,9 @@ export default function ThemeCustomizer() {
                 <p className="tc-kicker">Aparência</p>
                 <strong>Personalizar tema</strong>
               </div>
-              <button className="icon-button" type="button" aria-label="Fechar" onClick={() => setAberto(false)}>
+              <Button variant="outline" size="icon" type="button" aria-label="Fechar" onClick={() => setAberto(false)}>
                 <X size={18} />
-              </button>
+              </Button>
             </header>
 
             <section className="tc-seccao">

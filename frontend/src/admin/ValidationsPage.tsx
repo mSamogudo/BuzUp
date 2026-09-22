@@ -7,6 +7,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { Button } from "@/components/ui/button";
 
 interface VE { id: number; uuid: string; validation_type: string; status: string; failure_reason: string; amount_debited: string; route_code: string; device_serial: string; created_at: string; }
 
@@ -21,7 +22,7 @@ export default function ValidationsPage() {
 
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "validations")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String((rows || []).length)} />
         <MetricCard label={t(lc, "approved")} value={String(approved.length)} detail={formatCurrency(approved.reduce((s, r) => s + parseFloat(r.amount_debited || "0"), 0))} />

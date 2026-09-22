@@ -22,6 +22,7 @@ import {
   useAsyncData,
   type TableColumn,
 } from "../ui/common";
+import { Button } from "@/components/ui/button";
 
 interface DayCloseRow {
   id: number;
@@ -199,16 +200,20 @@ export default function AgentRevenuePage() {
       render: (r) => (
         <span style={{ display: "inline-flex", gap: 6 }}>
           <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => openDetail(r)} />
-          <button className="admin-inline-button admin-inline-button-icon" type="button"
-            disabled={exporting !== null} onClick={() => void exportReport("pdf", "session", r.id)}
-            title={exporting === exportKey("pdf", "session", r.id) ? t(lc, "preparingDownload") : t(lc, "exportPdf")}>
-            {exporting === exportKey("pdf", "session", r.id) ? <ButtonSpinner size={15} /> : <FileText size={15} />}
-          </button>
-          <button className="admin-inline-button admin-inline-button-icon" type="button"
-            disabled={exporting !== null} onClick={() => void exportReport("xlsx", "session", r.id)}
-            title={exporting === exportKey("xlsx", "session", r.id) ? t(lc, "preparingDownload") : t(lc, "exportExcel")}>
-            {exporting === exportKey("xlsx", "session", r.id) ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
-          </button>
+          <TableActionButton
+            disabled={exporting !== null}
+            icon={<FileText size={15} />}
+            label={exporting === exportKey("pdf", "session", r.id) ? t(lc, "preparingDownload") : t(lc, "exportPdf")}
+            loading={exporting === exportKey("pdf", "session", r.id)}
+            onClick={() => void exportReport("pdf", "session", r.id)}
+          />
+          <TableActionButton
+            disabled={exporting !== null}
+            icon={<FileSpreadsheet size={15} />}
+            label={exporting === exportKey("xlsx", "session", r.id) ? t(lc, "preparingDownload") : t(lc, "exportExcel")}
+            loading={exporting === exportKey("xlsx", "session", r.id)}
+            onClick={() => void exportReport("xlsx", "session", r.id)}
+          />
         </span>
       ),
     },
@@ -239,19 +244,19 @@ export default function AgentRevenuePage() {
       description={t(lc, "agentRevenueHint")}
       action={
         <>
-          <button className="icon-text-button" onClick={reloadBoth} type="button">
+          <Button variant="outline" onClick={reloadBoth} type="button">
             <RefreshCw size={15} /><span>{t(lc, "refresh")}</span>
-          </button>
-          <button className="icon-text-button" type="button" disabled={exporting !== null}
+          </Button>
+          <Button variant="outline" type="button" disabled={exporting !== null}
             onClick={() => void exportReport("pdf", "summary")}>
             {exporting === exportKey("pdf", "summary") ? <ButtonSpinner size={15} /> : <FileText size={15} />}
             <span>{exporting === exportKey("pdf", "summary") ? t(lc, "preparingDownload") : t(lc, "summaryPdf")}</span>
-          </button>
-          <button className="icon-text-button" type="button" disabled={exporting !== null}
+          </Button>
+          <Button variant="outline" type="button" disabled={exporting !== null}
             onClick={() => void exportReport("xlsx", "summary")}>
             {exporting === exportKey("xlsx", "summary") ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
             <span>{exporting === exportKey("xlsx", "summary") ? t(lc, "preparingDownload") : t(lc, "summaryExcel")}</span>
-          </button>
+          </Button>
         </>
       }
     >
@@ -274,13 +279,13 @@ export default function AgentRevenuePage() {
               placeholder={t(lc, "searchAgentHint")} />
           </label>
           <div style={{ display: "flex", gap: 8, paddingBottom: 6 }}>
-            <button className="icon-text-button" onClick={reloadBoth} type="button">
+            <Button variant="outline" onClick={reloadBoth} type="button">
               <Search size={15} /><span>{t(lc, "apply")}</span>
-            </button>
+            </Button>
             {agentFilter && (
-              <button className="icon-text-button" onClick={() => setAgentFilter("")} type="button">
+              <Button variant="outline" onClick={() => setAgentFilter("")} type="button">
                 <X size={15} /><span>{t(lc, "clear")}</span>
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -346,16 +351,16 @@ export default function AgentRevenuePage() {
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="icon-text-button" type="button" disabled={exporting !== null}
+              <Button variant="outline" type="button" disabled={exporting !== null}
                 onClick={() => void exportReport("pdf", "session", detail.id)}>
                 {exporting === exportKey("pdf", "session", detail.id) ? <ButtonSpinner size={15} /> : <FileText size={15} />}
                 <span>{exporting === exportKey("pdf", "session", detail.id) ? t(lc, "preparingDownload") : t(lc, "sessionPdf")}</span>
-              </button>
-              <button className="icon-text-button" type="button" disabled={exporting !== null}
+              </Button>
+              <Button variant="outline" type="button" disabled={exporting !== null}
                 onClick={() => void exportReport("xlsx", "session", detail.id)}>
                 {exporting === exportKey("xlsx", "session", detail.id) ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
                 <span>{exporting === exportKey("xlsx", "session", detail.id) ? t(lc, "preparingDownload") : t(lc, "sessionExcel")}</span>
-              </button>
+              </Button>
             </div>
 
             <SectionCard title={`Vendas (${(detail.payload.sales || []).length})`}>

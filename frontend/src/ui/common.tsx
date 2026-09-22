@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { humanizeStatus } from "../lib/format";
 import { showToast } from "../lib/toast";
 import { useUi } from "./UiPreferences";
+import { Button } from "@/components/ui/button";
 
 export type TableColumn<T> = {
   header: string;
@@ -97,13 +97,17 @@ export function TableActionButton({ icon, label, onClick, tone = "default", load
   return (
     <Button
       aria-label={label}
-      className={`admin-inline-button admin-inline-button-icon${tone === "danger" ? " admin-inline-button-danger" : ""}`}
+      className={
+        tone === "danger"
+          ? "border-destructive/15 bg-destructive/5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          : undefined
+      }
       disabled={disabled || loading}
       onClick={onClick}
-      size="icon"
+      size="icon-sm"
       title={label}
       type="button"
-      variant={tone === "danger" ? "ghost" : "ghost"}
+      variant="outline"
     >
       {loading ? <ButtonSpinner size={15} /> : icon}
     </Button>
@@ -202,7 +206,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
             <div className="admin-table-filter-row">
               <Search aria-hidden="true" className="admin-table-filter-icon" size={15} />
               <input placeholder={t(locale, "searchPlaceholder")} type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
-              {query ? <button className="icon-button admin-table-filter-clear" onClick={() => setQuery("")} type="button"><X size={15} /></button> : null}
+              {query ? <Button variant="outline" size="icon" className="admin-table-filter-clear" onClick={() => setQuery("")} type="button"><X size={15} /></Button> : null}
             </div>
           </label>
         ) : <span />}
@@ -241,9 +245,9 @@ export function DataTable<T>({ columns, rows, rowKey, loading, emptyMessage, fil
       </table>
       {totalPages > 1 && (
         <div className="admin-table-pagination">
-          <Button className="secondary-button" disabled={sp <= 1} onClick={() => setPage((c) => Math.max(1, c - 1))} type="button" variant="outline">{t(locale, "previous")}</Button>
+          <Button size="lg" disabled={sp <= 1} onClick={() => setPage((c) => Math.max(1, c - 1))} type="button" variant="outline">{t(locale, "previous")}</Button>
           <span>{t(locale, "page")} {sp} {t(locale, "of")} {totalPages}</span>
-          <Button className="secondary-button" disabled={sp >= totalPages} onClick={() => setPage((c) => Math.min(totalPages, c + 1))} type="button" variant="outline">{t(locale, "next")}</Button>
+          <Button size="lg" disabled={sp >= totalPages} onClick={() => setPage((c) => Math.min(totalPages, c + 1))} type="button" variant="outline">{t(locale, "next")}</Button>
         </div>
       )}
     </div>

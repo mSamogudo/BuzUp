@@ -15,7 +15,13 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
 const BASE = process.env.BUZUP_BASE_URL ?? 'http://localhost:3008'
-const ETIQUETA = process.argv[2] ?? 'antes'
+// Sem valor por omissao de proposito: `antes/` e a linha de base e esteve
+// a ser o predefinido, por isso uma corrida distraida escrevia-lhe por cima.
+const ETIQUETA = process.argv[2]
+if (!ETIQUETA) {
+  console.error('uso: node capturar.mjs <etiqueta>   (ex.: fase4)')
+  process.exit(1)
+}
 const DESTINO = path.join('capturas', ETIQUETA)
 
 const PUBLICAS = [

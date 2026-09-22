@@ -8,6 +8,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { Button } from "@/components/ui/button";
 
 interface AuditEntry {
   id: number; actor: number | null; actor_name: string; action: string;
@@ -55,7 +56,7 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
 
   return (
     <PageFrame kicker={t(lc, "security")} title={t(lc, "audit")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>}>
       <SectionCard title={t(lc, "audit")}>
         <div className="admin-form-grid" style={{ marginBottom: 12 }}>
           <label className="field"><span>{t(lc, "action")}</span>
@@ -69,7 +70,7 @@ export default function AuditPage({ embedded }: { embedded?: boolean }) {
           <label className="field"><span>{t(lc, "from")}</span><CampoData onChange={(v) => setDateFrom(v)} value={dateFrom} /></label>
           <label className="field"><span>{t(lc, "to")}</span><CampoData onChange={(v) => setDateTo(v)} value={dateTo} /></label>
           <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
-            <button className="primary-button" type="button" onClick={reload}>{t(lc, "filter")}</button>
+            <Button size="lg" type="button" onClick={reload}>{t(lc, "filter")}</Button>
           </div>
         </div>
         <DataTable columns={[

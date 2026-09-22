@@ -10,6 +10,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface Pkg { id: number; uuid: string; name: string; description: string; discount_type: string; discount_value: string; price: string; validity_days: number; max_trips: number; status: string; routes: { route_id: number; route_code: string; route_name: string }[]; }
 interface Sub { id: number; uuid: string; passenger_name: string; passenger_phone: string; package_name: string; discount_type: string; special_balance: string; trips_used: number; trips_remaining: number; status: string; activated_at: string; expires_at: string; passenger_account_id: number; package_id: number; }
@@ -71,8 +72,8 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
       {tab === "packages" && (
         <SectionCard title={t(lc, "packages")}>
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-            <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
-            <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "newPackage")}</button>
+            <Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>
+            <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "newPackage")}</Button>
           </div>
           <DataTable columns={[
             { header: t(lc, "name"), render: (r: Pkg) => <TablePrimaryCell title={r.name} subtitle={r.discount_type === "percentage" ? `${r.discount_value}%` : r.discount_type === "free_trips" ? `${r.max_trips} viagens` : formatCurrency(r.discount_value)} /> },
@@ -91,7 +92,7 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
       {tab === "subs" && (
         <SectionCard title={t(lc, "subscriptions")}>
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-            <button className="primary-button" onClick={() => { setSubForm({ passenger_id: "", package_id: "" }); setSubModal(true); }} type="button"><Plus size={15} /> {t(lc, "subscribe")}</button>
+            <Button size="lg" onClick={() => { setSubForm({ passenger_id: "", package_id: "" }); setSubModal(true); }} type="button"><Plus size={15} /> {t(lc, "subscribe")}</Button>
           </div>
           <DataTable columns={[
             { header: t(lc, "passenger"), render: (r: Sub) => <TablePrimaryCell title={r.passenger_name} subtitle={r.package_name} /> },
@@ -167,8 +168,8 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
             <label className="field admin-field-span-full"><span>{t(lc, "description")}</span><textarea value={form.description} onChange={(e) => f("description", e.target.value)} /></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okPackageUpdated") : t(lc, "okPackageCreated")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okPackageUpdated") : t(lc, "okPackageCreated")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -190,8 +191,8 @@ export default function PackagesPage({ embedded }: { embedded?: boolean }) {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : t(lc, "subscribe")}</button>
-            <button className="secondary-button" onClick={() => setSubModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : t(lc, "subscribe")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setSubModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

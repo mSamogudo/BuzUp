@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TabBar, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { Button } from "@/components/ui/button";
 
 interface Release { id: number; uuid: string; app_type: string; version_name: string; version_code: number; is_mandatory: boolean; min_supported_version_code?: number; status: string; release_notes: string; published_at: string | null; download_url?: string; file_size_bytes?: number; }
 
@@ -88,8 +89,8 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "devices")} title={t(lc, "releases")}
       action={<>
-        <button className="icon-text-button" onClick={() => { reload(); reloadInstalls(); }} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newRelease")}</button>
+        <Button variant="outline" onClick={() => { reload(); reloadInstalls(); }} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newRelease")}</Button>
       </>}>
       <TabBar items={[
         { key: "releases", label: t(lc, "releases") },
@@ -108,8 +109,8 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
               <TableActionButton icon={<Eye size={15} />} label={t(lc, "view")} onClick={() => setViewing(r)} />
               <TableActionButton icon={<Pencil size={15} />} label={t(lc, "edit")} onClick={() => { setEditId(r.id); setModalOpen(true); setApkFile(null); setForm({ app_type: r.app_type, version_name: r.version_name, version_code: String(r.version_code), release_notes: r.release_notes, is_mandatory: r.is_mandatory ? "true" : "false", min_supported_version_code: String(r.min_supported_version_code ?? 0) }); }} />
               {r.download_url && <TableActionButton icon={<Download size={15} />} label={t(lc, "download")} onClick={() => window.open(r.download_url, "_blank", "noopener,noreferrer")} />}
-              {(r.status === "draft" || r.status === "suspended") && <button className="secondary-button" onClick={() => publish(r.id)}>{t(lc, "publish")}</button>}
-              {r.status === "published" && <button className="danger-button" onClick={() => suspend(r.id)}>{t(lc, "suspend")}</button>}
+              {(r.status === "draft" || r.status === "suspended") && <Button variant="outline" size="lg" onClick={() => publish(r.id)}>{t(lc, "publish")}</Button>}
+              {r.status === "published" && <Button variant="destructive" size="lg" onClick={() => suspend(r.id)}>{t(lc, "suspend")}</Button>}
             </div>
           )},
         ]} rows={rows || []} rowKey={(r) => r.uuid} loading={loading} emptyMessage={t(lc, "noReleases")} />
@@ -163,8 +164,8 @@ export default function ReleasesPage({ embedded }: { embedded?: boolean }) {
             <label className="field admin-field-span-full"><span>{t(lc, "releaseNotes")}</span><textarea value={form.release_notes} onChange={(e) => f("release_notes", e.target.value)} /></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

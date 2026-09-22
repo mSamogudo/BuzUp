@@ -7,6 +7,7 @@ import { useUi } from "../ui/UiPreferences";
 import { PageFrame, useAsyncData } from "../ui/common";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { Button } from "@/components/ui/button";
 
 interface DeviceLocation {
   id: number;
@@ -89,7 +90,7 @@ export default function MapPage() {
 
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "map")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 13, color: "var(--app-text-muted)" }}>
         <MapPin size={14} />
         <span>{loading ? "A carregar..." : `${(devices || []).length} terminais com localizacao`}</span>

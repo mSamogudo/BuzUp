@@ -10,6 +10,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell } from "../ui/common";
 import BroadcastModal from "./BroadcastModal";
+import { Button } from "@/components/ui/button";
 
 interface RevenueSummary {
   guest_checkout: { revenue: string; count: number; tickets: number };
@@ -179,21 +180,21 @@ export default function TripDetailPage() {
       title={`${trip.route_code} · ${trip.route_name}`}
       action={
         <>
-          <button className="icon-text-button" onClick={() => navigate("/app/trips")} type="button">
+          <Button variant="outline" onClick={() => navigate("/app/trips")} type="button">
             <ArrowLeft size={16} /><span>{t(lc, "back")}</span>
-          </button>
-          <button className="icon-text-button" onClick={() => void load()} type="button">
+          </Button>
+          <Button variant="outline" onClick={() => void load()} type="button">
             <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
-          </button>
+          </Button>
           {manifest && manifest.totals.total > 0 ? (
-            <button className="icon-text-button" onClick={() => void downloadManifest()}
+            <Button variant="outline" onClick={() => void downloadManifest()}
               disabled={downloading} type="button">
               <Download size={16} /><span>{downloading ? t(lc, "preparingDownload") : "Manifesto PDF"}</span>
-            </button>
+            </Button>
           ) : null}
-          <button className="icon-text-button" onClick={() => setAvisoAberto(true)} type="button">
+          <Button variant="outline" onClick={() => setAvisoAberto(true)} type="button">
             <MessageSquareWarning size={16} /><span>{t(lc, "notifyPassengers")}</span>
-          </button>
+          </Button>
         </>
       }
     >
@@ -407,11 +408,11 @@ export default function TripDetailPage() {
                 </p>
               ) : null}
               <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                <button className="icon-text-button" onClick={() => void downloadManifest()}
+                <Button variant="outline" onClick={() => void downloadManifest()}
                   disabled={downloading} type="button">
                   <Download size={15} />
                   <span>{downloading ? t(lc, "preparingDownload") : "Descarregar manifesto (PDF)"}</span>
-                </button>
+                </Button>
               </div>
               {!manifest.formal ? (
                 <p style={{ fontSize: 12, color: "var(--app-text-muted)" }}>

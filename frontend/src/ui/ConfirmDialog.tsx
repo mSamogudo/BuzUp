@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -60,23 +61,23 @@ export function ConfirmDialog({
             </div>
           </div>
           <div className="confirm-dialog-actions">
-            <button
-              className="secondary-button"
+            <Button variant="outline" size="lg"
               disabled={busy}
               onClick={onCancel}
               type="button"
             >
               {cancelLabel}
-            </button>
-            <button
+            </Button>
+            <Button
               ref={confirmRef}
-              className={isDanger ? "danger-button" : "primary-button"}
+              variant={isDanger ? "destructive" : "default"}
+              size="lg"
               disabled={busy}
               onClick={onConfirm}
               type="button"
             >
               {confirmLabel}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

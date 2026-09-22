@@ -11,6 +11,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface Passenger { id: number; uuid: string; full_name: string; phone_number: string; email: string; document_type: string; document_number: string; status: string; has_user_account: boolean; created_at: string; }
 interface CardInfo { id: number; card_number: string; card_type: string; status: string; balance: string | null; card_uid?: string; created_at?: string; }
@@ -137,8 +138,8 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "management")} title={t(lc, "passengers")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "newPassenger")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={15} /> {t(lc, "newPassenger")}</Button>
       </>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String((rows || []).length)} />
@@ -314,13 +315,13 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
 
             <div style={{ marginTop: 16, padding: "12px 0", borderTop: "1px solid var(--app-border)" }}>
               {!viewing.has_user_account && (
-                <button className="primary-button" onClick={createAccessAccount} disabled={accountBusy || !viewing.phone_number} type="button" style={{ width: "100%", marginBottom: 10 }}>
+                <Button size="lg" onClick={createAccessAccount} disabled={accountBusy || !viewing.phone_number} type="button" style={{ width: "100%", marginBottom: 10 }}>
                   {accountBusy ? t(lc, "saving") : "Criar conta e notificar por SMS"}
-                </button>
+                </Button>
               )}
-              <button className="icon-text-button" onClick={() => { setExtractFrom(""); setExtractTo(""); setExtractModal(true); }} type="button" style={{ width: "100%" }}>
+              <Button variant="outline" onClick={() => { setExtractFrom(""); setExtractTo(""); setExtractModal(true); }} type="button" style={{ width: "100%" }}>
                 <FileText size={15} /><span>{t(lc, "generateStatement")}</span>
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -336,8 +337,8 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "dateTo")}</span><CampoData onChange={(v) => setExtractTo(v)} value={extractTo} /></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" onClick={downloadExtract} type="button"><FileText size={15} /> {t(lc, "generatePdf")}</button>
-            <button className="secondary-button" onClick={() => setExtractModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" onClick={downloadExtract} type="button"><FileText size={15} /> {t(lc, "generatePdf")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setExtractModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </div>
       </AdminModal>
@@ -365,8 +366,8 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
             )}
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

@@ -10,6 +10,7 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableAction
 import { DetailDrawer } from "../ui/DetailDrawer";
 import SeatLayoutPreview from "./SeatLayoutPreview";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface Vehicle { id: number; uuid: string; registration: string; make: string; model_name: string; seated_capacity: number; standing_capacity: number; seat_layout?: string; last_row_seats?: number; status: string; livrete_url?: string; }
 
@@ -57,8 +58,8 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "vehicles")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newVehicle")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newVehicle")}</Button>
       </>}>
       <SectionCard title={t(lc, "vehicles")}>
         <DataTable columns={[
@@ -111,8 +112,8 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
             <label className="field admin-field-span-full"><span>{t(lc, "livrete")}</span><input type="file" accept="application/pdf,image/*" onChange={(e) => setLivrete(e.target.files?.[0] ?? null)} /><small style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{t(lc, "livreteHint")}</small></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okVehicleUpdated") : t(lc, "okVehicleCreated")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okVehicleUpdated") : t(lc, "okVehicleCreated")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -132,8 +133,8 @@ export default function VehiclesPage({ embedded }: { embedded?: boolean }) {
                 </div>
               </div>
               <div className="admin-form-actions vehicle-qr-actions">
-                <button className="primary-button" onClick={() => window.print()} type="button"><Printer size={15} /> {t(lc, "print")}</button>
-                <button className="secondary-button" onClick={() => setQrVehicle(null)} type="button">{t(lc, "cancel")}</button>
+                <Button size="lg" onClick={() => window.print()} type="button"><Printer size={15} /> {t(lc, "print")}</Button>
+                <Button variant="outline" size="lg" onClick={() => setQrVehicle(null)} type="button">{t(lc, "cancel")}</Button>
               </div>
             </div>
           );

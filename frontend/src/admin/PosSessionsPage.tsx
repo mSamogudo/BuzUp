@@ -6,6 +6,7 @@ import { useUi } from "../ui/UiPreferences";
 import { formatDateTime } from "../lib/format";
 import { useAuth } from "../auth/AuthContext";
 import { DataTable, PageFrame, SectionCard, StatusBadge, TablePrimaryCell, useAsyncData } from "../ui/common";
+import { Button } from "@/components/ui/button";
 
 interface PosSessionAgent { id: number; username: string; name: string; }
 interface PosSessionDevice { id: number; serial_number: string; }
@@ -30,7 +31,7 @@ export default function PosSessionsPage() {
   return (
     <PageFrame kicker={t(lc, "operations")} title={t(lc, "posSessions")}
       description={t(lc, "posSessionsHint")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>}>
       <SectionCard title={t(lc, "sessions")} description={t(lc, "posSessionsHistory")}>
         <DataTable columns={[
           { header: t(lc, "agent"), render: (r: PosSession) => r.agent

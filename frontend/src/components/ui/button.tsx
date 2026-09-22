@@ -14,18 +14,24 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border bg-card shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
         secondary:
           "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
       },
+      // A escala e a da aplicacao, nao a de origem do shadcn (36/32/40/36).
+      // O BusUp tinha oito alturas de controlo diferentes — 34, 36, 38, 40,
+      // 42, 46, 48, 52 — e os botoes viviam em duas: 40px nas barras de
+      // ferramentas e 48px nas accoes de formulario. Sao essas que aqui
+      // ficam, para a conversao nao reflow todas as barras.
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        default: "h-10 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
+        lg: "h-12 rounded-md px-5 has-[>svg]:px-4",
+        icon: "size-10",
+        "icon-sm": "size-[34px]",   // accoes dentro de uma linha de tabela
       },
     },
     defaultVariants: {

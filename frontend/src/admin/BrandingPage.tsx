@@ -8,6 +8,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { useBranding, type Branding } from "../lib/branding";
 import { PageFrame, SectionCard } from "../ui/common";
+import { Button } from "@/components/ui/button";
 
 type Slot = { key: keyof Branding; urlKey: keyof Branding; label: string; hint: string };
 
@@ -75,9 +76,9 @@ export default function BrandingPage() {
   return (
     <PageFrame kicker={t(lc, "system")} title={t(lc, "branding")}
       action={
-        <button className="icon-text-button" onClick={reload} type="button">
+        <Button variant="outline" onClick={reload} type="button">
           <RefreshCw size={16} /><span>{t(lc, "refresh")}</span>
-        </button>
+        </Button>
       }>
       <form className="admin-form" onSubmit={submit}>
         <SectionCard title={t(lc, "identity")}>
@@ -122,9 +123,9 @@ export default function BrandingPage() {
         </SectionCard>
 
         <div className="admin-form-actions">
-          <button className="primary-button" disabled={busy || !dirty} type="submit">
+          <Button size="lg" disabled={busy || !dirty} type="submit">
             <Save size={16} /> {busy ? t(lc, "saving") : t(lc, "save")}
-          </button>
+          </Button>
         </div>
       </form>
     </PageFrame>

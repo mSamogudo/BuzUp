@@ -26,6 +26,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 interface MeData { username: string; email: string; phone: string; first_name: string; last_name: string; is_superuser: boolean; roles: { name: string; code: string }[]; capabilities: string[]; }
 
@@ -200,7 +201,7 @@ function Casca() {
           <div className="admin-topbar-left">
             {/* Um so gatilho para as duas coisas: recolhe no desktop, abre a
                 gaveta no telemovel. Antes eram dois botoes e dois estados. */}
-            <SidebarTrigger className="icon-button" />
+            <SidebarTrigger />
             <div>
               <div className="admin-breadcrumbs">
                 <span>{t(locale, "portal")}</span>
@@ -214,19 +215,19 @@ function Casca() {
               <button className={`locale-flag-button${locale === "pt" ? " locale-flag-button-active" : ""}`} onClick={() => setLocale("pt")} type="button">PT</button>
               <button className={`locale-flag-button${locale === "en" ? " locale-flag-button-active" : ""}`} onClick={() => setLocale("en")} type="button">EN</button>
             </div>
-            <button className="icon-button" onClick={toggleTheme} title={theme === "dark" ? t(locale, "lightMode") : t(locale, "darkMode")} type="button">
+            <Button variant="outline" size="icon" onClick={toggleTheme} title={theme === "dark" ? t(locale, "lightMode") : t(locale, "darkMode")} type="button">
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+            </Button>
             <ThemeCustomizer />
             <div style={{ position: "relative" }}>
-              <button className="icon-button" onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }} title={t(locale, "notifications")} type="button">
+              <Button variant="outline" size="icon" onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }} title={t(locale, "notifications")} type="button">
                 <Bell size={16} />
-              </button>
+              </Button>
               {notifOpen && (
                 <div className="topbar-popover">
                   <div className="topbar-popover-head">
                     <strong>{t(locale, "notifications")}</strong>
-                    <button className="icon-button" onClick={() => setNotifOpen(false)} type="button"><X size={14} /></button>
+                    <Button variant="outline" size="icon" onClick={() => setNotifOpen(false)} type="button"><X size={14} /></Button>
                   </div>
                   <div className="topbar-popover-body">
                     <p style={{ color: "var(--app-text-muted)", fontSize: 13, textAlign: "center", padding: 20 }}>{t(locale, "noNotifications")}</p>
@@ -235,14 +236,14 @@ function Casca() {
               )}
             </div>
             <div style={{ position: "relative" }}>
-              <button className="icon-button" onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }} title={t(locale, "profile")} type="button">
+              <Button variant="outline" size="icon" onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }} title={t(locale, "profile")} type="button">
                 <UserCircle2 size={16} />
-              </button>
+              </Button>
               {profileOpen && me && (
                 <div className="topbar-popover topbar-popover-profile">
                   <div className="topbar-popover-head">
                     <strong>{t(locale, "profile")}</strong>
-                    <button className="icon-button" onClick={() => setProfileOpen(false)} type="button"><X size={14} /></button>
+                    <Button variant="outline" size="icon" onClick={() => setProfileOpen(false)} type="button"><X size={14} /></Button>
                   </div>
                   <div className="topbar-popover-body">
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
@@ -259,17 +260,16 @@ function Casca() {
                       <div className="detail-field"><dt>{t(locale, "status")}</dt><dd>{roleLabel}</dd></div>
                     </div>
                     <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                      <button
-                        className="secondary-button"
+                      <Button variant="outline" size="lg"
                         onClick={() => { setProfileOpen(false); navigate("/profile"); }}
                         type="button"
                         style={{ flex: 1, fontSize: 12 }}
                       >
                         <UserCog size={14} /> {t(locale, "editProfile")}
-                      </button>
-                      <button className="danger-button" onClick={logout} type="button" style={{ flex: 1, fontSize: 12 }}>
+                      </Button>
+                      <Button variant="destructive" onClick={logout} type="button" style={{ flex: 1, fontSize: 12 }}>
                         <LogOut size={14} /> {t(locale, "signOut")}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

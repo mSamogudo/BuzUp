@@ -10,6 +10,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { ButtonSpinner, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TablePrimaryCell, useAsyncData, type TableColumn } from "../ui/common";
 import { SkeletonCard } from "../ui/Skeleton";
+import { Button } from "@/components/ui/button";
 
 interface RevenueData {
   validations: { total_count: number; total_revenue: string; by_route: { route__code: string; route__name: string; count: number; total: string }[] };
@@ -254,9 +255,9 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
     <PageFrame kicker={t(lc, "financial")} title={t(lc, "reports")}
       action={
         <div className="admin-page-actions">
-          <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-          <a className="icon-text-button" href="/api/admin/exports/validations/" target="_blank" rel="noreferrer"><Download size={16} /><span>{t(lc, "exportValidationsCsv")}</span></a>
-          <a className="icon-text-button" href="/api/admin/exports/transactions/" target="_blank" rel="noreferrer"><Download size={16} /><span>{t(lc, "exportTransactionsCsv")}</span></a>
+          <Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+          <Button asChild variant="outline"><a href="/api/admin/exports/validations/" target="_blank" rel="noreferrer"><Download size={16} /><span>{t(lc, "exportValidationsCsv")}</span></a></Button>
+          <Button asChild variant="outline"><a href="/api/admin/exports/transactions/" target="_blank" rel="noreferrer"><Download size={16} /><span>{t(lc, "exportTransactionsCsv")}</span></a></Button>
         </div>
       }>
       <TabBar items={[
@@ -421,19 +422,19 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
           </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-            <button className="primary-button" type="button" onClick={runReport} disabled={running}>
+            <Button size="lg" type="button" onClick={runReport} disabled={running}>
               <Search size={15} /> {running ? "A gerar..." : "Gerar pre-visualizacao"}
-            </button>
-            <button className="icon-text-button" type="button" disabled={exporting !== null}
+            </Button>
+            <Button variant="outline" type="button" disabled={exporting !== null}
               onClick={() => void exportReport("pdf")}>
               {exporting === "pdf" ? <ButtonSpinner size={15} /> : <FileText size={15} />}
               <span>{exporting === "pdf" ? t(lc, "preparingDownload") : "PDF"}</span>
-            </button>
-            <button className="icon-text-button" type="button" disabled={exporting !== null}
+            </Button>
+            <Button variant="outline" type="button" disabled={exporting !== null}
               onClick={() => void exportReport("xlsx")}>
               {exporting === "xlsx" ? <ButtonSpinner size={15} /> : <FileSpreadsheet size={15} />}
               <span>{exporting === "xlsx" ? t(lc, "preparingDownload") : "Excel"}</span>
-            </button>
+            </Button>
           </div>
 
           {result && (
@@ -508,7 +509,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               </select>
             </label>
             <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
-              <button className="primary-button" type="button" onClick={reloadOp}>{t(lc, "apply")}</button>
+              <Button size="lg" type="button" onClick={reloadOp}>{t(lc, "apply")}</Button>
             </div>
           </div>
           {loadingOp ? <SkeletonCard count={4} /> : !op ? <div className="admin-empty-state">{t(lc, "noData")}</div> : (
@@ -569,7 +570,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               </select>
             </label>
             <div className="admin-form-actions" style={{ alignItems: "flex-end" }}>
-              <button className="primary-button" type="button" onClick={reloadV}>{t(lc, "apply")}</button>
+              <Button size="lg" type="button" onClick={reloadV}>{t(lc, "apply")}</Button>
             </div>
           </div>
           {loadingV ? <SkeletonCard count={4} /> : !val ? <div className="admin-empty-state">{t(lc, "noData")}</div> : (

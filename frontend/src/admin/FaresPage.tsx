@@ -11,6 +11,7 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableAction
 import { DetailDrawer } from "../ui/DetailDrawer";
 import FareMatrixTab from "./FareMatrixTab";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface FareProduct { id: number; uuid: string; name: string; product_type: string; status: string; }
 interface FareRule { id: number; uuid: string; fare_product_id: number; fare_product_name: string; route_id: number | null; route_code: string; origin_stop_name: string; destination_stop_name: string; calculation_method: string; fixed_amount: string; amount_per_km: string; min_amount: string; max_amount: string; distance_min_km: string | null; distance_max_km: string | null; passenger_class: string; priority: number; origin_stop_id: number | null; destination_stop_id: number | null; }
@@ -159,7 +160,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
       {tab === "rules" && (
         <SectionCard title={t(lc, "fareRules")}>
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-            <button className="primary-button" onClick={() => { setEditR(null); setRForm({ fare_product: "", route: "", origin_stop: "", destination_stop: "", calculation_method: "fixed", fixed_amount: "", amount_per_km: "", min_amount: "", max_amount: "", distance_min_km: "", distance_max_km: "", passenger_class: "standard", priority: "0" }); setRuleModal(true); }} type="button"><Plus size={15} /> {t(lc, "newRule")}</button>
+            <Button size="lg" onClick={() => { setEditR(null); setRForm({ fare_product: "", route: "", origin_stop: "", destination_stop: "", calculation_method: "fixed", fixed_amount: "", amount_per_km: "", min_amount: "", max_amount: "", distance_min_km: "", distance_max_km: "", passenger_class: "standard", priority: "0" }); setRuleModal(true); }} type="button"><Plus size={15} /> {t(lc, "newRule")}</Button>
           </div>
           <DataTable columns={[
             { header: t(lc, "route"), render: (r: FareRule) => <TablePrimaryCell title={r.route_code || t(lc, "allRoutes")} subtitle={r.fare_product_name} /> },
@@ -178,7 +179,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
       {tab === "products" && (
         <SectionCard title={t(lc, "fareProducts")}>
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-            <button className="primary-button" onClick={() => { setEditP(null); setPForm({ name: "", product_type: "single_trip", status: "active" }); setProdModal(true); }} type="button"><Plus size={15} /> {t(lc, "newProduct")}</button>
+            <Button size="lg" onClick={() => { setEditP(null); setPForm({ name: "", product_type: "single_trip", status: "active" }); setProdModal(true); }} type="button"><Plus size={15} /> {t(lc, "newProduct")}</Button>
           </div>
           <DataTable columns={[
             { header: t(lc, "name"), render: (r: FareProduct) => <TablePrimaryCell title={r.name} subtitle={r.product_type.replace(/_/g, " ")} /> },
@@ -196,11 +197,11 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
       {tab === "fees" && (
         <SectionCard title={t(lc, "adminFees")} description={t(lc, "adminFeesHint")}>
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-            <button className="primary-button" type="button" onClick={() => {
+            <Button size="lg" type="button" onClick={() => {
               setEditFee(null);
               setFeeForm({ code: "", name: "", kind: "card_issuance", amount: "0.00", currency: "MZN", description: "", is_active: true });
               setFeeModal(true);
-            }}><Plus size={15} /> {t(lc, "newFee")}</button>
+            }}><Plus size={15} /> {t(lc, "newFee")}</Button>
           </div>
           <DataTable columns={[
             { header: t(lc, "name"), render: (r: AdminFee) => <TablePrimaryCell title={r.name} subtitle={r.code} /> },
@@ -232,11 +233,11 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
           description={t(lc, "fxHint")}
         >
           <div className="admin-toolbar"><div className="admin-toolbar-spacer" />
-            <button className="primary-button" type="button" onClick={() => {
+            <Button size="lg" type="button" onClick={() => {
               setEditFx(null);
               setFxForm({ currency: "ZAR", rate_to_mzn: "", rounding_step: "1", is_active: true, notes: "" });
               setFxModal(true);
-            }}><Plus size={15} /> {t(lc, "newFxRate")}</button>
+            }}><Plus size={15} /> {t(lc, "newFxRate")}</Button>
           </div>
           <DataTable columns={[
             { header: t(lc, "currency"), render: (r: ExchangeRate) => <TablePrimaryCell title={r.currency} subtitle={r.notes || ""} /> },
@@ -299,7 +300,7 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
               Deixar em branco tira o contacto do bilhete. Um bilhete sem número de emergência não dá ao passageiro nenhuma forma de pedir ajuda a bordo.
             </p>
             <div className="admin-form-actions">
-              <button className="primary-button" disabled={busy || !contactsLoaded} type="submit">{busy ? t(lc, "saving") : t(lc, "update")}</button>
+              <Button size="lg" disabled={busy || !contactsLoaded} type="submit">{busy ? t(lc, "saving") : t(lc, "update")}</Button>
             </div>
           </form>
         </SectionCard>
@@ -367,8 +368,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             );
           })()}
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editFx ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={() => setFxModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editFx ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setFxModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -462,8 +463,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             )}
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editR ? t(lc, "okRuleUpdated") : t(lc, "okRuleCreated")}</button>
-            <button className="secondary-button" onClick={() => setRuleModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editR ? t(lc, "okRuleUpdated") : t(lc, "okRuleCreated")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setRuleModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -490,8 +491,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editP ? t(lc, "okProductUpdated") : t(lc, "okProductCreated")}</button>
-            <button className="secondary-button" onClick={() => setProdModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editP ? t(lc, "okProductUpdated") : t(lc, "okProductCreated")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setProdModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -552,8 +553,8 @@ export default function FaresPage({ embedded }: { embedded?: boolean }) {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editFee ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={() => setFeeModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editFee ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setFeeModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

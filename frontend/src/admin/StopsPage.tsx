@@ -10,6 +10,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface StopRouteLink { route_id: number; route_code: string; route_name: string; sequence: number; distance_from_start_km: string; direction: "outbound" | "inbound"; }
 interface Stop { id: number; uuid: string; code: string; name: string; latitude: string | null; longitude: string | null; status: string; route_count: number; route_links?: StopRouteLink[]; created_at: string; }
@@ -58,8 +59,8 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "stops")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newStop")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newStop")}</Button>
       </>}>
       <SectionCard title={t(lc, "stops")}>
         <DataTable columns={[
@@ -107,8 +108,8 @@ export default function StopsPage({ embedded }: { embedded?: boolean }) {
             <label className="field"><span>{t(lc, "status")}</span><select value={form.status} onChange={(e) => f("status", e.target.value)}><option value="active">{t(lc, "active")}</option><option value="inactive">{t(lc, "inactive")}</option></select></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "update") : t(lc, "create")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

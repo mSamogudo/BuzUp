@@ -10,6 +10,7 @@ import { PageFrame, SectionCard } from "../ui/common";
 import TermsDialog from "../public/booking/TermsDialog";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 interface Seccao { title: string; items: string[] }
 
@@ -141,15 +142,15 @@ export default function TermsPage() {
       title={t(lc, "termsAndConditions")}
       description={t(lc, "termsHint")}
       action={<>
-        <button className="icon-text-button" type="button" onClick={() => setPrevia(true)}>
+        <Button variant="outline" type="button" onClick={() => setPrevia(true)}>
           <Eye size={16} /><span>{t(lc, "preview")}</span>
-        </button>
-        <button className="icon-text-button" type="button" onClick={carregar}>
+        </Button>
+        <Button variant="outline" type="button" onClick={carregar}>
           <RefreshCw size={16} /><span>{t(lc, "reload")}</span>
-        </button>
-        <button className="primary-button" type="button" disabled={aGravar || !carregado} onClick={gravar}>
+        </Button>
+        <Button size="lg" type="button" disabled={aGravar || !carregado} onClick={gravar}>
           <Save size={16} /> {aGravar ? "A gravar…" : "Gravar"}
-        </button>
+        </Button>
       </>}
     >
       <SectionCard title={t(lc, "operator")}
@@ -272,10 +273,10 @@ export default function TermsPage() {
           ))}
         </div>
 
-        <button type="button" className="icon-text-button" style={{ marginTop: 12 }}
+        <Button variant="outline" type="button" style={{ marginTop: 12 }}
           onClick={() => setSeccoesActuais([...seccoesActuais, { ...VAZIA, items: [""] }])}>
           <FileText size={15} /><span>{t(lc, "newSection")}</span>
-        </button>
+        </Button>
 
         <label className="field" style={{ marginTop: 16 }}><span>{t(lc, "closing")}</span>
           <input value={fechoActual}

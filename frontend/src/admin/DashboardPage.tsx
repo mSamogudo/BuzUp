@@ -25,6 +25,7 @@ import {
 import { chartTheme, shortDate } from "./dashboard/theme";
 import type { Analytics, DashFilters, Lookup } from "./dashboard/types";
 import "./dashboard/dashboard.css";
+import { Button } from "@/components/ui/button";
 
 const AUTO_REFRESH_MS = 30_000;
 
@@ -124,10 +125,10 @@ export default function DashboardPage() {
       action={
         <div className="admin-page-actions">
           <AutoRefreshToggle on={autoRefresh} onToggle={() => setAutoRefresh((v) => !v)} />
-          <button className="icon-text-button" disabled={loading} onClick={reload} type="button">
+          <Button variant="outline" disabled={loading} onClick={reload} type="button">
             <RefreshCw className={refreshing ? "button-spinner" : undefined} size={16} />
             <span>{t(lc, "refresh")}</span>
-          </button>
+          </Button>
         </div>
       }
       description={
@@ -161,9 +162,9 @@ export default function DashboardPage() {
         <div className="dash-error" style={{ marginTop: 16 }}>
           <strong>{t(lc, "dashboardFailed")}</strong>
           <p>{error}</p>
-          <button className="primary-button" onClick={reload} type="button">
+          <Button size="lg" onClick={reload} type="button">
             <RefreshCw size={15} /> {t(lc, "tryAgain")}
-          </button>
+          </Button>
         </div>
       ) : null}
 

@@ -10,6 +10,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SectionCard, StatusBadge, TabBar, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface Device {
   id: number; uuid: string; serial_number: string; device_type: string;
@@ -182,7 +183,7 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
 
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "devices")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String(counts.total)} />
         <MetricCard label={t(lc, "active")} value={String(counts.active)} />
@@ -232,10 +233,10 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
             </label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy || !allocateAgentId} type="submit">
+            <Button size="lg" disabled={busy || !allocateAgentId} type="submit">
               {busy ? "A guardar..." : "Alocar e gerar codigo"}
-            </button>
-            <button className="secondary-button" onClick={closeAllocate} type="button">{t(lc, "cancel")}</button>
+            </Button>
+            <Button variant="outline" size="lg" onClick={closeAllocate} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -272,21 +273,20 @@ export default function DevicesPage({ embedded }: { embedded?: boolean }) {
               }}>
                 {generatedCode.code}
               </div>
-              <button
-                className="secondary-button"
+              <Button variant="outline" size="lg"
                 onClick={() => copyCode(generatedCode.code)}
                 type="button"
                 style={{ marginTop: 8 }}
               >
                 <Copy size={14} /> {t(lc, "copy")}
-              </button>
+              </Button>
             </div>
             <p style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
               O agente deve introduzir este codigo no ecra de activacao do POS.
               Para gerar um novo codigo (caso este seja comprometido) use a accao t(lc, "newCode") na tabela.
             </p>
             <div className="admin-form-actions">
-              <button className="primary-button" onClick={() => setGeneratedCode(null)} type="button">{t(lc, "done")}</button>
+              <Button size="lg" onClick={() => setGeneratedCode(null)} type="button">{t(lc, "done")}</Button>
             </div>
           </div>
         )}

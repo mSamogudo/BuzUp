@@ -9,6 +9,7 @@ import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
 import { useConfirm } from "../ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 interface Driver { id: number; uuid: string; user_id: number | null; user_display: string; full_name: string; phone: string; license_number: string; status: string; username?: string; email?: string; first_name?: string; last_name?: string; is_active?: boolean; }
 
@@ -54,8 +55,8 @@ export default function DriversPage() {
   return (
     <PageFrame kicker={t(lc, "operation")} title={t(lc, "drivers")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newDriver")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newDriver")}</Button>
       </>}>
       <SectionCard title={t(lc, "drivers")}>
         <DataTable columns={[
@@ -98,8 +99,8 @@ export default function DriversPage() {
             <label className="field"><span>{t(lc, "active")}</span><select value={form.is_active ? "1" : "0"} onChange={(e) => f("is_active", e.target.value === "1")}><option value="1">{t(lc, "yes")}</option><option value="0">{t(lc, "no")}</option></select></label>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okDriverUpdated") : t(lc, "okDriverCreated")}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? t(lc, "saving") : editId ? t(lc, "okDriverUpdated") : t(lc, "okDriverCreated")}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>

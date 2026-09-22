@@ -9,6 +9,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { AdminModal, StatusBadge } from "../ui/common";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 const LIVE_STATUSES = new Set(["boarding", "departed", "paused"]);
 
@@ -139,14 +140,14 @@ export default function DriverPortalPage() {
           <span>{t(lc, "driverPortal")}</span>
           <h1>{t(lc, "busActivity")}</h1>
         </div>
-        <button className="driver-ghost-button" onClick={handleLogout} type="button"><LogOut size={18} /> {t(lc, "signOut")}</button>
+        <Button variant="ghost" onClick={handleLogout} type="button"><LogOut size={18} /> {t(lc, "signOut")}</Button>
       </header>
 
       <section className="driver-layout">
         <aside className="driver-trip-list">
           <div className="driver-section-head">
             <strong>{t(lc, "assignedTrips")}</strong>
-            <button className="driver-icon-button" onClick={() => void loadTrips()} type="button"><RotateCcw size={16} /></button>
+            <Button variant="outline" size="icon" onClick={() => void loadTrips()} type="button"><RotateCcw size={16} /></Button>
           </div>
           {lastUpdate ? (
             <p className="driver-muted" style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
@@ -211,18 +212,18 @@ export default function DriverPortalPage() {
               {!isClosed && (
                 <div className="driver-actions">
                   {canStart && (
-                    <button className="driver-primary-button" disabled={!!busyAction} onClick={() => void runAction("start")} type="button"><Play size={18} /> {t(lc, "startActivity")}</button>
+                    <Button size="default" disabled={!!busyAction} onClick={() => void runAction("start")} type="button"><Play size={18} /> {t(lc, "startActivity")}</Button>
                   )}
                   {canPauseClose && (
                     <>
-                      <button className="driver-secondary-button" disabled={!!busyAction} onClick={() => void runAction("pause")} type="button"><Pause size={18} /> {t(lc, "pause")}</button>
-                      <button className="driver-danger-button" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> {t(lc, "closeTrip")}</button>
+                      <Button variant="outline" disabled={!!busyAction} onClick={() => void runAction("pause")} type="button"><Pause size={18} /> {t(lc, "pause")}</Button>
+                      <Button variant="destructive" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> {t(lc, "closeTrip")}</Button>
                     </>
                   )}
                   {canResumeClose && (
                     <>
-                      <button className="driver-primary-button" disabled={!!busyAction} onClick={() => void runAction("resume")} type="button"><Play size={18} /> {t(lc, "resume")}</button>
-                      <button className="driver-danger-button" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> {t(lc, "closeTrip")}</button>
+                      <Button size="default" disabled={!!busyAction} onClick={() => void runAction("resume")} type="button"><Play size={18} /> {t(lc, "resume")}</Button>
+                      <Button variant="destructive" disabled={!!busyAction} onClick={() => void runAction("close")} type="button"><Square size={18} /> {t(lc, "closeTrip")}</Button>
                     </>
                   )}
                 </div>

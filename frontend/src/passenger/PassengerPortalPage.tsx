@@ -26,6 +26,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { AdminModal, StatusBadge } from "../ui/common";
 import { showToast } from "../lib/toast";
+import { Button } from "@/components/ui/button";
 
 interface ActivePackage {
   id: number;
@@ -387,10 +388,10 @@ export default function PassengerPortalPage() {
         <div className="portal-container">
           <div className="portal-error">
             <p>{error}</p>
-            <button className="secondary-button" onClick={handleLogout} type="button">
+            <Button variant="outline" size="lg" onClick={handleLogout} type="button">
               <LogOut size={16} />
               {t(locale, "signOut")}
-            </button>
+            </Button>
           </div>
         </div>
       </main>
@@ -416,13 +417,13 @@ export default function PassengerPortalPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button className="secondary-button" onClick={() => setWalletOpen(true)} type="button" aria-label={t(locale, "myWallet")}>
+            <Button variant="outline" size="lg" onClick={() => setWalletOpen(true)} type="button" aria-label={t(locale, "myWallet")}>
               <Wallet size={16} />
               <span>{formatCurrency(data?.balance || "0")}</span>
-            </button>
-            <button className="secondary-button" onClick={handleLogout} type="button" aria-label={t(locale, "signOut")}>
+            </Button>
+            <Button variant="outline" size="lg" onClick={handleLogout} type="button" aria-label={t(locale, "signOut")}>
               <LogOut size={16} />
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -430,9 +431,9 @@ export default function PassengerPortalPage() {
           <article className="portal-wallet-card portal-wallet-card-strong">
             <span>{t(locale, "accountBalance")}</span>
             <strong>{formatCurrency(data?.balance || "0")}</strong>
-            <button className="primary-button" onClick={() => setWalletOpen(true)} type="button">
+            <Button size="lg" onClick={() => setWalletOpen(true)} type="button">
               <Wallet size={16} /> {t(locale, "topUp")}
-            </button>
+            </Button>
           </article>
           <article className="portal-wallet-card">
             <span>{t(locale, "card")}</span>
@@ -699,12 +700,12 @@ export default function PassengerPortalPage() {
                   {t(locale, "transactions")}
                 </h3>
                 <div className="portal-section-actions">
-                  <button className="icon-button" onClick={loadTransactions} title={t(locale, "refresh")} type="button">
+                  <Button variant="outline" size="icon" onClick={loadTransactions} title={t(locale, "refresh")} type="button">
                     <RefreshCw size={16} />
-                  </button>
-                  <button className="icon-button" onClick={downloadExtract} title={t(locale, "downloadStatement")} type="button">
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={downloadExtract} title={t(locale, "downloadStatement")} type="button">
                     <Download size={16} />
-                  </button>
+                  </Button>
                 </div>
               </div>
               {loadingTransactions ? (
@@ -773,15 +774,14 @@ export default function PassengerPortalPage() {
                         <small style={{ color: "#6B6356", textAlign: "center" }}>
                           {t(locale, "showQrHint")}
                         </small>
-                        <button
-                          className="primary-button"
+                        <Button size="lg"
                           type="button"
                           onClick={() => void apiDownload(
                             `/api/cards/${data.card_id}/qr.png`, token, `buzup-qr-${data.card_number}.png`,
                           ).catch(() => undefined)}
                         >
                           {t(locale, "downloadQr")}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </>
@@ -848,15 +848,14 @@ export default function PassengerPortalPage() {
                         <span>{pkg.routes.length > 0 ? pkg.routes.map((route) => route.route_code).join(", ") : "Todas as rotas"}</span>
                       </div>
                       {pkg.description ? <p className="portal-package-description">{pkg.description}</p> : null}
-                      <button
-                        className="primary-button"
+                      <Button size="lg"
                         disabled={packageBuyingId === pkg.id}
                         onClick={() => handleBuyPackage(pkg.id)}
                         type="button"
                       >
                         <CreditCard size={16} />
                         {packageBuyingId === pkg.id ? "A processar..." : "Comprar com saldo"}
-                      </button>
+                      </Button>
                     </article>
                   ))}
                 {(data?.available_packages || []).filter((pkg) => !(data?.active_packages || []).some((active) => active.package_id === pkg.id && active.status === "active")).length === 0 ? (

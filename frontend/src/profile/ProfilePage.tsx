@@ -8,6 +8,7 @@ import { mensagemDeErro } from "../lib/errors";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 interface MeData {
   username: string;
@@ -111,13 +112,13 @@ export default function ProfilePage() {
         padding: "16px 24px", borderBottom: "1px solid var(--app-border)",
         background: "var(--app-surface)",
       }}>
-        <button className="icon-text-button" onClick={() => navigate(-1)} type="button">
+        <Button variant="outline" onClick={() => navigate(-1)} type="button">
           <ArrowLeft size={16} /><span>{t(locale, "back")}</span>
-        </button>
+        </Button>
         <h2 style={{ margin: 0, fontSize: 18 }}>{t(locale, "profile")}</h2>
-        <button className="danger-button" onClick={handleLogout} type="button">
+        <Button variant="destructive" size="lg" onClick={handleLogout} type="button">
           <LogOut size={14} /> {t(locale, "signOut")}
-        </button>
+        </Button>
       </header>
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -164,9 +165,9 @@ export default function ProfilePage() {
                   </label>
                 </div>
                 <div className="admin-form-actions">
-                  <button className="primary-button" disabled={savingProfile} type="submit">
+                  <Button size="lg" disabled={savingProfile} type="submit">
                     <Save size={14} /> {savingProfile ? t(locale, "saving") : t(locale, "save")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </section>
@@ -194,9 +195,9 @@ export default function ProfilePage() {
                   </label>
                 </div>
                 <div className="admin-form-actions">
-                  <button className="primary-button" disabled={savingPassword} type="submit">
+                  <Button size="lg" disabled={savingPassword} type="submit">
                     <KeyRound size={14} /> {savingPassword ? t(locale, "saving") : t(locale, "changePassword")}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </section>

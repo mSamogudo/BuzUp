@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 
 interface DetailField {
   label: string;
@@ -27,9 +28,9 @@ export function DetailDrawer({
       <aside className="detail-drawer">
         <div className="detail-drawer-head">
           <h3>{title}</h3>
-          <button className="icon-button" onClick={onClose} type="button">
+          <Button variant="outline" size="icon" onClick={onClose} type="button">
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <div className="detail-drawer-body">
           {fields && (

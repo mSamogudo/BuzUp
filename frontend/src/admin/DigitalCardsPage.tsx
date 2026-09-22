@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SegmentedControl, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { Button } from "@/components/ui/button";
 
 interface CardRecord { id: number; uuid: string; card_type: string; card_uid: string; card_number: string; card_technology: string; status: string; passenger_name: string; passenger_phone: string; balance: string | null; activated_at: string | null; created_at: string; }
 
@@ -50,7 +51,7 @@ export default function DigitalCardsPage() {
 
   return (
     <PageFrame kicker={t(lc, "management")} title={t(lc, "digitalCards")}
-      action={<button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>}>
+      action={<Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String(all.length)} />
         <MetricCard label={t(lc, "active")} value={String(all.filter((c) => c.status === "active").length)} />
@@ -100,15 +101,14 @@ export default function DigitalCardsPage() {
               {t(lc, "showQrAgentHint")}<br />
               Cartao: <strong>{qrCard.card_number}</strong>
             </p>
-            <button
-              className="icon-text-button"
+            <Button variant="outline"
               type="button"
               onClick={() => void apiDownload(
                 `/api/cards/${qrCard.id}/qr.png`, token!, `buzup-qr-${qrCard.card_number}.png`,
               ).catch((e) => showToast("danger", mensagemDeErro(e, lc)))}
             >
               <QrCode size={15} /><span>{t(lc, "downloadPng")}</span>
-            </button>
+            </Button>
           </div>
         )}
       </AdminModal>

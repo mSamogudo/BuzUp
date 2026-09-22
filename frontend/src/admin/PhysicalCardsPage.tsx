@@ -9,6 +9,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { AdminModal, DataTable, MetricCard, PageFrame, SegmentedControl, StatusBadge, TableActionButton, TablePrimaryCell, useAsyncData } from "../ui/common";
 import { DetailDrawer } from "../ui/DetailDrawer";
+import { Button } from "@/components/ui/button";
 
 interface CardRecord { id: number; uuid: string; card_type: string; card_uid: string; card_number: string; card_technology: string; status: string; passenger_name: string; passenger_phone: string; balance: string | null; issued_batch: string; batch_serial: string; manufacturer: string; activated_at: string | null; created_at: string; }
 interface PassengerOpt { id: number; full_name: string; phone_number: string; }
@@ -70,9 +71,9 @@ export default function PhysicalCardsPage() {
   return (
     <PageFrame kicker={t(lc, "management")} title={t(lc, "physicalCards")}
       action={<>
-        <button className="icon-text-button" onClick={downloadTemplate} type="button"><Download size={15} /><span>{t(lc, "template")}</span></button>
-        <button className="icon-text-button" onClick={() => { setImportFile(null); setImportModal(true); }} type="button"><Upload size={15} /><span>{t(lc, "importAction")}</span></button>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></button>
+        <Button variant="outline" onClick={downloadTemplate} type="button"><Download size={15} /><span>{t(lc, "template")}</span></Button>
+        <Button variant="outline" onClick={() => { setImportFile(null); setImportModal(true); }} type="button"><Upload size={15} /><span>{t(lc, "importAction")}</span></Button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={15} /><span>{t(lc, "refresh")}</span></Button>
       </>}>
       <div className="admin-metric-grid">
         <MetricCard label={t(lc, "total")} value={String(all.length)} />
@@ -122,8 +123,8 @@ export default function PhysicalCardsPage() {
             </select>
           </label>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy || !assignPassenger} onClick={doAssign} type="button">{busy ? t(lc, "saving") : "Atribuir e Activar"}</button>
-            <button className="secondary-button" onClick={() => setAssignModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy || !assignPassenger} onClick={doAssign} type="button">{busy ? t(lc, "saving") : "Atribuir e Activar"}</Button>
+            <Button variant="outline" size="lg" onClick={() => setAssignModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </div>
       </AdminModal>
@@ -135,8 +136,8 @@ export default function PhysicalCardsPage() {
             <input type="file" accept=".xlsx,.xls" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
           </label>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy || !importFile} onClick={doImport} type="button">{busy ? "A importar..." : t(lc, "importAction")}</button>
-            <button className="secondary-button" onClick={() => setImportModal(false)} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy || !importFile} onClick={doImport} type="button">{busy ? "A importar..." : t(lc, "importAction")}</Button>
+            <Button variant="outline" size="lg" onClick={() => setImportModal(false)} type="button">{t(lc, "cancel")}</Button>
           </div>
         </div>
       </AdminModal>

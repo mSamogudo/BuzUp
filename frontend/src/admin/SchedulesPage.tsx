@@ -8,6 +8,7 @@ import { AdminModal, DataTable, PageFrame, SectionCard, StatusBadge, TableAction
 import { useConfirm } from "../ui/ConfirmDialog";
 import { mensagemDeErro } from "../lib/errors";
 import { useUi } from "../ui/UiPreferences";
+import { Button } from "@/components/ui/button";
 
 interface Schedule {
   id: number;
@@ -243,8 +244,8 @@ export default function SchedulesPage({
             <small style={{ opacity: 0.7 }}>{t(lc, "noDaysHint")}</small>
           </div>
           <div className="admin-form-actions">
-            <button className="primary-button" disabled={busy} type="submit">{busy ? "A guardar..." : editId ? t(lc, "refresh") : "Criar"}</button>
-            <button className="secondary-button" onClick={reset} type="button">{t(lc, "cancel")}</button>
+            <Button size="lg" disabled={busy} type="submit">{busy ? "A guardar..." : editId ? t(lc, "refresh") : "Criar"}</Button>
+            <Button variant="outline" size="lg" onClick={reset} type="button">{t(lc, "cancel")}</Button>
           </div>
         </form>
       </AdminModal>
@@ -258,8 +259,8 @@ export default function SchedulesPage({
   return (
     <PageFrame kicker={t(lc, "operations")} title={t(lc, "schedules")}
       action={<>
-        <button className="icon-text-button" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></button>
-        <button className="primary-button" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newSchedule")}</button>
+        <Button variant="outline" onClick={reload} type="button"><RefreshCw size={16} /><span>{t(lc, "refresh")}</span></Button>
+        <Button size="lg" onClick={() => { reset(); setModalOpen(true); }} type="button"><Plus size={16} /> {t(lc, "newSchedule")}</Button>
       </>}>
       {body}
     </PageFrame>

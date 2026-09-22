@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
 
 export interface ComboOpt { id: number; code: string; name: string }
 
@@ -69,7 +70,7 @@ export default function StopCombo({ id, value, onChange, stops, exclude, placeho
 
   return (
     <div className="bzbk-combo" ref={rootRef}>
-      <input
+      <Input
         aria-autocomplete="list"
         aria-controls={`${id}-list`}
         aria-expanded={open}

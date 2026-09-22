@@ -8,6 +8,7 @@ import { showToast } from "../lib/toast";
 import { useAuth } from "./AuthContext";
 import { useUi } from "../ui/UiPreferences";
 import { useBranding, pickLogo } from "../lib/branding";
+import { Input } from "@/components/ui/input";
 import "./login.css";
 
 type Mode = "staff" | "otp" | "register";
@@ -414,7 +415,7 @@ export default function LoginPage() {
                     <div className="bzau-field">
                       <label className="bzau-label" htmlFor="bzau-2fa">{t(locale, "verificationCode")}</label>
                       <span className="bzau-input">
-                        <input
+                        <Input
                           id="bzau-2fa"
                           type="text"
                           inputMode="numeric"
@@ -447,7 +448,7 @@ export default function LoginPage() {
                     <div className="bzau-field">
                       <label className="bzau-label" htmlFor="bzau-username">{t(locale, "username")}</label>
                       <span className="bzau-input">
-                        <input
+                        <Input
                           id="bzau-username"
                           type="text"
                           value={username}
@@ -461,7 +462,7 @@ export default function LoginPage() {
                     <div className="bzau-field">
                       <label className="bzau-label" htmlFor="bzau-password">{t(locale, "password")}</label>
                       <span className="bzau-input has-reveal">
-                        <input
+                        <Input
                           id="bzau-password"
                           type={showPassword ? "text" : "password"}
                           value={password}
@@ -504,7 +505,7 @@ export default function LoginPage() {
                       <div className="bzau-field">
                         <label className="bzau-label" htmlFor="bzau-fullname">{t(locale, "fullName")}</label>
                         <span className="bzau-input">
-                          <input
+                          <Input
                             id="bzau-fullname"
                             type="text"
                             value={fullName}
@@ -519,7 +520,7 @@ export default function LoginPage() {
                     <div className="bzau-field">
                       <label className="bzau-label" htmlFor="bzau-phone">{t(locale, "phoneNumber")}</label>
                       <span className="bzau-input">
-                        <input
+                        <Input
                           id="bzau-phone"
                           type="tel"
                           placeholder="84 / 85 / 86 / 87..."
@@ -557,7 +558,7 @@ export default function LoginPage() {
                     </div>
                     <div className="bzau-otp-grid">
                       {otpDigits.map((digit, i) => (
-                        <input
+                        <Input
                           key={i}
                           ref={(el) => { inputRefs.current[i] = el; }}
                           type="text"
@@ -649,7 +650,7 @@ export default function LoginPage() {
                 <div className="bzau-field">
                   <label className="bzau-label" htmlFor="bzau-reset-phone">{t(locale, "phoneNumber")}</label>
                   <span className="bzau-input">
-                    <input
+                    <Input
                       id="bzau-reset-phone"
                       type="tel"
                       value={resetPhone}

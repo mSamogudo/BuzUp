@@ -6,6 +6,8 @@ import { AlertCircle, ArrowRight, Bus, CheckCircle, MapPin, Phone, ShoppingCart,
 import { apiPublic } from "../lib/api";
 import { useBranding, pickLogo } from "../lib/branding";
 import TermsDialog from "./booking/TermsDialog";
+import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface BusStop { id: number; code: string; name: string; }
 interface ActiveTrip {
@@ -223,25 +225,20 @@ export default function BusPaymentPage() {
                   documento e um contacto de emergência. Continue na compra
                   completa — o percurso vai preenchido.
                 </p>
-                <label className="bus-pay-field">
-                  <span><MapPin size={14} /> {t(lc, "origin")}</span>
-                  <select value={originId}
-                    onChange={(e) => { const v = e.target.value; setOriginId(v); if (v && v === destId) setDestId(""); }}>
-                    <option value="">{t(lc, "select")}</option>
-                    {trip.stops.filter((st) => String(st.id) !== destId).map((st) => (
-                      <option key={st.id} value={st.id}>{st.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="bus-pay-field">
-                  <span><MapPin size={14} /> {t(lc, "destination")}</span>
-                  <select value={destId} onChange={(e) => setDestId(e.target.value)}>
-                    <option value="">{t(lc, "select")}</option>
-                    {trip.stops.filter((st) => String(st.id) !== originId).map((st) => (
-                      <option key={st.id} value={st.id}>{st.name}</option>
-                    ))}
-                  </select>
-                </label>
+                <CampoSelect className="bus-pay-field" label={<><MapPin size={14} /> {t(lc, "origin")}</>}
+                  onChange={(v) => { setOriginId(v); if (v && v === destId) setDestId(""); }} value={originId}>
+                  <option value="">{t(lc, "select")}</option>
+                  {trip.stops.filter((st) => String(st.id) !== destId).map((st) => (
+                    <option key={st.id} value={st.id}>{st.name}</option>
+                  ))}
+                </CampoSelect>
+                <CampoSelect className="bus-pay-field" label={<><MapPin size={14} /> {t(lc, "destination")}</>}
+                  onChange={setDestId} value={destId}>
+                  <option value="">{t(lc, "select")}</option>
+                  {trip.stops.filter((st) => String(st.id) !== originId).map((st) => (
+                    <option key={st.id} value={st.id}>{st.name}</option>
+                  ))}
+                </CampoSelect>
                 <Link className="bus-pay-btn" to={linkFluxoCompleto()}>
                   {t(lc, "continuePurchase")} <ArrowRight size={18} />
                 </Link>
@@ -249,37 +246,25 @@ export default function BusPaymentPage() {
             ) : (
             <section className="bus-pay-card">
               <form className="bus-pay-form" onSubmit={handleSubmit}>
-                <label className="bus-pay-field">
-                  <span><MapPin size={14} /> {t(lc, "origin")}</span>
-                  <select
-                    value={originId}
-                    onChange={(e) => { const v = e.target.value; setOriginId(v); if (v && v === destId) setDestId(""); }}
-                    required
-                  >
-                    <option value="">{t(lc, "select")}</option>
-                    {trip.stops.filter((s) => String(s.id) !== destId).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </label>
+                <CampoSelect className="bus-pay-field" label={<><MapPin size={14} /> {t(lc, "origin")}</>}
+                  onChange={(v) => { setOriginId(v); if (v && v === destId) setDestId(""); }} required value={originId}>
+                  <option value="">{t(lc, "select")}</option>
+                  {trip.stops.filter((s) => String(s.id) !== destId).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </CampoSelect>
 
-                <label className="bus-pay-field">
-                  <span><MapPin size={14} /> {t(lc, "destination")}</span>
-                  <select
-                    value={destId}
-                    onChange={(e) => { const v = e.target.value; setDestId(v); if (v && v === originId) setOriginId(""); }}
-                    required
-                  >
-                    <option value="">{t(lc, "select")}</option>
-                    {trip.stops.filter((s) => String(s.id) !== originId).map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </label>
+                <CampoSelect className="bus-pay-field" label={<><MapPin size={14} /> {t(lc, "destination")}</>}
+                  onChange={(v) => { setDestId(v); if (v && v === originId) setOriginId(""); }} required value={destId}>
+                  <option value="">{t(lc, "select")}</option>
+                  {trip.stops.filter((s) => String(s.id) !== originId).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </CampoSelect>
 
                 <label className="bus-pay-field">
                   <span><Users size={14} /> {t(lc, "quantity")}</span>
-                  <input
+                  <Input
                     type="number"
                     inputMode="numeric"
                     min={1}
@@ -293,7 +278,7 @@ export default function BusPaymentPage() {
 
                 <label className="bus-pay-field">
                   <span><Phone size={14} /> {t(lc, "phone9Hint")}</span>
-                  <input
+                  <Input
                     type="tel"
                     inputMode="numeric"
                     pattern="[0-9]{9}"

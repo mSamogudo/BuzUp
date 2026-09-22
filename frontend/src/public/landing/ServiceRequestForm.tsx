@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Send } from "lucide-react";
+import { CampoSelect } from "../../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 /** Texto do formulário nos dois idiomas — a página traduz, o formulário
  *  também tem de traduzir (antes ficava sempre em PT dentro da versão EN). */
@@ -90,30 +92,30 @@ export default function ServiceRequestForm({ lang = "pt" }: { lang?: "pt" | "en"
       <div className="bzlp-form-grid">
         <label>
           <span>{t.name}</span>
-          <input required value={form.name} onChange={(e) => set("name", e.target.value)} />
+          <Input required value={form.name} onChange={(e) => set("name", e.target.value)} />
         </label>
         <label>
           <span>{t.org}</span>
-          <input value={form.organization} onChange={(e) => set("organization", e.target.value)} />
+          <Input value={form.organization} onChange={(e) => set("organization", e.target.value)} />
         </label>
         <label>
           <span>{t.phone}</span>
-          <input required inputMode="tel" placeholder="84xxxxxxx"
+          <Input required inputMode="tel" placeholder="84xxxxxxx"
             value={form.phone} onChange={(e) => set("phone", e.target.value)} />
         </label>
         <label>
           <span>{t.email}</span>
-          <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+          <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
         </label>
         <label>
           <span>{t.profile}</span>
-          <select value={form.interest} onChange={(e) => set("interest", e.target.value)}>
+          <CampoSelect className="bzlp-campo" onChange={(valor) => set("interest", valor)} value={form.interest}>
             {t.interests.map((i) => <option key={i.value} value={i.value}>{i.label}</option>)}
-          </select>
+          </CampoSelect>
         </label>
         <label>
           <span>{t.fleet}</span>
-          <input placeholder={t.fleetHint}
+          <Input placeholder={t.fleetHint}
             value={form.fleet_size} onChange={(e) => set("fleet_size", e.target.value)} />
         </label>
       </div>

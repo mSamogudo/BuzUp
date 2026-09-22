@@ -3750,7 +3750,10 @@ html[data-theme="dark"] .otp-digit:focus {
 .bus-pay-route-text span { font-size: 12px; color: var(--app-text-muted, #71717a); margin-top: 2px; }
 .bus-pay-form { display: flex; flex-direction: column; gap: 12px; }
 .bus-pay-field { display: flex; flex-direction: column; gap: 6px; }
-.bus-pay-field > span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--app-text-muted, #71717a); text-transform: uppercase; letter-spacing: 0.04em; }
+/* O CampoSelect poe um `<Label>` onde antes havia um `<span>`: o gatilho do
+   Radix e um botao, que nao e rotulavel por um `<label>` a envolve-lo. */
+.bus-pay-field > span,
+.bus-pay-field > [data-slot=label] { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--app-text-muted, #71717a); text-transform: uppercase; letter-spacing: 0.04em; }
 .bus-pay-field select,
 .bus-pay-field input { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--app-border, #e4e4e7); border-radius: 10px; font-size: 16px; background: var(--app-surface, #fff); color: var(--app-text, #18181b); transition: border-color 150ms ease, box-shadow 150ms ease; appearance: none; -webkit-appearance: none; box-sizing: border-box; }
 .bus-pay-field select { padding-right: 36px; background-image: linear-gradient(45deg, transparent 50%, #71717a 50%), linear-gradient(135deg, #71717a 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
@@ -5460,4 +5463,32 @@ html[data-theme="dark"] .fare-matrix td input.fare-matrix-empty { background: co
 .campo-data-limpar:hover {
   background: var(--app-surface-soft);
   color: var(--app-text);
+}
+
+
+/* Invólucros dos campos de escolha das páginas públicas.
+   O CampoSelect usa a classe que recebe como caixa de fora; o gatilho do
+   Radix tem `w-fit` por omissão e é ele que precisa da largura e da altura
+   que cada página já usava. */
+.co-field [data-slot=select-trigger],
+.bzbk-campo [data-slot=select-trigger],
+.bzlp-campo [data-slot=select-trigger] {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.co-field [data-slot=select-trigger] {
+  height: 46px;
+}
+
+.bzbk-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bzlp-campo {
+  display: grid;
+  gap: 6px;
 }

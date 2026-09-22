@@ -11,6 +11,8 @@ import { bt, type BookingKey } from "./booking.i18n";
 import SeatMap, { type SeatRow } from "./SeatMap";
 import StopCombo from "./StopCombo";
 import TermsDialog from "./TermsDialog";
+import { CampoSelect } from "../../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 import "./booking.css";
 
 // `rtrips`/`rseats` são a ida e volta: o regresso é outro autocarro, com a
@@ -463,20 +465,22 @@ export default function BookingPage() {
 
   /// O tipo de documento, garantidamente entre os que ESTA rota aceita.
   ///
-  /// Um `<select>` cujo `value` não está entre as opções mostra a PRIMEIRA
-  /// opção mas mantém no estado o valor antigo. Numa rota internacional só o
-  /// passaporte é oferecido; como o tipo por omissão era `"bi"`, o ecrã dizia
-  /// "Passaporte" e o estado dizia "bi". A pessoa escrevia um número de
-  /// passaporte e o servidor recusava-o por não ser um BI — a recusa estava
-  /// certa, quem mentia era o formulário.
+  /// Numa rota internacional só o passaporte é oferecido; como o tipo por
+  /// omissão era `"bi"`, o ecrã dizia "Passaporte" e o estado dizia "bi". A
+  /// pessoa escrevia um número de passaporte e o servidor recusava-o por não
+  /// ser um BI — a recusa estava certa, quem mentia era o formulário.
+  ///
+  /// (O `<select>` nativo mostrava a PRIMEIRA opção quando o valor não
+  /// existia; o Select do shadcn mostra o marcador, que é pior. Por isso o
+  /// campo recebe já o valor passado por aqui.)
   const tipoPermitido = useCallback((tipo: string) => {
     if (docRules.some((d) => d.value === tipo)) return tipo;
     return docRules[0]?.value || "";
   }, [docRules]);
 
-  /// A regra deste tipo. Cai no PRIMEIRO permitido e não no último: o primeiro
-  /// é o que o `<select>` mostra quando o valor não existe, e assim a regra
-  /// que valida é a mesma que a pessoa está a ver.
+  /// A regra deste tipo. Cai no PRIMEIRO permitido e não no último, para
+  /// coincidir com o que `tipoPermitido` põe no campo: a regra que valida é a
+  /// mesma que a pessoa está a ver.
   const docRule = useCallback(
     (type: string) => docRules.find((d) => d.value === type) || docRules[0],
     [docRules],
@@ -757,12 +761,11 @@ export default function BookingPage() {
                   ) : null}
                   <div className="bzbk-field">
                     <label className="bzbk-label" htmlFor="q"><Users size={12} style={{ verticalAlign: -2 }} /> {tr("passengersCount")}</label>
-                    <select id="q" className="bzbk-select" value={qty}
-                      onChange={(e) => setQty(Number(e.target.value))}>
+                    <CampoSelect className="bzbk-campo" id="q" onChange={(valor) => setQty(Number(valor))} value={String(qty)}>
                       {[1, 2, 3, 4, 5].map((n) => (
                         <option key={n} value={n}>{n} {n === 1 ? tr("passenger") : tr("passengersPlural")}</option>
                       ))}
-                    </select>
+                    </CampoSelect>
                   </div>
                 </div>
                 <div className="bzbk-actions">
@@ -948,7 +951,7 @@ export default function BookingPage() {
                     </div>
                     <div className="bzbk-field">
                       <label className="bzbk-label">Nome completo</label>
-                      <input className="bzbk-input" value={p.name} required
+                      <Input className="bzbk-input" value={p.name} required
                         placeholder="Como está no documento"
                         onChange={(e) => setPaxField(i, "name", e.target.value)} />
                     </div>
@@ -965,12 +968,15 @@ export default function BookingPage() {
                         <div className="bzbk-grid" style={{ marginTop: 12 }}>
                           <div className="bzbk-field bzbk-field-wide">
                             <label className="bzbk-label">Documento</label>
-                            <select className="bzbk-select" value={p.document_type}
-                              onChange={(e) => {
+                            {/* O `value` passa pelo `tipoPermitido`: o Select do
+                                shadcn nao mostra a primeira opcao quando o valor
+                                nao existe — mostra o marcador, que e pior. Assim
+                                o que se ve e sempre uma opcao real. */}
+                            <CampoSelect className="bzbk-campo" value={tipoPermitido(p.document_type)}
+                              onChange={(novo) => {
                                 // Trocar de tipo depois de escrever: o número
                                 // é refiltrado pela regra nova, senão ficavam
                                 // letras num campo que passou a ser só dígitos.
-                                const novo = e.target.value;
                                 setPax((prev) => prev.map((q, idx) => idx === i ? {
                                   ...q,
                                   document_type: novo,
@@ -978,11 +984,11 @@ export default function BookingPage() {
                                 } : q));
                               }}>
                               {docRules.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                            </select>
+                            </CampoSelect>
                           </div>
                           <div className="bzbk-field bzbk-field-wide">
                             <label className="bzbk-label">Número</label>
-                            <input
+                            <Input
                               className={`bzbk-input${mostraErro ? " bzbk-input-error" : ""}`}
                               value={p.document_number}
                               required
@@ -1029,13 +1035,13 @@ export default function BookingPage() {
                     <div className="bzbk-grid" style={{ marginTop: 12 }}>
                       <div className="bzbk-field bzbk-field-wide">
                         <label className="bzbk-label">Nome</label>
-                        <input className="bzbk-input" value={emergName} required
+                        <Input className="bzbk-input" value={emergName} required
                           placeholder={tr("nameExample")}
                           onChange={(e) => setEmergName(e.target.value)} />
                       </div>
                       <div className="bzbk-field bzbk-field-wide">
                         <label className="bzbk-label">Telefone</label>
-                        <input className="bzbk-input" value={emergPhone} required
+                        <Input className="bzbk-input" value={emergPhone} required
                           inputMode="numeric" placeholder="84/85/86/87..."
                           autoComplete="off"
                           onChange={(e) => setEmergPhone(filterPhone(e.target.value))} />
@@ -1122,14 +1128,14 @@ export default function BookingPage() {
                 <div className="bzbk-grid">
                   <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="ph">{tr("payPhone")}</label>
-                    <input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
+                    <Input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
                       autoComplete="off"
                       value={phone} required onChange={(e) => setPhone(filterPhone(e.target.value))} />
                     <span className="bzbk-hint">{method === "card" ? tr("cardPhoneHint") : tr("payPhoneHint")}</span>
                   </div>
                   <div className="bzbk-field bzbk-field-wide">
                     <label className="bzbk-label" htmlFor="em">{tr("emailOptional")}</label>
-                    <input id="em" className="bzbk-input" type="email" placeholder={tr("emailHint")}
+                    <Input id="em" className="bzbk-input" type="email" placeholder={tr("emailHint")}
                       value={email} onChange={(e) => setEmail(e.target.value)} />
                   </div>
                 </div>

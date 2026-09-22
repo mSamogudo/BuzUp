@@ -4,6 +4,8 @@ import { useUi } from "../ui/UiPreferences";
 import { ArrowLeft, Bus, CheckCircle, Clock, MapPin, Search, Ticket } from "lucide-react";
 import { formatCurrency, formatDateTime } from "../lib/format";
 import { useBranding, pickLogo } from "../lib/branding";
+import { CampoSelect } from "../ui/CampoSelect";
+import { Input } from "@/components/ui/input";
 
 interface RouteOption { id: number; code: string; name: string; }
 interface StopOption { id: number; code: string; name: string; }
@@ -109,19 +111,21 @@ export default function CheckoutPage() {
             <div className="co-card-icon"><Search size={24} /></div>
             <h2>{t(lc, "searchBus")}</h2>
             <form className="co-form" onSubmit={search}>
-              <select className="co-select" value={routeId} onChange={(e) => setRouteId(e.target.value)}>
+              <CampoSelect aria-label={t(lc, "allRoutes")} className="co-field" onChange={setRouteId} value={routeId}>
                 <option value="">{t(lc, "allRoutes")}</option>
                 {routes.map((r) => <option key={r.id} value={r.id}>{r.code} — {r.name}</option>)}
-              </select>
+              </CampoSelect>
               <div className="co-row">
-                <select className="co-select" value={originId} onChange={(e) => { const value = e.target.value; setOriginId(value); if (value && value === destId) setDestId(""); }}>
+                <CampoSelect aria-label={t(lc, "origin")} className="co-field" value={originId}
+                  onChange={(valor) => { setOriginId(valor); if (valor && valor === destId) setDestId(""); }}>
                   <option value="">{t(lc, "origin")}</option>
                   {stops.filter((s) => String(s.id) !== destId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                <select className="co-select" value={destId} onChange={(e) => { const value = e.target.value; setDestId(value); if (value && value === originId) setOriginId(""); }}>
+                </CampoSelect>
+                <CampoSelect aria-label={t(lc, "destination")} className="co-field" value={destId}
+                  onChange={(valor) => { setDestId(valor); if (valor && valor === originId) setOriginId(""); }}>
                   <option value="">{t(lc, "destination")}</option>
                   {stops.filter((s) => String(s.id) !== originId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                </CampoSelect>
               </div>
               <button className="co-btn" type="submit" disabled={loading}>
                 <Search size={18} />{loading ? "A pesquisar..." : "Pesquisar"}
@@ -167,11 +171,11 @@ export default function CheckoutPage() {
               <div className="co-pay-amount">{formatCurrency(selectedTrip.fare_amount)}</div>
             </div>
             <form className="co-form" onSubmit={pay}>
-              <input className="co-input" required type="tel" placeholder={t(lc, "phoneHint")} value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input className="co-input" required type="tel" placeholder={t(lc, "phoneHint")} value={phone} onChange={(e) => setPhone(e.target.value)} />
               <div className="co-row">
-                <select className="co-select" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))}>
+                <CampoSelect aria-label={t(lc, "tickets")} className="co-field" onChange={(valor) => setQuantity(Number(valor))} value={String(quantity)}>
                   {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n} bilhete{n > 1 ? "s" : ""}</option>)}
-                </select>
+                </CampoSelect>
                 <div className="co-total">{formatCurrency(Number(selectedTrip.fare_amount || 0) * quantity)}</div>
               </div>
               <button className="co-btn" type="submit" disabled={submitting}>

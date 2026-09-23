@@ -21,7 +21,7 @@ from apps.payments.models import PaymentIntent
 from apps.reports.api.serializers import DateRangeSerializer
 from apps.trips.models import Trip
 from apps.trips.revenue import calculate_trip_revenue, calculate_trips_revenue_bulk
-from apps.validations.models import ValidationEvent
+from apps.validations.models import COBRA_NO_EMBARQUE, ValidationEvent
 from apps.wallets.models import Wallet, WalletTransaction
 
 
@@ -89,7 +89,12 @@ class DashboardView(APIView):
             total=Count("id"),
             approved=Count("id", filter=Q(status=ValidationEvent.Status.APPROVED)),
             denied=Count("id", filter=Q(status=ValidationEvent.Status.DENIED)),
-            revenue=Sum("amount_debited", filter=Q(status=ValidationEvent.Status.APPROVED)),
+            revenue=Sum(
+                "amount_debited",
+                # So o embarque que MOVEU dinheiro. Um passe digital ja foi
+                # pago na compra: somar o valor dele conta o bilhete duas vezes.
+                filter=Q(status=ValidationEvent.Status.APPROVED) & Q(validation_type__in=COBRA_NO_EMBARQUE),
+            ),
         )
 
         today_topups = WalletTransaction.objects.filter(
@@ -167,7 +172,10 @@ class DashboardChartsView(APIView):
             )
             .annotate(day=TruncDate("created_at"))
             .values("day")
-            .annotate(revenue=Sum("amount_debited"), count=Count("id"))
+            .annotate(
+                revenue=Sum("amount_debited", filter=Q(validation_type__in=COBRA_NO_EMBARQUE)),
+                count=Count("id"),
+            )
             .order_by("day")
         )
         topups = (
@@ -230,7 +238,10 @@ class DashboardChartsView(APIView):
                 route__isnull=False,
             )
             .values("route__code", "route__name")
-            .annotate(count=Count("id"), revenue=Sum("amount_debited"))
+            .annotate(
+                count=Count("id"),
+                revenue=Sum("amount_debited", filter=Q(validation_type__in=COBRA_NO_EMBARQUE)),
+            )
             .order_by("-count")[:5]
         )
         return [
@@ -477,7 +488,12 @@ class ValidationReportView(APIView):
         ).annotate(
             count=Count("id"),
             approved=Count("id", filter=Q(status=ValidationEvent.Status.APPROVED)),
-            revenue=Sum("amount_debited", filter=Q(status=ValidationEvent.Status.APPROVED)),
+            revenue=Sum(
+                "amount_debited",
+                # So o embarque que MOVEU dinheiro. Um passe digital ja foi
+                # pago na compra: somar o valor dele conta o bilhete duas vezes.
+                filter=Q(status=ValidationEvent.Status.APPROVED) & Q(validation_type__in=COBRA_NO_EMBARQUE),
+            ),
         ).order_by("-count")[:20]
 
         return Response({

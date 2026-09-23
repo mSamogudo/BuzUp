@@ -19,7 +19,7 @@ from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.packages.models import PassengerPackage
 from apps.payments.models import PaymentIntent
 from apps.trips.models import Trip
-from apps.validations.models import ValidationEvent
+from apps.validations.models import COBRA_NO_EMBARQUE, ValidationEvent
 from apps.wallets.models import WalletTransaction
 
 MAX_RANGE_DAYS = 400
@@ -92,6 +92,15 @@ class AnalyticsFilters:
             qs = qs.filter(trip__agent_id=self.agent_id)
         return qs
 
+    def validations_cobradas(self):
+        """So as validacoes que MOVERAM dinheiro no embarque.
+
+        As outras sao passes ja pagos na compra: o `amount_debited` delas e o
+        valor nominal do bilhete, nao receita nova. Ver a nota do campo em
+        `apps.validations.models`.
+        """
+        return self.validations().filter(validation_type__in=COBRA_NO_EMBARQUE)
+
     def passes(self):
         qs = DigitalTravelPass.objects.filter(
             created_at__gte=self.dt_from, created_at__lt=self.dt_to,
@@ -142,7 +151,17 @@ def build_analytics(params) -> dict:
     topups = f.topups()
     payments = f.payments()
 
-    validation_revenue = validations.aggregate(v=Sum("amount_debited"))["v"] or Decimal("0.00")
+    # Receita de validacao e SO o que foi cobrado no embarque. Somar tambem os
+    # passes digitais contava o bilhete duas vezes — ver COBRA_NO_EMBARQUE.
+    validation_revenue = (
+        f.validations_cobradas().aggregate(v=Sum("amount_debited"))["v"] or Decimal("0.00")
+    )
+    # O valor dos bilhetes que passaram pelo validador. Nao e receita (ja esta
+    # nos bilhetes); e quanto valia quem embarcou de facto.
+    validations_nominal = (
+        validations.exclude(validation_type__in=COBRA_NO_EMBARQUE)
+        .aggregate(v=Sum("amount_debited"))["v"] or Decimal("0.00")
+    )
     ticket_revenue = passes.aggregate(v=Sum("fare_amount"))["v"] or Decimal("0.00")
     topup_total = topups.aggregate(v=Sum("amount"))["v"] or Decimal("0.00")
     payment_total = payments.aggregate(v=Sum("amount"))["v"] or Decimal("0.00")
@@ -166,6 +185,7 @@ def build_analytics(params) -> dict:
         "cash_in": _money(cash_in),
         "ticket_revenue": _money(ticket_revenue),
         "validation_revenue": _money(validation_revenue),
+        "validations_nominal": _money(validations_nominal),
         "topups_total": _money(topup_total),
         "payments_total": _money(payment_total),
         "tickets_sold": tickets_count,
@@ -183,7 +203,9 @@ def build_analytics(params) -> dict:
         "revenue_series": _revenue_series(f),
         "hourly": _hourly(validations),
         "payment_methods": methods,
-        "top_routes": _top_routes(validations, passes),
+        # Receita por rota: so o que foi cobrado no embarque, senao a rota
+        # levava o bilhete a dobrar (uma vez pelo passe, outra pela validacao).
+        "top_routes": _top_routes(f.validations_cobradas(), passes),
         "top_trips": _top_trips(f),
         "top_drivers": _top_drivers(f),
         "top_agents": _top_agents(f),
@@ -202,7 +224,7 @@ def _revenue_series(f: AnalyticsFilters) -> list[dict]:
         }
 
     tickets = by_day(f.passes(), "fare_amount", "total")
-    vals = by_day(f.validations(), "amount_debited", "total")
+    vals = by_day(f.validations_cobradas(), "amount_debited", "total")
     tops = by_day(f.topups(), "amount", "total")
 
     out = []

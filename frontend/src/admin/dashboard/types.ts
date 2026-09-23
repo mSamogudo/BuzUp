@@ -18,6 +18,9 @@ export interface AnalyticsKpis {
   cash_in: string;
   ticket_revenue: string;
   validation_revenue: string;
+  /** Valor dos bilhetes que passaram pelo validador. NAO e receita —
+   *  ja esta em ticket_revenue; e quanto valia quem embarcou. */
+  validations_nominal: string;
   topups_total: string;
   payments_total: string;
   tickets_sold: number;

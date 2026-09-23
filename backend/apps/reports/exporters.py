@@ -448,7 +448,8 @@ ROTULOS_DE_TOTAL = {
     "confirmed_count": "Confirmadas",
     "approved_count": "Aprovadas",
     "total_amount": "Total",
-    "total_debited": "Total debitado",
+    "total_debited": "Cobrado a bordo",
+    "total_embarcado": "Bilhetes embarcados",
 }
 
 

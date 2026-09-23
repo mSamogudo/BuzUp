@@ -33,6 +33,34 @@ import type {
  * explicacao que so funciona se for lida nao e uma explicacao — a separacao
  * tem de estar no layout. Dai os grupos: cada numero fica debaixo da pergunta
  * a que responde, e a soma vem DEPOIS das suas parcelas, como numa factura. */
+/** Quanto vale o que embarcou, e quanto disso foi cobrado a bordo.
+ *
+ * Sao numeros de natureza diferente e por isso nao se somam: o primeiro sao
+ * bilhetes ja pagos na compra a passar pelo validador, o segundo e saldo a
+ * sair na hora. Quem nao usa saldo — que e o caso de hoje — so ve o primeiro. */
+function detalheDasValidacoes(lc: Locale, k: AnalyticsKpis): string {
+  const partes: string[] = [];
+  if (Number(k.validations_nominal) > 0) {
+    partes.push(`${formatCurrency(k.validations_nominal)} ${t(lc, "boardedTickets")}`);
+  }
+  if (Number(k.validation_revenue) > 0) {
+    partes.push(`${formatCurrency(k.validation_revenue)} ${t(lc, "chargedOnBoard")}`);
+  }
+  return partes.join(" · ") || t(lc, "noFareCollected");
+}
+
+/** A conta que forma a receita — mas so quando ha duas parcelas.
+ *
+ * Escrever «X em bilhetes + 0,00 cobrados a bordo» numa operacao que nao usa
+ * saldo e ruido: convida a procurar um numero que nunca vai existir. */
+function detalheDaReceita(lc: Locale, k: AnalyticsKpis): string {
+  if (Number(k.validation_revenue) > 0) {
+    return `${formatCurrency(k.ticket_revenue)} ${t(lc, "inTickets")} + `
+      + `${formatCurrency(k.validation_revenue)} ${t(lc, "chargedOnBoard")}`;
+  }
+  return `${formatCurrency(k.ticket_revenue)} ${t(lc, "inTicketsOnly")}`;
+}
+
 function KpiGroup({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
     <section className="dash-kpi-group">
@@ -71,8 +99,12 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
           label={t(lc, "ticketsSoldLabel")}
           value={formatCount(k.tickets_sold)}
         />
+        {/* Validacoes sao EMBARQUES, nao vendas. Mostrar aqui o
+            `validation_revenue` fazia o cartao parecer uma segunda receita —
+            e para quem nao usa saldo, como a TPM-TUR, mostraria 0,00 ao lado
+            de sete embarques reais. O que importa e o valor que embarcou. */}
         <MetricCard
-          detail={formatCurrency(k.validation_revenue)}
+          detail={detalheDasValidacoes(lc, k)}
           label={t(lc, "validations")}
           value={formatCount(k.validations)}
         />
@@ -81,7 +113,7 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
             10 900,00 MZN de diferenca — eram as validacoes, somadas aqui e
             ausentes de la. Ver as duas parcelas deixa fazer a conta de cabeca. */}
         <MetricCard
-          detail={`${formatCurrency(k.ticket_revenue)} ${t(lc, "inTickets")} + ${formatCurrency(k.validation_revenue)} ${t(lc, "inValidations")}`}
+          detail={detalheDaReceita(lc, k)}
           label={t(lc, "transportRevenue")}
           value={formatCurrency(k.transport_revenue)}
         />

@@ -7,13 +7,12 @@ from django.db.models import Count, Q, Sum
 from apps.guest_checkouts.models import DigitalTravelPass, GuestCheckout
 from apps.payments.models import CASH_PROVIDER, PaymentIntent
 from apps.trips.models import Trip
-from apps.validations.models import ValidationEvent
+from apps.validations.models import COBRA_NO_EMBARQUE, ValidationEvent
 
 
-PAY_AS_YOU_GO_VALIDATION_TYPES = (
-    ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO,
-    ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO,
-)
+# Nome antigo, fonte nova: a lista passou a viver ao pe da enumeracao que
+# descreve (apps.validations.models), para nao haver duas copias a divergir.
+PAY_AS_YOU_GO_VALIDATION_TYPES = COBRA_NO_EMBARQUE
 
 
 def calculate_trip_revenue(trip: Trip) -> dict:

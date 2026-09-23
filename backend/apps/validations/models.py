@@ -78,6 +78,19 @@ class ValidationEvent(BaseModel):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="validations_performed",
     )
+    # ATENCAO: este campo quer dizer DUAS coisas, conforme o `validation_type`.
+    #
+    #   pay-as-you-go  -> dinheiro saiu do saldo AGORA. E receita.
+    #   passe digital  -> o bilhete ja foi pago na compra; aqui guarda-se
+    #                     apenas quanto esse bilhete VALIA, para o manifesto
+    #                     saber o valor de quem embarcou. NAO e receita.
+    #
+    # Somar o campo todo como receita conta o mesmo dinheiro duas vezes: uma na
+    # compra do bilhete e outra no embarque. Foi o que o painel fez ate
+    # 2026-09-23, inflacionando a receita da TPM-TUR em 10 900,00 MZN — 20% —
+    # sobre uma operacao que nem sequer usa saldo.
+    #
+    # Quem somar este campo tem de filtrar por `COBRA_NO_EMBARQUE` (abaixo).
     amount_debited = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     status = models.CharField(max_length=16, choices=Status.choices)
     failure_reason = models.CharField(max_length=32, choices=FailureReason.choices, blank=True, default="")
@@ -99,3 +112,16 @@ class ValidationEvent(BaseModel):
 
     def __str__(self):
         return f"{self.validation_type} [{self.status}] {self.created_at}"
+
+
+# Os unicos tipos em que a validacao MOVE dinheiro.
+#
+# Vive aqui, e nao no modulo que faz as contas, porque e uma propriedade da
+# enumeracao acima: quem acrescentar um `ValidationType` novo passa por esta
+# linha e tem de decidir de que lado fica. Quando esta constante morava longe
+# do modelo, dois modulos calcularam a mesma receita de maneiras diferentes
+# durante meses — e o que estava errado era o que o cliente via.
+COBRA_NO_EMBARQUE = (
+    ValidationEvent.ValidationType.CARD_PAY_AS_YOU_GO,
+    ValidationEvent.ValidationType.QR_PAY_AS_YOU_GO,
+)

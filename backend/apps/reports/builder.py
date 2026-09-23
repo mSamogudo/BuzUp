@@ -568,7 +568,20 @@ def aggregate_totals(spec: ReportSpec, rows: list[dict]) -> dict:
         totals["confirmed_count"] = len(ok)
         totals["total_amount"] = str(sum((Decimal(r["amount"]) for r in ok), Decimal("0.00")))
     elif spec.key == "validations":
+        # O `amount_debited` quer dizer duas coisas conforme o tipo, por isso um
+        # total unico mente a metade dos casos. Num passe digital o bilhete foi
+        # pago na compra: aquele valor e quanto o passageiro valia a bordo, nao
+        # um debito. Somar os dois num numero chamado «Total debitado» foi como
+        # a receita da TPM-TUR apareceu inflacionada em 10 900,00 MZN.
+        from apps.validations.models import COBRA_NO_EMBARQUE
+
+        cobrados = {str(t) for t in COBRA_NO_EMBARQUE}
         ok = [r for r in rows if r.get("status") == "approved"]
         totals["approved_count"] = len(ok)
-        totals["total_debited"] = str(sum((Decimal(r["amount_debited"]) for r in ok), Decimal("0.00")))
+        totals["total_debited"] = str(sum(
+            (Decimal(r["amount_debited"]) for r in ok
+             if r.get("validation_type") in cobrados), Decimal("0.00")))
+        totals["total_embarcado"] = str(sum(
+            (Decimal(r["amount_debited"]) for r in ok
+             if r.get("validation_type") not in cobrados), Decimal("0.00")))
     return totals

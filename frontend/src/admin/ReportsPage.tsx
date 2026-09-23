@@ -456,24 +456,22 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
                     : t(lc, "columnsAll")}
                 </span>
                 {colunas.length > 0 && (
-                  <button type="button" onClick={() => setColunas([])}
-                    style={{ fontSize: 12, color: "var(--app-accent)", background: "none", border: "none", cursor: "pointer" }}>
+                  <Button onClick={() => setColunas([])} size="sm" type="button" variant="link">
                     {t(lc, "columnsReset")}
-                  </button>
+                  </Button>
                 )}
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {(currentSpec?.columns ?? []).map((col) => {
                   const ligada = colunaEstaLigada(col.key);
+                  // O chip da aplicacao, e nao um estilo em linha: `#fff`
+                  // sobre o teal da 2,31:1 no tema escuro, e `--app-muted`
+                  // nao existe — o que pintava era a cor herdada.
                   return (
                     <button key={col.key} type="button" onClick={() => alternarColuna(col.key)}
                       aria-pressed={ligada}
-                      style={{
-                        fontSize: 12, padding: "4px 10px", borderRadius: 999, cursor: "pointer",
-                        border: `1px solid ${ligada ? "var(--app-accent)" : "var(--app-border)"}`,
-                        background: ligada ? "var(--app-accent)" : "transparent",
-                        color: ligada ? "#fff" : "var(--app-muted)",
-                      }}>
+                      className={`admin-chip-button${ligada ? " admin-chip-button-active" : ""}`}
+                      style={{ borderRadius: 999 }}>
                       {col.label}
                     </button>
                   );

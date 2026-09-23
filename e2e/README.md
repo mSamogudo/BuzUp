@@ -114,3 +114,54 @@ prop em camelCase, o React 19 reconhece.
 
 **Depois da fase 1 este aviso deve desaparecer.** Se continuar lá, a subida não foi
 feita e vale a pena apertar o filtro.
+
+
+## O teste das paragens depende de partidas futuras
+
+`publicas.spec.ts › a compra de bilhete sugere paragens vindas do backend`
+falha com "Nenhuma paragem com esse nome" quando **todas** as viagens semeadas
+já partiram. Não é regressão: `/api/public/trips/?sellable=1` devolve as
+paragens das viagens vendáveis, e se não houver viagens futuras a lista vem
+vazia. Foi o que aconteceu a 23/09 — as 40 viagens do seed tinham partido
+todas.
+
+Recriar (só na base de dados de desenvolvimento):
+
+```bash
+docker exec buzup_backend_dev python manage.py shell -c "
+from datetime import timedelta
+from django.apps import apps
+from django.utils import timezone
+Trip = apps.get_model('trips','Trip'); Route = apps.get_model('routes','Route')
+RouteStop = apps.get_model('routes','RouteStop'); Vehicle = apps.get_model('trips','Vehicle')
+agora = timezone.now()
+rotas = [r for r in Route.objects.all() if RouteStop.objects.filter(route=r).count() >= 2]
+veic = list(Vehicle.objects.all()[:4])
+for d in range(1, 8):
+    for i, r in enumerate(rotas):
+        p = agora + timedelta(days=d, hours=6 + (i % 6) * 2)
+        Trip.objects.create(route=r, vehicle=veic[i % len(veic)], direction='outbound',
+                            planned_departure_at=p, planned_arrival_at=p + timedelta(hours=2),
+                            status='scheduled')
+print('futuras:', Trip.objects.filter(planned_departure_at__gte=agora).count())
+"
+```
+
+Os nomes dos modelos não são óbvios: `Trip` e `Vehicle` vivem os dois em
+`trips`, e o campo é `planned_departure_at`, não `departure_datetime`.
+
+## Auditoria de contraste
+
+`node contraste.mjs` percorre 32 rotas nos dois temas, apanha cada texto
+visível e compara-o com o fundo **real** — sobe a árvore até encontrar um
+opaco, compondo o que for translúcido pelo caminho. Não é uma tabela de
+tokens: é o que o browser desenhou.
+
+Sai com código 1 se encontrar algum par abaixo do mínimo WCAG AA que se
+aplica àquele tamanho de letra (4,5:1, ou 3:1 em texto grande).
+
+Duas armadilhas que a ferramenta já conhece, e que davam falsos positivos:
+um fundo pintado por degradé ou imagem deixa `backgroundColor` transparente,
+e um pintado por `::before`/`::after` não aparece de todo no elemento. Nos
+dois casos a medição é abandonada em vez de subir até à página e inventar um
+"branco sobre branco".

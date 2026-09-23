@@ -34,7 +34,7 @@ function Wordmark({ url, alt, height = 30 }: { url: string; alt: string; height?
   if (url) return <img src={url} alt={alt} style={{ height, display: "block" }} />;
   return (
     <span style={{ fontWeight: 800, fontSize: height * 0.8, letterSpacing: "-0.02em" }}>
-      Bus<span style={{ color: "var(--primary)" }}>Up</span>
+      Bus<span style={{ color: "var(--blue-bright)" }}>Up</span>
     </span>
   );
 }
@@ -164,6 +164,7 @@ const CSS = `
   --blue:var(--primary);--blue2:var(--primary-ink);--ink:var(--foreground);
   --muted-ink:var(--muted-foreground);--line:var(--border);--bg:var(--background);
   --on-navy:var(--sidebar-accent-foreground);
+  --blue-bright:color-mix(in srgb, var(--primary) 58%, white);
   min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
 .bzdl a{text-decoration:none;}
@@ -174,7 +175,7 @@ const CSS = `
 .bzdl-back:hover{color:#fff;}
 .bzdl-main{flex:1;width:100%;max-width:960px;margin:0 auto;padding:40px 20px 24px;}
 .bzdl-hero{text-align:center;margin-bottom:32px;}
-.bzdl-pill{display:inline-block;background:color-mix(in srgb, var(--primary) 12%, var(--card));color:var(--blue2);font-weight:700;font-size:12px;
+.bzdl-pill{display:inline-block;background:color-mix(in srgb, var(--primary) 12%, var(--card));color:color-mix(in srgb, var(--blue2) 88%, var(--ink));font-weight:700;font-size:12px;
   letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:30px;}
 .bzdl-hero h1{font-size:30px;font-weight:800;margin:14px 0 8px;line-height:1.15;}
 .bzdl-hero h1 span{color:var(--blue);}
@@ -201,15 +202,15 @@ const CSS = `
 .bzdl-soon{color:var(--muted-ink);font-style:italic;font-size:14px;}
 .bzdl-loading{text-align:center;color:var(--muted-ink);font-size:13px;margin-top:16px;}
 .bzdl-how{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin-top:28px;}
-.bzdl-how h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 14px;color:var(--navy);}
+.bzdl-how h3{display:flex;align-items:center;gap:8px;font-size:16px;margin:0 0 14px;color:var(--ink);}
 .bzdl-how ol{margin:0;padding-left:20px;display:grid;gap:9px;}
 .bzdl-how li{font-size:14px;line-height:1.5;color:var(--ink);}
 .bzdl-note{display:flex;align-items:center;gap:8px;margin-top:16px;padding:12px 14px;background:color-mix(in srgb, var(--success) 12%, var(--card));
-  border-radius:10px;font-size:13px;color:var(--success);}
+  border-radius:10px;font-size:13px;color:color-mix(in srgb, var(--success) 82%, var(--ink));}
 .bzdl-note svg{flex:0 0 auto;color:var(--success);}
 .bzdl-store{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:22px;
   font-size:13px;color:var(--muted-ink);text-align:center;}
 .bzdl-foot{background:var(--navy);color:var(--on-navy);display:flex;align-items:center;justify-content:center;gap:14px;
   flex-wrap:wrap;padding:20px;font-size:12.5px;margin-top:24px;}
-.bzdl-foot a{color:var(--blue);font-weight:700;}
+.bzdl-foot a{color:var(--blue-bright);font-weight:700;}
 `;

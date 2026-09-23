@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import LoginPage from "./auth/LoginPage";
 import AdminLayout from "./admin/AdminLayout";
 // Cada ecra chega quando alguem la vai, e nao antes.
@@ -79,7 +79,7 @@ function AppContent() {
 
   return (
     <>
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" />
       <PwaInstallPrompt />
       {/* Uma so fronteira de espera: o ecra que falta e sempre o proximo. */}
       <Suspense fallback={<SplashScreen />}>

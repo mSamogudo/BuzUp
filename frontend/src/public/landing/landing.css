@@ -48,7 +48,7 @@
    batia o `.bzlp-btn`, que vale 0,1,0 — o botao do cabecalho ficava com
    texto navy sobre a cor de accao, 2,90:1. O `:where()` nao soma
    especificidade, por isso as restantes ligacoes continuam como estavam. */
-.bzlp a:where(:not(.bzlp-btn)){text-decoration:none;color:inherit}
+.bzlp a:where(:not(.bzlp-btn, .bzlp-skip)){text-decoration:none;color:inherit}
 .bzlp img{max-width:100%}
 
 /* Receitas de layout */
@@ -296,10 +296,18 @@
 .bzlp-plogo{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;
   padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);overflow:hidden}
 .bzlp-plogo img{display:block;width:auto}
-.bzlp-tile-cat{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pa)}
+/* A cor de cada produto irmao vem dos dados e nao foi escolhida para ser
+   lida em texto pequeno: o verde da CashUp da 3,30:1 sobre branco e o
+   vermelho da PayUp 3,76:1 — chumbavam AA desde sempre, e no navy do tema
+   escuro caiam para 2,84:1. Daqui sai uma TINTA: escurecida a 78% no claro
+   e clareada a 62% no escuro, todas passam os 4,8:1. O `--pa` continua a
+   pintar molduras e realces, onde a cor cheia e que e precisa. */
+.bzlp-tile{--pa-ink:color-mix(in srgb,var(--pa) 78%,black)}
+.bzlp[data-theme="dark"] .bzlp-tile{--pa-ink:color-mix(in srgb,var(--pa) 62%,white)}
+.bzlp-tile-cat{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--pa-ink)}
 .bzlp-tile-body p{font-size:13.5px;line-height:1.55;color:var(--muted-ink);margin:0}
 .bzlp-tile-cta{margin-top:auto;display:inline-flex;align-items:center;gap:7px;font-size:13.5px;
-  font-weight:800;color:var(--pa);transition:gap .3s}
+  font-weight:800;color:var(--pa-ink);transition:gap .3s}
 .bzlp-tile:hover .bzlp-tile-cta{gap:12px}
 /* tile grande: media e texto lado a lado */
 @media(min-width:981px){

@@ -55,6 +55,12 @@
   [type="submit"] {
     background-color: transparent;
     background-image: none;
+    /* E a cor, pelo mesmo motivo. O UA poe `button { color: buttontext }`,
+     * que e preto, e isso ganha a qualquer cor herdada. O
+     * `SidebarMenuButton` do shadcn nao define cor propria — conta com a que
+     * herda — por isso "Cartoes" e os outros submenus saiam a PRETO sobre o
+     * navy da barra: 1,51:1, praticamente invisivel. */
+    color: inherit;
   }
 }
 

@@ -291,7 +291,10 @@ VALIDATIONS = ("validations", "Validacoes", [
     ("validation_type", "Tipo"),
     ("route", "Rota"),
     ("device", "Dispositivo"),
-    ("amount_debited", "Debito"),
+    # «Debito» mentia em metade das linhas: num passe digital nada foi
+    # debitado, aquilo e quanto o bilhete valia. A coluna «Tipo» ao lado diz
+    # qual e qual, com «(ja pago)» ou «(pago a bordo)».
+    ("amount_debited", "Valor"),
     ("status", "Estado"),
     ("failure_reason", "Motivo falha"),
     ("passenger", "Passageiro"),
@@ -523,17 +526,23 @@ REGISTRY: dict[str, ReportSpec] = {
     SALES[0]: ReportSpec(
         *SALES, _rows_sales,
         escopo="Conta os PAGAMENTOS de bilhetes comprados sem conta (guest). "
-               "Nao inclui validacoes de cartao nem recargas de saldo.",
+               "Nao inclui recargas de saldo. O relatorio de Validacoes NAO se "
+               "soma a este: um bilhete validado a bordo e um destes bilhetes a "
+               "embarcar, nao uma venda nova.",
     ),
     TOPUPS[0]: ReportSpec(
         *TOPUPS, _rows_topups,
         escopo="Conta recargas de saldo, pacotes e emissoes de cartao. "
-               "Nao inclui bilhetes.",
+               "Nao inclui bilhetes. Uma recarga e dinheiro recebido mas ainda "
+               "em divida ao passageiro: so vira receita quando ele viaja.",
     ),
     VALIDATIONS[0]: ReportSpec(
         *VALIDATIONS, _rows_validations,
-        escopo="Conta as validacoes de cartao a bordo. "
-               "Nao inclui bilhetes comprados sem conta.",
+        escopo="Conta EMBARQUES: cada bilhete ou cartao lido a bordo. So «Cobrado "
+               "a bordo» e receita — e o saldo que saiu no momento. «Bilhetes "
+               "embarcados» e o valor de bilhetes ja pagos na compra e NAO se "
+               "soma ao relatorio de Vendas, senao conta-se o mesmo dinheiro "
+               "duas vezes.",
     ),
     ONBOARDING[0]: ReportSpec(
         *ONBOARDING, _rows_onboardings,
@@ -546,7 +555,7 @@ REGISTRY: dict[str, ReportSpec] = {
     TICKETS[0]: ReportSpec(
         *TICKETS, _rows_tickets,
         escopo="Uma linha por passageiro que viaja. Uma ida-e-volta e UMA linha "
-               "com as duas datas. Nao inclui validacoes de cartao.",
+               "com as duas datas. Nao inclui embarques pagos do saldo a bordo.",
     ),
 }
 

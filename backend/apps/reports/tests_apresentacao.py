@@ -168,8 +168,24 @@ class OQueCadaRelatorioConta(TestCase):
         from apps.reports.builder import REGISTRY
 
         for chave in ("sales", "tickets", "topups", "validations"):
-            self.assertIn("Nao", REGISTRY[chave].escopo,
+            # Indiferente a maiusculas: alguns escopos gritam «NAO» de
+            # proposito, no sitio onde somar dois relatorios custa dinheiro.
+            self.assertIn("nao", REGISTRY[chave].escopo.lower(),
                           f"o escopo de «{chave}» nao diz o que fica de fora")
+
+    def test_o_escopo_avisa_contra_somar_vendas_com_validacoes(self):
+        """O erro concreto que custou 10 900,00 MZN.
+
+        Os escopos antigos diziam «nao inclui validacoes de cartao», o que
+        convidava a soma: se um nao inclui o outro, somam-se. Falso — um
+        bilhete validado a bordo e um bilhete das Vendas a embarcar.
+        """
+        from apps.reports.builder import REGISTRY
+
+        for chave in ("sales", "validations"):
+            escopo = REGISTRY[chave].escopo.lower()
+            self.assertIn("nao se soma", escopo,
+                          f"o escopo de «{chave}» nao avisa contra a soma")
 
     def test_o_escopo_chega_ao_documento(self):
         from apps.reports.builder import REGISTRY
@@ -218,3 +234,95 @@ class AEscolhaDeColunas(TestCase):
     def test_nenhuma_valida_devolve_tudo(self):
         """Um documento vazio nao se distingue de «nao houve movimento»."""
         self.assertEqual(self.escolher(self.spec, "nada,disto,existe"), self.spec.columns)
+
+
+class OQueSaiNaColunaTipo(TestCase):
+    """Um financeiro nao tem de saber o modelo de dados para ler o relatorio.
+
+    A coluna «Tipo» do relatorio de Validacoes saia como
+    `guest_digital_travel_pass`. E a unica coluna que separa receita de
+    nao-receita naquele documento: sair de la um identificador do codigo era a
+    mesma queixa que o cliente ja tinha feito da coluna dos pagamentos.
+    """
+
+    def test_cada_tipo_diz_o_que_faz_ao_dinheiro(self):
+        from apps.reports.exporters import _apresentar
+
+        self.assertEqual(_apresentar("validation_type", "guest_digital_travel_pass"),
+                         "Bilhete (ja pago)")
+        self.assertEqual(_apresentar("validation_type", "card_pay_as_you_go"),
+                         "Cartao (pago a bordo)")
+
+    def test_nenhum_tipo_conhecido_sai_em_variavel(self):
+        from apps.reports.exporters import _apresentar
+        from apps.validations.models import ValidationEvent
+
+        for tipo in ValidationEvent.ValidationType:
+            saida = _apresentar("validation_type", str(tipo))
+            self.assertNotIn("_", saida, f"«{tipo}» sai como variavel do codigo")
+
+    def test_um_tipo_desconhecido_ainda_se_le(self):
+        """Nunca devolver o identificador cru, nem sequer no caso que nao previmos."""
+        from apps.reports.exporters import _apresentar
+
+        self.assertEqual(_apresentar("validation_type", "tipo_novo_qualquer"),
+                         "Tipo novo qualquer")
+
+
+class OEscopoCabeNaFolha(TestCase):
+    """Um aviso truncado a meio e pior do que aviso nenhum."""
+
+    def test_o_escopo_longo_quebra_em_linhas_e_nao_se_perde(self):
+        from reportlab.pdfgen import canvas as _canvas
+        from reportlab.lib.pagesizes import A4
+        import io as _io
+
+        from apps.reports.builder import REGISTRY
+        from apps.reports.exporters import _quebrar
+
+        c = _canvas.Canvas(_io.BytesIO(), pagesize=A4)
+        escopo = REGISTRY["validations"].escopo
+        linhas = _quebrar(c, escopo, "Helvetica-Oblique", 8, A4[0] - 40)
+
+        self.assertGreater(len(linhas), 1, "o escopo das validacoes ocupa mais de uma linha")
+        # Nada se perde pelo caminho: as linhas juntas sao o texto inteiro.
+        self.assertEqual(" ".join(linhas), " ".join(escopo.split()))
+        for linha in linhas:
+            self.assertLessEqual(c.stringWidth(linha, "Helvetica-Oblique", 8), A4[0] - 40)
+
+
+class UmTotalNovoNaoSaiCru(TestCase):
+    """O «30387.80» ao lado do «6 184,00 MZN».
+
+    O `total_embarcado` nasceu com um nome que nenhuma regra apanhava, e foi
+    parar ao cartao do PDF sem separador de milhares, sem virgula decimal e sem
+    moeda — ao lado de outro cartao formatado. So se viu olhando para o
+    documento; nenhum teste o apanhava porque todos testavam os totais que ja
+    existiam.
+    """
+
+    def test_todo_o_total_que_nao_e_contagem_sai_formatado(self):
+        from apps.reports.builder import REGISTRY, aggregate_totals
+        from apps.reports.exporters import _apresentar, _dinheiro, _e_dinheiro
+
+        # Uma linha por relatorio chega: o que se prova e a REGRA, nao os dados.
+        for chave, spec in REGISTRY.items():
+            for total in aggregate_totals(spec, []):
+                if total.endswith("_count") or total == "count":
+                    continue
+                self.assertTrue(
+                    _e_dinheiro(total),
+                    f"o total «{total}» de «{chave}» nao e reconhecido como dinheiro "
+                    f"e vai sair cru no cartao do PDF",
+                )
+                # O caminho do cartao, que era o que estava partido: nas
+                # celulas da tabela a moeda vai no cabecalho da coluna, nos
+                # cartoes tem de ir no proprio numero.
+                self.assertIn("MZN", _dinheiro("1234.50"))
+                self.assertEqual(_apresentar(total, "1234.50"), "1 234,50")
+
+    def test_uma_contagem_nunca_leva_moeda(self):
+        from apps.reports.exporters import _e_dinheiro
+
+        for contagem in ("count", "confirmed_count", "approved_count", "quantity"):
+            self.assertFalse(_e_dinheiro(contagem), f"«{contagem}» nao e dinheiro")

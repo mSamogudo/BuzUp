@@ -73,6 +73,17 @@ def _branding_image(field_name: str):
 #:
 #: Num PDF nao ha distintivo nenhum: sai o que la estiver escrito, e
 #: `confirmed` nao diz nada a quem fecha as contas do mes.
+# Cada rotulo diz, entre parenteses, o que aquela linha faz ao dinheiro. E a
+# unica coluna que separa receita de nao-receita neste relatorio, e sair de la
+# «guest_digital_travel_pass» obrigava quem le a saber o modelo de dados.
+TIPOS_DE_VALIDACAO = {
+    "card_pay_as_you_go": "Cartao (pago a bordo)",
+    "qr_pay_as_you_go": "QR (pago a bordo)",
+    "digital_travel_pass": "Passe da app (ja pago)",
+    "guest_digital_travel_pass": "Bilhete (ja pago)",
+}
+
+
 ESTADOS = {
     "confirmed": "Confirmado", "pending": "Pendente", "failed": "Falhado",
     "cancelled": "Cancelado", "expired": "Expirado", "refunded": "Reembolsado",
@@ -82,8 +93,23 @@ ESTADOS = {
 }
 
 
+#: Totais que sao contagens, nao dinheiro. Tudo o resto que apareca num cartao
+#: e dinheiro e tem de sair formatado — a regra e esta e nao uma lista de
+#: sufixos, porque um total novo com um nome novo saia como «30387.80», cru, ao
+#: lado de «6 184,00 MZN». Quem le nao tem de adivinhar que sao a mesma moeda.
+CONTAGENS = {"count", "confirmed_count", "approved_count", "quantity"}
+
+
 def _e_dinheiro(key: str) -> bool:
-    return key.endswith("amount") or key.endswith("debited") or key in {"valor", "total"}
+    if key in CONTAGENS or key.endswith("_count"):
+        return False
+    return (
+        key.endswith("amount")
+        or key.endswith("debited")
+        or key.endswith("embarcado")
+        or key.startswith("total")
+        or key in {"valor", "total"}
+    )
 
 
 def _apresentar(key: str, value, *, para: str = "pdf"):
@@ -99,6 +125,8 @@ def _apresentar(key: str, value, *, para: str = "pdf"):
     bonita e impossivel de somar — e somar a coluna e a primeira coisa que
     quem recebe a folha vai fazer.
     """
+    if key == "validation_type" and isinstance(value, str):
+        return TIPOS_DE_VALIDACAO.get(value.strip(), value.replace("_", " ").capitalize())
     if key == "status" and isinstance(value, str):
         v = value.strip()
         return ESTADOS.get(v.lower(), v.replace("_", " ").capitalize() if v else "—")
@@ -145,6 +173,29 @@ def _is_numeric_cell(txt: str) -> bool:
             break
     core = s.replace(" ", "").replace(",", "").replace(".", "").replace("-", "").replace("+", "")
     return core.isdigit()
+
+
+def _quebrar(c, txt: str, font: str, size: float, max_w: float, maximo: int = 4) -> list[str]:
+    """O texto em linhas que cabem em `max_w`, sem partir palavras."""
+    palavras = (txt or "").split()
+    linhas: list[str] = []
+    actual = ""
+    for p in palavras:
+        tentativa = f"{actual} {p}".strip()
+        if c.stringWidth(tentativa, font, size) <= max_w:
+            actual = tentativa
+        else:
+            if actual:
+                linhas.append(actual)
+            actual = p
+            if len(linhas) == maximo - 1:
+                # A ultima linha leva o resto, cortado se for preciso.
+                resto = " ".join(palavras[palavras.index(p):])
+                linhas.append(_fit_text(c, resto, font, size, max_w))
+                return linhas
+    if actual:
+        linhas.append(actual)
+    return linhas
 
 
 def _fit_text(c, txt: str, font: str, size: float, max_w: float) -> str:
@@ -274,7 +325,12 @@ def _e_intocavel(key: str) -> bool:
     return (
         key.endswith("amount")
         or key.endswith("_at")
-        or key in {"created_at", "quantity", "status", "method", "valor", "total"}
+        # `payer` e curto e fixo — «***6613», sete caracteres — mas ficava com
+        # o que sobrasse e saia «***6…», que nao identifica ninguem. Uma coluna
+        # que nao se le ocupa espaco e nao vale nada; ou cabe, ou nao devia la
+        # estar. Reservar-lhe a largura exacta custa quase nada as outras.
+        or key in {"created_at", "quantity", "status", "method", "valor",
+                   "total", "payer", "documento", "validation_type"}
     )
 
 
@@ -359,10 +415,15 @@ def render_pdf(
     # porque e ali que a pergunta nasce: alguem le o total, compara com o
     # painel, e nao bate certo. A resposta tem de estar na mesma folha.
     if escopo:
+        # Em linhas, e nao cortado com reticencias. O escopo deixou de ser uma
+        # etiqueta e passou a ser um aviso — «nao some isto com aquele
+        # relatorio» — e um aviso truncado a meio e pior do que nenhum.
         c.setFillColor(GREY)
         c.setFont("Helvetica-Oblique", 8)
-        c.drawString(10 * mm, y, _fit_text(c, escopo, "Helvetica-Oblique", 8, width - 20 * mm))
-        y -= 5 * mm
+        for linha in _quebrar(c, escopo, "Helvetica-Oblique", 8, width - 20 * mm):
+            c.drawString(10 * mm, y, linha)
+            y -= 4 * mm
+        y -= 1 * mm
 
     sample = rows[:200]
     avail = width - 20 * mm
@@ -511,7 +572,12 @@ def _draw_totals(c, width, y, totals):
         # O valor encolhe se nao couber. Um total cortado a meio num cartao e
         # pior do que um total pequeno: «68 650,00» a sair «68 65» le-se como
         # outro numero.
-        texto = _dinheiro(valor) if "amount" in chave or "debited" in chave else _stringify(valor)
+        # `_e_dinheiro` e nao um teste proprio: era aqui que o cartao decidia o
+        # formato por conta propria («amount» ou «debited» no nome), e por isso
+        # o `total_embarcado` — que nao tem nem uma nem outra — saiu «30387.80»
+        # ao lado de «6 184,00 MZN». Duas regras para a mesma pergunta acabam
+        # sempre a responder coisas diferentes.
+        texto = _dinheiro(valor) if _e_dinheiro(chave) else _stringify(valor)
         tamanho = 15
         largura_util = box_w - 2 * margem
         while tamanho > 8 and c.stringWidth(texto, "Helvetica-Bold", tamanho) > largura_util:
@@ -599,19 +665,31 @@ def _draw_footer(c, width, logos=None):
         or _safe_image(_asset("up-digital-logo", "up_digital_dark.png"))
         or _safe_image(_asset("up-digital-logo", "up_digital_light.png"))
     )
+    c.setFillColor(GREY)
+    c.setFont("Helvetica", 8)
+    c.drawString(10 * mm, band_h / 2 - 2, "BuzUp | TPM-TUR S.A. | Documento gerado automaticamente.")
+
     if up:
         try:
             iw, ih = up.getSize()
             target_h = 7 * mm
             target_w = iw * target_h / ih
-            c.drawImage(up, width - 8 * mm - target_w, (band_h - target_h) / 2,
+            x_logo = width - 8 * mm - target_w
+            c.drawImage(up, x_logo, (band_h - target_h) / 2,
                        width=target_w, height=target_h, mask="auto")
+            # «powered by» e a legenda do logo, por isso vai colada a ele e
+            # alinhada pelo meio. Estava fixa a 10 mm da margem esquerda, numa
+            # segunda linha debaixo do texto do rodape e a meia folha de
+            # distancia do logo — a legendar coisa nenhuma.
+            etiqueta = "powered by"
+            c.setFont("Helvetica", 7)
+            c.drawString(
+                x_logo - 2 * mm - c.stringWidth(etiqueta, "Helvetica", 7),
+                band_h / 2 - 2.5, etiqueta,
+            )
         except Exception:
+            # Sem logo nao se escreve a legenda: sozinha nao quer dizer nada.
             pass
-    c.setFillColor(GREY)
-    c.setFont("Helvetica", 8)
-    c.drawString(10 * mm, band_h / 2 - 2, "BuzUp | TPM-TUR S.A. | Documento gerado automaticamente.")
-    c.drawString(10 * mm, band_h / 2 - 9, "powered by")
 
 
 # ---------------------------------------------------------------------------

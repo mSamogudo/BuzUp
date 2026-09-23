@@ -62,6 +62,14 @@
      * navy da barra: 1,51:1, praticamente invisivel. */
     color: inherit;
   }
+
+  /* Terceira omissao do preflight apanhada a medir, depois do fundo e da cor
+   * dos botoes: o `<figure>` guarda a margem do UA, `16px 40px`. Os quatro
+   * cartoes da frota da TPM-TUR ficavam a 179px dentro de celulas de 258,5px
+   * — 80px mais estreitos — e a legenda saia cortada a meio das palavras. */
+  figure {
+    margin: 0;
+  }
 }
 
 /* Inter e Manrope, alojadas localmente. */

@@ -170,7 +170,13 @@
   transition: border-color 0.18s ease, transform 0.18s ease;
 }
 .tpm-service:hover { border-color: var(--blue); transform: translateY(-2px); }
-.tpm-service img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
+/* O `height: auto` nao e decorativo. Estas imagens levam atributos HTML
+   `width`/`height` de proposito, para o browser reservar o espaco e a pagina
+   nao saltar ao carregar. Sem o preflight do Tailwind, esse `height="1500"`
+   entra como presentational hint e o CSS so o vence se disser algo sobre
+   altura: o `aspect-ratio` sozinho e ignorado. Estas fotos pediam 16/10 e
+   davam 0,46 — tiras verticais com a legenda cortada a meio da palavra. */
+.tpm-service img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
 .tpm-service-body { padding: 20px 20px 22px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .tpm-service-body h3 { margin: 0; font-size: 17px; }
 .tpm-service-body p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--muted-ink); flex: 1; }
@@ -218,6 +224,9 @@
 .tpm-vehicle { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
 .tpm-vehicle img {
   width: 100%;
+  /* Ver a nota em `.tpm-service img`: sem altura declarada, o atributo HTML
+     ganha e o racio e ignorado. Pedia 4/5 e dava 0,17. */
+  height: auto;
   aspect-ratio: 4 / 5;
   object-fit: cover;
   display: block;

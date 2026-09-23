@@ -214,13 +214,42 @@
 .tpm-services-extra a:hover { border-color: var(--blue); color: var(--blue); }
 
 /* Frota — grelha fotográfica. */
+/* Cabecalho da frota: titulo a esquerda, apoio ao lado. */
+.tpm-frota-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: end;
+  margin-bottom: 36px;
+}
+.tpm-frota-head .bzlp-lead { max-width: 46ch; }
+@media (max-width: 860px) {
+  .tpm-frota-head { grid-template-columns: 1fr; gap: 16px; align-items: start; }
+}
+
+/* Quatro cartoes iguais em fila liam-se como uma prateleira de miniaturas.
+   Em xadrez — largo, estreito / estreito, largo — a frota ganha escala e a
+   pagina ganha um momento de ritmo que nao tinha. Seis colunas dao os dois
+   pesos sem fraccoes estranhas. */
 .tpm-fleet {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 300px;
   gap: 14px;
 }
-@media (max-width: 980px) { .tpm-fleet { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .tpm-fleet { grid-template-columns: 1fr; } }
+.tpm-fleet > *:nth-child(1) { grid-column: span 4; }
+.tpm-fleet > *:nth-child(2) { grid-column: span 2; }
+.tpm-fleet > *:nth-child(3) { grid-column: span 2; }
+.tpm-fleet > *:nth-child(4) { grid-column: span 4; }
+
+/* O cartao enche a celula: com `aspect-ratio` as duas larguras davam duas
+   alturas, e o xadrez desalinhava. */
+.tpm-fleet > * { min-width: 0; }
+.tpm-fleet .tpm-vehicle { height: 100%; }
+.tpm-fleet .tpm-vehicle img { height: 100%; aspect-ratio: auto; }
+@media (max-width: 980px) { .tpm-fleet { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 240px; }
+  .tpm-fleet > * { grid-column: span 1 !important; } }
+@media (max-width: 560px) { .tpm-fleet { grid-template-columns: 1fr; grid-auto-rows: 260px; } }
 .tpm-vehicle { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); }
 .tpm-vehicle img {
   width: 100%;
@@ -374,3 +403,19 @@
   border-color: rgba(58, 42, 6, 0.45);
 }
 .tpm-cta-final .bzlp-btn.outline:hover { background: rgba(58, 42, 6, 0.08); }
+
+
+/* O FAQ e a seccao calma desta pagina: titulo numa coluna estreita, as
+   perguntas ao lado, e muito espaco por preencher de proposito. Era a quarta
+   composicao centrada de um scroll que so tem blocos grandes. */
+.tpm-faq-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
+  gap: 56px;
+  align-items: start;
+}
+.tpm-faq-head { position: sticky; top: 96px; }
+@media (max-width: 860px) {
+  .tpm-faq-wrap { grid-template-columns: 1fr; gap: 24px; }
+  .tpm-faq-head { position: static; }
+}

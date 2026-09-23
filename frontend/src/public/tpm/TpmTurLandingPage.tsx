@@ -238,12 +238,20 @@ export default function TpmTurLandingPage() {
         {/* FROTA */}
         <section className="bzlp-sec" id="frota">
           <div className="bzlp-wrap">
+            {/* Cabecalho a esquerda, e nao centrado: esta era a terceira
+                seccao seguida com a mesma composicao — etiqueta ao meio,
+                titulo ao meio, fila de cartoes iguais. Tres iguais em fila
+                fazem a pagina parecer gerada. */}
             <Reveal>
-              <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Frota</div>
-                <h2 className="bzlp-h2">Conheça a frota, imagine a viagem</h2>
-                <p className="bzlp-lead">
-                  Autocarros executivos e normais, Coaster, Quantum e SUV — opções para cada grupo e cada destino.
+              <div className="tpm-frota-head">
+                <div>
+                  <div className="bzlp-kicker left">Frota</div>
+                  <h2 className="bzlp-h2 left">Conheça a frota,<br />imagine a viagem</h2>
+                </div>
+                <p className="bzlp-lead left">
+                  Autocarros executivos e normais, Coaster, Quantum e SUV — opções para cada
+                  grupo e cada destino. Consulte a equipa sobre lotação, comodidades e
+                  disponibilidade da viatura pretendida.
                 </p>
               </div>
             </Reveal>
@@ -262,9 +270,6 @@ export default function TpmTurLandingPage() {
                 </Reveal>
               ))}
             </div>
-            <p className="bzlp-lead" style={{ marginTop: 22, fontSize: 13.5 }}>
-              Consulte a equipa sobre lotação, comodidades e disponibilidade da viatura pretendida.
-            </p>
           </div>
         </section>
 
@@ -330,11 +335,11 @@ export default function TpmTurLandingPage() {
 
         {/* FAQ */}
         <section className="bzlp-sec alt" id="faq">
-          <div className="bzlp-wrap" style={{ maxWidth: 820 }}>
+          <div className="bzlp-wrap tpm-faq-wrap">
             <Reveal>
-              <div className="bzlp-sechead">
-                <div className="bzlp-kicker">Perguntas frequentes</div>
-                <h2 className="bzlp-h2">Antes de partir</h2>
+              <div className="tpm-faq-head">
+                <div className="bzlp-kicker left">Perguntas frequentes</div>
+                <h2 className="bzlp-h2 left">Antes de partir</h2>
               </div>
             </Reveal>
             <div className="tpm-faq">

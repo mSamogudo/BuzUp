@@ -360,14 +360,22 @@ export default function BookingPage() {
 
   // Link partilhável: /comprar?origem=66&destino=70&data=2026-08-05&pax=2
   // (campanhas e CTAs da landing podem apontar directamente a um percurso).
+  //
+  // `volta=<data>` acrescenta o regresso. Sem ele, a pesquisa do hero da
+  // landing mandava quem queria ida e volta para um formulário de só ida, e a
+  // escolha perdia-se pelo caminho.
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const o = p.get("origem"); const d = p.get("destino");
     const dt = p.get("data"); const n = Number(p.get("pax") || 0);
+    const v = p.get("volta");
     if (o) setOrigin(o);
     if (d) setDestination(d);
     if (dt) setDate(dt);
     if (n >= 1 && n <= 5) setQty(n);
+    // Só o tipo e a data: o resto do que `escolherTipo` limpa ainda não
+    // existe nesta altura, e chamá-la aqui apagava a data que acabámos de pôr.
+    if (v) { setTipo("idaevolta"); setReturnDate(v); }
   }, []);
 
   const runSearch = useCallback(async (o: string, d: string, dt: string) => {

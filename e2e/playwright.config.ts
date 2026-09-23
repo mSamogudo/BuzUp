@@ -32,13 +32,15 @@ export default defineConfig({
   projects: [
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
     {
+      // Paginas que nao pedem sessao. Correm sem depender do `setup`, por
+      // isso uma falha de autenticacao nao as arrasta consigo.
       name: 'publicas',
-      testMatch: /publicas\.spec\.ts/,
+      testMatch: [/publicas\.spec\.ts/, /hero-busca\.spec\.ts/],
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'portal',
-      testIgnore: [/publicas\.spec\.ts/, /.*\.setup\.ts/],
+      testIgnore: [/publicas\.spec\.ts/, /hero-busca\.spec\.ts/, /.*\.setup\.ts/],
       dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'], storageState: FICHEIRO_SESSAO },
     },

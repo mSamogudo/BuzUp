@@ -419,3 +419,140 @@
   .tpm-faq-wrap { grid-template-columns: 1fr; gap: 24px; }
   .tpm-faq-head { position: static; }
 }
+
+/* ── Pesquisa de viagem no hero ──────────────────────────────────────────
+   O cartao assenta sobre a fotografia, por isso tem superficie propria: os
+   campos tem de se ler contra o que estiver por baixo, seja ceu claro ou
+   chapa escura. A largura e maior do que a do texto acima de proposito — e
+   a accao principal da pagina, nao um apendice do titulo. */
+.tpm-busca {
+  margin: 30px 0 0;
+  max-width: 980px;
+  background: var(--surface);
+  /* O hero poe `color: #fff` para o texto se ler sobre a fotografia. Dentro
+     deste cartao branco isso era branco sobre branco: o gatilho do Select do
+     shadcn nao define cor propria — conta com a herdada — e "1 passageiro"
+     saia invisivel, a 1,00:1. */
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 22px 48px -22px rgba(0, 0, 0, 0.45);
+}
+
+.tpm-busca-tipo {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  margin-bottom: 14px;
+}
+.tpm-busca-tipo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  /* Puxado 15% para a tinta: o tom fraco cheio sobre a propria faixa da
+     4,31:1 e chumba AA. */
+  color: color-mix(in srgb, var(--muted-ink) 85%, var(--ink));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.tpm-busca-tipo-btn.is-on {
+  background: var(--surface);
+  color: var(--blue2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+}
+
+/* Origem e destino puxam mais largura do que a data e os passageiros: sao
+   campos de escrita livre e os nomes das paragens sao longos. */
+.tpm-busca-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) minmax(0, 0.85fr) minmax(0, 0.9fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.tpm-busca-campos.tem-volta {
+  grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.85fr) auto;
+}
+
+.tpm-busca-campo { display: grid; gap: 5px; min-width: 0; }
+.tpm-busca-campo > label,
+.tpm-busca-campo > [data-slot=label] {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-ink);
+}
+.tpm-busca-campo [data-slot=select-trigger] { width: 100%; }
+.tpm-busca-campo .campo-data-botao { height: 48px; }
+
+/* Entre os dois campos, e alinhado com eles: e ali que a pessoa olha quando
+   percebe que trocou os lugares. */
+.tpm-busca-inverter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--blue2);
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+.tpm-busca-inverter:hover { border-color: var(--blue); color: var(--blue); }
+
+.tpm-busca-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 160ms ease, transform 140ms ease;
+}
+.tpm-busca-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--gold) 88%, white); transform: translateY(-1px); }
+.tpm-busca-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.tpm-busca-erro {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--destructive);
+}
+
+/* Em ecra estreito a fila unica nao cabe: os campos empilham dois a dois e o
+   botao de inverter passa a ocupar a largura toda entre eles. */
+@media (max-width: 1080px) {
+  .tpm-busca-campos,
+  .tpm-busca-campos.tem-volta {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .tpm-busca-inverter { width: 100%; height: 38px; grid-column: 1 / -1; }
+  .tpm-busca-btn { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .tpm-busca { padding: 14px; border-radius: 14px; }
+  .tpm-busca-campos,
+  .tpm-busca-campos.tem-volta { grid-template-columns: 1fr; }
+}

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import Reveal from "../landing/Reveal";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
+import HeroBooking from "./HeroBooking";
 import "../landing/landing.css";
 import "./tpm.css";
 
@@ -130,17 +131,16 @@ export default function TpmTurLandingPage() {
               Compre o bilhete online, escolha o seu lugar e embarque sem filas.
               Mais perto do seu destino — viaje com a TPM-TUR.
             </p>
+            {/* A compra comeca aqui. O botao dourado continua, para quem
+                prefere percorrer o site antes de escolher percurso. */}
+            <HeroBooking />
             <div className="tpm-hero-cta">
-              <Link to="/comprar" className="bzlp-btn gold"><Ticket size={18} aria-hidden /> Comprar bilhete</Link>
               <a href={`mailto:${EMAIL}?subject=${encodeURIComponent("Pedido de orçamento TPM-TUR")}`} className="bzlp-btn outline light">
                 Precisa de transporte para um grupo? <ArrowUpRight size={16} aria-hidden />
               </a>
-            </div>
-            <div className="tpm-hero-chips">
-              <span>Bilhetes online</span>
-              <span>Lugar escolhido por si</span>
-              <span>Sem dinheiro em mão</span>
-              <span>App do passageiro</span>
+              <Link to="/comprar" className="bzlp-ghost light">
+                Ver todas as partidas <ArrowUpRight size={15} aria-hidden />
+              </Link>
             </div>
           </div>
         </section>

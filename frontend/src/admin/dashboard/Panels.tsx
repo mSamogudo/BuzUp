@@ -26,8 +26,15 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
           label={t(lc, "cashIn")}
           value={formatCurrency(k.cash_in)}
         />
+        {/* A conta VISIVEL, e nao so a soma.
+            O cliente comparou este numero com o total do relatorio de vendas
+            e encontrou 10 900,00 MZN de diferenca — que eram as validacoes de
+            cartao, somadas aqui e ausentes de la. A legenda ja dizia
+            «bilhetes e validacoes», mas dizer nao chega: mostrar as duas
+            parcelas deixa qualquer pessoa fazer a conta de cabeca e parar de
+            desconfiar do resto. */}
         <MetricCard
-          detail={t(lc, "transportRevenueHint")}
+          detail={`${formatCurrency(k.ticket_revenue)} ${t(lc, "inTickets")} + ${formatCurrency(k.validation_revenue)} ${t(lc, "inValidations")}`}
           label={t(lc, "transportRevenue")}
           value={formatCurrency(k.transport_revenue)}
         />

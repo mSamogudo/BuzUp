@@ -174,6 +174,29 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
 
   const currentSpec = useMemo(() => specs.find((s) => s.key === kind), [specs, kind]);
 
+  // As colunas a incluir. Vazio quer dizer TODAS — e nao «nenhuma»: quem
+  // nunca mexeu nisto continua a receber o relatorio inteiro, como sempre.
+  const [colunas, setColunas] = useState<string[]>([]);
+
+  // Mudar de relatorio limpa a escolha: as colunas de um nao existem no
+  // outro, e manter a escolha antiga dava um relatorio sem colunas nenhumas.
+  useEffect(() => { setColunas([]); }, [kind]);
+
+  const alternarColuna = (key: string) => {
+    setColunas((actuais) => {
+      const todas = (currentSpec?.columns ?? []).map((c) => c.key);
+      // A primeira vez que se desmarca uma, parte-se de TODAS marcadas.
+      const base = actuais.length ? actuais : todas;
+      const nova = base.includes(key) ? base.filter((k) => k !== key) : [...base, key];
+      // Nunca deixar ficar sem nenhuma: um relatorio de zero colunas nao e
+      // um relatorio, e o botao de descarregar daria um ficheiro vazio.
+      if (!nova.length) return actuais;
+      return nova.length === todas.length ? [] : nova;
+    });
+  };
+
+  const colunaEstaLigada = (key: string) => !colunas.length || colunas.includes(key);
+
   const buildQS = () => {
     const qs = new URLSearchParams();
     if (dateFrom) qs.set("date_from", dateFrom);
@@ -184,6 +207,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
     if (passengerId) qs.set("passenger_id", passengerId);
     if (source) qs.set("source", source);
     if (extraKind) qs.set("kind", extraKind);
+    if (colunas.length) qs.set("columns", colunas.join(","));
     return qs.toString();
   };
 
@@ -233,7 +257,10 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
     if (key.endsWith("amount") || key.endsWith("debited") || key === "total") {
       return `${formatCurrency(String(value))} MZN`;
     }
-    if (key === "created_at" && typeof value === "string") {
+    // Qualquer campo que acabe em `_at` e uma data. Antes so o `created_at`
+    // era tratado, e o relatorio de bilhetes — que traz a ida e o regresso —
+    // mostrava "2026-09-25T13:30:00Z" ao lado de "2026-09-21 13:25".
+    if ((key === "created_at" || key.endsWith("_at")) && typeof value === "string") {
       return value.replace("T", " ").substring(0, 16);
     }
     return String(value);
@@ -411,6 +438,49 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               </button>
             )}
           </div>
+
+          {/* A escolha de colunas. Fica ANTES dos botoes de propósito: e uma
+              decisao sobre o documento, e o sitio de a tomar e antes de
+              carregar em «PDF», nao depois de o receber com doze colunas
+              espremidas numa A4. */}
+          {(currentSpec?.columns?.length ?? 0) > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--app-muted)" }}>
+                  {t(lc, "columnsToInclude")}
+                </span>
+                <span style={{ fontSize: 12, color: "var(--app-muted)" }}>
+                  {colunas.length
+                    ? t(lc, "columnsChosen").replace("{n}", String(colunas.length))
+                        .replace("{total}", String(currentSpec?.columns.length ?? 0))
+                    : t(lc, "columnsAll")}
+                </span>
+                {colunas.length > 0 && (
+                  <button type="button" onClick={() => setColunas([])}
+                    style={{ fontSize: 12, color: "var(--app-accent)", background: "none", border: "none", cursor: "pointer" }}>
+                    {t(lc, "columnsReset")}
+                  </button>
+                )}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {(currentSpec?.columns ?? []).map((col) => {
+                  const ligada = colunaEstaLigada(col.key);
+                  return (
+                    <button key={col.key} type="button" onClick={() => alternarColuna(col.key)}
+                      aria-pressed={ligada}
+                      style={{
+                        fontSize: 12, padding: "4px 10px", borderRadius: 999, cursor: "pointer",
+                        border: `1px solid ${ligada ? "var(--app-accent)" : "var(--app-border)"}`,
+                        background: ligada ? "var(--app-accent)" : "transparent",
+                        color: ligada ? "#fff" : "var(--app-muted)",
+                      }}>
+                      {col.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
             <Button size="lg" type="button" onClick={runReport} disabled={running}>

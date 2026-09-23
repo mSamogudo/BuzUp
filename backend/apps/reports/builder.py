@@ -1,4 +1,5 @@
-"""Report builder: a small registry that exposes every supported report
+"""
+Report builder: a small registry that exposes every supported report
 under a single API. Each entry defines:
 
   - title (human-readable)
@@ -68,6 +69,75 @@ def _date_range(filters: dict):
     return df, dt
 
 
+
+def _metodo(provider: str, fallback: str = "") -> str:
+    """O nome por que o financeiro conhece o metodo de pagamento.
+
+    Antes saia `mobile_money` e `cash` — identificadores do codigo. Pior:
+    `mobile_money` nem sequer diz QUAL carteira, e a carteira esta noutro
+    campo que o relatorio nao mostrava. Quem concilia precisa de saber se
+    entrou por M-Pesa ou por e-Mola, porque as contas sao diferentes.
+
+    A tabela e a mesma que o painel ja usava (`analytics.PROVIDER_LABELS`) —
+    de proposito: dois sitios a traduzir a mesma coisa acabam sempre a
+    traduzi-la de maneira diferente.
+    """
+    from apps.reports.analytics import PROVIDER_LABELS
+
+    chave = (provider or "").strip().upper()
+    if chave in PROVIDER_LABELS:
+        return PROVIDER_LABELS[chave][0]
+    if chave:
+        return chave.title()
+    # Sem provedor: diz-se o que se sabe, e nunca o nome da variavel.
+    return {"cash": "Dinheiro", "mobile_money": "Carteira movel"}.get(fallback, fallback or "—")
+
+
+
+#: O que se comprou.
+TIPOS = {
+    "wallet": "Recarga de saldo",
+    "package": "Pacote",
+    "card_issuance": "Emissao de cartao",
+    "card_recovery": "Recuperacao de cartao",
+}
+
+
+def _legivel(valor: str, tabela: dict) -> str:
+    """Traduz, e quando nao souber traduzir devolve algo que ainda se le.
+
+    Nunca devolve vazio: uma celula em branco num relatorio le-se como «nao
+    houve», e aqui quer dizer «nao soubemos dizer».
+    """
+    v = (valor or "").strip()
+    if not v:
+        return "—"
+    return tabela.get(v.lower(), v.replace("_", " ").capitalize())
+
+
+_NOMES_DE_AGENTE: dict[int, str] = {}
+
+
+def _agente(user_id) -> str:
+    """O nome de quem vendeu, e nao o numero dele na base de dados.
+
+    Um relatorio que diz «6» obriga quem o le a ir perguntar quem e o 6. Fica
+    em cache por relatorio: sao meia duzia de agentes em milhares de linhas, e
+    uma consulta por linha era uma consulta por linha.
+    """
+    if not user_id:
+        return ""
+    if user_id not in _NOMES_DE_AGENTE:
+        from django.contrib.auth import get_user_model
+
+        u = get_user_model().objects.filter(pk=user_id).first()
+        nome = ""
+        if u:
+            nome = (u.get_full_name() or "").strip() or u.get_username()
+        _NOMES_DE_AGENTE[user_id] = nome or f"#{user_id}"
+    return _NOMES_DE_AGENTE[user_id]
+
+
 # ---------------------------------------------------------------------------
 # Report definitions
 # ---------------------------------------------------------------------------
@@ -105,11 +175,11 @@ def _rows_sales(filters: dict) -> list[dict]:
             "destination": gc.destination_stop if gc else "",
             "amount": str(pi.amount),
             "quantity": gc.quantity if gc else 0,
-            "method": meta.get("payment_method", "mobile_money"),
-            "agent_user_id": meta.get("agent_user_id"),
+            "method": _metodo(pi.provider, meta.get("payment_method", "")),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "device_serial": meta.get("device_serial", ""),
             "payer": _mask(pi.payer_phone),
-            "provider": pi.provider or "",
+            "provider": _metodo(pi.provider),
             "status": pi.status,
         })
     return _capped(out)
@@ -159,12 +229,12 @@ def _rows_topups(filters: dict) -> list[dict]:
         out.append({
             "created_at": pi.created_at,
             "reference": pi.reference,
-            "kind": kind,
+            "kind": _legivel(kind, TIPOS),
             "card_uid": meta.get("card_uid", ""),
             "amount": str(pi.amount),
-            "agent_user_id": meta.get("agent_user_id"),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "payer": _mask(pi.payer_phone),
-            "provider": pi.provider or "",
+            "provider": _metodo(pi.provider),
             "status": pi.status,
         })
     return _capped(out)
@@ -257,7 +327,7 @@ def _rows_onboardings(filters: dict) -> list[dict]:
             "passenger_id": meta.get("passenger_id"),
             "card_uid": meta.get("card_uid", ""),
             "amount": str(pi.amount),
-            "agent_user_id": meta.get("agent_user_id"),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "device": meta.get("device_serial", ""),
             "payer": _mask(pi.payer_phone),
             "status": pi.status,
@@ -305,7 +375,7 @@ def _rows_recoveries(filters: dict) -> list[dict]:
             "blocked_cards": meta.get("blocked_cards", 0),
             "amount": str(pi.amount),
             "reason": meta.get("reason", ""),
-            "agent_user_id": meta.get("agent_user_id"),
+            "agent_user_id": _agente(meta.get("agent_user_id")),
             "status": pi.status,
         })
     return _capped(out)
@@ -324,7 +394,109 @@ RECOVERIES = ("recoveries", "Recuperacao de cartoes", [
 ])
 
 
-# ---------------------------------------------------------------------------
+def _rows_tickets(filters: dict) -> list[dict]:
+    """Um bilhete por linha, do ponto de vista do PASSAGEIRO.
+
+    O relatorio de Vendas conta PAGAMENTOS: uma familia de tres e uma linha so,
+    e o nome de quem viaja nao aparece em lado nenhum. Quem opera a carreira
+    nao trabalha assim — trabalha com a lista de quem vai no autocarro, que e
+    exactamente a folha que a TPM-TUR mantinha a mao ao lado do sistema.
+
+    **Uma linha por passageiro, e nao por perna.** No sistema, uma ida-e-volta
+    sao dois bilhetes (05:00 e 15:30, com codigos proprios); na folha do
+    operador e uma linha com as duas datas e o valor das duas. Junta-se aqui,
+    porque e assim que ele confere — e o valor bate com o que o passageiro
+    pagou, que e o numero que interessa quando alguem reclama.
+
+    As duas pernas emparelham-se pelo nome E pelo documento. So pelo nome,
+    dois irmaos com o mesmo nome proprio numa mesma compra apareciam fundidos
+    numa linha.
+    """
+    from apps.guest_checkouts.models import DigitalTravelPass
+
+    df, dt = _date_range(filters)
+    qs = (
+        DigitalTravelPass.objects
+        .select_related("guest_checkout", "guest_checkout__return_trip", "trip", "trip__route")
+        .filter(created_at__gte=df, created_at__lt=dt)
+        .order_by("-created_at", "guest_checkout_id", "passenger_name", "leg")
+    )
+    if filters.get("status"):
+        qs = qs.filter(status=filters["status"])
+    if filters.get("route_id"):
+        qs = qs.filter(trip__route_id=int(filters["route_id"]))
+
+    # O tecto conta LINHAS, e cada linha pode vir de duas pernas. Pede-se o
+    # dobro para o `_capped` continuar a distinguir "sao mesmo 5000" de "sao
+    # mais de 5000" depois de juntar.
+    linhas: dict[tuple, dict] = {}
+    for p in qs[: (MAX_ROWS + 1) * 2]:
+        gc = p.guest_checkout
+        chave = (p.guest_checkout_id, p.passenger_name.strip().lower(), p.document_number)
+
+        linha = linhas.get(chave)
+        if linha is None:
+            linha = linhas[chave] = {
+                "created_at": p.created_at,
+                "bilhete": "",
+                "passageiro": p.passenger_name or "",
+                "documento": p.document_number or "",
+                "tipo_de_viagem": "Ida e volta" if (gc and gc.return_trip_id) else "So ida",
+                "ida_at": None,
+                "regresso_at": None,
+                "rota": p.route_name or p.route_code or "",
+                "partida": p.origin_stop or "",
+                "destino": p.destination_stop or "",
+                "fare_amount": Decimal("0.00"),
+                "status": p.status,
+                # Guardados por perna e nao por ordem de chegada: as duas sao
+                # criadas no mesmo instante, e a ordenacao por data punha o
+                # codigo do regresso a frente do da ida. Quem le o bilhete le
+                # a ida primeiro.
+                "_codigos": {},
+            }
+
+        if p.leg == DigitalTravelPass.Leg.RETURN:
+            linha["regresso_at"] = p.departure_at
+        else:
+            linha["ida_at"] = p.departure_at
+            # A data da compra e a do bilhete de ida: e a da venda.
+            linha["created_at"] = p.created_at
+
+        linha["fare_amount"] += p.fare_amount or Decimal("0.00")
+        if p.short_code:
+            linha["_codigos"][p.leg] = p.short_code
+
+        # Um bilhete cancelado numa das pernas nao pode passar por activo na
+        # linha inteira: fica o estado mais grave dos dois.
+        if p.status != DigitalTravelPass.Status.ACTIVE:
+            linha["status"] = p.status
+
+    out = []
+    for linha in linhas.values():
+        codigos = linha.pop("_codigos")
+        linha["bilhete"] = " / ".join(
+            codigos[perna] for perna in ("outbound", "return") if perna in codigos
+        )
+        linha["fare_amount"] = str(linha["fare_amount"])
+        out.append(linha)
+    return _capped(out)
+
+
+TICKETS = ("tickets", "Bilhetes por passageiro", [
+    ("created_at", "Data da compra"),
+    ("bilhete", "Nr do bilhete"),
+    ("passageiro", "Nome do passageiro"),
+    ("documento", "Documento"),
+    ("tipo_de_viagem", "Tipo de viagem"),
+    ("ida_at", "Ida"),
+    ("regresso_at", "Regresso"),
+    ("rota", "Rota"),
+    ("fare_amount", "Valor do bilhete"),
+    ("status", "Estado"),
+])
+
+  # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
@@ -334,21 +506,64 @@ class ReportSpec:
     title: str
     columns: list[tuple[str, str]]
     build_rows: Callable[[dict], list[dict]]
+    #: O que este relatorio conta, e o que NAO conta.
+    #:
+    #: Existe porque o cliente comparou o total de um relatorio com o cartao
+    #: «Receita de transporte» do painel e encontrou 10 900,00 MZN de
+    #: diferenca. Nao era erro: o painel soma bilhetes MAIS validacoes de
+    #: cartao, e este relatorio so cobre um dos dois.
+    #:
+    #: Um numero que nao diz o que conta obriga quem o le a desconfiar de
+    #: todos os outros. A frase vai dentro do documento, onde a pergunta
+    #: aparece — e nao numa pagina de ajuda que ninguem abre.
+    escopo: str = ""
 
 
 REGISTRY: dict[str, ReportSpec] = {
-    SALES[0]: ReportSpec(SALES[0], SALES[1], SALES[2], _rows_sales),
-    TOPUPS[0]: ReportSpec(TOPUPS[0], TOPUPS[1], TOPUPS[2], _rows_topups),
-    VALIDATIONS[0]: ReportSpec(VALIDATIONS[0], VALIDATIONS[1], VALIDATIONS[2], _rows_validations),
-    ONBOARDING[0]: ReportSpec(ONBOARDING[0], ONBOARDING[1], ONBOARDING[2], _rows_onboardings),
-    RECOVERIES[0]: ReportSpec(RECOVERIES[0], RECOVERIES[1], RECOVERIES[2], _rows_recoveries),
+    SALES[0]: ReportSpec(
+        *SALES, _rows_sales,
+        escopo="Conta os PAGAMENTOS de bilhetes comprados sem conta (guest). "
+               "Nao inclui validacoes de cartao nem recargas de saldo.",
+    ),
+    TOPUPS[0]: ReportSpec(
+        *TOPUPS, _rows_topups,
+        escopo="Conta recargas de saldo, pacotes e emissoes de cartao. "
+               "Nao inclui bilhetes.",
+    ),
+    VALIDATIONS[0]: ReportSpec(
+        *VALIDATIONS, _rows_validations,
+        escopo="Conta as validacoes de cartao a bordo. "
+               "Nao inclui bilhetes comprados sem conta.",
+    ),
+    ONBOARDING[0]: ReportSpec(
+        *ONBOARDING, _rows_onboardings,
+        escopo="Conta registos de passageiros com cartao. Nao e receita de transporte.",
+    ),
+    RECOVERIES[0]: ReportSpec(
+        *RECOVERIES, _rows_recoveries,
+        escopo="Conta recuperacoes de cartao perdido. Nao e receita de transporte.",
+    ),
+    TICKETS[0]: ReportSpec(
+        *TICKETS, _rows_tickets,
+        escopo="Uma linha por passageiro que viaja. Uma ida-e-volta e UMA linha "
+               "com as duas datas. Nao inclui validacoes de cartao.",
+    ),
 }
+
 
 
 def aggregate_totals(spec: ReportSpec, rows: list[dict]) -> dict:
     """Compute headline totals for the report header. Specific per kind."""
     totals = {"count": len(rows)}
-    if spec.key in {"sales", "topups", "onboarding", "recoveries"}:
+    if spec.key == "tickets":
+        # Cancelados e reembolsados nao somam: um bilhete devolvido nao e
+        # receita, e um total que os conte da sempre mais do que a conta.
+        validos = [r for r in rows if r.get("status") in {"active", "used", "expired"}]
+        totals["confirmed_count"] = len(validos)
+        totals["total_amount"] = str(
+            sum((Decimal(r["fare_amount"]) for r in validos), Decimal("0.00"))
+        )
+    elif spec.key in {"sales", "topups", "onboarding", "recoveries"}:
         ok = [r for r in rows if r.get("status") == "confirmed"]
         totals["confirmed_count"] = len(ok)
         totals["total_amount"] = str(sum((Decimal(r["amount"]) for r in ok), Decimal("0.00")))

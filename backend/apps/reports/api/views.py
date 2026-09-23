@@ -704,6 +704,37 @@ class ReportBuilderListView(APIView):
         })
 
 
+
+def _colunas_pedidas(spec, pedido: str | None):
+    """As colunas a incluir, pela ordem em que o relatorio as declara.
+
+    O relatorio de Vendas tem doze colunas e numa A4 saem todas espremidas —
+    referencias cortadas, nomes cortados. Quem exporta raramente quer as
+    doze: quer cinco, e que essas se leiam.
+
+    Duas decisoes:
+
+    **A ordem e a do relatorio, nao a do pedido.** Se fosse a do pedido,
+    dois utilizadores com as mesmas colunas recebiam documentos diferentes, e
+    ninguem os podia comparar lado a lado.
+
+    **Uma coluna desconhecida ignora-se em silencio.** O pedido vem de um URL
+    que alguem pode ter guardado nos favoritos, e uma coluna que entretanto
+    deixou de existir nao deve dar erro — deve dar o relatorio sem ela.
+
+    Sem `columns`, vao todas: e o que quem ja tem um link guardado recebe.
+    """
+    if not pedido:
+        return spec.columns
+    escolhidas = {c.strip() for c in pedido.split(",") if c.strip()}
+    if not escolhidas:
+        return spec.columns
+    filtradas = [(k, l) for k, l in spec.columns if k in escolhidas]
+    # Nenhuma bateu certo: devolve-se tudo em vez de um documento vazio, que
+    # nao se distingue de «nao houve movimento».
+    return filtradas or spec.columns
+
+
 class ReportBuilderRunView(APIView):
     permission_classes = [IsAuthenticated, HasCapabilities]
     authentication_classes = [JWTAuthentication, DownloadTicketAuthentication]
@@ -719,6 +750,9 @@ class ReportBuilderRunView(APIView):
         filters = _parse_filters(request)
         rows = spec.build_rows(filters)
         totals = aggregate_totals(spec, rows)
+        # As colunas a mostrar. Sem `columns`, vao todas — o comportamento
+        # de sempre, e o que quem ja tem um link guardado continua a receber.
+        colunas = _colunas_pedidas(spec, request.query_params.get("columns"))
         # O aviso tem de ir DENTRO do documento: e o PDF/XLSX que segue por
         # email e serve de base a reconciliacao, e um relatorio cortado com ar
         # de completo faz as contas nao baterem sem ninguem perceber porque.
@@ -744,8 +778,9 @@ class ReportBuilderRunView(APIView):
         if fmt == "pdf":
             pdf = render_pdf(
                 title=spec.title, period_from=period_from, period_to=period_to,
-                columns=spec.columns, rows=rows,
+                columns=colunas, rows=rows,
                 totals=totals, filters_summary=filters_summary,
+                escopo=getattr(spec, "escopo", ""),
             )
             resp = HttpResponse(pdf, content_type="application/pdf")
             resp["X-Report-Truncated"] = "1" if truncated else "0"
@@ -755,8 +790,9 @@ class ReportBuilderRunView(APIView):
         if fmt == "xlsx":
             data = render_xlsx(
                 title=spec.title, period_from=period_from, period_to=period_to,
-                columns=spec.columns, rows=rows,
+                columns=colunas, rows=rows,
                 totals=totals, filters_summary=filters_summary,
+                escopo=getattr(spec, "escopo", ""),
             )
             resp = HttpResponse(data, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             resp["X-Report-Truncated"] = "1" if truncated else "0"
@@ -770,7 +806,7 @@ class ReportBuilderRunView(APIView):
             "period_to": period_to,
             "filters": {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in filters.items()},
             "totals": totals,
-            "columns": [{"key": k, "label": l} for k, l in spec.columns],
+            "columns": [{"key": k, "label": l} for k, l in colunas],
             "rows": [
                 {
                     k: (v.isoformat() if hasattr(v, "isoformat") else v)

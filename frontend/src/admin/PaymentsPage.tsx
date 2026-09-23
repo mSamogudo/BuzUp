@@ -48,10 +48,13 @@ interface PI {
 }
 
 const SOURCE_TONE: Record<string, string> = {
-  MOBILE: "var(--success, #1FB04A)",
-  POS: "var(--orange, #E47B11)",
-  PORTAL: "var(--navy, #071E49)",
-  OUTRO: "var(--muted, #6B6356)",
+  // Tokens do preset, nao nomes inventados. `--orange` e `--navy` nunca
+  // existiram — o que pintava era sempre o fallback — e `--muted` existe mas
+  // e um FUNDO quase-branco: usado como cor de texto ficava ilegivel.
+  MOBILE: "var(--app-success)",
+  POS: "var(--app-warning)",
+  PORTAL: "var(--app-accent-deep)",
+  OUTRO: "var(--app-text-muted)",
 };
 
 export default function PaymentsPage() {
@@ -128,7 +131,7 @@ export default function PaymentsPage() {
           role="alert"
           style={{
             marginBottom: 16, padding: "12px 14px", borderRadius: 12,
-            background: "#FFF7E6", border: "1px solid #F5E2B0", color: "#7A5A00",
+            background: "color-mix(in srgb, var(--app-warning) 14%, var(--app-surface))", border: "1px solid color-mix(in srgb, var(--app-warning) 34%, var(--app-surface))", color: "var(--warning-foreground)",
             fontSize: 13.5, lineHeight: 1.55,
           }}
         >
@@ -181,7 +184,7 @@ export default function PaymentsPage() {
           <CampoData onChange={(v) => setFTo(v)} value={fTo} />
           {anyFilter && (
             <button type="button" onClick={clearFilters}
-              style={{ display: "inline-flex", gap: 4, alignItems: "center", padding: "6px 10px", fontSize: 12, borderRadius: 6, border: "1px solid var(--border, #E7E1D4)", background: "transparent", cursor: "pointer" }}>
+              style={{ display: "inline-flex", gap: 4, alignItems: "center", padding: "6px 10px", fontSize: 12, borderRadius: 6, border: "1px solid var(--app-border)", background: "transparent", cursor: "pointer" }}>
               <X size={12} /> {t(lc, "clear")}
             </button>
           )}
@@ -194,8 +197,14 @@ export default function PaymentsPage() {
                 <span style={{
                   display: "inline-block", padding: "2px 8px", borderRadius: 12,
                   fontSize: 10.5, fontWeight: 900, letterSpacing: 0.6,
-                  color: SOURCE_TONE[r.source] || "#666",
-                  background: `${SOURCE_TONE[r.source] || "#666"}1F`,
+                  // Puxado para a cor do texto: o tom cheio sobre a sua
+                  // propria tinta a 12% da 4,46:1 e chumba AA. Funciona nos
+                  // dois temas, porque no escuro o texto e claro.
+                  color: `color-mix(in srgb, ${SOURCE_TONE[r.source] || "var(--app-text-muted)"} 85%, var(--app-text))`,
+                  // Era `${tom}1F`, a colar dois digitos de alfa ao fim do
+                  // valor. Com um token isso da `var(--x)1F`, que nao e CSS
+                  // nenhum: o fundo simplesmente nao aparecia.
+                  background: `color-mix(in srgb, ${SOURCE_TONE[r.source] || "var(--app-text-muted)"} 12%, transparent)`,
                 }}>{r.source}</span>
               ),
             },
@@ -235,7 +244,7 @@ export default function PaymentsPage() {
                   {r.needs_review && (
                     <span
                       title={r.review_reason}
-                      style={{ fontSize: 10.5, fontWeight: 800, color: "#7A5A00", letterSpacing: 0.3 }}
+                      style={{ fontSize: 10.5, fontWeight: 800, color: "var(--warning-foreground)", letterSpacing: 0.3 }}
                     >
                       {t(lc, "awaitingDecisionCaps")}
                     </span>

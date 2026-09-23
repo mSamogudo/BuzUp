@@ -279,7 +279,7 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
             <div style={{
               padding: "10px 14px", marginBottom: 14,
               background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.30)",
-              borderRadius: 8, color: "#b91c1c", fontSize: 13,
+              borderRadius: 8, color: "var(--app-danger)", fontSize: 13,
             }}>{error}</div>
           )}
           {specsLoading && (
@@ -339,23 +339,23 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               {agentSearch && !agentId && filteredAgents.length > 0 && (
                 <div style={{
                   position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10,
-                  background: "var(--app-surface, #fff)", border: "1px solid var(--app-border, #ddd)",
+                  background: "var(--app-surface)", border: "1px solid var(--app-border)",
                   borderRadius: 6, maxHeight: 200, overflowY: "auto",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
                 }}>
                   {filteredAgents.map((a) => (
                     <div key={a.id}
                       onClick={() => { setAgentId(String(a.id)); setAgentSearch(""); }}
-                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--app-border, #eee)" }}>
+                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--app-border)" }}>
                       <strong>{a.full_name || `Agente #${a.id}`}</strong>
-                      {a.phone_number && <span style={{ marginLeft: 8, color: "#888", fontSize: 11 }}>{a.phone_number}</span>}
+                      {a.phone_number && <span style={{ marginLeft: 8, color: "var(--app-text-muted)", fontSize: 11 }}>{a.phone_number}</span>}
                     </div>
                   ))}
                 </div>
               )}
               {agentId && (
                 <button type="button" onClick={() => { setAgentId(""); setAgentSearch(""); }}
-                  style={{ position: "absolute", right: 6, top: 28, background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 16 }}>×</button>
+                  style={{ position: "absolute", right: 6, top: 28, background: "none", border: "none", cursor: "pointer", color: "var(--app-text-muted)", fontSize: 16 }}>×</button>
               )}
             </label>
             <label className="field" style={{ position: "relative" }}>
@@ -374,23 +374,23 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
               {passengerSearch && !passengerId && filteredPassengers.length > 0 && (
                 <div style={{
                   position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10,
-                  background: "var(--app-surface, #fff)", border: "1px solid var(--app-border, #ddd)",
+                  background: "var(--app-surface)", border: "1px solid var(--app-border)",
                   borderRadius: 6, maxHeight: 200, overflowY: "auto",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
                 }}>
                   {filteredPassengers.map((p) => (
                     <div key={p.id}
                       onClick={() => { setPassengerId(String(p.id)); setPassengerSearch(""); }}
-                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--app-border, #eee)" }}>
+                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--app-border)" }}>
                       <strong>{p.full_name || `Passageiro #${p.id}`}</strong>
-                      {p.phone_number && <span style={{ marginLeft: 8, color: "#888", fontSize: 11 }}>{p.phone_number}</span>}
+                      {p.phone_number && <span style={{ marginLeft: 8, color: "var(--app-text-muted)", fontSize: 11 }}>{p.phone_number}</span>}
                     </div>
                   ))}
                 </div>
               )}
               {passengerId && (
                 <button type="button" onClick={() => { setPassengerId(""); setPassengerSearch(""); }}
-                  style={{ position: "absolute", right: 6, top: 28, background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 16 }}>×</button>
+                  style={{ position: "absolute", right: 6, top: 28, background: "none", border: "none", cursor: "pointer", color: "var(--app-text-muted)", fontSize: 16 }}>×</button>
               )}
             </label>
             {kind === "topups" && (
@@ -450,12 +450,12 @@ export default function ReportsPage({ embedded }: { embedded?: boolean }) {
                 // Nao e o mesmo que mostrar so 500 na tabela: aqui a propria
                 // consulta parou no tecto, e o PDF/Excel sai igualmente
                 // incompleto. Dizer "use PDF para obter tudo" seria mentira.
-                <p style={{ fontSize: 12, color: "#B4432B", marginTop: 6, fontWeight: 600 }}>
+                <p style={{ fontSize: 12, color: "var(--app-danger)", marginTop: 6, fontWeight: 600 }}>
                   <Sliders size={11} /> Ha mais movimentos do que as {result.row_limit ?? 5000} linhas que o relatorio consegue trazer.
                   O PDF e o Excel saem igualmente incompletos — reduza o intervalo de datas ou filtre por rota/agente.
                 </p>
               ) : result.truncated ? (
-                <p style={{ fontSize: 12, color: "#6B6356", marginTop: 6 }}>
+                <p style={{ fontSize: 12, color: "var(--app-text-muted)", marginTop: 6 }}>
                   <Sliders size={11} /> {t(lc, "rowLimitHint")}
                 </p>
               ) : null}

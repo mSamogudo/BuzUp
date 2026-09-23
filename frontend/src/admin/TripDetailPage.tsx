@@ -212,7 +212,7 @@ export default function TripDetailPage() {
                 aria-label={t(lc, "live")}
                 style={{
                   display: "inline-block", width: 10, height: 10, borderRadius: "50%",
-                  background: "#22c55e", boxShadow: "0 0 0 0 rgba(34,197,94,0.7)",
+                  background: "var(--app-success)", boxShadow: "0 0 0 0 color-mix(in srgb, var(--app-success) 70%, transparent)",
                   animation: "pulse 1.4s infinite",
                 }}
               />
@@ -255,8 +255,8 @@ export default function TripDetailPage() {
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 6,
                     padding: "5px 10px", borderRadius: 999, fontSize: 12.5,
-                    background: i === 0 || i === stops.length - 1 ? "var(--app-accent)" : "var(--app-surface-muted, #f1f5f9)",
-                    color: i === 0 || i === stops.length - 1 ? "#fff" : "var(--app-text)",
+                    background: i === 0 || i === stops.length - 1 ? "var(--app-accent)" : "var(--app-surface-soft)",
+                    color: i === 0 || i === stops.length - 1 ? "var(--primary-foreground)" : "var(--app-text)",
                     border: "1px solid var(--app-border)",
                     fontWeight: 600,
                   }}
@@ -336,7 +336,7 @@ export default function TripDetailPage() {
               { header: t(lc, "type"), render: (r: TripValidation) => <TablePrimaryCell title={r.validation_type.replace(/_/g, " ")} subtitle={r.device_serial || "-"} /> },
               { header: t(lc, "status"), render: (r: TripValidation) => (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  {r.status === "approved" ? <CheckCircle2 size={14} color="#22c55e" /> : <XCircle size={14} color="#ef4444" />}
+                  {r.status === "approved" ? <CheckCircle2 size={14} color="var(--app-success)" /> : <XCircle size={14} color="var(--app-danger)" />}
                   <StatusBadge value={r.status} />
                 </span>
               ) },

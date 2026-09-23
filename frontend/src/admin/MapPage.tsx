@@ -61,7 +61,7 @@ export default function MapPage() {
     });
 
     const busIcon = L.divIcon({
-      html: `<div style="background:#1D5FA7;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;">🚌</div>`,
+      html: `<div style="background:var(--app-accent);color:var(--primary-foreground);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.3);border:2px solid #fff;">🚌</div>`,
       iconSize: [32, 32],
       iconAnchor: [16, 16],
       className: "",
@@ -74,9 +74,9 @@ export default function MapPage() {
       marker.bindPopup(`
         <div style="font-family:Inter,sans-serif;min-width:180px;">
           <strong style="font-size:14px;">${dev.serial_number}</strong><br/>
-          <span style="font-size:12px;color:#71717a;">${dev.manufacturer} ${dev.model_name}</span><br/>
-          <span style="font-size:11px;color:#71717a;">Velocidade: ${dev.last_speed ? dev.last_speed + " km/h" : "-"}</span><br/>
-          <span style="font-size:11px;color:#71717a;">Ultima posicao: ${dev.last_location_at ? new Date(dev.last_location_at).toLocaleString("pt-MZ") : "-"}</span>
+          <span style="font-size:12px;color:var(--app-text-muted);">${dev.manufacturer} ${dev.model_name}</span><br/>
+          <span style="font-size:11px;color:var(--app-text-muted);">Velocidade: ${dev.last_speed ? dev.last_speed + " km/h" : "-"}</span><br/>
+          <span style="font-size:11px;color:var(--app-text-muted);">Ultima posicao: ${dev.last_location_at ? new Date(dev.last_location_at).toLocaleString("pt-MZ") : "-"}</span>
         </div>
       `);
       marker.addTo(mapInstance.current!);

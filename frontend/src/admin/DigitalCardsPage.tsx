@@ -95,9 +95,11 @@ export default function DigitalCardsPage() {
             <img
               src={qrSrc}
               alt="QR"
-              style={{ width: 280, height: 280, background: "#fff", borderRadius: 12, padding: 8, border: "1px solid #E7E1D4" }}
+              // O fundo do QR e branco fixo de proposito: e o que o leitor espera, e
+// sobre o cartao escuro do tema nocturno o codigo deixaria de ser lido.
+              style={{ width: 280, height: 280, background: "#ffffff", borderRadius: 12, padding: 8, border: "1px solid var(--app-border)" }}
             />
-            <p style={{ color: "#6B6356", fontSize: 12, textAlign: "center", margin: 0 }}>
+            <p style={{ color: "var(--app-text-muted)", fontSize: 12, textAlign: "center", margin: 0 }}>
               {t(lc, "showQrAgentHint")}<br />
               Cartao: <strong>{qrCard.card_number}</strong>
             </p>

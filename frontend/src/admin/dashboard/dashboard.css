@@ -244,7 +244,7 @@
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--app-success, #2A9D8F);
+  background: var(--app-success);
   animation: dash-pulse 1.8s ease-in-out infinite;
 }
 

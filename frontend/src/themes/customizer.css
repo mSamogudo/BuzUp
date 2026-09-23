@@ -305,7 +305,7 @@
   border: none;
   border-radius: calc(var(--radius, 0.5rem) + 2px);
   background: var(--app-accent);
-  color: var(--primary-foreground, #ffffff);
+  color: var(--primary-foreground);
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;

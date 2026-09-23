@@ -243,7 +243,7 @@ export default function PassengersPage({ embedded }: { embedded?: boolean }) {
                     <div style={{ textAlign: "right" }}>
                       <div style={{
                         fontSize: 13, fontWeight: 800,
-                        color: tx.direction === "credit" ? "var(--success, #1FB04A)" : "var(--danger, #EF4444)",
+                        color: tx.direction === "credit" ? "var(--app-success)" : "var(--app-danger)",
                       }}>
                         {tx.direction === "credit" ? "+" : "-"}{formatCurrency(tx.amount)}
                       </div>

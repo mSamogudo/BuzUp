@@ -676,7 +676,7 @@ export default function BookingPage() {
             <Link to="/" aria-label="BusUp">
               {logo
                 ? <img src={logo} alt="BusUp" style={{ height: 30, display: "block" }} />
-                : <strong style={{ fontSize: 22 }}>Bus<span style={{ color: "#2D8CF0" }}>Up</span></strong>}
+                : <strong style={{ fontSize: 22 }}>Bus<span style={{ color: "var(--blue-bright, var(--primary))" }}>Up</span></strong>}
             </Link>
             <div className="bzbk-top-controls">
               <div className="bzbk-lang" role="group" aria-label="PT / EN">
@@ -690,7 +690,7 @@ export default function BookingPage() {
                 title={theme === "dark" ? tr("lightTheme") : tr("darkTheme")}>
                 {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
               </button>
-              <Link to="/" className="bzbk-kicker" style={{ color: "#a9c2dc" }}>{tr("backToSite")}</Link>
+              <Link to="/" className="bzbk-kicker" style={{ color: "var(--on-navy-soft)" }}>{tr("backToSite")}</Link>
             </div>
           </div>
           <div style={{ position: "relative", zIndex: 2, marginTop: 18 }}>

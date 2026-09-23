@@ -8,6 +8,7 @@
   --muted-ink:var(--muted-foreground);
   --line:var(--border);--bg:var(--background);--ok:var(--success);--danger:var(--destructive);
   --on-navy:var(--sidebar-accent-foreground);--on-navy-soft:var(--sidebar-foreground);
+  --blue-bright:color-mix(in srgb, var(--primary) 58%, white);
   /* `--navy` faz DOIS papéis: é o fundo do cabeçalho e a cor dos títulos.
      No claro coincidem; no escuro não podem — escurecer o fundo apagava os
      títulos, que ficavam quase pretos sobre quase preto. `--heading` é o papel

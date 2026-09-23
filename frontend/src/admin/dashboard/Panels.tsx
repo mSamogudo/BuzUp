@@ -1,4 +1,5 @@
 import { Pause, Play, QrCode, Ticket } from "lucide-react";
+import type { ReactNode } from "react";
 import { useUi } from "../../ui/UiPreferences";
 import { t, type Locale } from "../../lib/i18n";
 import { formatCount, formatCurrency, formatDateTime } from "../../lib/format";
@@ -12,32 +13,59 @@ import type {
 /* KPIs                                                                */
 /* ------------------------------------------------------------------ */
 
-/** Cada cartão diz o que mede. A distinção que mais confunde num painel de
- * transportes: recargas ≠ receita. O backend separa-as de propósito e aqui
- * mantemos essa leitura visível em vez de a esconder num tooltip. */
+/** Um numero por pergunta, e as perguntas agrupadas.
+ *
+ * Antes eram oito cartoes numa grelha lisa, quatro deles com dinheiro. Sem
+ * hierarquia, «Entradas de dinheiro» e «Receita de transporte» leem-se como
+ * duas respostas rivais a mesma pergunta. Nao sao: tem bases diferentes que se
+ * CRUZAM em parte.
+ *
+ *   entradas = pagamentos externos confirmados (M-Pesa, e-Mola, numerario),
+ *              venham de recarga ou de bilhete
+ *   receita  = bilhetes + validacoes
+ *
+ * Um bilhete pago por M-Pesa esta nas duas. Uma validacao so esta na receita —
+ * esse dinheiro entrou antes, na recarga. Uma recarga so esta nas entradas.
+ * Nenhuma contem a outra, e somar as duas conta o mesmo dinheiro duas vezes.
+ *
+ * Isto ja estava escrito, numa nota de sessenta palavras debaixo dos oito
+ * cartoes. Nao chegou: o cliente voltou a confundir-se, que e a prova. Uma
+ * explicacao que so funciona se for lida nao e uma explicacao — a separacao
+ * tem de estar no layout. Dai os grupos: cada numero fica debaixo da pergunta
+ * a que responde, e a soma vem DEPOIS das suas parcelas, como numa factura. */
+function KpiGroup({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+  return (
+    <section className="dash-kpi-group">
+      <header className="dash-kpi-group-head">
+        <h3>{title}</h3>
+        <span>{hint}</span>
+      </header>
+      <div className="admin-metric-grid">{children}</div>
+    </section>
+  );
+}
+
 export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: PackagesBlock }) {
   const { locale: lc } = useUi();
   const completion = k.trips_total ? Math.round((k.trips_completed / k.trips_total) * 100) : 0;
   return (
     <>
-      <div className="admin-metric-grid">
+      {/* Caixa: o que reconcilia com o extracto do M-Pesa, do e-Mola e do cofre. */}
+      <KpiGroup hint={t(lc, "kpiGroupCashHint")} title={t(lc, "kpiGroupCash")}>
         <MetricCard
           detail={t(lc, "cashInHint")}
           label={t(lc, "cashIn")}
           value={formatCurrency(k.cash_in)}
         />
-        {/* A conta VISIVEL, e nao so a soma.
-            O cliente comparou este numero com o total do relatorio de vendas
-            e encontrou 10 900,00 MZN de diferenca — que eram as validacoes de
-            cartao, somadas aqui e ausentes de la. A legenda ja dizia
-            «bilhetes e validacoes», mas dizer nao chega: mostrar as duas
-            parcelas deixa qualquer pessoa fazer a conta de cabeca e parar de
-            desconfiar do resto. */}
         <MetricCard
-          detail={`${formatCurrency(k.ticket_revenue)} ${t(lc, "inTickets")} + ${formatCurrency(k.validation_revenue)} ${t(lc, "inValidations")}`}
-          label={t(lc, "transportRevenue")}
-          value={formatCurrency(k.transport_revenue)}
+          detail={t(lc, "topUpsHint")}
+          label={t(lc, "topUps")}
+          value={formatCurrency(k.topups_total)}
         />
+      </KpiGroup>
+
+      {/* Servico: o que a operacao entregou. Nao e dinheiro novo. */}
+      <KpiGroup hint={t(lc, "kpiGroupServiceHint")} title={t(lc, "kpiGroupService")}>
         <MetricCard
           detail={formatCurrency(k.ticket_revenue)}
           label={t(lc, "ticketsSoldLabel")}
@@ -48,16 +76,23 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
           label={t(lc, "validations")}
           value={formatCount(k.validations)}
         />
+        {/* A conta VISIVEL, e a seguir as parcelas que a formam. O cliente
+            comparou este numero com o total do relatorio de vendas e encontrou
+            10 900,00 MZN de diferenca — eram as validacoes, somadas aqui e
+            ausentes de la. Ver as duas parcelas deixa fazer a conta de cabeca. */}
+        <MetricCard
+          detail={`${formatCurrency(k.ticket_revenue)} ${t(lc, "inTickets")} + ${formatCurrency(k.validation_revenue)} ${t(lc, "inValidations")}`}
+          label={t(lc, "transportRevenue")}
+          value={formatCurrency(k.transport_revenue)}
+        />
         <MetricCard
           detail={t(lc, "averageTicketHint")}
           label={t(lc, "averageTicket")}
           value={formatCurrency(k.avg_ticket)}
         />
-        <MetricCard
-          detail={t(lc, "topUpsHint")}
-          label={t(lc, "topUps")}
-          value={formatCurrency(k.topups_total)}
-        />
+      </KpiGroup>
+
+      <KpiGroup hint={t(lc, "kpiGroupOpsHint")} title={t(lc, "kpiGroupOps")}>
         <MetricCard
           detail={`${formatCount(k.trips_completed)} ${t(lc, "completedPl").toLowerCase()} · ${completion}%`}
           label={t(lc, "trips")}
@@ -68,7 +103,9 @@ export function KpiStrip({ k, packages }: { k: AnalyticsKpis; packages: Packages
           label={t(lc, "activePackages")}
           value={formatCount(packages.active_now)}
         />
-      </div>
+      </KpiGroup>
+
+      {/* O unico aviso que sobra: o erro que se pode mesmo cometer. */}
       <p className="dash-kpi-note">{t(lc, "kpiNote")}</p>
     </>
   );

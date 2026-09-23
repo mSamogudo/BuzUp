@@ -228,6 +228,41 @@
   color: var(--app-text-muted);
 }
 
+/* Os KPI vivem em grupos porque a separacao tem de estar no layout: «Entradas
+   de dinheiro» e «Receita de transporte» tem bases que se cruzam, e numa grelha
+   lisa leem-se como rivais. O cabecalho leva a pergunta e a ressalva juntas,
+   para a ressalva nao ficar a trinta centimetros do numero que a precisa. */
+.dash-kpi-group + .dash-kpi-group {
+  margin-top: 20px;
+}
+
+.dash-kpi-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+
+.dash-kpi-group-head h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text);
+}
+
+/* A ressalva encolhe e quebra para a linha de baixo em ecras estreitos; e
+   contexto, nao titulo, e nunca deve empurrar o titulo para fora. */
+.dash-kpi-group-head span {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+}
+
 .dash-kpi-note {
   margin: 10px 0 0;
   font-size: 12px;

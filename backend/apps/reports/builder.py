@@ -51,11 +51,33 @@ def _capped(rows: list) -> RowSet:
     return out
 
 
-def _mask(phone: str | None) -> str:
-    p = "".join(ch for ch in (phone or "") if ch.isdigit())
-    if len(p) < 4:
-        return p
-    return f"***{p[-4:]}"
+def _telefone(phone: str | None) -> str:
+    """O numero inteiro, e sempre com a mesma cara.
+
+    Saia mascarado («***6483»), o que nao serve para nada a quem recebe o
+    relatorio: o operador precisa de ligar ao passageiro e de conciliar com o
+    extracto do M-Pesa, onde o numero aparece por extenso. A mascara protegia
+    o passageiro de quem ja tem acesso a todos os dados dele — ou seja, de
+    ninguem.
+
+    Normaliza-se porque a base guarda as duas formas: uns numeros com o 258 a
+    frente, outros sem. Numa coluna so, a mesma pessoa aparecia de duas
+    maneiras, e ordenar ou procurar deixava de funcionar.
+
+    Fica como TEXTO com espacos, de proposito: um «258848818277» cru numa
+    celula do Excel vira numero e perde a cara — e ninguem reconhece um
+    telefone em notacao cientifica.
+    """
+    d = "".join(ch for ch in (phone or "") if ch.isdigit())
+    if not d:
+        return ""
+    if len(d) == 12 and d.startswith("258"):
+        d = d[3:]
+    if len(d) == 9:
+        return f"+258 {d[:2]} {d[2:5]} {d[5:]}"
+    # Fora do formato conhecido, devolve-se o que ha. Inventar um formato para
+    # um numero que nao o segue e pior do que o mostrar como esta.
+    return phone or ""
 
 
 def _date_range(filters: dict):
@@ -178,7 +200,7 @@ def _rows_sales(filters: dict) -> list[dict]:
             "method": _metodo(pi.provider, meta.get("payment_method", "")),
             "agent_user_id": _agente(meta.get("agent_user_id")),
             "device_serial": meta.get("device_serial", ""),
-            "payer": _mask(pi.payer_phone),
+            "payer": _telefone(pi.payer_phone),
             "provider": _metodo(pi.provider),
             "status": pi.status,
         })
@@ -233,7 +255,7 @@ def _rows_topups(filters: dict) -> list[dict]:
             "card_uid": meta.get("card_uid", ""),
             "amount": str(pi.amount),
             "agent_user_id": _agente(meta.get("agent_user_id")),
-            "payer": _mask(pi.payer_phone),
+            "payer": _telefone(pi.payer_phone),
             "provider": _metodo(pi.provider),
             "status": pi.status,
         })
@@ -332,7 +354,7 @@ def _rows_onboardings(filters: dict) -> list[dict]:
             "amount": str(pi.amount),
             "agent_user_id": _agente(meta.get("agent_user_id")),
             "device": meta.get("device_serial", ""),
-            "payer": _mask(pi.payer_phone),
+            "payer": _telefone(pi.payer_phone),
             "status": pi.status,
         })
     return _capped(out)

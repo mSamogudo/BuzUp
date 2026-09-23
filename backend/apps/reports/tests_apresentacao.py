@@ -326,3 +326,43 @@ class UmTotalNovoNaoSaiCru(TestCase):
 
         for contagem in ("count", "confirmed_count", "approved_count", "quantity"):
             self.assertFalse(_e_dinheiro(contagem), f"«{contagem}» nao e dinheiro")
+
+
+class OTelefoneSaiInteiro(TestCase):
+    """O numero mascarado nao servia a ninguem.
+
+    Saia «***6483». Quem recebe o relatorio e o operador — precisa de ligar ao
+    passageiro e de conciliar com o extracto do M-Pesa, onde o numero vem por
+    extenso. A mascara protegia o passageiro de quem ja tem acesso a tudo.
+    """
+
+    def test_as_duas_formas_guardadas_dao_o_mesmo_numero(self):
+        """A base tem uns numeros com 258 a frente e outros sem.
+
+        Sem normalizar, a mesma pessoa aparecia de duas maneiras na mesma
+        coluna, e ordenar ou procurar deixava de funcionar.
+        """
+        from apps.reports.builder import _telefone
+
+        self.assertEqual(_telefone("841234567"), "+258 84 123 4567")
+        self.assertEqual(_telefone("258841234567"), "+258 84 123 4567")
+
+    def test_e_idempotente(self):
+        from apps.reports.builder import _telefone
+
+        uma = _telefone("841234567")
+        self.assertEqual(_telefone(uma), uma)
+
+    def test_um_numero_fora_do_formato_passa_como_esta(self):
+        """Inventar um formato para o que nao o segue e pior do que nao mexer."""
+        from apps.reports.builder import _telefone
+
+        self.assertEqual(_telefone("12345"), "12345")
+        self.assertEqual(_telefone(""), "")
+        self.assertEqual(_telefone(None), "")
+
+    def test_nenhum_relatorio_volta_a_mascarar(self):
+        from apps.reports import builder
+
+        self.assertFalse(hasattr(builder, "_mask"),
+                         "a mascara voltou; o operador precisa do numero inteiro")

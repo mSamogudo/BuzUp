@@ -7,6 +7,7 @@ import { apiPublic } from "../lib/api";
 import { useBranding, pickLogo } from "../lib/branding";
 import TermsDialog from "./booking/TermsDialog";
 import { CampoSelect } from "../ui/CampoSelect";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 
 interface BusStop { id: number; code: string; name: string; }
@@ -291,16 +292,28 @@ export default function BusPaymentPage() {
                 </label>
 
                 {temTermos && !precisaFluxoCompleto ? (
-                  <label className="bus-pay-accept">
-                    <input type="checkbox" checked={aceitouTermos} required
-                      onChange={(e) => setAceitouTermos(e.target.checked)} />
-                    <span>
+                  <div
+                    className="bus-pay-accept"
+                    onClick={(e) => {
+                      // Mesmo caso do checkout: o gatilho do Radix e um
+                      // `<button>` que nenhum `<label>` activa, e ao lado dele
+                      // vive um `<input>` escondido cujos cliques sinteticos
+                      // subiriam ate aqui e anulavam o toque na frase.
+                      const alvo = e.target as HTMLElement;
+                      if (alvo.closest("[data-slot=checkbox],.bus-pay-terms-link")) return;
+                      if (alvo instanceof HTMLInputElement && alvo.type === "checkbox") return;
+                      setAceitouTermos((v) => !v);
+                    }}
+                  >
+                    <Checkbox aria-labelledby="bus-pay-aceitar-txt" checked={aceitouTermos}
+                      onCheckedChange={(v) => setAceitouTermos(v === true)} />
+                    <span id="bus-pay-aceitar-txt">
                       Li e aceito os{" "}
                       <button type="button" className="bus-pay-terms-link"
                         onClick={() => setTermosAbertos(true)}>{t(lc, "termsAndConditions")}</button>
                       {branding.company_name ? ` da ${branding.company_name}` : ""}.
                     </span>
-                  </label>
+                  </div>
                 ) : null}
 
                 <button

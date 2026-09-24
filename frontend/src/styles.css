@@ -51,6 +51,12 @@
   --app-accent: var(--primary);
   --app-accent-strong: color-mix(in srgb, var(--primary) 85%, white);
   --app-accent-deep: var(--sidebar);
+  /* "-deep" e superficie, e so superficie. Usado como cor de TEXTO passa a
+   * `#050f1a` no tema escuro: um navy quase preto sobre fundo navy, 1,15:1
+   * na etiqueta "PORTAL" dos pagamentos. "-ink" e o papel de tinta da
+   * marca — escurece no claro, clareia no escuro — e e esse que se usa
+   * quando o que se pinta sao letras. */
+  --app-accent-ink: var(--primary-ink);
   --app-accent-soft: color-mix(in srgb, var(--primary) 8%, transparent);
 
   --app-success: var(--success);
@@ -3703,13 +3709,13 @@ html[data-theme="dark"] .otp-digit:focus {
 .co-trip-details { display: flex; flex-direction: column; min-width: 0; }
 .co-trip-details strong { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .co-trip-details span { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--app-text-muted); }
-.co-trip-price { font-size: 16px; font-weight: 800; color: var(--app-accent-deep); white-space: nowrap; }
+.co-trip-price { font-size: 16px; font-weight: 800; color: var(--app-accent-ink); white-space: nowrap; }
 .co-pay-summary { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: color-mix(in srgb, var(--app-accent) 4%, transparent); border: 1px solid color-mix(in srgb, var(--app-accent) 10%, transparent); border-radius: 12px; margin-bottom: 16px; }
 .co-pay-route { display: flex; align-items: center; gap: 12px; }
 .co-pay-route div { display: flex; flex-direction: column; }
 .co-pay-route strong { font-size: 14px; }
 .co-pay-route span { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--app-text-muted); }
-.co-pay-amount { font-size: 22px; font-weight: 800; color: var(--app-accent-deep); }
+.co-pay-amount { font-size: 22px; font-weight: 800; color: var(--app-accent-ink); }
 .co-total { display: flex; align-items: center; justify-content: center; min-height: 46px; border-radius: 10px; background: var(--app-accent-deep); color: #fff; font-size: 18px; font-weight: 800; }
 .co-success { text-align: center; }
 .co-success-icon { color: var(--app-success); margin-bottom: 12px; }
@@ -4704,7 +4710,7 @@ html[data-theme="dark"] .otp-digit:focus {
   height: 40px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--app-accent-deep) 10%, transparent);
-  color: var(--app-accent-deep);
+  color: var(--app-accent-ink);
   flex-shrink: 0;
 }
 
@@ -5376,7 +5382,8 @@ html[data-theme="dark"] .fare-matrix td input.fare-matrix-empty { background: co
   border: 1px solid var(--app-border); background: var(--app-surface);
   font-size: 13px; line-height: 1.5;
 }
-.bus-pay-accept input { width: 18px; height: 18px; flex: none; margin-top: 1px; cursor: pointer; }
+/* O seletor era `input`; o gatilho do Radix e um `<button>`. */
+.bus-pay-accept [data-slot=checkbox] { width: 18px; height: 18px; flex: none; margin-top: 1px; cursor: pointer; }
 .bus-pay-terms-link {
   padding: 0; border: 0; background: none; font: inherit; font-weight: 700;
   color: var(--app-accent); text-decoration: underline; text-underline-offset: 2px;

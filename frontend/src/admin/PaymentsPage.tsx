@@ -53,7 +53,8 @@ const SOURCE_TONE: Record<string, string> = {
   // e um FUNDO quase-branco: usado como cor de texto ficava ilegivel.
   MOBILE: "var(--app-success)",
   POS: "var(--app-warning)",
-  PORTAL: "var(--app-accent-deep)",
+  // "-deep" e superficie: no tema escuro da navy quase preto sobre navy.
+  PORTAL: "var(--app-accent-ink)",
   OUTRO: "var(--app-text-muted)",
 };
 

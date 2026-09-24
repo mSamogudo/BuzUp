@@ -70,6 +70,18 @@
   figure {
     margin: 0;
   }
+
+  /* Quinta: o UA poe `button { padding: 1px 6px }`, e os primitivos do shadcn
+   * foram desenhados contra um preflight que o zera. O `Checkbox` mede 19px
+   * com `box-sizing: border-box`, e 12px disso eram padding do browser: ao
+   * visto de 14px sobravam 5px de caixa, esmagado num risco vertical.
+   *
+   * So os que trazem `data-slot`, que sao exactamente os primitivos. Quem
+   * declara o seu proprio padding por utilitario ganha na mesma — isto vive
+   * em `@layer base`, e `@layer utilities` vem depois. */
+  button[data-slot] {
+    padding: 0;
+  }
 }
 
 /* Inter e Manrope, alojadas localmente. */

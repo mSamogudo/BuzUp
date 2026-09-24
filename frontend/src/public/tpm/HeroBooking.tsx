@@ -33,6 +33,14 @@ export default function HeroBooking() {
 
   const hoje = useMemo(() => paraIso(new Date()), []);
 
+  /** Atalhos de destino. Nao sao "populares" — nao ha dados de procura — sao
+   *  simplesmente paragens que o `sellable=1` devolveu, ou seja, que tem
+   *  partidas futuras a venda. Chamar-lhes outra coisa seria inventar. */
+  const atalhos = useMemo(
+    () => stops.filter((s) => String(s.id) !== origem && String(s.id) !== destino).slice(0, 4),
+    [stops, origem, destino],
+  );
+
   useEffect(() => {
     let vivo = true;
     fetch("/api/public/trips/?sellable=1", { headers: { "Content-Type": "application/json" } })
@@ -66,19 +74,22 @@ export default function HeroBooking() {
 
   return (
     <form className="tpm-busca" onSubmit={submeter}>
-      <div className="tpm-busca-tipo" role="group" aria-label="Tipo de viagem">
-        {([["ida", "Só ida"], ["idaevolta", "Ida e volta"]] as const).map(([chave, rotulo]) => (
-          <button
-            aria-pressed={tipo === chave}
-            className={`tpm-busca-tipo-btn${tipo === chave ? " is-on" : ""}`}
-            key={chave}
-            onClick={() => { setTipo(chave); if (chave === "ida") setVolta(""); }}
-            type="button"
-          >
-            {chave === "ida" ? <ArrowRight aria-hidden size={15} /> : <ArrowLeftRight aria-hidden size={15} />}
-            {rotulo}
-          </button>
-        ))}
+      <div className="tpm-busca-topo">
+        <h2 className="tpm-busca-titulo">Encontre a sua viagem</h2>
+        <div className="tpm-busca-tipo" role="group" aria-label="Tipo de viagem">
+          {([["ida", "Só ida"], ["idaevolta", "Ida e volta"]] as const).map(([chave, rotulo]) => (
+            <button
+              aria-pressed={tipo === chave}
+              className={`tpm-busca-tipo-btn${tipo === chave ? " is-on" : ""}`}
+              key={chave}
+              onClick={() => { setTipo(chave); if (chave === "ida") setVolta(""); }}
+              type="button"
+            >
+              {chave === "ida" ? <ArrowRight aria-hidden size={15} /> : <ArrowLeftRight aria-hidden size={15} />}
+              {rotulo}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={`tpm-busca-campos${tipo === "idaevolta" ? " tem-volta" : ""}`}>
@@ -142,7 +153,22 @@ export default function HeroBooking() {
             <option key={n} value={n}>{n} {n === 1 ? "passageiro" : "passageiros"}</option>
           ))}
         </CampoSelect>
+      </div>
 
+      {/* O botao vive numa linha propria, e nao no fim da fila dos campos:
+          com a volta ligada a fila ganha uma coluna e o botao encolhia ate
+          "Procurar" quebrar em duas linhas. */}
+      <div className="tpm-busca-baixo">
+        {atalhos.length > 0 && !destino ? (
+          <div className="tpm-busca-atalhos">
+            <span className="tpm-busca-atalhos-rotulo">Destinos à venda:</span>
+            {atalhos.map((s) => (
+              <button className="tpm-busca-atalho" key={s.id} onClick={() => setDestino(String(s.id))} type="button">
+                {s.name}
+              </button>
+            ))}
+          </div>
+        ) : <span />}
         <button className="tpm-busca-btn" disabled={semParagens} type="submit">
           <Search aria-hidden size={18} /> Procurar viagens
         </button>

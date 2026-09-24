@@ -131,19 +131,26 @@ export default function TpmTurLandingPage() {
               Compre o bilhete online, escolha o seu lugar e embarque sem filas.
               Mais perto do seu destino — viaje com a TPM-TUR.
             </p>
-            {/* A compra comeca aqui. O botao dourado continua, para quem
-                prefere percorrer o site antes de escolher percurso. */}
+          </div>
+        </section>
+
+        {/* O cartao de busca atravessa a dobra da fotografia: metade sobre a
+            imagem, metade sobre a pagina. Vive FORA do <section>, que tem
+            `overflow:hidden` para a foto nao transbordar — la dentro seria
+            cortado pela mesma regra. */}
+        <div className="tpm-hero-busca">
+          <div className="tpm-hero-busca-in">
             <HeroBooking />
             <div className="tpm-hero-cta">
-              <a href={`mailto:${EMAIL}?subject=${encodeURIComponent("Pedido de orçamento TPM-TUR")}`} className="bzlp-btn outline light">
+              <a href={`mailto:${EMAIL}?subject=${encodeURIComponent("Pedido de orçamento TPM-TUR")}`} className="bzlp-btn outline">
                 Precisa de transporte para um grupo? <ArrowUpRight size={16} aria-hidden />
               </a>
-              <Link to="/comprar" className="bzlp-ghost light">
+              <Link to="/comprar" className="bzlp-ghost">
                 Ver todas as partidas <ArrowUpRight size={15} aria-hidden />
               </Link>
             </div>
           </div>
-        </section>
+        </div>
 
         {/* COMO VIAJAR */}
         <section className="bzlp-sec" id="viagens">
@@ -215,7 +222,7 @@ export default function TpmTurLandingPage() {
                   <article className="tpm-service">
                     <img src={s.img} alt={s.alt} width={1200} height={750} loading="lazy" decoding="async" />
                     <div className="tpm-service-body">
-                      <h3><s.icon size={18} aria-hidden style={{ verticalAlign: "-3px", marginRight: 8, color: "var(--blue)" }} />{s.h}</h3>
+                      <h3><s.icon size={18} aria-hidden style={{ verticalAlign: "-3px", marginRight: 8, color: "var(--blue2)" }} />{s.h}</h3>
                       <p>{s.p}</p>
                       <a href={`mailto:${EMAIL}?subject=${encodeURIComponent(s.assunto)}`}>{s.cta} <ArrowUpRight size={16} aria-hidden /></a>
                     </div>
@@ -346,7 +353,7 @@ export default function TpmTurLandingPage() {
               <details>
                 <summary>Como posso comprar um bilhete?</summary>
                 <p>
-                  Clique em <Link to="/comprar" className="bzlp-ghost" style={{ padding: 0, minHeight: 0, color: "var(--blue)" }}>Comprar bilhete</Link>,
+                  Clique em <Link to="/comprar" className="bzlp-ghost" style={{ padding: 0, minHeight: 0, color: "var(--blue2)" }}>Comprar bilhete</Link>,
                   escolha a origem, o destino e a data, seleccione o lugar, preencha os dados
                   dos passageiros e conclua o pagamento. O bilhete fica no seu telemóvel.
                 </p>
@@ -368,7 +375,7 @@ export default function TpmTurLandingPage() {
               <details>
                 <summary>Como instalo a aplicação Android?</summary>
                 <p>
-                  Abra a <Link to="/baixar" style={{ color: "var(--blue)", fontWeight: 600 }}>página oficial de instalação</Link> no
+                  Abra a <Link to="/baixar" style={{ color: "var(--blue2)", fontWeight: 600 }}>página oficial de instalação</Link> no
                   seu telemóvel e siga as instruções.
                 </p>
               </details>

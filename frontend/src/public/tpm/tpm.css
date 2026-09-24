@@ -16,6 +16,9 @@
      reintroduzir o nome colidente. */
   --navy: var(--sidebar);
   --navy2: color-mix(in srgb, var(--sidebar) 84%, black);
+  /* `--blue` e o ciano oficial e serve para PINTAR: fundos, molduras,
+     estados. Para LETRAS e `--blue2`, que e o `--primary-ink` — o ciano
+     oficial sobre branco da 3,01:1 e chumba corpo de texto. */
   --blue: var(--primary);
   --blue2: var(--primary-ink);
   --blue-bright: color-mix(in srgb, var(--primary) 58%, white);
@@ -69,13 +72,39 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(16, 45, 79, 0.35) 0%, rgba(16, 45, 79, 0.55) 45%, rgba(11, 35, 64, 0.92) 100%);
+  /* O marinho do preset, e nao um rgba fixo: era #102d4f escrito a mao e
+     ficou para tras quando a paleta oficial entrou. */
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--navy) 8%, transparent) 0%,
+    color-mix(in srgb, var(--navy) 22%, transparent) 34%,
+    color-mix(in srgb, var(--navy2) 82%, transparent) 78%,
+    color-mix(in srgb, var(--navy2) 94%, transparent) 100%);
 }
+/* O texto tem chao proprio, a esquerda, em vez de se escurecer a imagem
+   inteira: o veu geral que o tornava legivel tapava os autocarros, que sao
+   o assunto da fotografia. */
+.tpm-hero::before {
+  content: "";
+  position: absolute;
+  /* A largura toda, e nao uma caixa a esquerda: limitada a 62% via `width`,
+     a aresta direita da caixa cortava o degrade a meio e via-se a costura.
+     Aqui o desvanecimento acaba aos 62% dentro de uma caixa que vai ate ao
+     fim, e nao ha aresta nenhuma. */
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--navy2) 86%, transparent) 0%,
+    color-mix(in srgb, var(--navy2) 56%, transparent) 32%,
+    transparent 62%);
+}
+
 .tpm-hero-in {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 160px 22px 72px;
+  /* Folga em baixo para o cartao, que sobe 76px para dentro da fotografia:
+     sem ela o titulo ficava debaixo do cartao. */
+  padding: 150px 22px 110px;
 }
 .tpm-hero .bzlp-badge {
   background: color-mix(in srgb, var(--gold) 16%, transparent);
@@ -186,7 +215,7 @@
   gap: 6px;
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--blue);
+  color: var(--blue2);
   margin-top: 8px;
 }
 .tpm-service-body a:hover { color: var(--blue2); }
@@ -211,7 +240,7 @@
   border-radius: 999px;
   padding: 8px 14px;
 }
-.tpm-services-extra a:hover { border-color: var(--blue); color: var(--blue); }
+.tpm-services-extra a:hover { border-color: var(--blue); color: var(--blue2); }
 
 /* Frota — grelha fotográfica. */
 /* Cabecalho da frota: titulo a esquerda, apoio ao lado. */
@@ -269,7 +298,7 @@
   color: #fff;
   font-size: 14.5px;
   font-weight: 700;
-  background: linear-gradient(180deg, transparent, rgba(11, 35, 64, 0.88));
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--navy2) 90%, transparent));
 }
 .tpm-vehicle figcaption small {
   display: block;
@@ -321,7 +350,7 @@
 }
 @media (max-width: 820px) { .tpm-sobre { grid-template-columns: 1fr; } }
 .tpm-sobre h2 { font-size: clamp(24px, 3vw, 34px); margin: 10px 0 0; letter-spacing: -0.02em; line-height: 1.16; }
-.tpm-sobre h2 span { color: var(--blue); }
+.tpm-sobre h2 span { color: var(--blue2); }
 .bzlp-tpm[data-theme="dark"] .tpm-sobre h2 span { color: var(--blue-bright); }
 .tpm-sobre-copy p { color: var(--muted-ink); line-height: 1.7; margin: 0 0 14px; font-size: 15px; }
 .tpm-sobre-partners {
@@ -370,9 +399,9 @@
   transition: transform 0.18s ease;
   flex: none;
 }
-.tpm-faq details[open] summary::after { transform: rotate(45deg); color: var(--blue); }
+.tpm-faq details[open] summary::after { transform: rotate(45deg); color: var(--blue2); }
 .tpm-faq details p { margin: 0; padding: 0 0 18px; font-size: 14px; line-height: 1.65; color: var(--muted-ink); max-width: 64ch; }
-.tpm-faq details a { color: var(--blue); font-weight: 600; }
+.tpm-faq details a { color: var(--blue2); font-weight: 600; }
 
 /* CTA final — o terceiro momento "loud": dourado a fundo, texto navy. */
 .tpm-cta-final {
@@ -425,9 +454,22 @@
    campos tem de se ler contra o que estiver por baixo, seja ceu claro ou
    chapa escura. A largura e maior do que a do texto acima de proposito — e
    a accao principal da pagina, nao um apendice do titulo. */
+/* Metade sobre a fotografia, metade sobre a pagina. */
+.tpm-hero-busca {
+  position: relative;
+  z-index: 3;
+  margin-top: -76px;
+}
+.tpm-hero-busca-in {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
 .tpm-busca {
-  margin: 30px 0 0;
-  max-width: 980px;
+  margin: 0;
+  max-width: none;
   background: var(--surface);
   /* O hero poe `color: #fff` para o texto se ler sobre a fotografia. Dentro
      deste cartao branco isso era branco sobre branco: o gatilho do Select do
@@ -440,13 +482,29 @@
   box-shadow: 0 22px 48px -22px rgba(0, 0, 0, 0.45);
 }
 
+.tpm-busca-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.tpm-busca-titulo {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--heading, var(--ink));
+}
+
 .tpm-busca-tipo {
   display: inline-flex;
   gap: 3px;
   padding: 3px;
   border-radius: 999px;
   background: var(--line-soft);
-  margin-bottom: 14px;
 }
 .tpm-busca-tipo-btn {
   display: inline-flex;
@@ -502,16 +560,62 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 48px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--blue2);
+  width: 42px;
+  height: 42px;
+  /* Alinhado pela base com os campos de 48px, e nao esticado ate eles: um
+     circulo de 48px ao lado de caixas de 48px lia-se como um sexto campo. */
+  margin-bottom: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
   cursor: pointer;
-  transition: border-color 160ms ease, color 160ms ease;
+  transition: background 160ms ease, transform 160ms ease;
 }
-.tpm-busca-inverter:hover { border-color: var(--blue); color: var(--blue); }
+.tpm-busca-inverter:hover { background: var(--blue2); transform: rotate(180deg); }
+/* No tema escuro o marinho do disco e quase o fundo do cartao: as setas
+   brancas liam-se, o botao nao. Ganha a cor de accao, que e o que ele e. */
+.bzlp-tpm[data-theme="dark"] .tpm-busca-inverter {
+  background: var(--blue);
+  color: var(--primary-foreground);
+}
+
+.tpm-busca-baixo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.tpm-busca-atalhos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.tpm-busca-atalhos-rotulo {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-ink);
+}
+.tpm-busca-atalho {
+  min-height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.tpm-busca-atalho:hover { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface)); }
 
 .tpm-busca-btn {
   display: inline-flex;
@@ -522,8 +626,10 @@
   padding: 0 22px;
   border: 0;
   border-radius: 10px;
-  background: var(--gold);
-  color: var(--gold-ink);
+  /* Ciano: e o que a paleta oficial destina a botoes. O dourado fica para
+     chamadas de atencao — o CTA da barra e a palavra do titulo. */
+  background: var(--blue);
+  color: var(--primary-foreground);
   font: inherit;
   font-size: 14.5px;
   font-weight: 800;
@@ -531,7 +637,7 @@
   white-space: nowrap;
   transition: background 160ms ease, transform 140ms ease;
 }
-.tpm-busca-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--gold) 88%, white); transform: translateY(-1px); }
+.tpm-busca-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--blue) 86%, var(--navy)); transform: translateY(-1px); }
 .tpm-busca-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .tpm-busca-erro {
@@ -548,11 +654,17 @@
   .tpm-busca-campos.tem-volta {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .tpm-busca-inverter { width: 100%; height: 38px; grid-column: 1 / -1; }
-  .tpm-busca-btn { grid-column: 1 / -1; }
+  .tpm-busca-inverter { width: 100%; height: 38px; border-radius: 10px; margin-bottom: 0; grid-column: 1 / -1; }
+  .tpm-busca-inverter:hover { transform: none; }
 }
 @media (max-width: 560px) {
   .tpm-busca { padding: 14px; border-radius: 14px; }
   .tpm-busca-campos,
   .tpm-busca-campos.tem-volta { grid-template-columns: 1fr; }
+  /* Sem espaco para atalhos: o que tem de caber e a accao, a largura toda. */
+  .tpm-busca-atalhos { display: none; }
+  .tpm-busca-baixo { justify-content: stretch; }
+  .tpm-busca-btn { width: 100%; }
+  .tpm-hero-busca { margin-top: -48px; }
+  .tpm-hero-in { padding: 120px 22px 84px; }
 }

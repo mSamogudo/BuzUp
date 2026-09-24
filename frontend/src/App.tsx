@@ -43,7 +43,10 @@ const BrandingPage = lazy(() => import("./admin/BrandingPage"));
 const TripDetailPage = lazy(() => import("./admin/TripDetailPage"));
 const TripSchedulerPage = lazy(() => import("./admin/TripSchedulerPage"));
 const TermsPage = lazy(() => import("./admin/TermsPage"));
-const CheckoutPage = lazy(() => import("./public/CheckoutPage"));
+// O `/checkout` antigo era uma rota orfa: um fluxo mais simples, sem escolha
+// de lugar nem documentos, a que nada ligava. Passa a ser o checkout da
+// compra — quem viaja e como se paga, com o resumo sempre a vista.
+const CheckoutPage = lazy(() => import("./public/booking/CheckoutPage"));
 const BusPaymentPage = lazy(() => import("./public/BusPaymentPage"));
 const DownloadPage = lazy(() => import("./public/DownloadPage"));
 const PassengerPortalPage = lazy(() => import("./passenger/PassengerPortalPage"));

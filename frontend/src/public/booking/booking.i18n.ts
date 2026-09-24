@@ -90,6 +90,9 @@ const PT = {
   departure: "Partida",
   returnDeparture: "Partida da volta",
   totalToPay: "TOTAL A PAGAR",
+  // Depois do bilhete emitido nao ha nada a pagar, e dizer que ha manda a
+  // pessoa procurar uma segunda cobranca que nao existe.
+  totalPaid: "TOTAL PAGO",
   equivalentIn: "Equivalente em",
   fxNote: "O débito na carteira móvel é sempre em meticais; o valor em {cur} é indicativo e fica registado no bilhete à taxa de hoje.",
   payPhone: "Telemóvel para pagamento",
@@ -216,6 +219,7 @@ const EN: Record<keyof typeof PT, string> = {
   departure: "Departure",
   returnDeparture: "Return departure",
   totalToPay: "TOTAL TO PAY",
+  totalPaid: "TOTAL PAID",
   equivalentIn: "Equivalent in",
   fxNote: "The mobile wallet is always charged in meticais; the {cur} amount is indicative and is recorded on the ticket at today's rate.",
   payPhone: "Phone number to pay with",

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { CampoData } from "../../ui/CampoData";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, Bus, Calendar, CheckCircle2, Download, MapPin, Moon,
-  Repeat, Search, Sun, Users,
+  ArrowLeft, ArrowRight, Calendar, MapPin, Moon, Repeat, Search, Sun, Users,
 } from "lucide-react";
 import { useBranding, pickLogo } from "../../lib/branding";
 import { useUi } from "../../ui/UiPreferences";
@@ -12,12 +11,14 @@ import SeatMap, { type SeatRow } from "./SeatMap";
 import StopCombo from "./StopCombo";
 import TermsDialog from "./TermsDialog";
 import { CampoSelect } from "../../ui/CampoSelect";
-import { Input } from "@/components/ui/input";
 import "./booking.css";
 
 // `rtrips`/`rseats` são a ida e volta: o regresso é outro autocarro, com a
 // sua lotação e o seu lugar, por isso escolhe-se à parte.
-type Step = "search" | "trips" | "seats" | "rtrips" | "rseats" | "pax" | "pay" | "done";
+// `pax` e `pay` continuam na barra de progresso e ja nao sao estados desta
+// pagina: vivem no `/checkout`. Ficam porque quem compra deve ver a jornada
+// inteira, e nao so o troco que ainda esta neste ecra.
+type Step = "search" | "trips" | "seats" | "rtrips" | "rseats" | "pax" | "pay";
 
 const CHAVES_IDA: { key: Step; label: BookingKey }[] = [
   { key: "search", label: "stepTrip" },
@@ -41,12 +42,13 @@ const CHAVES_IDA_E_VOLTA: { key: Step; label: BookingKey }[] = [
 ];
 
 import {
-  DOC_FALLBACK, filterDoc, filterPhone, getJson, longDate, money, normalizeDoc,
-  readServerError, timeOf,
-  type CheckoutResult, type DocRule, type Passenger, type StopOpt, type TripOpt,
+  getJson, longDate, money, timeOf,
+  type StopOpt, type TripOpt,
 } from "./compra";
+import type { Reserva } from "./CheckoutPage";
 
 export default function BookingPage() {
+  const navegar = useNavigate();
   const { branding } = useBranding();
   // Idioma e tema vêm do mesmo sítio que o resto da aplicação: quem escolheu
   // inglês no portal não devia voltar ao português ao clicar em "comprar".
@@ -72,7 +74,6 @@ export default function BookingPage() {
     setTipo(novo);
     if (novo === "ida") {
       setReturnDate(""); setRtrip(null); setRtrips([]); setRpicked([]);
-      setPax((prev) => prev.map((p) => ({ ...p, return_seat: "" })));
     }
   };
 
@@ -93,31 +94,19 @@ export default function BookingPage() {
   // o comprador ter onde os escrever.
   const [hasSeatMap, setHasSeatMap] = useState(true);
   const [needsIdentity, setNeedsIdentity] = useState(true);
-  const [docRules, setDocRules] = useState<DocRule[]>(DOC_FALLBACK);
   const [picked, setPicked] = useState<string[]>([]);
-  const [pax, setPax] = useState<Passenger[]>([]);
-  const [phone, setPhone] = useState("");
   // Contacto de emergência: obrigatório nas rotas que marcam lugar
   // (interprovincial/internacional), porque é para o manifesto de bordo que
   // serve. Numa carreira urbana o campo nem aparece.
-  const [emergName, setEmergName] = useState("");
-  const [emergPhone, setEmergPhone] = useState("");
-  const [email, setEmail] = useState("");
   // Carteira movel ou cartao. O servidor deduz M-Pesa/e-Mola do telefone;
   // o cartao e uma escolha explicita, porque leva o comprador para fora do
   // site (pagina do DPO) e volta por `?ref=`.
-  const [method, setMethod] = useState<"mpesa" | "emola" | "card">("mpesa");
   // Aceitação dos Termos. O servidor recusa a compra sem ela — a caixa aqui é
   // para o passageiro poder ler antes de dizer que sim, não é a barreira.
-  const [aceitouTermos, setAceitouTermos] = useState(false);
   const [termosAbertos, setTermosAbertos] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<CheckoutResult | null>(null);
-  // Regresso da pagina do cartao (`/comprar?ref=GC-...`): a confirmar junto
-  // do servidor, que por sua vez pergunta ao DPO. O URL nao prova nada.
-  const [checking, setChecking] = useState(false);
 
   // Moeda de EXIBIÇÃO (rand nas rotas p/ África do Sul). A cobrança é sempre
   // em meticais; a taxa vem do portal e o bilhete congela a moeda escolhida.
@@ -140,9 +129,6 @@ export default function BookingPage() {
     getJson("/api/public/trips/?sellable=1")
       .then((d) => setStops(d.stops || []))
       .catch(() => setStops([]));
-    getJson("/api/public/document-types/")
-      .then((d) => { if (d.document_types?.length) setDocRules(d.document_types); })
-      .catch(() => { /* fica a lista de recurso: melhor comprar do que travar */ });
     getJson("/api/public/exchange-rate/")
       .then((d) => {
         const parsed: Record<string, number> = {};
@@ -192,45 +178,13 @@ export default function BookingPage() {
     </div>
   );
 
-  /// Pergunta ao servidor se a compra `ref` já está paga. Usado no regresso da
-  /// página do cartão e no botão "verificar outra vez". Enquanto o servidor
-  /// disser pendente, volta a perguntar algumas vezes: o DPO leva uns segundos
-  /// a assentar a transacção depois de devolver o passageiro.
-  const verify = useCallback(async (ref: string, tentativas = 4) => {
-    setChecking(true); setError("");
-    try {
-      for (let i = 0; i < tentativas; i++) {
-        const res = await fetch(`/api/guest-checkouts/${encodeURIComponent(ref)}/verify/`, { method: "POST" });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(readServerError(body, tr("errPayment")));
-        setResult(body);
-        setStep("done");
-        if (body.payment_status !== "pending") break;
-        await new Promise((r) => setTimeout(r, 2500));
-      }
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : tr("errPayment"));
-    } finally { setChecking(false); }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // O DPO devolve a pessoa a `/comprar?ref=GC-...` — endereco construido pelo
+  // servidor (ver `tests_cartao_dpo.py`), que esta fora de ambito. Quem sabe
+  // mostrar o desfecho e o checkout, por isso o `ref` segue para la.
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get("ref");
-    if (ref) void verify(ref);
-  }, [verify]);
-
-  // Pagamento por carteira que ficou pendente (o PIN demorou mais do que a
-  // cobrança esperou): em vez de mandar o passageiro esperar pelo SMS, a
-  // página pergunta ao servidor de 5 em 5 s durante 3 minutos — e o servidor
-  // pergunta à operadora. O bilhete aparece no segundo em que o PIN entra.
-  useEffect(() => {
-    if (step !== "done" || !result || result.payment_status !== "pending" || checking) return;
-    const inicio = Date.now();
-    const id = window.setInterval(() => {
-      if (Date.now() - inicio > 180_000) { window.clearInterval(id); return; }
-      void verify(result.checkout_reference, 1);
-    }, 5000);
-    return () => window.clearInterval(id);
-  }, [step, result, checking, verify]);
+    if (ref) navegar(`/checkout?ref=${encodeURIComponent(ref)}`, { replace: true });
+  }, [navegar]);
 
   // Link partilhável: /comprar?origem=66&destino=70&data=2026-08-05&pax=2
   // (campanhas e CTAs da landing podem apontar directamente a um percurso).
@@ -300,8 +254,7 @@ export default function BookingPage() {
       if (d.has_seat_map) { setStep("seats"); return; }
       // Sem planta na ida: segue para o regresso, se houver.
       if (idaEVolta) { await procurarVolta(); return; }
-      setStep("pax");
-      startPax([], Boolean(d.seat_selection));
+      irParaCheckout({ trip: t, needsIdentity: Boolean(d.seat_selection) });
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : tr("errSeats"));
     } finally { setBusy(false); }
@@ -326,8 +279,7 @@ export default function BookingPage() {
       const d = await getJson(`/api/public/trips/${t.trip_id}/seats/`);
       setRrows(d.rows || []);
       if (d.has_seat_map) { setStep("rseats"); return; }
-      setStep("pax");
-      startPax(picked, needsIdentity, []);
+      if (trip) irParaCheckout({ trip, rtrip: t, seats: picked, needsIdentity });
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : tr("errReturnSeats"));
     } finally { setBusy(false); }
@@ -345,196 +297,43 @@ export default function BookingPage() {
       : (prev.length >= qty ? prev : [...prev, label]));
   };
 
-  /// O tipo de documento, garantidamente entre os que ESTA rota aceita.
-  ///
-  /// Numa rota internacional só o passaporte é oferecido; como o tipo por
-  /// omissão era `"bi"`, o ecrã dizia "Passaporte" e o estado dizia "bi". A
-  /// pessoa escrevia um número de passaporte e o servidor recusava-o por não
-  /// ser um BI — a recusa estava certa, quem mentia era o formulário.
-  ///
-  /// (O `<select>` nativo mostrava a PRIMEIRA opção quando o valor não
-  /// existia; o Select do shadcn mostra o marcador, que é pior. Por isso o
-  /// campo recebe já o valor passado por aqui.)
-  const tipoPermitido = useCallback((tipo: string) => {
-    if (docRules.some((d) => d.value === tipo)) return tipo;
-    return docRules[0]?.value || "";
-  }, [docRules]);
+  /** Entrega a compra ao checkout.
+   *
+   *  Recebe `trip` e `needsIdentity` em vez de os ler do estado: quem chama
+   *  acabou de os definir no mesmo ciclo, e ler o estado aqui traria o valor
+   *  da partida ANTERIOR. E o mesmo cuidado que o assistente ja tinha.
+   *
+   *  A reserva viaja em `location.state` — nao ha carrinho do lado do
+   *  servidor. O checkout trata o caso de ela nao chegar. */
+  const irParaCheckout = (o: {
+    trip: TripOpt; rtrip?: TripOpt | null;
+    seats?: string[]; rseats?: string[]; needsIdentity: boolean;
+  }) => {
+    const oStop = stops.find((s) => String(s.id) === origin);
+    const dStop = stops.find((s) => String(s.id) === destination);
+    const reserva: Reserva = {
+      origin, destination,
+      originName: oStop?.name || "", destinationName: dStop?.name || "",
+      date, returnDate,
+      trip: o.trip, rtrip: o.rtrip ?? null,
+      qty, seats: o.seats ?? [], rseats: o.rseats ?? [],
+      needsIdentity: o.needsIdentity,
+    };
+    navegar("/checkout", { state: { reserva } });
+  };
 
-  /// A regra deste tipo. Cai no PRIMEIRO permitido e não no último, para
-  /// coincidir com o que `tipoPermitido` põe no campo: a regra que valida é a
-  /// mesma que a pessoa está a ver.
-  const docRule = useCallback(
-    (type: string) => docRules.find((d) => d.value === type) || docRules[0],
-    [docRules],
-  );
-
-  /// Corrige quem ficou com um tipo que a rota não aceita.
-  ///
-  /// Corre sempre que as regras mudam — e não só quando chegam do servidor —
-  /// porque `startPax` pode reconstruir a lista depois delas e repor o "bi".
-  useEffect(() => {
-    if (docRules.length === 0) return;
-    setPax((prev) => {
-      let mudou = false;
-      const novo = prev.map((p) => {
-        if (!p.document_type) return p;
-        const valido = tipoPermitido(p.document_type);
-        if (valido === p.document_type) return p;
-        mudou = true;
-        return { ...p, document_type: valido, document_number: "" };
-      });
-      return mudou ? novo : prev;
-    });
-  }, [docRules, tipoPermitido]);
-
-  const startPax = useCallback((seats: string[], comDocumento?: boolean, returnSeats?: string[]) => {
-    // `needsIdentity` acabou de ser definido no mesmo ciclo em `chooseTrip`;
-    // ler o estado aqui traria o valor da partida ANTERIOR.
-    const pedeDocumento = comDocumento ?? needsIdentity;
-    // Preserva o que já foi escrito. Antes, cada passagem por "Continuar"
-    // reconstruía a lista de raiz: quem voltasse atrás para trocar de lugar
-    // perdia os nomes e os documentos que já tinha preenchido, sem aviso.
-    setPax((prev) => Array.from({ length: qty }, (_, i) => {
-      const antes = prev[i];
-      return {
-        name: antes?.name || "",
-        // O tipo só se preenche onde o documento é pedido. Numa carreira
-        // urbana o campo do número nem aparece, e mandar o tipo sozinho era
-        // mandar meia resposta a uma pergunta que não foi feita.
-        document_type: pedeDocumento ? tipoPermitido(antes?.document_type || "bi") : "",
-        document_number: pedeDocumento ? (antes?.document_number || "") : "",
-        seat: seats[i] || "",
-        return_seat: (returnSeats ?? rpicked)[i] || "",
-      };
-    }));
-  }, [qty, needsIdentity, rpicked, tipoPermitido]);
-
-  /** Fim da escolha de lugares da ida: ou vai ao regresso, ou aos passageiros. */
-  const goToPax = () => {
+  /** Fim da escolha de lugares da ida: ou vai ao regresso, ou ao checkout. */
+  const fecharIda = () => {
     if (idaEVolta && !rtrip) { void procurarVolta(); return; }
-    startPax(picked);
-    setStep("pax");
+    if (trip) irParaCheckout({ trip, seats: picked, needsIdentity });
   };
 
-  const goToPaxFromReturn = () => { startPax(picked, needsIdentity, rpicked); setStep("pax"); };
-
-  const setPaxField = (i: number, key: keyof Passenger, value: string) => {
-    setPax((prev) => prev.map((p, idx) => (idx === i ? { ...p, [key]: value } : p)));
+  const fecharVolta = () => {
+    if (trip) irParaCheckout({ trip, rtrip, seats: picked, rseats: rpicked, needsIdentity });
   };
 
-  // Os documentos aceites dependem da carreira: numa rota internacional so o
-  // passaporte atravessa a fronteira, e oferecer BI ou DIRE seria deixar o
-  // passageiro escolher um documento com que nao vai passar — descobre-o em
-  // Ressano Garcia, com o autocarro a espera e sem reembolso.
-  useEffect(() => {
-    const tipo = trip?.service_type;
-    if (!tipo) return;
-    let cancelado = false;
-    getJson(`/api/public/document-types/?service_type=${encodeURIComponent(tipo)}`)
-      .then((d) => {
-        if (cancelado || !d.document_types?.length) return;
-        setDocRules(d.document_types);
-        // Quem ja tinha escolhido um tipo que esta rota nao aceita fica com o
-        // primeiro permitido, em vez de um campo que o servidor vai recusar.
-        const permitidos = new Set(d.document_types.map((r: DocRule) => r.value));
-        setPax((prev) => prev.map((p) => (
-          p.document_type && !permitidos.has(p.document_type)
-            ? { ...p, document_type: d.document_types[0].value, document_number: "" }
-            : p
-        )));
-      })
-      .catch(() => { /* fica a lista geral: melhor comprar do que travar */ });
-    return () => { cancelado = true; };
-  }, [trip?.service_type]);
-
-
-  /// O que está errado no documento deste passageiro, por palavras. Vazio
-  /// quando está bem — ou quando a viagem nem pede documento.
-  const docError = useCallback((p: Passenger) => {
-    if (!needsIdentity) return "";
-    const rule = docRule(p.document_type);
-    const num = normalizeDoc(p.document_number);
-    if (!num) return `Indique o número do documento (${rule.label}).`;
-    if (!new RegExp(rule.pattern).test(num)) return `${rule.label}: ${rule.help}`;
-    return "";
-  }, [needsIdentity, docRule]);
-
-  /// O que falta para avançar, por palavras. Um botão cinzento e calado deixa
-  /// o comprador sem saber o que corrigir — e o erro só aparecia quando o
-  /// servidor recusava a compra, já depois de escolher o lugar.
-  const paxMissing = useMemo(() => {
-    if (pax.length === 0) return tr("errWhoTravels");
-    for (let i = 0; i < pax.length; i++) {
-      const p = pax[i];
-      const quem = pax.length === 1 ? "" : ` do passageiro ${i + 1}`;
-      if (p.name.trim().length < 3) return `Indique o nome completo${quem}.`;
-      const erro = docError(p);
-      if (erro) return pax.length === 1 ? erro : `Passageiro ${i + 1}: ${erro}`;
-    }
-    if (needsIdentity) {
-      if (emergName.trim().length < 3) return tr("errEmergencyName");
-      if (!/^\d{9}$/.test(emergPhone.replace(/\D/g, ""))) {
-        return tr("errEmergencyPhone");
-      }
-    }
-    return "";
-  }, [pax, docError, needsIdentity, emergName, emergPhone]);
-
-  const paxValid = paxMissing === "";
-  const phoneValid = /^\d{9}$/.test(phone.replace(/\D/g, ""));
-  const unit = Number(trip?.fare_amount || 0);
   // A volta é cotada para o percurso invertido; o servidor cota-a outra vez e
   // é o valor dele que manda. Aqui só se mostra o que se vai pagar.
-  const unitVolta = rtrip ? Number(rtrip.fare_amount || 0) : 0;
-  const total = (unit + unitVolta) * qty;
-
-  const pay = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!trip) return;
-    setBusy(true); setError("");
-    try {
-      const originStop = stops.find((s) => String(s.id) === origin);
-      const destStop = stops.find((s) => String(s.id) === destination);
-      const res = await fetch("/api/guest-checkouts/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          payer_phone: phone.replace(/\D/g, ""),
-          buyer_name: pax[0]?.name || "",
-          buyer_email: email,
-          route_code: trip.route_code,
-          route_name: trip.route_name,
-          origin_stop: originStop?.name || "",
-          destination_stop: destStop?.name || "",
-          origin_stop_id: Number(origin),
-          destination_stop_id: Number(destination),
-          trip_id: trip.trip_id,
-          ...(rtrip ? { return_trip_id: rtrip.trip_id } : {}),
-          quantity: qty,
-          passengers: pax,
-          emergency_contact_name: emergName,
-          emergency_contact_phone: emergPhone.replace(/\D/g, ""),
-          display_currency: currency,
-          accept_terms: aceitouTermos,
-          terms_version: branding.terms_version,
-          payment_method: method === "card" ? "card" : "mobile_wallet",
-        }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(readServerError(body, tr("errPurchase")));
-      if (body.redirect_url) {
-        // Cartao: o pagamento acontece na pagina do DPO. Fica-se em `busy`
-        // ate o browser sair — soltar o botao aqui era convidar a segundo toque.
-        window.location.assign(body.redirect_url);
-        return;
-      }
-      setResult(body);
-      setStep("done");
-    } catch (err) {
-      setError(err instanceof Error && err.message ? err.message : tr("errPayment"));
-      setBusy(false);
-    }
-  };
 
   const temTermos = (branding.terms_sections || []).length > 0;
   // Termos na língua escolhida, com recurso à portuguesa: mais vale mostrá-los
@@ -555,10 +354,13 @@ export default function BookingPage() {
       <header className="bzbk-top">
         <div className="bzbk-wrap">
           <div className="bzbk-top-in">
-            <Link to="/" aria-label="BusUp">
+            {/* A marca vem do operador, e nao do produto. Quem chega do hero
+                da TPM-TUR comprava a "BusUp" nesta pagina e pagava a "TPM-TUR"
+                na seguinte: a mesma compra com dois donos. */}
+            <Link to="/tpm-tur" aria-label={branding.company_name || "Inicio"}>
               {logo
-                ? <img src={logo} alt="BusUp" style={{ height: 30, display: "block" }} />
-                : <strong style={{ fontSize: 22 }}>Bus<span style={{ color: "var(--blue-bright, var(--primary))" }}>Up</span></strong>}
+                ? <img src={logo} alt={branding.company_name || ""} style={{ height: 30, display: "block" }} />
+                : <strong style={{ fontSize: 22 }}>{branding.company_name}</strong>}
             </Link>
             <div className="bzbk-top-controls">
               <div className="bzbk-lang" role="group" aria-label="PT / EN">
@@ -572,7 +374,7 @@ export default function BookingPage() {
                 title={theme === "dark" ? tr("lightTheme") : tr("darkTheme")}>
                 {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
               </button>
-              <Link to="/" className="bzbk-kicker" style={{ color: "var(--on-navy-soft)" }}>{tr("backToSite")}</Link>
+              <Link to="/tpm-tur" className="bzbk-kicker" style={{ color: "var(--on-navy-soft)" }}>{tr("backToSite")}</Link>
             </div>
           </div>
           <div style={{ position: "relative", zIndex: 2, marginTop: 18 }}>
@@ -730,7 +532,7 @@ export default function BookingPage() {
                   <button className="bzbk-btn ghost" type="button" onClick={() => setStep("trips")}>
                     <ArrowLeft size={16} /> {tr("otherTrip")}
                   </button>
-                  <button className="bzbk-btn" type="button" disabled={picked.length !== qty} onClick={goToPax}>
+                  <button className="bzbk-btn" type="button" disabled={picked.length !== qty} onClick={fecharIda}>
                     {picked.length === qty
                       ? <>{tr("continue")} <ArrowRight size={16} /></>
                       : tr("stillToPick", { n: qty - picked.length })}
@@ -789,7 +591,7 @@ export default function BookingPage() {
                   </button>
                   {/* Desistir do regresso não pode obrigar a recomeçar tudo. */}
                   <button className="bzbk-btn ghost" type="button"
-                    onClick={() => { escolherTipo("ida"); startPax(picked, needsIdentity, []); setStep("pax"); }}>
+                    onClick={() => { escolherTipo("ida"); if (trip) irParaCheckout({ trip, seats: picked, needsIdentity }); }}>
                     {tr("buyOneWayInstead")}
                   </button>
                 </div>
@@ -808,7 +610,7 @@ export default function BookingPage() {
                     <ArrowLeft size={16} /> {tr("otherReturn")}
                   </button>
                   <button className="bzbk-btn" type="button"
-                    disabled={rpicked.length !== qty} onClick={goToPaxFromReturn}>
+                    disabled={rpicked.length !== qty} onClick={fecharVolta}>
                     {rpicked.length === qty
                       ? <>{tr("continue")} <ArrowRight size={16} /></>
                       : tr("stillToPick", { n: qty - rpicked.length })}
@@ -817,298 +619,6 @@ export default function BookingPage() {
               </div>
             )}
 
-            {step === "pax" && trip && (
-              <div>
-                <h2 className="bzbk-h2">{tr("whoTravels")}</h2>
-                <p className="bzbk-lead">
-                  {needsIdentity
-                    ? "O bilhete é nominal. Em viagens internacionais o documento é conferido na fronteira."
-                    : "Basta o nome de quem viaja. Nesta carreira não é preciso documento."}
-                </p>
-                {pax.map((p, i) => (
-                  <div className="bzbk-pax" key={i}>
-                    <div className="bzbk-pax-head">
-                      {p.seat && <span className="bzbk-pax-seat">{p.seat}</span>}
-                      <span className="bzbk-pax-title">Passageiro {i + 1}</span>
-                    </div>
-                    <div className="bzbk-field">
-                      <label className="bzbk-label">Nome completo</label>
-                      <Input className="bzbk-input" value={p.name} required
-                        placeholder="Como está no documento"
-                        onChange={(e) => setPaxField(i, "name", e.target.value)} />
-                    </div>
-                    {/* Documento só nas viagens interprovinciais e
-                        internacionais. Numa carreira urbana ninguém mostra o BI
-                        para apanhar o autocarro do bairro. */}
-                    {needsIdentity && (() => {
-                      const rule = docRule(p.document_type);
-                      const erro = docError(p);
-                      // Só se avisa depois de escrever alguma coisa: acusar um
-                      // campo ainda vazio é ralhar antes da falta.
-                      const mostraErro = p.document_number.trim() !== "" && erro !== "";
-                      return (
-                        <div className="bzbk-grid" style={{ marginTop: 12 }}>
-                          <div className="bzbk-field bzbk-field-wide">
-                            <label className="bzbk-label">Documento</label>
-                            {/* O `value` passa pelo `tipoPermitido`: o Select do
-                                shadcn nao mostra a primeira opcao quando o valor
-                                nao existe — mostra o marcador, que e pior. Assim
-                                o que se ve e sempre uma opcao real. */}
-                            <CampoSelect className="bzbk-campo" value={tipoPermitido(p.document_type)}
-                              onChange={(novo) => {
-                                // Trocar de tipo depois de escrever: o número
-                                // é refiltrado pela regra nova, senão ficavam
-                                // letras num campo que passou a ser só dígitos.
-                                setPax((prev) => prev.map((q, idx) => idx === i ? {
-                                  ...q,
-                                  document_type: novo,
-                                  document_number: filterDoc(q.document_number, docRule(novo)),
-                                } : q));
-                              }}>
-                              {docRules.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-                            </CampoSelect>
-                          </div>
-                          <div className="bzbk-field bzbk-field-wide">
-                            <label className="bzbk-label">Número</label>
-                            <Input
-                              className={`bzbk-input${mostraErro ? " bzbk-input-error" : ""}`}
-                              value={p.document_number}
-                              required
-                              // Sem `maxLength`: ele corta o texto CRU, antes
-                              // de os espaços serem tirados. Um BI colado como
-                              // "1101 0012 3456 A" (17 caracteres) era truncado
-                              // a meio e ficava inválido sem se perceber
-                              // porquê. O limite é aplicado em `filterDoc`,
-                              // depois de normalizar.
-                              placeholder={rule.placeholder}
-                              inputMode={rule.digits_only ? "numeric" : "text"}
-                              autoCapitalize="characters"
-                              autoComplete="off"
-                              spellCheck={false}
-                              aria-invalid={mostraErro}
-                              // Normaliza enquanto se escreve: o campo passa a
-                              // recusar o que o servidor recusaria, em vez de
-                              // deixar chegar ao pagamento para falhar la.
-                              onChange={(e) => setPaxField(i, "document_number", filterDoc(e.target.value, rule))}
-                            />
-                            <span className={mostraErro ? "bzbk-hint bzbk-hint-error" : "bzbk-hint"}>
-                              {mostraErro ? erro : rule.help}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                ))}
-                {/* Quem decide é a ROTA, não a existência de planta: uma
-                    interprovincial cuja viatura ainda não tem lotação registada
-                    vende sem planta e continua a precisar deste contacto. Com
-                    `hasSeatMap` aqui, o campo desaparecia e o servidor recusava
-                    a compra sem o comprador ter onde o escrever. */}
-                {needsIdentity ? (
-                  <div className="bzbk-pax bzbk-pax-emergency">
-                    <div className="bzbk-pax-head">
-                      <span className="bzbk-pax-title">Contacto de emergência</span>
-                    </div>
-                    <p className="bzbk-lead" style={{ marginTop: -4 }}>
-                      Quem avisamos se algo correr mal durante a viagem. Vai no
-                      manifesto de bordo que segue com o motorista.
-                    </p>
-                    <div className="bzbk-grid" style={{ marginTop: 12 }}>
-                      <div className="bzbk-field bzbk-field-wide">
-                        <label className="bzbk-label">Nome</label>
-                        <Input className="bzbk-input" value={emergName} required
-                          placeholder={tr("nameExample")}
-                          onChange={(e) => setEmergName(e.target.value)} />
-                      </div>
-                      <div className="bzbk-field bzbk-field-wide">
-                        <label className="bzbk-label">Telefone</label>
-                        <Input className="bzbk-input" value={emergPhone} required
-                          inputMode="numeric" placeholder="84/85/86/87..."
-                          autoComplete="off"
-                          onChange={(e) => setEmergPhone(filterPhone(e.target.value))} />
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-                {paxMissing && (
-                  <p className="bzbk-hint" style={{ marginTop: 14 }}>{paxMissing}</p>
-                )}
-                <div className="bzbk-actions">
-                  <button className="bzbk-btn ghost" type="button"
-                    onClick={() => setStep(hasSeatMap ? "seats" : "trips")}>
-                    <ArrowLeft size={16} /> {tr("back")}
-                  </button>
-                  <button className="bzbk-btn" type="button" disabled={!paxValid} onClick={() => setStep("pay")}>
-                    Continuar <ArrowRight size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === "pay" && trip && (
-              <form onSubmit={pay}>
-                <div className="bzbk-h2-row">
-                  <h2 className="bzbk-h2">Pagamento</h2>
-                  {currencyToggle}
-                </div>
-                <p className="bzbk-lead">{tr("payLead")}</p>
-
-                <div className="bzbk-summary">
-                  <div className="bzbk-sum-row"><span>{rtrip ? tr("outbound") : tr("route")}</span><b>{percurso(trip)}</b></div>
-                  <div className="bzbk-sum-row"><span>{tr("departure")}</span><b>{date && longDate(date)} · {timeOf(trip.departure)}</b></div>
-                  {rtrip ? (
-                    <>
-                      <div className="bzbk-sum-row"><span>{tr("returnLeg")}</span><b>{percurso(rtrip)}</b></div>
-                      <div className="bzbk-sum-row">
-                        <span>{tr("returnDeparture")}</span>
-                        <b>{returnDate && longDate(returnDate)} · {timeOf(rtrip.departure)}</b>
-                      </div>
-                    </>
-                  ) : null}
-                  <div className="bzbk-sum-row">
-                    <span>{tr("passengersCount")}</span>
-                    <b>{pax.map((p) => p.name
-                      + (p.seat ? ` (${p.seat}${p.return_seat ? ` / ${p.return_seat}` : ""})` : "")).join(", ")}</b>
-                  </div>
-                  <div className="bzbk-sum-row">
-                    <span>{qty} × {rate ? priceLabel(unit) : `${money(unit)} MZN`}{rtrip ? " · ida" : ""}</span>
-                    <b>{rate ? priceLabel(unit * qty) : `${money(unit * qty)} MZN`}</b>
-                  </div>
-                  {rtrip ? (
-                    <div className="bzbk-sum-row">
-                      <span>{qty} × {rate ? priceLabel(unitVolta) : `${money(unitVolta)} MZN`} · volta</span>
-                      <b>{rate ? priceLabel(unitVolta * qty) : `${money(unitVolta * qty)} MZN`}</b>
-                    </div>
-                  ) : null}
-                  <div className="bzbk-sum-total"><span>{tr("totalToPay")}</span><b>{money(total)} MZN</b></div>
-                  {rate && (
-                    <div className="bzbk-sum-row bzbk-sum-fx">
-                      <span>{tr("equivalentIn")} {currency}</span>
-                      <b>{money(inDisplay(total))} {currency} · 1 {currency} = {money(rate)} MZN</b>
-                    </div>
-                  )}
-                </div>
-                {rate && (
-                  <p className="bzbk-hint" style={{ display: "block", marginTop: -8, marginBottom: 14 }}>
-                    O débito na carteira móvel é sempre em meticais; o valor em {currency} é indicativo
-                    e fica registado no bilhete à taxa de hoje.
-                  </p>
-                )}
-
-                <div className="bzbk-methods">
-                  {(["mpesa", "emola", ...(branding.card_payments_enabled ? ["card" as const] : [])] as const).map((m) => (
-                    <button key={m} type="button"
-                      className={`bzbk-method${method === m ? " is-on" : ""}`}
-                      onClick={() => setMethod(m)} aria-pressed={method === m}>
-                      <span className="dot" />
-                      {m === "mpesa" ? "M-Pesa" : m === "emola" ? "e-Mola" : tr("cardMethod")}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="bzbk-grid">
-                  <div className="bzbk-field bzbk-field-wide">
-                    <label className="bzbk-label" htmlFor="ph">{tr("payPhone")}</label>
-                    <Input id="ph" className="bzbk-input" inputMode="numeric" placeholder="84xxxxxxx / 86xxxxxxx"
-                      autoComplete="off"
-                      value={phone} required onChange={(e) => setPhone(filterPhone(e.target.value))} />
-                    <span className="bzbk-hint">{method === "card" ? tr("cardPhoneHint") : tr("payPhoneHint")}</span>
-                  </div>
-                  <div className="bzbk-field bzbk-field-wide">
-                    <label className="bzbk-label" htmlFor="em">{tr("emailOptional")}</label>
-                    <Input id="em" className="bzbk-input" type="email" placeholder={tr("emailHint")}
-                      value={email} onChange={(e) => setEmail(e.target.value)} />
-                  </div>
-                </div>
-
-                {temTermos ? (
-                  <label className="bzbk-accept">
-                    <input type="checkbox" checked={aceitouTermos} required
-                      onChange={(e) => setAceitouTermos(e.target.checked)} />
-                    <span>
-                      {tr("acceptPre")}{" "}
-                      <button type="button" className="bzbk-terms-link"
-                        onClick={() => setTermosAbertos(true)}>
-                        {tr("termsLink")}
-                      </button>
-                      {branding.company_name ? ` ${tr("acceptOf")} ${branding.company_name}` : ""}.
-                    </span>
-                  </label>
-                ) : null}
-
-                <div className="bzbk-actions">
-                  <button className="bzbk-btn ghost" type="button" onClick={() => setStep("pax")} disabled={busy}>
-                    <ArrowLeft size={16} /> {tr("back")}
-                  </button>
-                  <button className="bzbk-btn" type="submit"
-                    disabled={busy || !phoneValid || (temTermos && !aceitouTermos)}>
-                    {busy
-                      ? <><span className="bzbk-spin" /> {method === "card" ? tr("cardRedirecting") : tr("processing")}</>
-                      : <>{tr("pay")} {money(total)} MZN</>}
-                  </button>
-                </div>
-                {method === "card" && !busy && (
-                  <div className="bzbk-notice info" style={{ marginTop: 16 }}>
-                    {tr("cardNotice")}
-                  </div>
-                )}
-                {busy && method !== "card" && (
-                  <div className="bzbk-notice info" style={{ marginTop: 16 }}>
-                    {tr("pinNotice")}
-                  </div>
-                )}
-              </form>
-            )}
-
-            {step === "done" && result && (() => {
-              // Dizia "Bilhete emitido · Pagamento confirmado" fosse qual fosse
-              // o estado — e desde que o timeout do M-Pesa passou a ficar
-              // pendente em vez de falhado, "pendente" e um fim possivel.
-              // Mentir aqui e o passageiro pagar duas vezes ou ir-se embora
-              // sem bilhete.
-              const pago = result.payment_status === "confirmed" || result.status === "issued";
-              const falhou = result.status === "cancelled" || result.status === "expired"
-                || result.payment_status === "failed";
-              const pendente = !pago && !falhou;
-              return (
-                <div className="bzbk-done">
-                  <div className="bzbk-done-mark" style={pago ? undefined : { opacity: .55 }}>
-                    {checking ? <span className="bzbk-spin" /> : <CheckCircle2 size={40} />}
-                  </div>
-                  <h2>{checking ? tr("returnChecking") : pago ? tr("ticketIssued") : falhou ? tr("returnFailedTitle") : tr("pendingTitle")}</h2>
-                  <p>
-                    {pago ? tr("ticketIssuedText")
-                      : falhou ? tr("returnFailedText")
-                      : result.payment_reference?.startsWith("PAY-") && new URLSearchParams(window.location.search).get("ref")
-                        ? tr("returnPendingText") : tr("pendingText")}
-                    {result.detail_message && !pago ? ` ${result.detail_message}` : ""}
-                  </p>
-                  <div className="bzbk-ref">{result.checkout_reference}</div>
-                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-                    {pago && result.ticket_url && (
-                      <a className="bzbk-btn" href={result.ticket_url} target="_blank" rel="noreferrer">
-                        <Download size={17} /> {tr("downloadTicket")}
-                      </a>
-                    )}
-                    {pendente && (
-                      <button className="bzbk-btn" type="button" disabled={checking}
-                        onClick={() => void verify(result.checkout_reference, 1)}>
-                        {checking ? <span className="bzbk-spin" /> : <CheckCircle2 size={17} />} {tr("checkAgain")}
-                      </button>
-                    )}
-                    {falhou && (
-                      <Link className="bzbk-btn" to="/comprar">
-                        <Bus size={17} /> {tr("tryAgain")}
-                      </Link>
-                    )}
-                    <Link className="bzbk-btn ghost" to="/">
-                      <Bus size={17} /> {tr("backHome")}
-                    </Link>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         </div>
 

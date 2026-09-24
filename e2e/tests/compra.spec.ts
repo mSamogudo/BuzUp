@@ -32,16 +32,18 @@ async function simularPagamento(page: Page) {
   return enviados
 }
 
+/** Da pesquisa ao checkout. Quem viaja e o pagamento vivem na mesma pagina:
+ *  eram dois passos de um assistente, e a pessoa preenchia os nomes sem
+ *  nunca ver o preco. */
 async function irAtePagamento(page: Page, nome: string) {
   await page.goto(PERCURSO, { waitUntil: 'networkidle' })
   await expect(page.locator('.bzbk-trip').first()).toBeVisible({ timeout: 25_000 })
   await page.locator('.bzbk-trip').first().click()
 
-  await expect(page.locator('.bzbk-pax .bzbk-input').first()).toBeVisible({ timeout: 15_000 })
+  await expect(page).toHaveURL(/\/checkout/, { timeout: 15_000 })
+  await expect(page.locator('.bzbk-checkout')).toBeVisible()
   await page.locator('.bzbk-pax .bzbk-input').first().fill(nome)
-  await page.locator('.bzbk-btn').last().click()
-
-  await expect(page.locator('#ph')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('#ph')).toBeVisible()
 }
 
 test('o pedido de compra leva tudo o que o servidor precisa', async ({ page }) => {
@@ -54,7 +56,7 @@ test('o pedido de compra leva tudo o que o servidor precisa', async ({ page }) =
   const termos = page.locator('.bzbk-accept [data-slot=checkbox], .bzbk-accept input[type=checkbox]')
   if (await termos.count()) await termos.first().click()
 
-  await page.locator('.bzbk-btn').last().click()
+  await page.locator('.bzbk-checkout-pagar').click()
   await expect.poll(() => enviados.length, { timeout: 20_000 }).toBe(1)
 
   const corpo = enviados[0] as Record<string, never>
@@ -84,7 +86,7 @@ test('o bilhete aparece depois de pagar', async ({ page }) => {
   await page.locator('#ph').fill('841234567')
   const termos = page.locator('.bzbk-accept [data-slot=checkbox], .bzbk-accept input[type=checkbox]')
   if (await termos.count()) await termos.first().click()
-  await page.locator('.bzbk-btn').last().click()
+  await page.locator('.bzbk-checkout-pagar').click()
 
   // A referência é o que a pessoa leva consigo: sem ela não há como
   // reclamar um pagamento que o operador não vê.
@@ -97,7 +99,7 @@ test('nao deixa pagar sem o telefone certo', async ({ page }) => {
 
   const termos = page.locator('.bzbk-accept [data-slot=checkbox], .bzbk-accept input[type=checkbox]')
   if (await termos.count()) await termos.first().click()
-  const pagar = page.locator('.bzbk-btn').last()
+  const pagar = page.locator('.bzbk-checkout-pagar')
 
   // Oito dígitos: um número moçambicano tem nove. O botão fica desactivado
   // em vez de deixar sair um pedido que a caixa vai recusar — e é assim que

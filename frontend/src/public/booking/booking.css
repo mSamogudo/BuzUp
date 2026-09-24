@@ -18,7 +18,14 @@
   background:var(--bg);min-height:100vh;overflow-x:hidden;}
 /* Sem isto, inputs a 100% + padding rebentam a largura em telemóvel. */
 .bzbk *,.bzbk *::before,.bzbk *::after{box-sizing:border-box}
-.bzbk a{text-decoration:none;color:inherit}
+/* `:where()` nao e cosmetica. `.bzbk a` vale 0,1,1 e vencia `.bzbk-btn`
+   (0,1,0): um `<Link className="bzbk-btn">` saia com a cor do texto da
+   pagina em vez da do botao. No tema claro ninguem reparava — o azul
+   escurece e o cinzento por cima ainda lia. No escuro o teal clareia para
+   #35b9d8 e o mesmo cinzento claro dava 1,98:1. Com `:where()` o reset
+   desce a 0,1,0 e quem declara cor propria mais abaixo ganha, que e o que
+   um reset deve deixar acontecer. */
+.bzbk :where(a){text-decoration:none;color:inherit}
 .bzbk-wrap{width:100%;max-width:940px;margin:0 auto;padding:0 20px}
 
 /* Cabeçalho */
@@ -213,10 +220,17 @@
 .bzbk-summary{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:18px}
 .bzbk-sum-row{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:5px 0;color:var(--muted-ink)}
 .bzbk-sum-row b{color:var(--ink);font-weight:700;text-align:right}
+/* O trajecto e a data nao sao par rotulo/valor: sao duas linhas do mesmo
+   facto. Empilhadas, cabem; lado a lado, quebravam as duas. */
+.bzbk-sum-leg{display:grid;gap:2px;padding:5px 0}
+.bzbk-sum-leg b{font-size:13.5px;font-weight:700;color:var(--ink)}
+.bzbk-sum-leg span{font-size:12.5px;color:var(--muted-ink)}
 .bzbk-sum-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:10px;
   padding-top:12px;border-top:1px dashed var(--line)}
 .bzbk-sum-total span{font-size:13px;font-weight:700;color:var(--muted-ink)}
 .bzbk-sum-total b{font-size:26px;font-weight:800;color:var(--heading)}
+/* O total sem nada por cima: o tracejado separava-o do vazio. */
+.bzbk-summary.so .bzbk-sum-total{margin-top:0;padding-top:0;border-top:none}
 
 /* Pagamento */
 .bzbk-methods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
@@ -311,8 +325,11 @@
   border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;
   font-size:13.5px;line-height:1.5;transition:border-color .16s,background .16s}
 .bzbk-accept:hover{border-color:var(--blue)}
-.bzbk-accept:has(input:checked){border-color:var(--blue);background:color-mix(in srgb, var(--primary) 6%, var(--card))}
-.bzbk-accept input{width:19px;height:19px;flex:none;margin-top:1px;accent-color:var(--blue);cursor:pointer}
+.bzbk-accept:has([data-state=checked]){border-color:var(--blue);background:color-mix(in srgb, var(--primary) 6%, var(--card))}
+/* O gatilho do Radix e um `<button>`: o seletor de elemento `input` deixou
+   de o apanhar. E os 16px do shadcn sao pequenos de mais para o unico
+   consentimento da pagina. */
+.bzbk-accept [data-slot=checkbox]{width:19px;height:19px;flex:none;margin-top:1px;cursor:pointer}
 .bzbk-terms-link{padding:0;border:0;background:none;font:inherit;font-weight:700;
   color:var(--blue2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .bzbk-terms-link:hover{color:var(--heading)}
@@ -415,7 +432,7 @@
 :root[data-theme="dark"] .bzbk-summary{background:var(--card);border-color:var(--line)}
 :root[data-theme="dark"] .bzbk-method{background:var(--card);border-color:var(--line);color:var(--ink)}
 :root[data-theme="dark"] .bzbk-accept{background:var(--card);border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-accept:has(input:checked){background:color-mix(in srgb, var(--primary) 12%, var(--card));border-color:var(--blue)}
+:root[data-theme="dark"] .bzbk-accept:has([data-state=checked]){background:color-mix(in srgb, var(--primary) 12%, var(--card));border-color:var(--blue)}
 :root[data-theme="dark"] .bzbk-triptype{background:rgba(255,255,255,.06);border-color:var(--line)}
 :root[data-theme="dark"] .bzbk-triptype-opt{color:var(--muted-ink)}
 :root[data-theme="dark"] .bzbk-triptype-opt.is-on{background:var(--accent);color:#fff;box-shadow:none}
@@ -446,3 +463,39 @@
    dentro de uma frase e a norma isenta esses). */
 .bzbk-foot .bzbk-terms-link{display:inline-flex;align-items:center;
   min-height:34px;padding:0 6px}
+
+/* ── Checkout ────────────────────────────────────────────────────────────
+   Quem viaja e como se paga numa so pagina, com o resumo sempre a vista.
+   Eram dois passos de um assistente: a pessoa preenchia os nomes sem ver o
+   preco, e so descobria o total depois de carregar em continuar. */
+/* O `.bzbk-wrap` do assistente tem 940px, que chegam a uma coluna. Duas
+   pedem mais ar, e o resumo nao pode ficar uma tira. */
+.bzbk-checkout-wrap{max-width:1180px}
+.bzbk-checkout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,0.9fr);
+  gap:20px;align-items:start}
+/* O `-40px` do cartao e para UM cartao a subir para a faixa. Numa coluna
+   com dois, o segundo subia para cima do primeiro. */
+.bzbk-checkout-form{display:grid;gap:16px;min-width:0}
+.bzbk-checkout-form>.bzbk-card+.bzbk-card{margin-top:0}
+.bzbk-checkout-resumo{min-width:0}
+
+/* O resumo acompanha o scroll: o preco tem de estar a vista quando se
+   carrega em pagar, e nao tres ecras acima. */
+.bzbk-checkout-resumo>.bzbk-card{position:sticky;top:20px}
+.bzbk-checkout-pagar{width:100%;margin-top:14px}
+.bzbk-h3{font-size:15px;font-weight:800;color:var(--heading);margin:0 0 12px}
+
+.bzbk-checkout-vazio{text-align:center;display:grid;gap:12px;justify-items:center;
+  padding:48px 24px}
+
+/* Abaixo dos 980px o resumo desce para debaixo do formulario e deixa de
+   acompanhar o scroll: preso, tapava metade do ecra no telemovel. */
+@media (max-width:980px){
+  .bzbk-checkout{grid-template-columns:1fr}
+  .bzbk-checkout-resumo>.bzbk-card{position:static}
+  /* Em duas colunas o resumo e o primeiro cartao da SUA coluna, e sobe os
+     -40px para a faixa navy ao lado do "Quem viaja?". Empilhado, deixa de
+     ter faixa por cima — tem o cartao do pagamento, e subia-lhe para cima:
+     o proprio "Resumo da compra" ficava tapado. */
+  .bzbk-checkout-resumo>.bzbk-card{margin-top:0}
+}

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ArrowRight, ArrowUpRight, BusFront, CarFront, CheckCircle2, Download,
-  MapPin, Phone, Route, ShieldCheck, Smartphone, Ticket, Users,
+  Check, MapPin, Phone, Route, Smartphone, Ticket, Users,
 } from "lucide-react";
 import Reveal from "../landing/Reveal";
 import HeroBooking from "./HeroBooking";
@@ -28,7 +28,54 @@ const FROTA_IMG = [
   "/landing/tpm/minibuses.webp",
   "/landing/tpm/suv.webp",
 ];
-const CONFIANCA_ICON = [ShieldCheck, Smartphone, Ticket];
+
+/* Clientes e parceiros — a seccao que o site oficial tem e esta nao tinha.
+ *
+ * Os ficheiros sao os do carrossel de tpmtur.co.mz (wp-content/uploads,
+ * 2025/10 e 2025/11), copiados para `public/landing/tpm/clientes/` com nomes
+ * legiveis. No original NENHUM tem texto alternativo: sao 34 imagens que um
+ * leitor de ecra anuncia como nada. Aqui cada uma leva o nome da organizacao,
+ * lido do proprio logotipo.
+ *
+ * Duas notas de honestidade: o oval vermelho e verde traz so a sigla "MM" e
+ * nao consegui apurar de quem e — fica a sigla, que e o que la esta escrito. O
+ * verde e a CFM, Caminhos de Ferro de Mocambique. */
+const CLIENTES: { f: string; nome: string }[] = [
+  { f: "banco-de-mocambique.png", nome: "Banco de Moçambique" },
+  { f: "assembleia-da-republica.png", nome: "Assembleia da República" },
+  { f: "municipio-de-maputo.jpg", nome: "Município de Maputo" },
+  { f: "cidade-da-matola.jpg", nome: "Cidade da Matola" },
+  { f: "cfm.jpg", nome: "CFM — Caminhos de Ferro de Moçambique" },
+  { f: "edm.jpg", nome: "Electricidade de Moçambique, E.P." },
+  { f: "petromoc.jpg", nome: "Petromoc" },
+  { f: "vodacom.jpg", nome: "Vodacom" },
+  { f: "totalenergies.jpg", nome: "TotalEnergies" },
+  { f: "millennium-bim.png", nome: "Millennium bim" },
+  { f: "bci.png", nome: "BCI" },
+  { f: "moza.png", nome: "Moza Banco" },
+  { f: "nedbank.png", nome: "Nedbank" },
+  { f: "bni.jpg", nome: "BNI — Banco Nacional de Investimento" },
+  { f: "bvm.jpg", nome: "BVM — Bolsa de Valores de Moçambique" },
+  { f: "inep.jpg", nome: "INEP — Instituto Nacional de Emprego" },
+  { f: "iese.jpg", nome: "IESE — Instituto de Estudos Sociais e Económicos" },
+  { f: "ocam.png", nome: "OCAM — Ordem dos Contabilistas e Auditores de Moçambique" },
+  { f: "radio-mocambique.jpg", nome: "Rádio Moçambique" },
+  { f: "fmn.jpg", nome: "Federação Moçambicana de Natação" },
+  { f: "aism.jpg", nome: "AISM — American International School of Mozambique" },
+  { f: "afecc-gloria-hotel.jpg", nome: "AFECC Gloria Hotel Maputo" },
+  { f: "bureau-veritas.jpg", nome: "Bureau Veritas" },
+  { f: "ccs-jv.png", nome: "CCS-JV" },
+  { f: "impala.png", nome: "Impala" },
+  { f: "grindrod.png", nome: "Grindrod" },
+  { f: "twigg.jpg", nome: "TWIGG Exploration & Mining" },
+  { f: "true-north.jpg", nome: "True North" },
+  { f: "tayanna.jpg", nome: "Tayanna" },
+  { f: "apco.png", nome: "APCO Heavy Duty Parts" },
+  { f: "ronil.png", nome: "Ronil" },
+  { f: "yutong.png", nome: "Yutong" },
+  { f: "zhongtong.png", nome: "Zhongtong" },
+  { f: "mm.png", nome: "MM" },
+];
 
 export default function TpmTurLandingPage() {
   const { hash } = useLocation();
@@ -78,49 +125,28 @@ export default function TpmTurLandingPage() {
         </div>
       </div>
 
-      {/* FAIXA DE CONFIANÇA — quem somos, em três factos verificáveis, logo
-          abaixo da dobra. Nenhum número: não há nenhum confirmado. */}
-      <section className="bzlp-wrap" style={{ paddingTop: 40 }}>
-        <div className="tpm-confianca">
-          {i.confianca.map((item, n) => {
-            const Icone = CONFIANCA_ICON[n];
-            return (
-              <div key={item.t} style={{ display: "contents" }}>
-                {n > 0 && <span className="tpm-confianca-risca" aria-hidden />}
-                <div className="tpm-confianca-item">
-                  <span className="tpm-confianca-ico"><Icone size={20} aria-hidden /></span>
-                  <span><strong>{item.t}</strong>{item.p}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* COMO VIAJAR */}
-      <section className="bzlp-sec" id="viagens">
+      {/* QUEM SOMOS — a ordem e a do site oficial: quem somos, o que
+          fazemos, porque connosco, o que conduzimos. */}
+      <section className="bzlp-sec" id="sobre">
         <div className="bzlp-wrap">
           <Reveal>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.passos.kicker}</div>
-              <h2 className="bzlp-h2">{i.passos.h2}</h2>
-              <p className="bzlp-lead">{i.passos.lead}</p>
+            <div className="tpm-sobre">
+              <div>
+                <div className="bzlp-kicker left">{i.sobre.kicker}</div>
+                <h2>{i.sobre.h2}<br /><span>{i.sobre.h2b}</span></h2>
+              </div>
+              <div className="tpm-sobre-copy">
+                <p>{i.sobre.p1}</p>
+                <p>{i.sobre.p2}</p>
+                <div className="tpm-sobre-partners" aria-label={i.sobre.parceiros}>
+                  <span>EMTPM</span><span>ETM</span><span>Sky Rent, Lda</span>
+                </div>
+                <Link to="/tpm-tur/sobre-nos" className="bzlp-ghost" style={{ paddingLeft: 0, marginTop: 14 }}>
+                  {i.sobre.link} <ArrowUpRight size={16} aria-hidden />
+                </Link>
+              </div>
             </div>
           </Reveal>
-          <div className="tpm-steps">
-            {i.passos.itens.map((s, n) => (
-              <Reveal key={s.h} delay={n * 70}>
-                <div className="tpm-step">
-                  <span className="tpm-step-num">{n + 1}</span>
-                  <h3>{s.h}</h3>
-                  <p>{s.p}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-          <div style={{ textAlign: "center", marginTop: 32 }}>
-            <Link to="/comprar" className="bzlp-btn">{i.passos.botao} <ArrowRight size={17} aria-hidden /></Link>
-          </div>
         </div>
       </section>
 
@@ -164,8 +190,30 @@ export default function TpmTurLandingPage() {
         </div>
       </section>
 
+      {/* VANTAGENS — os cinco pontos do site oficial. */}
+      <section className="bzlp-sec" id="vantagens">
+        <div className="bzlp-wrap">
+          <Reveal>
+            <div className="bzlp-sechead">
+              <div className="bzlp-kicker">{i.vantagens.kicker}</div>
+              <h2 className="bzlp-h2">{i.vantagens.h2}</h2>
+            </div>
+          </Reveal>
+          <ul className="tpm-vantagens">
+            {i.vantagens.itens.map((v, n) => (
+              <Reveal key={v} delay={(n % 3) * 60}>
+                <li>
+                  <span className="tpm-vantagem-ico"><Check size={18} aria-hidden strokeWidth={2.4} /></span>
+                  {v}
+                </li>
+              </Reveal>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       {/* FROTA */}
-      <section className="bzlp-sec" id="frota">
+      <section className="bzlp-sec alt" id="frota">
         <div className="bzlp-wrap">
           {/* Cabecalho a esquerda, e nao centrado: esta era a terceira
               seccao seguida com a mesma composicao — etiqueta ao meio,
@@ -177,7 +225,12 @@ export default function TpmTurLandingPage() {
                 <div className="bzlp-kicker left">{i.frota.kicker}</div>
                 <h2 className="bzlp-h2 left">{i.frota.h2}<br />{i.frota.h2b}</h2>
               </div>
-              <p className="bzlp-lead left">{i.frota.lead}</p>
+              <div>
+                <p className="bzlp-lead left">{i.frota.lead}</p>
+                {/* As marcas da frota, tal como o site oficial as nomeia em
+                    NOSSOS AUTOCARROS. */}
+                <p className="tpm-frota-marcas">{i.frota.marcas}</p>
+              </div>
             </div>
           </Reveal>
           <div className="tpm-fleet">
@@ -195,6 +248,54 @@ export default function TpmTurLandingPage() {
             <Link to="/tpm-tur/frota" className="bzlp-btn outline">
               {i.frota.verCompleta} <ArrowRight size={17} aria-hidden />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CLIENTES E PARCEIROS — no site oficial fecha a pagina inicial. */}
+      <section className="bzlp-sec" id="clientes">
+        <div className="bzlp-wrap">
+          <Reveal>
+            <div className="bzlp-sechead">
+              <div className="bzlp-kicker">{i.clientes.kicker}</div>
+              <h2 className="bzlp-h2">{i.clientes.h2}</h2>
+              <p className="bzlp-lead">{i.clientes.lead}</p>
+            </div>
+          </Reveal>
+          <ul className="tpm-clientes">
+            {CLIENTES.map((c) => (
+              <li className="tpm-cliente" key={c.f}>
+                <img src={`/landing/tpm/clientes/${c.f}`} alt={`${i.clientes.logoDe} ${c.nome}`}
+                  width={283} height={188} loading="lazy" decoding="async" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* COMO VIAJAR */}
+      <section className="bzlp-sec" id="viagens">
+        <div className="bzlp-wrap">
+          <Reveal>
+            <div className="bzlp-sechead">
+              <div className="bzlp-kicker">{i.passos.kicker}</div>
+              <h2 className="bzlp-h2">{i.passos.h2}</h2>
+              <p className="bzlp-lead">{i.passos.lead}</p>
+            </div>
+          </Reveal>
+          <div className="tpm-steps">
+            {i.passos.itens.map((s, n) => (
+              <Reveal key={s.h} delay={n * 70}>
+                <div className="tpm-step">
+                  <span className="tpm-step-num">{n + 1}</span>
+                  <h3>{s.h}</h3>
+                  <p>{s.p}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 32 }}>
+            <Link to="/comprar" className="bzlp-btn">{i.passos.botao} <ArrowRight size={17} aria-hidden /></Link>
           </div>
         </div>
       </section>
@@ -221,30 +322,6 @@ export default function TpmTurLandingPage() {
               <div className="tpm-app-cta">
                 <Link to="/baixar" className="bzlp-btn gold"><Download size={18} aria-hidden /> {i.app.descarregar}</Link>
                 <Link to="/comprar" className="bzlp-btn outline"><Smartphone size={17} aria-hidden /> {i.app.browser}</Link>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SOBRE — institucional */}
-      <section className="bzlp-sec" id="sobre">
-        <div className="bzlp-wrap">
-          <Reveal>
-            <div className="tpm-sobre">
-              <div>
-                <div className="bzlp-kicker left">{i.sobre.kicker}</div>
-                <h2>{i.sobre.h2}<br /><span>{i.sobre.h2b}</span></h2>
-              </div>
-              <div className="tpm-sobre-copy">
-                <p>{i.sobre.p1}</p>
-                <p>{i.sobre.p2}</p>
-                <div className="tpm-sobre-partners" aria-label={i.sobre.parceiros}>
-                  <span>EMTPM</span><span>ETM</span><span>Sky Rent, Lda</span>
-                </div>
-                <Link to="/tpm-tur/sobre-nos" className="bzlp-ghost" style={{ paddingLeft: 0, marginTop: 14 }}>
-                  {i.sobre.link} <ArrowUpRight size={16} aria-hidden />
-                </Link>
               </div>
             </div>
           </Reveal>

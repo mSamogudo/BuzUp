@@ -112,6 +112,18 @@ const PT = {
       ],
       botao: "Ver partidas e preços",
     },
+    // Os cinco pontos que o site oficial lista em VANTAGENS, tal como lá estão.
+    vantagens: {
+      kicker: "Vantagens",
+      h2: "Porquê viajar connosco",
+      itens: [
+        "Qualidade dos autocarros e do serviço prestado",
+        "Conforto devido ao alto padrão dos autocarros",
+        "Agilidade e segurança na locomoção",
+        "Escolha do destino da viagem de acordo com a necessidade",
+        "Motoristas qualificados",
+      ],
+    },
     servicos: {
       kicker: "Serviços",
       h2: "O transporte certo para cada ocasião",
@@ -137,8 +149,17 @@ const PT = {
         { nome: "Quantum", nota: "Equipas e transfers" },
         { nome: "SUV", nota: "Pequenos grupos e rent-a-car" },
       ],
+      // As marcas sao as que o site oficial nomeia em NOSSOS AUTOCARROS.
+      marcasTitulo: "Os nossos autocarros",
+      marcas: "A empresa possui uma gama de viaturas das marcas Volkswagen (VW), Marcopolo, Zhongtong Bus, Foton, Quantum, Coaster, Mercedes Sprinter, Ford Transit e Yaching, concebidas para dar conforto a quem viaja.",
       altSufixo: "da TPM-TUR",
       verCompleta: "Ver a frota completa",
+    },
+    clientes: {
+      kicker: "Confiança",
+      h2: "Clientes e parceiros",
+      lead: "Organizações que já viajam connosco.",
+      logoDe: "Logótipo de",
     },
     app: {
       kicker: "App do passageiro",
@@ -157,8 +178,9 @@ const PT = {
       kicker: "A empresa",
       h2: "Somos TPM-TUR.",
       h2b: "Ligamos pessoas aos seus destinos.",
-      p1: "A TPM-TUR, S.A. é uma empresa moçambicana de transporte e turismo, constituída através de uma parceria entre a EMTPM, a ETM e a Sky Rent, Lda.",
-      p2: "Reunimos soluções de transporte para passageiros, empresas e grupos, com uma frota dedicada a diferentes necessidades de mobilidade — das viagens regulares ao aluguer de autocarros.",
+      // Texto do site oficial, na apresentacao que a empresa faz de si propria.
+      p1: "A TPM-TUR, SA é uma empresa público-privada cujo capital é detido pela Empresa Municipal Transportes Públicos de Maputo (EMTPM), a Empresa Municipal de Transportes Públicos da Matola (ETM) e pela Sky Rent, Lda.",
+      p2: "Esta parceria público-privada foi constituída com o intuito de rentabilizar o investimento feito na aquisição de uma frota de autocarros executivos, estando estes a ser geridos por uma entidade independente e autónoma.",
       parceiros: "Parceiros fundadores",
       link: "A nossa história, missão e valores",
     },
@@ -508,6 +530,17 @@ const EN: typeof PT = {
       ],
       botao: "See departures and fares",
     },
+    vantagens: {
+      kicker: "Advantages",
+      h2: "Why travel with us",
+      itens: [
+        "Quality of the coaches and of the service",
+        "Comfort, from the high standard of the coaches",
+        "Agility and safety on the move",
+        "The destination chosen to fit what you need",
+        "Qualified drivers",
+      ],
+    },
     servicos: {
       kicker: "Services",
       h2: "The right transport for every occasion",
@@ -533,8 +566,16 @@ const EN: typeof PT = {
         { nome: "Quantum", nota: "Teams and transfers" },
         { nome: "SUV", nota: "Small groups and car hire" },
       ],
+      marcasTitulo: "Our coaches",
+      marcas: "The company runs a range of vehicles from Volkswagen (VW), Marcopolo, Zhongtong Bus, Foton, Quantum, Coaster, Mercedes Sprinter, Ford Transit and Yaching, built to keep passengers comfortable.",
       altSufixo: "from TPM-TUR",
       verCompleta: "See the full fleet",
+    },
+    clientes: {
+      kicker: "Trust",
+      h2: "Clients and partners",
+      lead: "Organisations that already travel with us.",
+      logoDe: "Logo of",
     },
     app: {
       kicker: "Passenger app",
@@ -553,8 +594,9 @@ const EN: typeof PT = {
       kicker: "The company",
       h2: "We are TPM-TUR.",
       h2b: "We connect people to their destinations.",
-      p1: "TPM-TUR, S.A. is a Mozambican transport and tourism company, formed through a partnership between EMTPM, ETM and Sky Rent, Lda.",
-      p2: "We bring together transport solutions for passengers, companies and groups, with a fleet dedicated to different mobility needs — from scheduled journeys to bus hire.",
+      // Traducao de trabalho do texto institucional do site oficial.
+      p1: "TPM-TUR, SA is a public-private company whose capital is held by Empresa Municipal Transportes Públicos de Maputo (EMTPM), Empresa Municipal de Transportes Públicos da Matola (ETM) and Sky Rent, Lda.",
+      p2: "This public-private partnership was formed to make the investment in a fleet of executive coaches pay off, with those coaches run by an independent and autonomous entity.",
       parceiros: "Founding partners",
       link: "Our story, mission and values",
     },

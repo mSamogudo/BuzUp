@@ -146,6 +146,27 @@
   .tpm-mapa iframe { height: 380px; }
 }
 
+/* O formulário de pedido. A caixa, a grelha e os campos vêm do `.bzlp-form`
+   de landing.css — aqui só se ajusta a medida e se acrescenta o aviso que
+   aparece depois de submeter. */
+.tpm-form-wrap { max-width: 820px; margin: 0 auto; }
+.tpm-form.bzlp-form { padding: 32px 34px 36px; }
+.tpm-form h3 { font-size: 24px; letter-spacing: -0.015em; color: var(--navy-ink); }
+.tpm-form .bzlp-form-lead { font-size: 15px; line-height: 1.6; }
+/* O `.bzlp-form` da landing BusUp poe o botao a 100% — faz sentido na coluna
+   estreita dela, nao neste cartao de 820px, onde um botao dourado da ponta a
+   ponta grita mais do que o formulario todo. */
+.tpm-form .bzlp-btn { margin-top: 22px; width: auto; }
+.tpm-form-aviso {
+  display: block;
+  margin-top: 16px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted-ink);
+}
+.tpm-form-aviso a { color: var(--blue2); font-weight: 700; }
+@media (max-width: 620px) { .tpm-form.bzlp-form { padding: 24px 20px 28px; } }
+
 /* ── CTA final da pagina inicial ──────────────────────────────────── */
 
 /* Dois caminhos, e nao dois botoes iguais: o passageiro compra sozinho e em

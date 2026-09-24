@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Mail, MapPin, Phone, Ticket } from "lucide-react";
 import Reveal from "../landing/Reveal";
+import TpmFormularioPedido from "./TpmFormularioPedido";
 import TpmPagina, {
   EMAIL, MORADA, TELEFONE, TELEFONE_FIXO, TELEFONE_FIXO_HREF, TELEFONE_HREF,
-  TpmIntro, pedido, useTpmMeta,
+  TpmIntro, useTpmMeta,
 } from "./TpmChrome";
 
 /* Contactos.
@@ -94,19 +95,29 @@ export default function ContactosPage() {
         </div>
       </section>
 
+      <section className="bzlp-sec alt">
+        <div className="bzlp-wrap">
+          <Reveal>
+            <div className="tpm-form-wrap">
+              <TpmFormularioPedido />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       <section className="tpm-escolha">
         <div className="bzlp-wrap">
           <div className="tpm-escolha-head">
             <h2>Já sabe para onde vai?</h2>
             <p>Não precisa de nos ligar para comprar: escolha a partida e o lugar em linha.</p>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
+          {/* So o bilhete. "Pedir orcamento" vivia aqui tambem, e com o
+              formulario logo acima passou a ser um atalho que salta por cima
+              dele — duas portas para a mesma sala, e a pior primeiro. */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
             <Link to="/comprar" className="bzlp-btn gold">
               <Ticket size={17} aria-hidden /> Comprar bilhete
             </Link>
-            <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
-              Pedir orçamento <ArrowUpRight size={16} aria-hidden />
-            </a>
           </div>
         </div>
       </section>

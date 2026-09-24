@@ -1,0 +1,508 @@
+/* Páginas institucionais da TPM-TUR — sobre nós, serviços, frota e políticas.
+ *
+ * Só o que a landing não tinha. Tudo o resto (`bzlp-wrap`, `bzlp-sec`,
+ * `bzlp-h2`, `bzlp-kicker`, botões) vem de landing.css e já está vestido de
+ * marca por tpm.css. Os nomes de cor são os aliases dessa folha: `--blue`
+ * pinta, `--blue2` escreve — o ciano oficial como texto sobre branco dá
+ * 3,01:1 e chumba AA.
+ */
+
+.bzlp-tpm {
+  /* Navy PARA LETRAS. O `--navy` do tpm.css é uma SUPERFÍCIE: no tema escuro
+     vale #03142a, e escrever com ele sobre o fundo escuro dá 1,03:1 — foi
+     exactamente isso que a auditoria apanhou em dezasseis pares. O par que a
+     marca já tem para este papel é `--accent-foreground`: navy #03316b no
+     claro, #f7f7f7 no escuro. */
+  --navy-ink: var(--accent-foreground);
+}
+
+/* Cada cartão vive dentro do seu `<Reveal>`, e é o envólucro — não o cartão —
+   que é filho da grelha. Sem isto o envólucro encolhe ao conteúdo e dois
+   cartões da mesma linha ficam com alturas diferentes. */
+.tpm-politicas > *,
+.tpm-proposito > * { display: flex; }
+.tpm-politicas > * > *,
+.tpm-proposito > * > * { flex: 1; }
+
+/* O rodapé só dá `display:block` e tipografia aos LINKS. A morada é um
+   `<span>`: ficava colada ao telefone e, por não apanhar a regra, saía num
+   corpo maior que o resto da coluna. Recebe o mesmo tratamento. */
+.bzlp-tpm .bzlp-foot-cols nav span {
+  display: block;
+  font-size: 13.5px;
+  line-height: 20px;
+  padding: 7px 0;
+}
+
+/* Créditos na barra inferior do rodapé.
+   A borda de cima fica na barra e atravessa a largura toda; o conteúdo vai
+   num invólucro com a mesma medida e as mesmas margens do resto do rodapé,
+   para os dois alinharem. */
+.bzlp-tpm .bzlp-foot-bar { text-align: left; padding: 16px 22px; }
+.tpm-foot-bar-in {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 28px;
+  flex-wrap: wrap;
+}
+.tpm-creditos { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* O alvo de toque é o link, não a imagem: 34px é o que o resto do rodapé usa. */
+.tpm-creditos a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 2px;
+  opacity: 0.92;
+  transition: opacity 0.18s ease;
+}
+.tpm-creditos a:hover { opacity: 1; }
+/* Altura declarada no CSS de propósito: sem o preflight do Tailwind, o
+   atributo HTML `height` entra como presentational hint e o `width: auto`
+   sozinho não o vence. */
+.tpm-creditos img { display: block; height: 26px; width: auto; }
+/* A UpDigital leva mais altura do que a BusUp de propósito: o seu logótipo
+   tem "Limitada" numa segunda linha, e a 20px essa linha era uma mancha. */
+.tpm-creditos a[href^="https"] img { height: 30px; }
+.tpm-creditos-sep { color: rgba(255, 255, 255, 0.32); }
+@media (max-width: 620px) {
+  /* Ao telemóvel os créditos partem em duas linhas; sem isto a segunda ficava
+     encostada à esquerda enquanto o resto da barra estava ao centro. */
+  .tpm-foot-bar-in { justify-content: center; text-align: center; }
+  .tpm-creditos { justify-content: center; }
+}
+
+/* ── Faixa de entrada ─────────────────────────────────────────────── */
+
+.tpm-intro {
+  background: var(--navy);
+  color: #fff;
+  padding: 72px 0 76px;
+}
+.tpm-intro-migalha {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  font-size: 13.5px;
+}
+.tpm-intro-migalha a { color: var(--blue-bright); font-weight: 600; }
+.tpm-intro-migalha a:hover { color: #fff; }
+.tpm-intro-migalha span[aria-hidden] { color: color-mix(in srgb, #fff 72%, var(--navy)); }
+.tpm-intro-migalha [aria-current] { font-weight: 700; color: #fff; }
+.tpm-intro h1 {
+  margin: 0;
+  max-width: 17ch;
+  font-size: clamp(32px, 5vw, 54px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+}
+.tpm-intro p {
+  margin: 18px 0 0;
+  max-width: 62ch;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.6;
+  color: color-mix(in srgb, #fff 82%, var(--navy));
+}
+
+/* Índice da própria página, dentro da faixa: leva a um bloco mais abaixo.
+   Sobre o navy, o fundo é o azul institucional — a marca dá-lhe esse papel. */
+.tpm-indice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+.tpm-indice a {
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--blue-bright) 30%, var(--navy));
+  background: var(--sidebar-accent);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.tpm-indice a:hover { border-color: var(--blue); color: #fff; }
+
+/* ── Chamada final ───────────────────────────────────────────────── */
+
+.tpm-callout {
+  background: var(--muted);
+  padding: 60px 0;
+}
+.tpm-callout-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+.tpm-callout h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  color: var(--navy-ink);
+}
+.tpm-callout p {
+  margin: 10px 0 0;
+  max-width: 56ch;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--accent-foreground);
+}
+/* O botão secundário desta faixa.
+ *
+ * `--primary-ink` foi derivado para passar sobre o branco do cartão (4,86:1) e
+ * sobre a página (4,54:1). Sobre esta faixa, que é `--muted` #eef1f5, dá
+ * 4,29:1 — chumba os 4,5 que um rótulo de 15px/700 exige. Medido, não
+ * estimado: é o que a auditoria apanhou nas quatro páginas.
+ *
+ * A correcção é a mesma que o preset já usa noutros sítios — puxar o ciano
+ * mais um pouco ao marinho (64% -> 56%), que dá 4,82:1 — e é SÓ no tema claro.
+ * No escuro `--primary` é o ciano clareado sobre #0c2340 e já dá 6,66:1;
+ * aplicar-lhe a mistura punha-o quase invisível. */
+.tpm-callout { --callout-ink: color-mix(in srgb, var(--primary) 56%, var(--sidebar)); }
+[data-theme='dark'] .tpm-callout { --callout-ink: var(--primary); }
+.tpm-callout .bzlp-btn.outline { color: var(--callout-ink); }
+
+@media (max-width: 860px) {
+  .tpm-callout-in { flex-direction: column; align-items: flex-start; gap: 24px; }
+}
+
+/* ── Sobre nós ───────────────────────────────────────────────────── */
+
+.tpm-historia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
+}
+.tpm-historia-foto {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+/* `height: auto` pela mesma razão que na frota da landing: sem o preflight do
+   Tailwind, o atributo HTML `height` entra como presentational hint e vence o
+   `aspect-ratio` sozinho. */
+/* 16/10 e nao 4/3. As fotografias de origem sao publicacoes promocionais
+   quadradas do operador, com um titulo gravado nos pixeis em cima e uma barra
+   laranja em baixo. Um recorte 4/3 corta 12,5% de cada lado e deixava o
+   titulo a aparecer; 16/10 corta cerca de 19% e apanha as duas faixas. A
+   correccao definitiva e uma fotografia limpa, nao mais recorte. */
+.tpm-historia-foto img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+}
+.tpm-historia h2 { margin: 0; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.14; letter-spacing: -0.022em; }
+.tpm-historia p { margin: 18px 0 0; font-size: 17px; line-height: 1.68; }
+.tpm-historia p + p { color: var(--muted-ink); }
+@media (max-width: 900px) {
+  .tpm-historia { grid-template-columns: 1fr; gap: 32px; }
+}
+
+.tpm-proposito {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.tpm-proposito article {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--blue);
+  border-radius: 16px;
+  padding: 34px 32px 38px;
+}
+.tpm-proposito .tpm-proposito-visao { border-top-color: var(--gold); }
+.tpm-proposito-ico {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: var(--blue2);
+  display: grid;
+  place-items: center;
+}
+.tpm-proposito .tpm-proposito-visao .tpm-proposito-ico {
+  background: color-mix(in srgb, var(--gold) 18%, var(--surface));
+  color: var(--gold-ink);
+}
+.tpm-proposito h2 { margin: 20px 0 10px; font-size: 25px; letter-spacing: -0.015em; }
+.tpm-proposito p { margin: 0; font-size: 17px; line-height: 1.65; }
+@media (max-width: 760px) { .tpm-proposito { grid-template-columns: 1fr; } }
+
+.tpm-valores {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+.tpm-valores h2 { margin: 0; font-size: clamp(26px, 3.4vw, 38px); line-height: 1.14; letter-spacing: -0.022em; }
+.tpm-valores > div > p { margin: 16px 0 0; font-size: 16px; line-height: 1.6; color: var(--muted-ink); }
+.tpm-valores ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.tpm-valores li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy-ink);
+}
+.tpm-valores li svg { color: var(--blue2); flex: none; }
+@media (max-width: 900px) { .tpm-valores { grid-template-columns: 1fr; gap: 28px; } }
+@media (max-width: 560px) { .tpm-valores ul { grid-template-columns: 1fr; } }
+
+.tpm-parceiros-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+.tpm-parceiros-grid div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px 26px;
+}
+.tpm-parceiros-grid strong {
+  display: block;
+  font-size: 28px;
+  letter-spacing: -0.015em;
+  color: var(--navy-ink);
+}
+.tpm-parceiros-grid span { display: block; margin-top: 8px; font-size: 15px; line-height: 1.5; color: var(--muted-ink); }
+@media (max-width: 800px) { .tpm-parceiros-grid { grid-template-columns: 1fr; } }
+
+/* ── Serviços ────────────────────────────────────────────────────── */
+
+.tpm-servicos-lista { display: flex; flex-direction: column; gap: 64px; }
+.tpm-servico-bloco {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
+  scroll-margin-top: 90px;
+}
+/* A foto alterna de lado. `order` e não `direction`: o leitor de ecrã continua
+   a ouvir o texto pela ordem em que está escrito.
+
+   A classe vem do JS e não de `:nth-child`: cada bloco está dentro de um
+   `<Reveal>` próprio, por isso é sempre o primeiro filho do seu envólucro e
+   um `:nth-child(even)` nunca casava — as fotos ficavam todas do mesmo lado. */
+.tpm-invertido .tpm-servico-foto { order: 2; }
+.tpm-servico-foto {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.tpm-servico-foto img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+}
+.tpm-servico-bloco h2 { margin: 12px 0 0; font-size: clamp(24px, 3vw, 32px); line-height: 1.14; letter-spacing: -0.02em; }
+.tpm-servico-intro { margin: 12px 0 0; font-size: 17.5px; line-height: 1.6; font-weight: 600; }
+.tpm-servico-texto { margin: 12px 0 0; font-size: 16.5px; line-height: 1.65; color: var(--muted-ink); }
+.tpm-servico-brief-rotulo {
+  margin: 24px 0 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--navy-ink);
+}
+.tpm-servico-brief {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tpm-servico-brief li {
+  padding: 7px 13px;
+  border-radius: 9px;
+  background: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--navy-ink);
+}
+.tpm-servico-bloco .bzlp-btn { margin-top: 24px; }
+@media (max-width: 900px) {
+  .tpm-servico-bloco { grid-template-columns: 1fr; gap: 28px; }
+  .tpm-invertido .tpm-servico-foto { order: 0; }
+  .tpm-servicos-lista { gap: 48px; }
+}
+
+/* ── Frota ───────────────────────────────────────────────────────── */
+
+.tpm-catalogo { display: flex; flex-direction: column; gap: 28px; }
+.tpm-frota-entrada {
+  display: grid;
+  grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  scroll-margin-top: 90px;
+}
+.tpm-invertido .tpm-frota-foto { order: 2; }
+/* A imagem e posicionada em absoluto dentro da celula, e nao dimensionada por
+   `height: 100%`. Sem o preflight do Tailwind o atributo HTML `height` entra
+   como presentational hint e disputa a altura com o CSS: as quatro entradas
+   saiam com fotos de alturas diferentes, e a do Coaster ficava com o dobro.
+   Assim a celula manda, e a foto enche-a sempre.
+
+   O `object-position` baixo puxa o recorte para a banda onde esta a viatura,
+   fora do titulo promocional gravado no topo da fotografia de origem. */
+.tpm-frota-foto { position: relative; overflow: hidden; }
+.tpm-frota-foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 66%;
+  display: block;
+}
+.tpm-frota-corpo { padding: 34px 36px 36px; min-height: 330px; display: flex; flex-direction: column; }
+.tpm-frota-topo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tpm-frota-topo h2 { margin: 0; font-size: 29px; letter-spacing: -0.02em; }
+.tpm-frota-etiqueta {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 13px;
+  font-weight: 700;
+}
+.tpm-frota-corpo > p { margin: 14px 0 0; font-size: 17px; line-height: 1.62; }
+.tpm-frota-corpo > p + p { font-size: 15.5px; color: var(--muted-ink); margin-top: 10px; }
+.tpm-frota-ficha {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line-soft);
+}
+.tpm-frota-ficha dt {
+  margin: 0 0 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted-ink);
+}
+.tpm-frota-ficha dd { margin: 0; font-size: 15.5px; font-weight: 600; color: var(--navy-ink); }
+.tpm-frota-corpo .bzlp-btn { margin-top: 26px; align-self: flex-start; }
+@media (max-width: 900px) {
+  .tpm-frota-entrada { grid-template-columns: 1fr; }
+  .tpm-invertido .tpm-frota-foto { order: 0; }
+  .tpm-frota-foto { aspect-ratio: 16 / 10; }
+  .tpm-frota-corpo { min-height: 0; }
+  .tpm-frota-corpo { padding: 26px 22px 28px; }
+}
+@media (max-width: 560px) { .tpm-frota-ficha { grid-template-columns: 1fr 1fr; } }
+
+.tpm-escolher {
+  display: grid;
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+.tpm-escolher h2 { margin: 0; font-size: clamp(24px, 3.2vw, 34px); line-height: 1.14; letter-spacing: -0.022em; }
+.tpm-escolher-passos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.tpm-escolher-passos div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px 22px 26px;
+}
+.tpm-escolher-passos b { font-size: 14px; color: var(--blue2); }
+.tpm-escolher-passos h3 { margin: 12px 0 8px; font-size: 18px; }
+.tpm-escolher-passos p { margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--muted-ink); }
+@media (max-width: 900px) { .tpm-escolher { grid-template-columns: 1fr; gap: 26px; } }
+@media (max-width: 680px) { .tpm-escolher-passos { grid-template-columns: 1fr; } }
+
+/* ── Políticas ───────────────────────────────────────────────────── */
+
+.tpm-politicas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.tpm-politica {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 26px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+.tpm-politica:hover { border-color: var(--blue); transform: translateY(-2px); }
+.tpm-politica-ico {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--blue2);
+  display: grid;
+  place-items: center;
+}
+.tpm-politica h3 { margin: 16px 0 8px; font-size: 18px; line-height: 1.28; }
+.tpm-politica p { margin: 0 0 16px; font-size: 14.5px; line-height: 1.6; color: var(--muted-ink); flex: 1; }
+.tpm-politica a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--blue2);
+}
+@media (max-width: 980px) { .tpm-politicas { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .tpm-politicas { grid-template-columns: 1fr; } }
+
+/* ── Faixa de confiança da landing ───────────────────────────────── */
+
+.tpm-confianca {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+.tpm-confianca-item { display: flex; align-items: center; gap: 12px; }
+.tpm-confianca-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--accent);
+  color: var(--blue2);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.tpm-confianca-item span { font-size: 14px; line-height: 1.42; }
+.tpm-confianca-item strong { display: block; color: var(--navy-ink); }
+.tpm-confianca-risca { width: 1px; height: 40px; background: var(--line); }
+@media (max-width: 900px) { .tpm-confianca-risca { display: none; } }

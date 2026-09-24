@@ -15,6 +15,12 @@ import AdminLayout from "./admin/AdminLayout";
 // o arranque.
 const LandingPage = lazy(() => import("./public/LandingPage"));
 const TpmTurLandingPage = lazy(() => import("./public/tpm/TpmTurLandingPage"));
+// As paginas institucionais da TPM-TUR. Cada uma chega quando alguem la vai:
+// quem abre /tpm-tur para comprar um bilhete nao paga o peso das outras.
+const TpmSobreNosPage = lazy(() => import("./public/tpm/SobreNosPage"));
+const TpmServicosPage = lazy(() => import("./public/tpm/ServicosPage"));
+const TpmFrotaPage = lazy(() => import("./public/tpm/FrotaPage"));
+const TpmPoliticasPage = lazy(() => import("./public/tpm/PoliticasPage"));
 const BookingPage = lazy(() => import("./public/booking/BookingPage"));
 const DashboardPage = lazy(() => import("./admin/DashboardPage"));
 const RoutesPage = lazy(() => import("./admin/RoutesPage"));
@@ -89,6 +95,10 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/tpm-tur" element={<TpmTurLandingPage />} />
+        <Route path="/tpm-tur/sobre-nos" element={<TpmSobreNosPage />} />
+        <Route path="/tpm-tur/servicos" element={<TpmServicosPage />} />
+        <Route path="/tpm-tur/frota" element={<TpmFrotaPage />} />
+        <Route path="/tpm-tur/nossas-politicas" element={<TpmPoliticasPage />} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/comprar" element={<BookingPage />} />

@@ -12,7 +12,8 @@ import { chromium } from '@playwright/test'
 
 const BASE = process.env.BUZUP_BASE_URL ?? 'http://localhost:3008'
 
-const PUBLICAS = ['/', '/tpm-tur', '/login', '/comprar', '/checkout', '/baixar']
+const PUBLICAS = ['/', '/tpm-tur', '/tpm-tur/sobre-nos', '/tpm-tur/servicos',
+  '/tpm-tur/frota', '/tpm-tur/nossas-politicas', '/login', '/comprar', '/checkout', '/baixar']
 const PRIVADAS = [
   '/app', '/app/routes', '/app/stops', '/app/vehicles', '/app/drivers', '/app/trips',
   '/app/fares', '/app/packages', '/app/passengers', '/app/wallets', '/app/cards/physical',

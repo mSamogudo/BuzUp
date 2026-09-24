@@ -243,6 +243,11 @@
    como estava. */
 [data-theme='dark'] .tpm-proposito .tpm-proposito-visao .tpm-proposito-ico { color: var(--gold); }
 
+/* O logótipo cresceu de 30 para 64px, como na tela. A barra não tem altura
+   fixa — sai do conteúdo mais o `padding` — por isso a folga encolhe para os
+   76px de altura que a tela desenhou, em vez de a barra crescer para 88. */
+.bzlp-tpm .bzlp-nav-in { padding-top: 6px; padding-bottom: 6px; }
+
 /* ── Faixa de entrada ─────────────────────────────────────────────── */
 
 .tpm-intro {

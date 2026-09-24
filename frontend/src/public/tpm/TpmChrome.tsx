@@ -123,8 +123,11 @@ function TpmNav({ activa }: { activa?: string }) {
     <>
       <header className={`bzlp-nav${scrolled ? " is-scrolled" : ""}`}>
         <div className="bzlp-nav-in">
+          {/* O logótipo fica DENTRO do link. Na tela o editor deixou-o ao lado
+              de uma âncora vazia — é artefacto de arrastar, não desenho: assim
+              o logótipo não seria clicável nem teria nome acessível. */}
           <Link to="/tpm-tur" aria-label="TPM-TUR — página inicial">
-            <img src={logo} alt="TPM-TUR, S.A. — Transporte e Turismo" height={30} style={{ display: "block" }} />
+            <img src={logo} alt="TPM-TUR, S.A. — Transporte e Turismo" height={64} style={{ display: "block" }} />
           </Link>
           <nav className="bzlp-links" aria-label="TPM-TUR">
             {NAV.map((n) => (
@@ -148,7 +151,7 @@ function TpmNav({ activa }: { activa?: string }) {
         <div className="bzlp-sheet" onClick={() => setMenuOpen(false)}>
           <div className="bzlp-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <div className="bzlp-sheet-head">
-              <img src={logo} alt="TPM-TUR" height={24} />
+              <img src={logo} alt="TPM-TUR" height={40} />
               <button className="bzlp-sheet-close" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}>
                 <X size={24} aria-hidden />
               </button>
@@ -173,7 +176,7 @@ function TpmFooter() {
     <footer className="bzlp-foot">
       <div className="bzlp-foot-in">
         <div className="bzlp-foot-brand">
-          <img src={LOGO_ESCURO} alt="TPM-TUR, S.A." height={30} style={{ display: "block" }} />
+          <img src={LOGO_ESCURO} alt="TPM-TUR, S.A." height={64} style={{ display: "block" }} />
           <p>
             Empresa moçambicana de transporte e turismo. Ligamos pessoas
             aos seus destinos — passageiros, empresas e grupos.

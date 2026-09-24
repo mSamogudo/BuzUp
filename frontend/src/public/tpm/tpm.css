@@ -314,7 +314,7 @@
 }
 .tpm-app-in {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 260px 1fr;
   gap: 56px;
   align-items: center;
   max-width: 1120px;
@@ -322,9 +322,18 @@
   padding: 72px 22px;
 }
 @media (max-width: 860px) { .tpm-app-in { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+/* A captura do telemovel estava ESTICADA, e nao so grande: media 300x900
+   quando a proporcao do ficheiro (430x900) daria 300x628. A regra dizia
+   `width` e nao dizia nada sobre altura — e sem o preflight do Tailwind o
+   atributo HTML `height="900"` entra como presentational hint e ganha. E a
+   mesma armadilha das fotografias da frota, anotada mais acima.
+
+   `height: auto` devolve a proporcao, e a largura desce de 300 para 240: ao
+   lado de uma coluna de texto, o telemovel e a ilustracao, nao o assunto. */
 .tpm-app-shot img {
   width: 100%;
-  max-width: 300px;
+  max-width: 240px;
+  height: auto;
   border-radius: 24px;
   border: 6px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.5);

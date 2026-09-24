@@ -403,37 +403,6 @@
 .tpm-faq details p { margin: 0; padding: 0 0 18px; font-size: 14px; line-height: 1.65; color: var(--muted-ink); max-width: 64ch; }
 .tpm-faq details a { color: var(--blue2); font-weight: 600; }
 
-/* CTA final — o terceiro momento "loud": dourado a fundo, texto navy. */
-.tpm-cta-final {
-  background: var(--gold);
-  color: var(--gold-ink);
-}
-.tpm-cta-final-in {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 64px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px;
-  flex-wrap: wrap;
-}
-.tpm-cta-final h2 { font-size: clamp(24px, 3.4vw, 36px); margin: 0; letter-spacing: -0.02em; }
-.tpm-cta-final p { margin: 8px 0 0; font-size: 15px; opacity: 0.85; }
-.tpm-cta-final .bzlp-btn {
-  background: var(--navy);
-  color: #fff;
-  box-shadow: none;
-}
-.tpm-cta-final .bzlp-btn:hover { background: var(--navy2); }
-.tpm-cta-final .bzlp-btn.outline {
-  background: transparent;
-  color: var(--gold-ink);
-  border-color: rgba(58, 42, 6, 0.45);
-}
-.tpm-cta-final .bzlp-btn.outline:hover { background: rgba(58, 42, 6, 0.08); }
-
-
 /* O FAQ e a seccao calma desta pagina: titulo numa coluna estreita, as
    perguntas ao lado, e muito espaco por preencher de proposito. Era a quarta
    composicao centrada de um scroll que so tem blocos grandes. */

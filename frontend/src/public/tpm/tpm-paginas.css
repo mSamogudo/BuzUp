@@ -74,6 +74,90 @@
   .tpm-creditos { justify-content: center; }
 }
 
+/* ── CTA final da pagina inicial ──────────────────────────────────── */
+
+/* Dois caminhos, e nao dois botoes iguais: o passageiro compra sozinho e em
+   minutos, a empresa abre uma conversa comercial. O dourado deixa de pintar a
+   faixa inteira — passa a marcar so a accao do passageiro, que e o papel que a
+   marca lhe da. */
+.tpm-escolha { background: var(--accent); padding: 72px 0; }
+.tpm-escolha-head { text-align: center; max-width: 660px; margin: 0 auto 40px; }
+.tpm-escolha-head h2 {
+  margin: 0;
+  font-size: clamp(28px, 3.6vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -0.022em;
+  color: var(--navy-ink);
+}
+.tpm-escolha-head p {
+  margin: 14px 0 0;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--accent-foreground);
+}
+.tpm-escolha-cartoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+.tpm-escolha-cartao {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
+  border-radius: 16px;
+  padding: 32px 34px 34px;
+  display: flex;
+  flex-direction: column;
+}
+.tpm-escolha-cartao.is-grupo { border-top-color: var(--blue); }
+.tpm-escolha-ico {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--gold) 16%, var(--surface));
+  color: var(--gold-ink);
+}
+.tpm-escolha-cartao.is-grupo .tpm-escolha-ico { background: var(--accent); color: var(--blue2); }
+.tpm-escolha-cartao h3 {
+  margin: 20px 0 10px;
+  font-size: clamp(20px, 2.2vw, 24px);
+  line-height: 1.24;
+  letter-spacing: -0.015em;
+  color: var(--navy-ink);
+}
+.tpm-escolha-cartao > p {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted-ink);
+  flex: 1;
+}
+.tpm-escolha-cartao .bzlp-btn { align-self: flex-start; }
+.tpm-escolha-accoes { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.tpm-escolha-tel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue2);
+}
+@media (max-width: 860px) { .tpm-escolha-cartoes { grid-template-columns: 1fr; } }
+
+/* A tinta sobre dourado e SEMPRE escura no tema claro — e por isso que
+   `--warning-foreground` existe. No tema escuro esse token vale #2a1e02, e a
+   pastilha do icone tambem escurece: ficavam os dois quase na mesma cor, 1,3:1,
+   um icone invisivel. No escuro a pastilha leva o dourado como tinta.
+   Vale para os dois sitios que usam esta construcao. */
+[data-theme='dark'] .tpm-escolha-ico,
+/* A regra base do cartao da visao tem tres classes; este selector precisa de
+   as igualar e passar, senao perde por ordem no ficheiro — e o icone ficava
+   como estava. */
+[data-theme='dark'] .tpm-proposito .tpm-proposito-visao .tpm-proposito-ico { color: var(--gold); }
+
 /* ── Faixa de entrada ─────────────────────────────────────────────── */
 
 .tpm-intro {

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   ArrowRight, ArrowUpRight, BusFront, CarFront, CheckCircle2, Download,
-  MapPin, Route, ShieldCheck, Smartphone, Ticket, Users,
+  MapPin, Phone, Route, ShieldCheck, Smartphone, Ticket, Users,
 } from "lucide-react";
 import Reveal from "../landing/Reveal";
 import HeroBooking from "./HeroBooking";
@@ -336,18 +336,50 @@ export default function TpmTurLandingPage() {
         </div>
       </section>
 
-      {/* CTA + CONTACTOS */}
-      <section className="tpm-cta-final" id="contacto">
-        <div className="tpm-cta-final-in">
-          <div>
+      {/* CTA FINAL — dois caminhos, e nao dois botoes iguais.
+          "Comprar bilhete" e auto-servico, instantaneo, de quem vai viajar;
+          "Pedir orcamento" e uma conversa comercial com uma empresa. Lado a
+          lado e com o mesmo peso, obrigavam cada visitante a ler os dois para
+          descobrir qual era o seu. O dourado — a cor que a marca reserva para
+          "olha para aqui" — deixa de pintar a faixa toda e passa a marcar a
+          accao do caminho do passageiro. */}
+      <section className="tpm-escolha" id="contacto">
+        <div className="bzlp-wrap">
+          <div className="tpm-escolha-head">
             <h2>Qual é o seu próximo destino?</h2>
-            <p>A viagem começa com uma conversa — ou com um bilhete.</p>
+            <p>Daqui seguem dois caminhos. Escolha o seu.</p>
           </div>
-          <div className="bzlp-cta-btns">
-            <Link to="/comprar" className="bzlp-btn"><Ticket size={17} aria-hidden /> Comprar bilhete</Link>
-            <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
-              Pedir orçamento <ArrowUpRight size={16} aria-hidden />
-            </a>
+          <div className="tpm-escolha-cartoes">
+            <article className="tpm-escolha-cartao">
+              <span className="tpm-escolha-ico"><Ticket size={24} aria-hidden /></span>
+              <h3>Vou viajar</h3>
+              <p>
+                Escolha a partida e o lugar no mapa do autocarro. Paga por M-Pesa,
+                e-Mola ou cartão, e o bilhete fica no seu telemóvel.
+              </p>
+              <Link to="/comprar" className="bzlp-btn gold">
+                Comprar bilhete <ArrowRight size={17} aria-hidden />
+              </Link>
+            </article>
+            <article className="tpm-escolha-cartao is-grupo">
+              <span className="tpm-escolha-ico"><Users size={24} aria-hidden /></span>
+              <h3>Preciso de transporte para um grupo</h3>
+              <p>
+                Empresas, excursões, transfers e aluguer com motorista. Diga o percurso,
+                as datas e quantas pessoas — a equipa responde com as opções disponíveis.
+              </p>
+              <div className="tpm-escolha-accoes">
+                <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
+                  Pedir orçamento <ArrowUpRight size={16} aria-hidden />
+                </a>
+                {/* O telefone vem para junto do botao: quem pede orcamento para um
+                    grupo quer muitas vezes falar com alguem, e o numero estava so
+                    no rodape. */}
+                <a href={TELEFONE_HREF} className="tpm-escolha-tel">
+                  <Phone size={17} aria-hidden /> {TELEFONE}
+                </a>
+              </div>
+            </article>
           </div>
         </div>
       </section>

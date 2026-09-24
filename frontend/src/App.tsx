@@ -21,6 +21,7 @@ const TpmSobreNosPage = lazy(() => import("./public/tpm/SobreNosPage"));
 const TpmServicosPage = lazy(() => import("./public/tpm/ServicosPage"));
 const TpmFrotaPage = lazy(() => import("./public/tpm/FrotaPage"));
 const TpmPoliticasPage = lazy(() => import("./public/tpm/PoliticasPage"));
+const TpmContactosPage = lazy(() => import("./public/tpm/ContactosPage"));
 const BookingPage = lazy(() => import("./public/booking/BookingPage"));
 const DashboardPage = lazy(() => import("./admin/DashboardPage"));
 const RoutesPage = lazy(() => import("./admin/RoutesPage"));
@@ -99,6 +100,7 @@ function AppContent() {
         <Route path="/tpm-tur/servicos" element={<TpmServicosPage />} />
         <Route path="/tpm-tur/frota" element={<TpmFrotaPage />} />
         <Route path="/tpm-tur/nossas-politicas" element={<TpmPoliticasPage />} />
+        <Route path="/tpm-tur/contactos" element={<TpmContactosPage />} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/comprar" element={<BookingPage />} />

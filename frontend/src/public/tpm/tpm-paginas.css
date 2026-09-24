@@ -74,6 +74,78 @@
   .tpm-creditos { justify-content: center; }
 }
 
+/* ── Contactos ────────────────────────────────────────────────────── */
+
+.tpm-contactos {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+.tpm-contactos-lista { display: flex; flex-direction: column; gap: 16px; }
+.tpm-contacto-cartao {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 26px 26px 28px;
+}
+.tpm-contacto-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--blue2);
+  display: grid;
+  place-items: center;
+}
+.tpm-contacto-cartao h2 { margin: 16px 0 8px; font-size: 19px; color: var(--navy-ink); }
+/* Alvo de toque de 34px, como no rodape: um telefone num telemovel e para se
+   tocar, e uma linha de texto de 22px nao chega. */
+.tpm-contacto-cartao a {
+  display: block;
+  padding: 6px 0;
+  min-height: 34px;
+  line-height: 22px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--blue2);
+}
+.tpm-contacto-cartao p { margin: 0; font-size: 15.5px; line-height: 1.7; color: var(--muted-ink); }
+
+.tpm-mapa {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface);
+}
+/* A altura vem daqui e nao do atributo `height` do iframe: sem o preflight do
+   Tailwind esse atributo e um presentational hint e ganha a um CSS que nao
+   diga nada sobre altura — a mesma armadilha das fotografias da frota. */
+.tpm-mapa iframe { display: block; width: 100%; height: 520px; border: 0; }
+.tpm-mapa-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 15px;
+  color: var(--muted-ink);
+}
+.tpm-mapa-barra a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  font-weight: 700;
+  color: var(--blue2);
+}
+@media (max-width: 900px) {
+  .tpm-contactos { grid-template-columns: 1fr; }
+  .tpm-mapa iframe { height: 380px; }
+}
+
 /* ── CTA final da pagina inicial ──────────────────────────────────── */
 
 /* Dois caminhos, e nao dois botoes iguais: o passageiro compra sozinho e em
@@ -145,6 +217,19 @@
   font-weight: 700;
   color: var(--blue2);
 }
+/* O botão secundário desta faixa.
+ *
+ * Na página inicial ele vive dentro de um cartão branco e `--primary-ink`
+ * chega (4,86:1). Na página de contactos está DIRECTAMENTE sobre a faixa, que
+ * é `--accent`: 4,15:1 no claro e 4,44:1 no escuro — chumba os dois. A faixa
+ * não se escurece, que é cor de marca; muda a tinta, e em sentidos opostos
+ * conforme o tema: no claro puxa-se o ciano ao marinho (4,67:1), no escuro
+ * clareia-se ao branco (5,30:1). Uma só regra para os dois sítios, porque a
+ * tinta nova também passa sobre o branco do cartão. */
+.tpm-escolha { --escolha-ink: color-mix(in srgb, var(--primary) 56%, var(--sidebar)); }
+[data-theme='dark'] .tpm-escolha { --escolha-ink: color-mix(in srgb, var(--primary) 78%, white); }
+.tpm-escolha .bzlp-btn.outline { color: var(--escolha-ink); }
+
 @media (max-width: 860px) { .tpm-escolha-cartoes { grid-template-columns: 1fr; } }
 
 /* A tinta sobre dourado e SEMPRE escura no tema claro — e por isso que

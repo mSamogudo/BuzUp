@@ -1,0 +1,115 @@
+import { Link } from "react-router-dom";
+import { ArrowUpRight, Mail, MapPin, Phone, Ticket } from "lucide-react";
+import Reveal from "../landing/Reveal";
+import TpmPagina, {
+  EMAIL, MORADA, TELEFONE, TELEFONE_FIXO, TELEFONE_FIXO_HREF, TELEFONE_HREF,
+  TpmIntro, pedido, useTpmMeta,
+} from "./TpmChrome";
+
+/* Contactos.
+ *
+ * A morada completa é a que a empresa publica — a etiqueta que o Google mostra
+ * no mapa ("2039 Rua da Resistência") é geocodificação dele, não o endereço que
+ * a TPM-TUR dá de si própria. Vale o da empresa; o mapa mostra o que mostrar.
+ *
+ * Não há horário de atendimento nesta página porque não há nenhum confirmado.
+ * Inventar "segunda a sexta, 8h-17h" seria mandar alguém a uma porta fechada. */
+
+/* O embed oficial do estabelecimento, tal como está no site da TPM-TUR: o `pb`
+ * carrega o place id (0x1ee69ba9923f3131:0xc237b107e4159e4b), e por isso o pino
+ * cai na sede e não numa aproximação da rua. */
+const MAPA =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3587.5037755073054!2d32.587324599999995" +
+  "!3d-25.9515135!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1ee69ba9923f3131" +
+  "%3A0xc237b107e4159e4b!2sTPM%20TUR!5e0!3m2!1spt-PT!2smz!4v1751969942071!5m2!1spt-PT!2smz";
+
+const MAPA_LINK =
+  "https://www.google.com/maps/search/?api=1&query=TPM+TUR+Rua+da+Resistencia+Maputo";
+
+export default function ContactosPage() {
+  useTpmMeta(
+    "Contactos — TPM-TUR",
+    "Contacte a TPM-TUR em Maputo: telefones, email e localização na Rua da Resistência, Bairro de Maxaquene C.",
+  );
+
+  return (
+    <TpmPagina activa="/tpm-tur/contactos">
+      <TpmIntro
+        migalha="Contactos"
+        titulo="Vamos conversar sobre a sua viagem."
+        descricao="Pedidos de orçamento, parcerias e informações. Aqui estão os contactos da TPM-TUR e onde nos encontrar."
+      />
+
+      <section className="bzlp-sec">
+        <div className="bzlp-wrap">
+          <Reveal>
+            <div className="tpm-contactos">
+              <div className="tpm-contactos-lista">
+                <article className="tpm-contacto-cartao">
+                  <span className="tpm-contacto-ico"><Phone size={22} aria-hidden /></span>
+                  <h2>Ligue-nos</h2>
+                  <a href={TELEFONE_HREF}>{TELEFONE}</a>
+                  <a href={TELEFONE_FIXO_HREF}>{TELEFONE_FIXO}</a>
+                </article>
+
+                <article className="tpm-contacto-cartao">
+                  <span className="tpm-contacto-ico"><Mail size={22} aria-hidden /></span>
+                  <h2>Escreva-nos</h2>
+                  <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+                </article>
+
+                <article className="tpm-contacto-cartao">
+                  <span className="tpm-contacto-ico"><MapPin size={22} aria-hidden /></span>
+                  <h2>Encontre-nos</h2>
+                  <p>
+                    Rua da Resistência, Parcela Nº 24<br />
+                    Bairro de Maxaquene C, 1º Andar<br />
+                    Maputo, Moçambique<br />
+                    Código postal 1104
+                  </p>
+                </article>
+              </div>
+
+              <div className="tpm-mapa">
+                {/* O `title` não estava no original e é o que um leitor de ecrã
+                    anuncia ao chegar aqui: sem ele, o enquadramento é só
+                    "frame". O `loading="lazy"` evita que o mapa do Google pese
+                    no carregamento de quem nunca chega a rolar até aqui. */}
+                <iframe
+                  src={MAPA}
+                  title="Mapa da localização da TPM-TUR, na Rua da Resistência, Maputo"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+                <div className="tpm-mapa-barra">
+                  <span>{MORADA}</span>
+                  <a href={MAPA_LINK} target="_blank" rel="noreferrer">
+                    Abrir no Google Maps <ArrowUpRight size={16} aria-hidden />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="tpm-escolha">
+        <div className="bzlp-wrap">
+          <div className="tpm-escolha-head">
+            <h2>Já sabe para onde vai?</h2>
+            <p>Não precisa de nos ligar para comprar: escolha a partida e o lugar em linha.</p>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap" }}>
+            <Link to="/comprar" className="bzlp-btn gold">
+              <Ticket size={17} aria-hidden /> Comprar bilhete
+            </Link>
+            <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
+              Pedir orçamento <ArrowUpRight size={16} aria-hidden />
+            </a>
+          </div>
+        </div>
+      </section>
+    </TpmPagina>
+  );
+}

@@ -53,6 +53,7 @@ const NAV: { to: string; label: string }[] = [
   { to: "/tpm-tur/sobre-nos", label: "Sobre nós" },
   { to: "/tpm-tur/nossas-politicas", label: "Nossas políticas" },
   { to: "/tpm-tur#faq", label: "Perguntas" },
+  { to: "/tpm-tur/contactos", label: "Contactos" },
 ];
 
 /**
@@ -191,6 +192,7 @@ function TpmFooter() {
             <Link to="/tpm-tur/servicos">Serviços</Link>
             <Link to="/tpm-tur/frota">Nossa frota</Link>
             <Link to="/tpm-tur/nossas-politicas">Nossas políticas</Link>
+            <Link to="/tpm-tur/contactos">Contactos</Link>
           </nav>
           <nav aria-label="Contactos">
             <h4>Contactos</h4>

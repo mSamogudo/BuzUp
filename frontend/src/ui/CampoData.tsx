@@ -44,6 +44,10 @@ export function CampoData({
   id,
   disabled = false,
   limpavel = true,
+  /* O formato mostrado quando ainda nao ha data. O portal segue a sua propria
+   * preferencia de idioma (`useUi`), mas as paginas publicas seguem outra — a
+   * do selector da landing — e por isso quem chama pode passar o seu. */
+  vazio = "dd/mm/aaaa",
 }: {
   value: string;
   onChange: (iso: string) => void;
@@ -52,6 +56,7 @@ export function CampoData({
   id?: string;
   disabled?: boolean;
   limpavel?: boolean;
+  vazio?: string;
 }) {
   const { locale } = useUi();
   const [aberto, setAberto] = useState(false);
@@ -70,7 +75,7 @@ export function CampoData({
       <div className="campo-data">
         <PopoverTrigger className="campo-data-botao" disabled={disabled} id={id} type="button">
           <CalendarDays aria-hidden size={16} />
-          {escolhida ? paraEcra(escolhida) : <span className="campo-data-vazio">dd/mm/aaaa</span>}
+          {escolhida ? paraEcra(escolhida) : <span className="campo-data-vazio">{vazio}</span>}
         </PopoverTrigger>
         {limpavel && value && !disabled ? (
           <button

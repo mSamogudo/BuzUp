@@ -7,53 +7,35 @@ import {
 import Reveal from "../landing/Reveal";
 import HeroBooking from "./HeroBooking";
 import TpmPagina, { EMAIL, TELEFONE, TELEFONE_HREF, pedido, useTpmMeta } from "./TpmChrome";
+import { useTpmCopy } from "./tpm-copy";
 
 /* Landing institucional + passageiros da TPM-TUR, cliente da UpDigital.
  * Vive em /tpm-tur, ao lado da landing BusUp (/). O conteúdo vem do site
  * oficial (output/tpm-tur-site) — os factos (serviços, frota, contactos)
  * são os de lá; não se inventam números que a operação não confirmou.
  *
- * A barra e o rodapé saíram daqui para `TpmChrome`: são agora partilhados
- * com as quatro páginas institucionais. Esta página fica só com as secções. */
+ * A barra e o rodapé saíram daqui para `TpmChrome`, e o texto para
+ * `tpm-copy.ts`. Esta página fica com a composição das secções. */
 
-const SERVICOS = [
-  {
-    id: "autocarros", icon: BusFront, img: "/landing/tpm/coaches.webp",
-    alt: "Autocarros executivos TPM-TUR disponíveis para aluguer",
-    h: "Aluguer de autocarros",
-    p: "Executivos e normais. A equipa ajuda a identificar a viatura adequada ao percurso e ao número de passageiros.",
-    cta: "Pedir orçamento",
-  },
-  {
-    id: "excursoes", icon: Route, img: "/landing/tpm/coach.webp",
-    alt: "Autocarro TPM-TUR para excursões e grupos",
-    h: "Excursões",
-    p: "Reúna o seu grupo e partilhe o destino e o programa. A equipa prepara uma proposta para a viagem.",
-    cta: "Planear uma excursão",
-  },
-  {
-    id: "trabalhadores", icon: Users, img: "/landing/tpm/minibuses.webp",
-    alt: "Minibuses da TPM-TUR para transporte de equipas",
-    h: "Transporte de trabalhadores",
-    p: "Apresente as necessidades de deslocação da sua equipa: percursos, turnos e frequência.",
-    cta: "Falar com a equipa",
-  },
+/* Os ids das âncoras e as fotografias não mudam com o idioma: os primeiros são
+ * URL, as segundas são as mesmas imagens. */
+const SERVICOS_IDS = ["autocarros", "excursoes", "trabalhadores"] as const;
+const SERVICOS_ICON = [BusFront, Route, Users];
+const SERVICOS_IMG = ["/landing/tpm/coaches.webp", "/landing/tpm/coach.webp", "/landing/tpm/minibuses.webp"];
+const FROTA_IMG = [
+  "/landing/tpm/coach.webp",
+  "/landing/tpm/coaster.webp",
+  "/landing/tpm/minibuses.webp",
+  "/landing/tpm/suv.webp",
 ];
-
-const FROTA = [
-  { img: "/landing/tpm/coach.webp", nome: "Autocarros", nota: "Percursos longos e grupos inteiros" },
-  { img: "/landing/tpm/coaster.webp", nome: "Coaster", nota: "Grupos médios e excursões" },
-  { img: "/landing/tpm/minibuses.webp", nome: "Quantum", nota: "Equipas e transfers" },
-  { img: "/landing/tpm/suv.webp", nome: "SUV", nota: "Pequenos grupos e rent-a-car" },
-];
+const CONFIANCA_ICON = [ShieldCheck, Smartphone, Ticket];
 
 export default function TpmTurLandingPage() {
   const { hash } = useLocation();
+  const { t } = useTpmCopy();
+  const i = t.inicio;
 
-  useTpmMeta(
-    "TPM-TUR — Transporte e Turismo",
-    "TPM-TUR, S.A. — transporte e turismo em Moçambique. Compre o bilhete online, conheça a frota e os serviços para empresas e grupos.",
-  );
+  useTpmMeta(i.meta.titulo, i.meta.descricao);
 
   /* As páginas institucionais ligam a `/tpm-tur#faq`. O react-router muda a
    * URL mas não rola para a âncora — sem isto, quem clica em "Perguntas"
@@ -69,15 +51,12 @@ export default function TpmTurLandingPage() {
       {/* HERO */}
       <section className="tpm-hero">
         <img className="tpm-hero-photo" src="/landing/tpm/coaches.webp"
-          alt="Autocarros da frota TPM-TUR" width={1920} height={1920}
+          alt={i.hero.fotoAlt} width={1920} height={1920}
           fetchPriority="high" decoding="sync" />
         <div className="tpm-hero-in">
-          <span className="bzlp-badge">TPM-TUR, S.A. — Transporte e Turismo</span>
-          <h1>A sua próxima viagem<br />começa <span>aqui.</span></h1>
-          <p>
-            Compre o bilhete online, escolha o seu lugar e embarque sem filas.
-            Mais perto do seu destino — viaje com a TPM-TUR.
-          </p>
+          <span className="bzlp-badge">{i.hero.badge}</span>
+          <h1>{i.hero.h1}<br />{i.hero.h1b} <span>{i.hero.h1destaque}</span></h1>
+          <p>{i.hero.lead}</p>
         </div>
       </section>
 
@@ -90,10 +69,10 @@ export default function TpmTurLandingPage() {
           <HeroBooking />
           <div className="tpm-hero-cta">
             <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
-              Precisa de transporte para um grupo? <ArrowUpRight size={16} aria-hidden />
+              {i.hero.grupo} <ArrowUpRight size={16} aria-hidden />
             </a>
             <Link to="/comprar" className="bzlp-ghost">
-              Ver todas as partidas <ArrowUpRight size={15} aria-hidden />
+              {i.hero.todasPartidas} <ArrowUpRight size={15} aria-hidden />
             </Link>
           </div>
         </div>
@@ -103,20 +82,18 @@ export default function TpmTurLandingPage() {
           abaixo da dobra. Nenhum número: não há nenhum confirmado. */}
       <section className="bzlp-wrap" style={{ paddingTop: 40 }}>
         <div className="tpm-confianca">
-          <div className="tpm-confianca-item">
-            <span className="tpm-confianca-ico"><ShieldCheck size={20} aria-hidden /></span>
-            <span><strong>Parceria público-privada</strong>EMTPM · ETM · Sky Rent, Lda.</span>
-          </div>
-          <span className="tpm-confianca-risca" aria-hidden />
-          <div className="tpm-confianca-item">
-            <span className="tpm-confianca-ico"><Smartphone size={20} aria-hidden /></span>
-            <span><strong>Bilhete no telemóvel</strong>Sem papel, sem filas ao balcão.</span>
-          </div>
-          <span className="tpm-confianca-risca" aria-hidden />
-          <div className="tpm-confianca-item">
-            <span className="tpm-confianca-ico"><Ticket size={20} aria-hidden /></span>
-            <span><strong>Lugar marcado</strong>Escolha o seu lugar no mapa do autocarro.</span>
-          </div>
+          {i.confianca.map((item, n) => {
+            const Icone = CONFIANCA_ICON[n];
+            return (
+              <div key={item.t} style={{ display: "contents" }}>
+                {n > 0 && <span className="tpm-confianca-risca" aria-hidden />}
+                <div className="tpm-confianca-item">
+                  <span className="tpm-confianca-ico"><Icone size={20} aria-hidden /></span>
+                  <span><strong>{item.t}</strong>{item.p}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -125,22 +102,16 @@ export default function TpmTurLandingPage() {
         <div className="bzlp-wrap">
           <Reveal>
             <div className="bzlp-sechead">
-              <div className="bzlp-kicker">Viagens</div>
-              <h2 className="bzlp-h2">O seu bilhete, em três passos</h2>
-              <p className="bzlp-lead">
-                Do percurso ao lugar sentado, tudo se trata online — antes de sair de casa.
-              </p>
+              <div className="bzlp-kicker">{i.passos.kicker}</div>
+              <h2 className="bzlp-h2">{i.passos.h2}</h2>
+              <p className="bzlp-lead">{i.passos.lead}</p>
             </div>
           </Reveal>
           <div className="tpm-steps">
-            {[
-              { h: "Escolha a viagem", p: "Indique a origem, o destino e a data. Consulte as partidas e os lugares disponíveis no momento." },
-              { h: "Reserve o seu lugar", p: "Seleccione o lugar no mapa do autocarro, preencha os dados de quem viaja e pague online." },
-              { h: "Receba o bilhete", p: "O bilhete fica no seu telemóvel logo após o pagamento. Apresente-o ao embarcar." },
-            ].map((s, i) => (
-              <Reveal key={s.h} delay={i * 70}>
+            {i.passos.itens.map((s, n) => (
+              <Reveal key={s.h} delay={n * 70}>
                 <div className="tpm-step">
-                  <span className="tpm-step-num">{i + 1}</span>
+                  <span className="tpm-step-num">{n + 1}</span>
                   <h3>{s.h}</h3>
                   <p>{s.p}</p>
                 </div>
@@ -148,7 +119,7 @@ export default function TpmTurLandingPage() {
             ))}
           </div>
           <div style={{ textAlign: "center", marginTop: 32 }}>
-            <Link to="/comprar" className="bzlp-btn">Ver partidas e preços <ArrowRight size={17} aria-hidden /></Link>
+            <Link to="/comprar" className="bzlp-btn">{i.passos.botao} <ArrowRight size={17} aria-hidden /></Link>
           </div>
         </div>
       </section>
@@ -158,35 +129,36 @@ export default function TpmTurLandingPage() {
         <div className="bzlp-wrap">
           <Reveal>
             <div className="bzlp-sechead">
-              <div className="bzlp-kicker">Serviços</div>
-              <h2 className="bzlp-h2">O transporte certo para cada ocasião</h2>
-              <p className="bzlp-lead">
-                Cinco serviços, da viagem em família à deslocação diária da sua equipa.
-              </p>
+              <div className="bzlp-kicker">{i.servicos.kicker}</div>
+              <h2 className="bzlp-h2">{i.servicos.h2}</h2>
+              <p className="bzlp-lead">{i.servicos.lead}</p>
             </div>
           </Reveal>
           <div className="tpm-services">
-            {SERVICOS.map((s, i) => (
-              <Reveal key={s.h} delay={i * 70}>
-                <article className="tpm-service">
-                  <img src={s.img} alt={s.alt} width={1200} height={750} loading="lazy" decoding="async" />
-                  <div className="tpm-service-body">
-                    <h3><s.icon size={18} aria-hidden style={{ verticalAlign: "-3px", marginRight: 8, color: "var(--blue2)" }} />{s.h}</h3>
-                    <p>{s.p}</p>
-                    <Link to={`/tpm-tur/servicos#${s.id}`}>{s.cta} <ArrowUpRight size={16} aria-hidden /></Link>
-                  </div>
-                </article>
-              </Reveal>
-            ))}
+            {i.servicos.cards.map((s, n) => {
+              const Icone = SERVICOS_ICON[n];
+              return (
+                <Reveal key={s.h} delay={n * 70}>
+                  <article className="tpm-service">
+                    <img src={SERVICOS_IMG[n]} alt={s.alt} width={1200} height={750} loading="lazy" decoding="async" />
+                    <div className="tpm-service-body">
+                      <h3><Icone size={18} aria-hidden style={{ verticalAlign: "-3px", marginRight: 8, color: "var(--blue2)" }} />{s.h}</h3>
+                      <p>{s.p}</p>
+                      <Link to={`/tpm-tur/servicos#${SERVICOS_IDS[n]}`}>{s.cta} <ArrowUpRight size={16} aria-hidden /></Link>
+                    </div>
+                  </article>
+                </Reveal>
+              );
+            })}
           </div>
           <div className="tpm-services-extra">
-            <span>Também ao seu dispor:</span>
-            <Link to="/tpm-tur/servicos#transfers"><MapPin size={15} aria-hidden /> Transfers e shuttle</Link>
-            <Link to="/tpm-tur/servicos#rent-a-car"><CarFront size={15} aria-hidden /> Rent-a-car</Link>
+            <span>{i.servicos.tambem}</span>
+            <Link to="/tpm-tur/servicos#transfers"><MapPin size={15} aria-hidden /> {i.servicos.transfers}</Link>
+            <Link to="/tpm-tur/servicos#rent-a-car"><CarFront size={15} aria-hidden /> {i.servicos.rentACar}</Link>
           </div>
           <div style={{ textAlign: "center", marginTop: 28 }}>
             <Link to="/tpm-tur/servicos" className="bzlp-btn outline">
-              Ver todos os serviços <ArrowRight size={17} aria-hidden />
+              {i.servicos.verTodos} <ArrowRight size={17} aria-hidden />
             </Link>
           </div>
         </div>
@@ -202,21 +174,18 @@ export default function TpmTurLandingPage() {
           <Reveal>
             <div className="tpm-frota-head">
               <div>
-                <div className="bzlp-kicker left">Frota</div>
-                <h2 className="bzlp-h2 left">Conheça a frota,<br />imagine a viagem</h2>
+                <div className="bzlp-kicker left">{i.frota.kicker}</div>
+                <h2 className="bzlp-h2 left">{i.frota.h2}<br />{i.frota.h2b}</h2>
               </div>
-              <p className="bzlp-lead left">
-                Autocarros, Coaster, Quantum e SUV — quatro categorias para grupos e
-                percursos diferentes. Consulte a equipa sobre lotação, comodidades e
-                disponibilidade da viatura pretendida.
-              </p>
+              <p className="bzlp-lead left">{i.frota.lead}</p>
             </div>
           </Reveal>
           <div className="tpm-fleet">
-            {FROTA.map((v, i) => (
-              <Reveal key={v.nome} delay={i * 60}>
+            {i.frota.itens.map((v, n) => (
+              <Reveal key={v.nome} delay={n * 60}>
                 <figure className="tpm-vehicle">
-                  <img src={v.img} alt={`${v.nome} da TPM-TUR`} width={1200} height={1500} loading="lazy" decoding="async" />
+                  <img src={FROTA_IMG[n]} alt={`${v.nome} ${i.frota.altSufixo}`}
+                    width={1200} height={1500} loading="lazy" decoding="async" />
                   <figcaption>{v.nome}<small>{v.nota}</small></figcaption>
                 </figure>
               </Reveal>
@@ -224,7 +193,7 @@ export default function TpmTurLandingPage() {
           </div>
           <div style={{ textAlign: "center", marginTop: 32 }}>
             <Link to="/tpm-tur/frota" className="bzlp-btn outline">
-              Ver a frota completa <ArrowRight size={17} aria-hidden />
+              {i.frota.verCompleta} <ArrowRight size={17} aria-hidden />
             </Link>
           </div>
         </div>
@@ -235,27 +204,23 @@ export default function TpmTurLandingPage() {
         <div className="tpm-app-in">
           <Reveal>
             <div className="tpm-app-shot">
-              <img src="/landing/tpm/app-login.png"
-                alt="Ecrã de entrada da aplicação BusUp Passageiro"
+              <img src="/landing/tpm/app-login.png" alt={i.app.shotAlt}
                 width={430} height={900} loading="lazy" decoding="async" />
             </div>
           </Reveal>
           <Reveal delay={90}>
             <div>
-              <div className="bzlp-kicker left">App do passageiro</div>
-              <h2>A sua viagem, sempre consigo</h2>
-              <p>
-                Com a app BusUp Passageiro, compra bilhetes, escolhe o seu lugar
-                e tem as viagens à mão — sem filas e sem papel.
-              </p>
+              <div className="bzlp-kicker left">{i.app.kicker}</div>
+              <h2>{i.app.h2}</h2>
+              <p>{i.app.p}</p>
               <ul>
-                <li><CheckCircle2 size={18} aria-hidden /> Entre com o seu número de telefone</li>
-                <li><CheckCircle2 size={18} aria-hidden /> Escolha a viagem e o seu lugar</li>
-                <li><CheckCircle2 size={18} aria-hidden /> Consulte os seus bilhetes na app</li>
+                {i.app.itens.map((li) => (
+                  <li key={li}><CheckCircle2 size={18} aria-hidden /> {li}</li>
+                ))}
               </ul>
               <div className="tpm-app-cta">
-                <Link to="/baixar" className="bzlp-btn gold"><Download size={18} aria-hidden /> Descarregar para Android</Link>
-                <Link to="/comprar" className="bzlp-btn outline"><Smartphone size={17} aria-hidden /> Comprar no browser</Link>
+                <Link to="/baixar" className="bzlp-btn gold"><Download size={18} aria-hidden /> {i.app.descarregar}</Link>
+                <Link to="/comprar" className="bzlp-btn outline"><Smartphone size={17} aria-hidden /> {i.app.browser}</Link>
               </div>
             </div>
           </Reveal>
@@ -268,24 +233,17 @@ export default function TpmTurLandingPage() {
           <Reveal>
             <div className="tpm-sobre">
               <div>
-                <div className="bzlp-kicker left">A empresa</div>
-                <h2>Somos TPM-TUR.<br /><span>Ligamos pessoas aos seus destinos.</span></h2>
+                <div className="bzlp-kicker left">{i.sobre.kicker}</div>
+                <h2>{i.sobre.h2}<br /><span>{i.sobre.h2b}</span></h2>
               </div>
               <div className="tpm-sobre-copy">
-                <p>
-                  A TPM-TUR, S.A. é uma empresa moçambicana de transporte e turismo,
-                  constituída através de uma parceria entre a EMTPM, a ETM e a Sky Rent, Lda.
-                </p>
-                <p>
-                  Reunimos soluções de transporte para passageiros, empresas e grupos,
-                  com uma frota dedicada a diferentes necessidades de mobilidade —
-                  das viagens regulares ao aluguer de autocarros.
-                </p>
-                <div className="tpm-sobre-partners" aria-label="Parceiros fundadores">
+                <p>{i.sobre.p1}</p>
+                <p>{i.sobre.p2}</p>
+                <div className="tpm-sobre-partners" aria-label={i.sobre.parceiros}>
                   <span>EMTPM</span><span>ETM</span><span>Sky Rent, Lda</span>
                 </div>
                 <Link to="/tpm-tur/sobre-nos" className="bzlp-ghost" style={{ paddingLeft: 0, marginTop: 14 }}>
-                  A nossa história, missão e valores <ArrowUpRight size={16} aria-hidden />
+                  {i.sobre.link} <ArrowUpRight size={16} aria-hidden />
                 </Link>
               </div>
             </div>
@@ -298,40 +256,27 @@ export default function TpmTurLandingPage() {
         <div className="bzlp-wrap tpm-faq-wrap">
           <Reveal>
             <div className="tpm-faq-head">
-              <div className="bzlp-kicker left">Perguntas frequentes</div>
-              <h2 className="bzlp-h2 left">Antes de partir</h2>
+              <div className="bzlp-kicker left">{i.faq.kicker}</div>
+              <h2 className="bzlp-h2 left">{i.faq.h2}</h2>
             </div>
           </Reveal>
           <div className="tpm-faq">
-            <details>
-              <summary>Como posso comprar um bilhete?</summary>
-              <p>
-                Clique em <Link to="/comprar" className="bzlp-ghost" style={{ padding: 0, minHeight: 0, color: "var(--blue2)" }}>Comprar bilhete</Link>,
-                escolha a origem, o destino e a data, seleccione o lugar, preencha os dados
-                dos passageiros e conclua o pagamento. O bilhete fica no seu telemóvel.
-              </p>
-            </details>
-            <details>
-              <summary>Onde consulto horários e preços?</summary>
-              <p>
-                Os horários, preços e lugares disponíveis são apresentados no portal de compra
-                depois de escolher o percurso e a data. A disponibilidade pode variar.
-              </p>
-            </details>
-            <details>
-              <summary>Posso pedir transporte para uma empresa ou grupo?</summary>
-              <p>
-                Sim. Envie um pedido para <a href={`mailto:${EMAIL}`}>{EMAIL}</a> com o percurso,
-                as datas e o número de passageiros. A equipa irá indicar as opções disponíveis.
-              </p>
-            </details>
-            <details>
-              <summary>Como instalo a aplicação Android?</summary>
-              <p>
-                Abra a <Link to="/baixar" style={{ color: "var(--blue2)", fontWeight: 600 }}>página oficial de instalação</Link> no
-                seu telemóvel e siga as instruções.
-              </p>
-            </details>
+            {i.faq.itens.map((item) => (
+              <details key={item.q}>
+                <summary>{item.q}</summary>
+                {/* O email é a única ligação que sobrevive dentro de uma
+                    resposta: vem por marcador, para a frase poder mudar de
+                    ordem em inglês sem partir o link. */}
+                <p>
+                  {item.a.split("{email}").map((parte, n, todas) => (
+                    <span key={n}>
+                      {parte}
+                      {n < todas.length - 1 && <a href={`mailto:${EMAIL}`}>{EMAIL}</a>}
+                    </span>
+                  ))}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </section>
@@ -346,35 +291,29 @@ export default function TpmTurLandingPage() {
       <section className="tpm-escolha" id="contacto">
         <div className="bzlp-wrap">
           <div className="tpm-escolha-head">
-            <h2>Qual é o seu próximo destino?</h2>
-            <p>Daqui seguem dois caminhos. Escolha o seu.</p>
+            <h2>{i.escolha.h2}</h2>
+            <p>{i.escolha.lead}</p>
           </div>
           <div className="tpm-escolha-cartoes">
             <article className="tpm-escolha-cartao">
               <span className="tpm-escolha-ico"><Ticket size={24} aria-hidden /></span>
-              <h3>Vou viajar</h3>
-              <p>
-                Escolha a partida e o lugar no mapa do autocarro. Paga por M-Pesa,
-                e-Mola ou cartão, e o bilhete fica no seu telemóvel.
-              </p>
+              <h3>{i.escolha.viajar.h}</h3>
+              <p>{i.escolha.viajar.p}</p>
               <Link to="/comprar" className="bzlp-btn gold">
-                Comprar bilhete <ArrowRight size={17} aria-hidden />
+                {i.escolha.viajar.btn} <ArrowRight size={17} aria-hidden />
               </Link>
             </article>
             <article className="tpm-escolha-cartao is-grupo">
               <span className="tpm-escolha-ico"><Users size={24} aria-hidden /></span>
-              <h3>Preciso de transporte para um grupo</h3>
-              <p>
-                Empresas, excursões, transfers e aluguer com motorista. Diga o percurso,
-                as datas e quantas pessoas — a equipa responde com as opções disponíveis.
-              </p>
+              <h3>{i.escolha.grupo.h}</h3>
+              <p>{i.escolha.grupo.p}</p>
               <div className="tpm-escolha-accoes">
                 <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
-                  Pedir orçamento <ArrowUpRight size={16} aria-hidden />
+                  {i.escolha.grupo.btn} <ArrowUpRight size={16} aria-hidden />
                 </a>
-                {/* O telefone vem para junto do botao: quem pede orcamento para um
-                    grupo quer muitas vezes falar com alguem, e o numero estava so
-                    no rodape. */}
+                {/* O telefone vem para junto do botao: quem pede orcamento para
+                    um grupo quer muitas vezes falar com alguem, e o numero
+                    estava so no rodape. */}
                 <a href={TELEFONE_HREF} className="tpm-escolha-tel">
                   <Phone size={17} aria-hidden /> {TELEFONE}
                 </a>
@@ -388,18 +327,18 @@ export default function TpmTurLandingPage() {
         <div className="bzlp-wrap">
           <div className="bzlp-contact" style={{ marginTop: 0 }}>
             <div className="bzlp-contact-card">
-              <small>Comercial</small>
+              <small>{i.contactoStrip.comercial}</small>
               <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
               <a href={TELEFONE_HREF}>{TELEFONE}</a>
             </div>
             <div className="bzlp-contact-card">
-              <small>Passageiros</small>
-              <Link to="/comprar" style={{ color: "inherit" }}>Comprar bilhete</Link>
-              <Link to="/baixar" style={{ color: "inherit" }}>App do passageiro</Link>
+              <small>{i.contactoStrip.passageiros}</small>
+              <Link to="/comprar" style={{ color: "inherit" }}>{i.contactoStrip.comprar}</Link>
+              <Link to="/baixar" style={{ color: "inherit" }}>{i.contactoStrip.app}</Link>
             </div>
             <div className="bzlp-contact-card">
-              <small>Em linha</small>
-              <Link to="/login" style={{ color: "inherit" }}>Entrar no portal</Link>
+              <small>{i.contactoStrip.emLinha}</small>
+              <Link to="/login" style={{ color: "inherit" }}>{i.contactoStrip.portal}</Link>
               <a href="https://updigital.co.mz" target="_blank" rel="noreferrer">updigital.co.mz</a>
             </div>
           </div>

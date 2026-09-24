@@ -4,6 +4,7 @@ import { ArrowLeftRight, ArrowRight, Search } from "lucide-react";
 import StopCombo, { type ComboOpt } from "../booking/StopCombo";
 import { CampoData } from "../../ui/CampoData";
 import { CampoSelect } from "../../ui/CampoSelect";
+import { useTpmCopy } from "./tpm-copy";
 
 /** A compra comeca no hero, e nao a um clique de distancia.
  *
@@ -21,6 +22,8 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const paraIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 export default function HeroBooking() {
+  const { t } = useTpmCopy();
+  const b = t.heroBusca;
   const navegar = useNavigate();
   const [stops, setStops] = useState<ComboOpt[]>([]);
   const [origem, setOrigem] = useState("");
@@ -75,9 +78,9 @@ export default function HeroBooking() {
   return (
     <form className="tpm-busca" onSubmit={submeter}>
       <div className="tpm-busca-topo">
-        <h2 className="tpm-busca-titulo">Encontre a sua viagem</h2>
-        <div className="tpm-busca-tipo" role="group" aria-label="Tipo de viagem">
-          {([["ida", "Só ida"], ["idaevolta", "Ida e volta"]] as const).map(([chave, rotulo]) => (
+        <h2 className="tpm-busca-titulo">{b.titulo}</h2>
+        <div className="tpm-busca-tipo" role="group" aria-label={b.tipoViagem}>
+          {([["ida", b.soIda], ["idaevolta", b.idaVolta]] as const).map(([chave, rotulo]) => (
             <button
               aria-pressed={tipo === chave}
               className={`tpm-busca-tipo-btn${tipo === chave ? " is-on" : ""}`}
@@ -94,12 +97,12 @@ export default function HeroBooking() {
 
       <div className={`tpm-busca-campos${tipo === "idaevolta" ? " tem-volta" : ""}`}>
         <div className="tpm-busca-campo">
-          <label htmlFor="busca-origem">Origem</label>
+          <label htmlFor="busca-origem">{b.origem}</label>
           <StopCombo
             exclude={destino}
             id="busca-origem"
             onChange={setOrigem}
-            placeholder={semParagens ? "Sem partidas à venda" : "De onde parte?"}
+            placeholder={semParagens ? b.semPartidas : b.deOnde}
             stops={stops}
             value={origem}
           />
@@ -108,49 +111,49 @@ export default function HeroBooking() {
         {/* O botao de inverter vive ENTRE os dois campos, e nao ao lado: e ali
             que a pessoa olha quando percebe que trocou os lugares. */}
         <button
-          aria-label="Trocar origem e destino"
+          aria-label={b.trocar}
           className="tpm-busca-inverter"
           onClick={inverter}
-          title="Trocar origem e destino"
+          title={b.trocar}
           type="button"
         >
           <ArrowLeftRight aria-hidden size={16} />
         </button>
 
         <div className="tpm-busca-campo">
-          <label htmlFor="busca-destino">Destino</label>
+          <label htmlFor="busca-destino">{b.destino}</label>
           <StopCombo
             exclude={origem}
             id="busca-destino"
             onChange={setDestino}
-            placeholder={semParagens ? "Sem partidas à venda" : "Para onde vai?"}
+            placeholder={semParagens ? b.semPartidas : b.paraOnde}
             stops={stops}
             value={destino}
           />
         </div>
 
         <div className="tpm-busca-campo">
-          <label htmlFor="busca-data">Ida</label>
+          <label htmlFor="busca-data">{b.ida}</label>
           {/* `min={hoje}`: nao se vende bilhete para ontem. */}
-          <CampoData id="busca-data" limpavel={false} min={hoje} onChange={setData} value={data} />
+          <CampoData id="busca-data" limpavel={false} min={hoje} onChange={setData} value={data} vazio={b.dataVazia} />
         </div>
 
         {tipo === "idaevolta" && (
           <div className="tpm-busca-campo">
-            <label htmlFor="busca-volta">Volta</label>
+            <label htmlFor="busca-volta">{b.volta}</label>
             {/* O regresso nunca antes da ida. */}
-            <CampoData id="busca-volta" limpavel={false} min={data || hoje} onChange={setVolta} value={volta} />
+            <CampoData id="busca-volta" limpavel={false} min={data || hoje} onChange={setVolta} value={volta} vazio={b.dataVazia} />
           </div>
         )}
 
         <CampoSelect
           className="tpm-busca-campo"
-          label="Passageiros"
+          label={b.passageiros}
           onChange={setPax}
           value={pax}
         >
           {[1, 2, 3, 4, 5].map((n) => (
-            <option key={n} value={n}>{n} {n === 1 ? "passageiro" : "passageiros"}</option>
+            <option key={n} value={n}>{n} {n === 1 ? b.passageiro1 : b.passageiroN}</option>
           ))}
         </CampoSelect>
       </div>
@@ -161,7 +164,7 @@ export default function HeroBooking() {
       <div className="tpm-busca-baixo">
         {atalhos.length > 0 && !destino ? (
           <div className="tpm-busca-atalhos">
-            <span className="tpm-busca-atalhos-rotulo">Destinos à venda:</span>
+            <span className="tpm-busca-atalhos-rotulo">{b.destinosAVenda}</span>
             {atalhos.map((s) => (
               <button className="tpm-busca-atalho" key={s.id} onClick={() => setDestino(String(s.id))} type="button">
                 {s.name}
@@ -170,7 +173,7 @@ export default function HeroBooking() {
           </div>
         ) : <span />}
         <button className="tpm-busca-btn" disabled={semParagens} type="submit">
-          <Search aria-hidden size={18} /> Procurar viagens
+          <Search aria-hidden size={18} /> {b.procurar}
         </button>
       </div>
 

@@ -269,6 +269,11 @@
    76px de altura que a tela desenhou, em vez de a barra crescer para 88. */
 .bzlp-tpm .bzlp-nav-in { padding-top: 6px; padding-bottom: 6px; }
 
+/* O selector de idioma vive ao lado do botão de tema. Abaixo dos 900px o
+   `.bzlp-tools` da barra desaparece (regra de landing.css) e ambos passam a
+   viver no painel do menu, que já os mostra. */
+.bzlp-tpm .bzlp-tools { display: flex; align-items: center; gap: 8px; }
+
 /* ── Faixa de entrada ─────────────────────────────────────────────── */
 
 .tpm-intro {

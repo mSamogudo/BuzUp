@@ -1,16 +1,17 @@
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, Moon, Sun, Ticket, X } from "lucide-react";
-import { useLandingPrefs } from "../landing/useLandingPrefs";
+import { useLandingPrefs, type Lang } from "../landing/useLandingPrefs";
+import { useTpmCopy } from "./tpm-copy";
 import "../landing/landing.css";
 import "./tpm.css";
 import "./tpm-paginas.css";
 
 /* A moldura das páginas da TPM-TUR — barra, menu de telemóvel e rodapé.
  *
- * Vivia dentro da landing, que era a única página do operador. Com as quatro
- * páginas institucionais passou a haver cinco cópias possíveis da mesma barra;
- * uma só é o que garante que acrescentar uma entrada de menu não deixa quatro
+ * Vivia dentro da landing, que era a única página do operador. Com as cinco
+ * páginas institucionais passou a haver seis cópias possíveis da mesma barra;
+ * uma só é o que garante que acrescentar uma entrada de menu não deixa cinco
  * páginas para trás.
  *
  * A ordem dos imports de CSS é deliberada e não se troca: landing.css põe o
@@ -47,13 +48,15 @@ export const pedido = (assunto: string) =>
  * institucionais passaram a ter páginas próprias, e é para lá que aponta.
  * `Perguntas` continua a ser uma âncora da landing — a FAQ não justifica
  * página. */
-const NAV: { to: string; label: string }[] = [
-  { to: "/tpm-tur/servicos", label: "Serviços" },
-  { to: "/tpm-tur/frota", label: "Nossa frota" },
-  { to: "/tpm-tur/sobre-nos", label: "Sobre nós" },
-  { to: "/tpm-tur/nossas-politicas", label: "Nossas políticas" },
-  { to: "/tpm-tur#faq", label: "Perguntas" },
-  { to: "/tpm-tur/contactos", label: "Contactos" },
+type Rotulos = ReturnType<typeof useTpmCopy>["t"]["nav"];
+
+const navegacao = (t: Rotulos) => [
+  { to: "/tpm-tur/servicos", label: t.servicos },
+  { to: "/tpm-tur/frota", label: t.frota },
+  { to: "/tpm-tur/sobre-nos", label: t.sobre },
+  { to: "/tpm-tur/nossas-politicas", label: t.politicas },
+  { to: "/tpm-tur#faq", label: t.perguntas },
+  { to: "/tpm-tur/contactos", label: t.contactos },
 ];
 
 /**
@@ -79,26 +82,37 @@ export function useTpmMeta(titulo: string, descricao: string) {
 
 function BotaoTema() {
   const { effectiveTheme, toggleTheme } = useLandingPrefs();
+  const { t } = useTpmCopy();
   const escuro = effectiveTheme === "dark";
+  const rotulo = escuro ? t.nav.temaClaro : t.nav.temaEscuro;
   return (
-    <button
-      className="bzlp-icon-btn"
-      type="button"
-      onClick={toggleTheme}
-      aria-label={escuro ? "Modo claro" : "Modo escuro"}
-      title={escuro ? "Modo claro" : "Modo escuro"}
-    >
+    <button className="bzlp-icon-btn" type="button" onClick={toggleTheme} aria-label={rotulo} title={rotulo}>
       {escuro ? <Sun size={16} aria-hidden /> : <Moon size={16} aria-hidden />}
     </button>
   );
 }
 
+function SelectorIdioma() {
+  const { t, lang, setLang } = useTpmCopy();
+  return (
+    <div className="bzlp-lang" role="group" aria-label={t.nav.idioma}>
+      {(["pt", "en"] as Lang[]).map((l) => (
+        <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function TpmNav({ activa }: { activa?: string }) {
   const { effectiveTheme } = useLandingPrefs();
+  const { t } = useTpmCopy();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const burgerRef = useRef<HTMLButtonElement | null>(null);
   const logo = effectiveTheme === "dark" ? LOGO_ESCURO : LOGO_CLARO;
+  const NAV = navegacao(t.nav);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -126,8 +140,8 @@ function TpmNav({ activa }: { activa?: string }) {
           {/* O logótipo fica DENTRO do link. Na tela o editor deixou-o ao lado
               de uma âncora vazia — é artefacto de arrastar, não desenho: assim
               o logótipo não seria clicável nem teria nome acessível. */}
-          <Link to="/tpm-tur" aria-label="TPM-TUR — página inicial">
-            <img src={logo} alt="TPM-TUR, S.A. — Transporte e Turismo" height={64} style={{ display: "block" }} />
+          <Link to="/tpm-tur" aria-label={t.nav.paginaInicial}>
+            <img src={logo} alt={t.nav.logoAlt} height={64} style={{ display: "block" }} />
           </Link>
           <nav className="bzlp-links" aria-label="TPM-TUR">
             {NAV.map((n) => (
@@ -137,10 +151,10 @@ function TpmNav({ activa }: { activa?: string }) {
             ))}
           </nav>
           <div className="bzlp-nav-cta">
-            <div className="bzlp-tools"><BotaoTema /></div>
-            <Link to="/login" className="bzlp-ghost">Entrar</Link>
-            <Link to="/comprar" className="bzlp-btn sm gold"><Ticket size={16} aria-hidden /> Comprar bilhete</Link>
-            <button ref={burgerRef} className="bzlp-burger" aria-label="Abrir menu" onClick={() => setMenuOpen(true)}>
+            <div className="bzlp-tools"><SelectorIdioma /><BotaoTema /></div>
+            <Link to="/login" className="bzlp-ghost">{t.nav.entrar}</Link>
+            <Link to="/comprar" className="bzlp-btn sm gold"><Ticket size={16} aria-hidden /> {t.nav.comprar}</Link>
+            <button ref={burgerRef} className="bzlp-burger" aria-label={t.nav.abrirMenu} onClick={() => setMenuOpen(true)}>
               <Menu size={24} aria-hidden />
             </button>
           </div>
@@ -152,18 +166,18 @@ function TpmNav({ activa }: { activa?: string }) {
           <div className="bzlp-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <div className="bzlp-sheet-head">
               <img src={logo} alt="TPM-TUR" height={40} />
-              <button className="bzlp-sheet-close" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}>
+              <button className="bzlp-sheet-close" aria-label={t.nav.fecharMenu} onClick={() => setMenuOpen(false)}>
                 <X size={24} aria-hidden />
               </button>
             </div>
             {NAV.map((n) => (
               <Link key={n.to} to={n.to} onClick={() => setMenuOpen(false)}>{n.label}</Link>
             ))}
-            <Link to="/login" onClick={() => setMenuOpen(false)}>Entrar no portal</Link>
+            <Link to="/login" onClick={() => setMenuOpen(false)}>{t.nav.entrarPortal}</Link>
             <Link to="/comprar" className="bzlp-btn gold" onClick={() => setMenuOpen(false)}>
-              <Ticket size={18} aria-hidden /> Comprar bilhete
+              <Ticket size={18} aria-hidden /> {t.nav.comprar}
             </Link>
-            <div className="bzlp-sheet-tools"><BotaoTema /></div>
+            <div className="bzlp-sheet-tools"><SelectorIdioma /><BotaoTema /></div>
           </div>
         </div>
       )}
@@ -172,33 +186,31 @@ function TpmNav({ activa }: { activa?: string }) {
 }
 
 function TpmFooter() {
+  const { t } = useTpmCopy();
   return (
     <footer className="bzlp-foot">
       <div className="bzlp-foot-in">
         <div className="bzlp-foot-brand">
           <img src={LOGO_ESCURO} alt="TPM-TUR, S.A." height={64} style={{ display: "block" }} />
-          <p>
-            Empresa moçambicana de transporte e turismo. Ligamos pessoas
-            aos seus destinos — passageiros, empresas e grupos.
-          </p>
+          <p>{t.rodape.tagline}</p>
         </div>
         <div className="bzlp-foot-cols">
-          <nav aria-label="Viagens">
-            <h4>Viagens</h4>
-            <Link to="/comprar">Comprar bilhete</Link>
-            <Link to="/baixar">App do passageiro</Link>
-            <Link to="/login">Entrar no portal</Link>
+          <nav aria-label={t.rodape.viagens}>
+            <h4>{t.rodape.viagens}</h4>
+            <Link to="/comprar">{t.nav.comprar}</Link>
+            <Link to="/baixar">{t.rodape.app}</Link>
+            <Link to="/login">{t.nav.entrarPortal}</Link>
           </nav>
-          <nav aria-label="Empresa">
-            <h4>Empresa</h4>
-            <Link to="/tpm-tur/sobre-nos">Sobre nós</Link>
-            <Link to="/tpm-tur/servicos">Serviços</Link>
-            <Link to="/tpm-tur/frota">Nossa frota</Link>
-            <Link to="/tpm-tur/nossas-politicas">Nossas políticas</Link>
-            <Link to="/tpm-tur/contactos">Contactos</Link>
+          <nav aria-label={t.rodape.empresa}>
+            <h4>{t.rodape.empresa}</h4>
+            <Link to="/tpm-tur/sobre-nos">{t.nav.sobre}</Link>
+            <Link to="/tpm-tur/servicos">{t.nav.servicos}</Link>
+            <Link to="/tpm-tur/frota">{t.nav.frota}</Link>
+            <Link to="/tpm-tur/nossas-politicas">{t.nav.politicas}</Link>
+            <Link to="/tpm-tur/contactos">{t.nav.contactos}</Link>
           </nav>
-          <nav aria-label="Contactos">
-            <h4>Contactos</h4>
+          <nav aria-label={t.rodape.contactos}>
+            <h4>{t.rodape.contactos}</h4>
             <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
             <a href={TELEFONE_FIXO_HREF}>{TELEFONE_FIXO}</a>
             <a href={TELEFONE_HREF}>{TELEFONE}</a>
@@ -212,14 +224,14 @@ function TpmFooter() {
           variantes de tinta clara servem sempre, sem alternância. */}
       <div className="bzlp-foot-bar">
         <div className="tpm-foot-bar-in">
-          <span>© {new Date().getFullYear()} TPM-TUR, S.A. · Transporte e Turismo.</span>
+          <span>© {new Date().getFullYear()} {t.rodape.direitos}</span>
           <div className="tpm-creditos">
-            <span>Tecnologia</span>
+            <span>{t.rodape.tecnologia}</span>
             <Link to="/">
               <img src={LOGO_BUSUP} alt="BusUp" width={70} height={26} />
             </Link>
             <span className="tpm-creditos-sep" aria-hidden>·</span>
-            <span>Desenvolvido por</span>
+            <span>{t.rodape.desenvolvidoPor}</span>
             <a href="https://updigital.co.mz" target="_blank" rel="noreferrer">
               <img src={LOGO_UPDIGITAL} alt="UpDigital, Limitada" width={75} height={30} />
             </a>
@@ -236,9 +248,10 @@ function TpmFooter() {
  */
 export default function TpmPagina({ activa, children }: PropsWithChildren<{ activa?: string }>) {
   const { effectiveTheme } = useLandingPrefs();
+  const { t } = useTpmCopy();
   return (
     <div className="bzlp bzlp-tpm" data-theme={effectiveTheme}>
-      <a className="bzlp-skip" href="#conteudo">Saltar para o conteúdo</a>
+      <a className="bzlp-skip" href="#conteudo">{t.nav.saltar}</a>
       <TpmNav activa={activa} />
       <main id="conteudo">{children}</main>
       <TpmFooter />
@@ -248,11 +261,12 @@ export default function TpmPagina({ activa, children }: PropsWithChildren<{ acti
 
 /** Faixa de entrada das páginas institucionais: migalha, título e resumo. */
 export function TpmIntro({ migalha, titulo, descricao }: { migalha: string; titulo: string; descricao: string }) {
+  const { t } = useTpmCopy();
   return (
     <section className="tpm-intro">
       <div className="bzlp-wrap">
-        <nav className="tpm-intro-migalha" aria-label="Caminho">
-          <Link to="/tpm-tur">Início</Link>
+        <nav className="tpm-intro-migalha" aria-label={t.comum.caminho}>
+          <Link to="/tpm-tur">{t.nav.inicio}</Link>
           <span aria-hidden>/</span>
           <span aria-current="page">{migalha}</span>
         </nav>
@@ -263,12 +277,12 @@ export function TpmIntro({ migalha, titulo, descricao }: { migalha: string; titu
   );
 }
 
-/** Chamada final, igual nas quatro páginas: falar com a equipa. */
+/** Chamada final, igual nas páginas institucionais: falar com a equipa. */
 export function TpmCallout({
   titulo,
   texto,
   assunto,
-  cta = "Pedir orçamento",
+  cta,
   secundario,
 }: {
   titulo: string;
@@ -277,6 +291,7 @@ export function TpmCallout({
   cta?: string;
   secundario?: { to: string; label: string };
 }) {
+  const { t } = useTpmCopy();
   return (
     <section className="tpm-callout">
       <div className="bzlp-wrap tpm-callout-in">
@@ -285,7 +300,7 @@ export function TpmCallout({
           <p>{texto}</p>
         </div>
         <div className="bzlp-cta-btns">
-          <a href={pedido(assunto)} className="bzlp-btn">{cta}</a>
+          <a href={pedido(assunto)} className="bzlp-btn">{cta ?? t.comum.pedirOrcamento}</a>
           {secundario && <Link to={secundario.to} className="bzlp-btn outline">{secundario.label}</Link>}
         </div>
       </div>

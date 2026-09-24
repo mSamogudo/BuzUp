@@ -3,6 +3,7 @@ import {
 } from "lucide-react";
 import Reveal from "../landing/Reveal";
 import TpmPagina, { EMAIL, TpmCallout, TpmIntro, useTpmMeta } from "./TpmChrome";
+import { useTpmCopy } from "./tpm-copy";
 
 /* Nossas políticas.
  *
@@ -12,72 +13,61 @@ import TpmPagina, { EMAIL, TpmCallout, TpmIntro, useTpmMeta } from "./TpmChrome"
  * boca da empresa um compromisso que ela não escreveu. Cada cartão leva à
  * fonte oficial.
  *
+ * Os documentos estão publicados em português. Com a página em inglês, os
+ * títulos traduzidos são uma tradução de trabalho — a ligação continua a levar
+ * ao original, que é o que vale.
+ *
  * O `rel="noreferrer"` acompanha o `target="_blank"` em todas: sem ele a
  * página aberta recebe `window.opener`. */
 
 const FONTE = "https://tpmtur.co.mz/nossas-politicas/";
 
-const POLITICAS = [
-  { titulo: "Política de Qualidade", Icone: Award },
-  { titulo: "Política de Saúde e Segurança no Trabalho", Icone: ShieldCheck },
-  { titulo: "Política de Responsabilidade Social", Icone: Globe2 },
-  { titulo: "Política de Compliance", Icone: BadgeCheck },
-  { titulo: "Política de Ética e Conduta Profissional", Icone: Scale },
-  { titulo: "Política de Inclusão e Diversidade", Icone: Users },
-  { titulo: "Política de Direitos Humanos", Icone: HeartHandshake },
-  { titulo: "Política de Combate à Escravatura Moderna", Icone: Link2Off },
-  { titulo: "Política de Recrutamento e Selecção Transparente", Icone: BadgeCheck },
-];
+const ICONES = [Award, ShieldCheck, Globe2, BadgeCheck, Scale, Users, HeartHandshake, Link2Off, BadgeCheck];
 
 export default function PoliticasPage() {
-  useTpmMeta(
-    "Nossas políticas — TPM-TUR",
-    "As políticas que a TPM-TUR assume na sua actividade: qualidade, segurança, compliance, ética, inclusão e direitos humanos.",
-  );
+  const { t } = useTpmCopy();
+  const p = t.politicas;
+  useTpmMeta(p.meta.titulo, p.meta.descricao);
 
   return (
     <TpmPagina activa="/tpm-tur/nossas-politicas">
-      <TpmIntro
-        migalha="Nossas políticas"
-        titulo="Como nos comprometemos a trabalhar."
-        descricao="As nove políticas que a TPM-TUR assume na sua actividade — da qualidade do serviço à conduta de quem o presta."
-      />
+      <TpmIntro migalha={p.migalha} titulo={p.titulo} descricao={p.descricao} />
 
       <section className="bzlp-sec">
         <div className="bzlp-wrap">
           <Reveal>
             <div className="bzlp-sechead left">
-              <div className="bzlp-kicker left">Políticas institucionais</div>
-              <h2 className="bzlp-h2 left">Nove compromissos</h2>
-              <p className="bzlp-lead left">
-                Cada política tem um documento próprio. O texto integral publicado pela
-                empresa é o que vale, e prevalece sobre qualquer apresentação feita aqui.
-              </p>
+              <div className="bzlp-kicker left">{p.kicker}</div>
+              <h2 className="bzlp-h2 left">{p.h2}</h2>
+              <p className="bzlp-lead left">{p.lead}</p>
             </div>
           </Reveal>
           <div className="tpm-politicas">
-            {POLITICAS.map(({ titulo, Icone }, i) => (
-              <Reveal key={titulo} delay={(i % 3) * 60}>
-                <article className="tpm-politica">
-                  <span className="tpm-politica-ico"><Icone size={22} aria-hidden /></span>
-                  <h3>{titulo}</h3>
-                  <p>Documento institucional publicado pela TPM-TUR, S.A.</p>
-                  <a href={FONTE} target="_blank" rel="noreferrer">
-                    Ler a política <ArrowUpRight size={15} aria-hidden />
-                  </a>
-                </article>
-              </Reveal>
-            ))}
+            {p.itens.map((titulo, i) => {
+              const Icone = ICONES[i];
+              return (
+                <Reveal key={titulo} delay={(i % 3) * 60}>
+                  <article className="tpm-politica">
+                    <span className="tpm-politica-ico"><Icone size={22} aria-hidden /></span>
+                    <h3>{titulo}</h3>
+                    <p>{p.subtitulo}</p>
+                    <a href={FONTE} target="_blank" rel="noreferrer">
+                      {p.ler} <ArrowUpRight size={15} aria-hidden />
+                    </a>
+                  </article>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </section>
 
       <TpmCallout
-        titulo="Tem uma questão sobre estas políticas?"
-        texto={`Escreva para ${EMAIL} e a equipa encaminha o pedido para quem o pode responder.`}
+        titulo={p.callout.h2}
+        texto={p.callout.p.replace("{email}", EMAIL)}
         assunto="Questão sobre as políticas da TPM-TUR"
-        cta="Contactar a TPM-TUR"
-        secundario={{ to: "/tpm-tur/sobre-nos", label: "Sobre a TPM-TUR" }}
+        cta={p.callout.cta}
+        secundario={{ to: "/tpm-tur/sobre-nos", label: p.callout.secundario }}
       />
     </TpmPagina>
   );

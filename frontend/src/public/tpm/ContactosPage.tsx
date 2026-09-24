@@ -6,12 +6,16 @@ import TpmPagina, {
   EMAIL, MORADA, TELEFONE, TELEFONE_FIXO, TELEFONE_FIXO_HREF, TELEFONE_HREF,
   TpmIntro, useTpmMeta,
 } from "./TpmChrome";
+import { useTpmCopy } from "./tpm-copy";
 
 /* Contactos.
  *
  * A morada completa é a que a empresa publica — a etiqueta que o Google mostra
  * no mapa ("2039 Rua da Resistência") é geocodificação dele, não o endereço que
  * a TPM-TUR dá de si própria. Vale o da empresa; o mapa mostra o que mostrar.
+ *
+ * A MORADA NÃO SE TRADUZ, nem com a página em inglês: é um endereço físico, e
+ * quem o lê tem de o conseguir dizer a um motorista de táxi em Maputo.
  *
  * Não há horário de atendimento nesta página porque não há nenhum confirmado.
  * Inventar "segunda a sexta, 8h-17h" seria mandar alguém a uma porta fechada. */
@@ -28,18 +32,13 @@ const MAPA_LINK =
   "https://www.google.com/maps/search/?api=1&query=TPM+TUR+Rua+da+Resistencia+Maputo";
 
 export default function ContactosPage() {
-  useTpmMeta(
-    "Contactos — TPM-TUR",
-    "Contacte a TPM-TUR em Maputo: telefones, email e localização na Rua da Resistência, Bairro de Maxaquene C.",
-  );
+  const { t } = useTpmCopy();
+  const c = t.contactos;
+  useTpmMeta(c.meta.titulo, c.meta.descricao);
 
   return (
     <TpmPagina activa="/tpm-tur/contactos">
-      <TpmIntro
-        migalha="Contactos"
-        titulo="Vamos conversar sobre a sua viagem."
-        descricao="Pedidos de orçamento, parcerias e informações. Aqui estão os contactos da TPM-TUR e onde nos encontrar."
-      />
+      <TpmIntro migalha={c.migalha} titulo={c.titulo} descricao={c.descricao} />
 
       <section className="bzlp-sec">
         <div className="bzlp-wrap">
@@ -48,20 +47,20 @@ export default function ContactosPage() {
               <div className="tpm-contactos-lista">
                 <article className="tpm-contacto-cartao">
                   <span className="tpm-contacto-ico"><Phone size={22} aria-hidden /></span>
-                  <h2>Ligue-nos</h2>
+                  <h2>{c.ligue}</h2>
                   <a href={TELEFONE_HREF}>{TELEFONE}</a>
                   <a href={TELEFONE_FIXO_HREF}>{TELEFONE_FIXO}</a>
                 </article>
 
                 <article className="tpm-contacto-cartao">
                   <span className="tpm-contacto-ico"><Mail size={22} aria-hidden /></span>
-                  <h2>Escreva-nos</h2>
+                  <h2>{c.escreva}</h2>
                   <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </article>
 
                 <article className="tpm-contacto-cartao">
                   <span className="tpm-contacto-ico"><MapPin size={22} aria-hidden /></span>
-                  <h2>Encontre-nos</h2>
+                  <h2>{c.encontre}</h2>
                   <p>
                     Rua da Resistência, Parcela Nº 24<br />
                     Bairro de Maxaquene C, 1º Andar<br />
@@ -78,7 +77,7 @@ export default function ContactosPage() {
                     no carregamento de quem nunca chega a rolar até aqui. */}
                 <iframe
                   src={MAPA}
-                  title="Mapa da localização da TPM-TUR, na Rua da Resistência, Maputo"
+                  title={c.mapaTitulo}
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
@@ -86,7 +85,7 @@ export default function ContactosPage() {
                 <div className="tpm-mapa-barra">
                   <span>{MORADA}</span>
                   <a href={MAPA_LINK} target="_blank" rel="noreferrer">
-                    Abrir no Google Maps <ArrowUpRight size={16} aria-hidden />
+                    {c.abrirMapa} <ArrowUpRight size={16} aria-hidden />
                   </a>
                 </div>
               </div>
@@ -108,15 +107,15 @@ export default function ContactosPage() {
       <section className="tpm-escolha">
         <div className="bzlp-wrap">
           <div className="tpm-escolha-head">
-            <h2>Já sabe para onde vai?</h2>
-            <p>Não precisa de nos ligar para comprar: escolha a partida e o lugar em linha.</p>
+            <h2>{c.banda.h2}</h2>
+            <p>{c.banda.p}</p>
           </div>
           {/* So o bilhete. "Pedir orcamento" vivia aqui tambem, e com o
               formulario logo acima passou a ser um atalho que salta por cima
               dele — duas portas para a mesma sala, e a pior primeiro. */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <Link to="/comprar" className="bzlp-btn gold">
-              <Ticket size={17} aria-hidden /> Comprar bilhete
+              <Ticket size={17} aria-hidden /> {c.banda.btn}
             </Link>
           </div>
         </div>

@@ -233,7 +233,7 @@ export default function ThemeCustomizer() {
                 id="tc-import"
                 className="tc-textarea"
                 rows={4}
-                placeholder='{"light": {"primary": "#087d99"}, "dark": {…}}'
+                placeholder='{"light": {"primary": "#00a1cd"}, "dark": {…}}'
                 value={importado}
                 onChange={(e) => setImportado(e.target.value)}
               />

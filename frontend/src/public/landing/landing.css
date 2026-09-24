@@ -114,7 +114,7 @@
 .bzlp-nav-cta{display:flex;align-items:center;gap:12px}
 .bzlp-ghost{font-weight:700;font-size:14px;color:var(--ink);
   display:inline-flex;align-items:center;min-height:38px;padding:0 6px}
-.bzlp-ghost:hover{color:var(--blue)}
+.bzlp-ghost:hover{color:var(--blue2)}
 .bzlp-burger{display:none;background:none;border:none;color:var(--ink);padding:8px;cursor:pointer}
 @media(max-width:900px){
   .bzlp-links{display:none}
@@ -346,7 +346,7 @@
 .bzlp-row p{font-size:15.5px;line-height:1.62;color:var(--muted-ink);margin:0}
 .bzlp-facts{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
 .bzlp-facts li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--ink)}
-.bzlp-facts svg{flex:0 0 auto;color:var(--blue);margin-top:3px}
+.bzlp-facts svg{flex:0 0 auto;color:var(--blue2);margin-top:3px}
 
 /* Formulário */
 .bzlp-form{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;

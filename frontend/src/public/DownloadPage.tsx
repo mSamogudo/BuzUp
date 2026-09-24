@@ -178,7 +178,10 @@ const CSS = `
 .bzdl-pill{display:inline-block;background:color-mix(in srgb, var(--primary) 12%, var(--card));color:color-mix(in srgb, var(--blue2) 88%, var(--ink));font-weight:700;font-size:12px;
   letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:30px;}
 .bzdl-hero h1{font-size:30px;font-weight:800;margin:14px 0 8px;line-height:1.15;}
-.bzdl-hero h1 span{color:var(--blue);}
+/* A tinta, e nao o ciano cheio: o oficial a 30px/800 sobre a pagina da
+   2,81:1, abaixo dos 3:1 que a norma pede a texto grande. (Sem crases
+   aqui dentro: a folha vive num template literal.) */
+.bzdl-hero h1 span{color:var(--blue2);}
 .bzdl-hero p{color:var(--muted-ink);font-size:15px;max-width:520px;margin:0 auto;line-height:1.5;}
 .bzdl-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media(max-width:720px){.bzdl-grid{grid-template-columns:1fr;}.bzdl-hero h1{font-size:24px;}}
@@ -192,7 +195,7 @@ const CSS = `
 .bzdl-desc{font-size:14px;color:var(--muted-ink);line-height:1.5;margin:0 0 14px;}
 .bzdl-feats{list-style:none;padding:0;margin:0 0 18px;display:grid;gap:9px;}
 .bzdl-feats li{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink);}
-.bzdl-feats li svg{color:var(--blue);flex:0 0 auto;}
+.bzdl-feats li svg{color:var(--blue2);flex:0 0 auto;}
 .bzdl-actions{margin-top:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .bzdl-btn{display:inline-flex;align-items:center;gap:9px;background:var(--blue);color:var(--primary-foreground);font-weight:700;font-size:15px;
   padding:13px 22px;border-radius:12px;transition:background .15s;}

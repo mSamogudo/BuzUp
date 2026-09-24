@@ -33,8 +33,11 @@
   --app-sidebar: var(--sidebar);
   --app-sidebar-text: var(--sidebar-foreground);
   --app-sidebar-text-strong: #e8eef5;
-  --app-sidebar-text-muted: #8aa7c9;
-  --app-sidebar-text-dim: #8aa4c4;
+  /* Estes dois niveis tem de passar sobre DOIS fundos: o marinho da barra e
+   * o institucional do item sob o rato. Afinados so contra o primeiro davam
+   * 4,24:1 e 4,11:1 assim que o rato passava por cima. */
+  --app-sidebar-text-muted: #98b2cf;
+  --app-sidebar-text-dim: #98b2cf;
   --app-sidebar-active: color-mix(in srgb, var(--sidebar-primary) 26%, transparent);
   --app-sidebar-separator: var(--sidebar-border);
 
@@ -89,8 +92,8 @@ html[data-theme="dark"] {
    * Ficam repetidos aqui apenas os ajustes que continuam a ser nossos. */
 
   --app-sidebar-text-strong: #e8eef5;
-  --app-sidebar-text-muted: #7592b6;
-  --app-sidebar-text-dim: #7592b6;
+  --app-sidebar-text-muted: #869fbf;
+  --app-sidebar-text-dim: #869fbf;
   --app-sidebar-active: color-mix(in srgb, var(--sidebar-primary) 24%, transparent);
 
   --app-shadow: 0 1px 3px rgba(0, 0, 0, 0.30), 0 1px 2px rgba(0, 0, 0, 0.20);
@@ -455,7 +458,7 @@ img {
 
 .admin-login-ambient svg {
   position: absolute;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   opacity: 0.03;
   stroke-width: 1.35;
   animation: ambientFloat 18s ease-in-out infinite;
@@ -523,7 +526,7 @@ img {
 .admin-kicker,
 .admin-topbar-kicker {
   margin: 0 0 8px;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1527,7 +1530,7 @@ body::-webkit-scrollbar,
   height: 24px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--app-accent) 14%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-weight: 900;
   font-size: 11.5px;
   display: inline-flex;
@@ -1603,7 +1606,7 @@ body::-webkit-scrollbar,
 }
 
 .dashboard-chart-header svg {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   opacity: 0.7;
 }
 
@@ -1684,7 +1687,7 @@ body::-webkit-scrollbar,
   height: 28px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1922,7 +1925,7 @@ body::-webkit-scrollbar,
 
 .admin-table-filter-row input:focus ~ .admin-table-filter-icon,
 .admin-table-filter-row:focus-within .admin-table-filter-icon {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .admin-table-filter-clear {
@@ -2085,7 +2088,7 @@ body::-webkit-scrollbar,
   place-items: center;
   border-radius: 10px;
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .confirm-dialog-icon-danger {
@@ -2365,7 +2368,7 @@ body::-webkit-scrollbar,
   padding: 0 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 10px;
   font-weight: 800;
 }
@@ -2397,7 +2400,7 @@ body::-webkit-scrollbar,
   height: 24px;
   border-radius: 6px;
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 11px;
   font-weight: 800;
 }
@@ -2429,7 +2432,7 @@ body::-webkit-scrollbar,
   height: 32px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--app-accent) 10%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 12px;
   font-weight: 800;
 }
@@ -2516,7 +2519,7 @@ body::-webkit-scrollbar,
 }
 
 .admin-tab-active {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   background: var(--app-surface);
   border-color: var(--app-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -2524,7 +2527,7 @@ body::-webkit-scrollbar,
 }
 
 .admin-tab-active strong {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 /* Segmented Control (pill toggle) */
@@ -2576,7 +2579,7 @@ body::-webkit-scrollbar,
   color: inherit;
 }
 
-.sortable-header:hover { color: var(--app-accent); }
+.sortable-header:hover { color: var(--app-accent-ink); }
 
 .sort-icon {
   display: inline-flex;
@@ -2586,7 +2589,7 @@ body::-webkit-scrollbar,
   transition: opacity 180ms ease;
 }
 
-.sort-icon-active { opacity: 1; color: var(--app-accent); }
+.sort-icon-active { opacity: 1; color: var(--app-accent-ink); }
 
 .sort-icon svg { display: block; }
 
@@ -2632,9 +2635,10 @@ body::-webkit-scrollbar,
 .admin-chip-button-active {
   border-color: color-mix(in srgb, var(--app-accent) 25%, transparent);
   background: color-mix(in srgb, var(--app-accent) 8%, transparent);
-  /* Teal sobre o proprio tom a 8% da 4,30:1 e chumba; a tinta de texto do
-     preset, cinco por cento mais escura, da 4,72:1. */
-  color: var(--primary-ink);
+  /* A etiqueta activa pinta-se com 8% da propria cor sobre branco — #ebf7fb —
+     e a tinta do preset da 4,45:1 sobre esse fundo: falha AA por cinco
+     centesimas. Mais 10% de marinho poe-na a 4,88:1 sem sair da familia. */
+  color: color-mix(in srgb, var(--primary-ink) 90%, var(--sidebar));
 }
 
 /* ==========================================================================
@@ -2691,7 +2695,7 @@ body::-webkit-scrollbar,
   display: grid;
   place-items: center;
   min-height: 200px;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .admin-loader svg {
@@ -3523,7 +3527,7 @@ html[data-theme="dark"] .recharts-legend-item-text {
 .login-field-icon { position: absolute; left: 14px; color: var(--app-text-muted); pointer-events: none; opacity: 0.4; z-index: 1; transition: all 200ms ease; }
 .login-field input { width: 100%; min-height: 48px; padding: 0 16px 0 44px; border: 1px solid var(--app-border); border-radius: 10px; font-size: 14px; background: var(--app-surface); color: var(--app-text); transition: all 200ms ease; }
 .login-field input:focus { outline: none; border-color: var(--app-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 12%, transparent); }
-.login-field input:focus ~ .login-field-icon { opacity: 1; color: var(--app-accent); }
+.login-field input:focus ~ .login-field-icon { opacity: 1; color: var(--app-accent-ink); }
 .login-submit { width: 100%; min-height: 48px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--app-accent-deep), color-mix(in srgb, var(--app-accent) 65%, var(--app-accent-deep))); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 200ms ease; margin-top: 8px; }
 .login-submit:hover { box-shadow: 0 4px 16px color-mix(in srgb, var(--app-accent-deep) 40%, transparent); transform: translateY(-1px); }
 .login-submit:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -3570,7 +3574,7 @@ html[data-theme="dark"] .recharts-legend-item-text {
 
 .login-mode-btn-active {
   background: var(--app-surface);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -3629,7 +3633,7 @@ html[data-theme="dark"] .recharts-legend-item-text {
 .otp-link-btn {
   border: none;
   background: none;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -3682,7 +3686,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .co-body { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 20px 16px; }
 .co-card { width: 100%; max-width: 440px; background: var(--app-surface-strong); border: 1px solid var(--app-border); border-radius: 16px; padding: 24px; animation: fadeIn 300ms ease; }
 .co-card h2 { font-family: Manrope, sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-.co-card-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent); margin-bottom: 12px; }
+.co-card-icon { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent-ink); margin-bottom: 12px; }
 .co-form { display: grid; gap: 12px; }
 .co-select, .co-input { width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid var(--app-border); border-radius: 10px; font-size: 14px; background: var(--app-surface); color: var(--app-text); transition: all 200ms ease; appearance: auto; }
 .co-select:focus, .co-input:focus { outline: none; border-color: var(--app-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 10%, transparent); }
@@ -3691,7 +3695,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .co-btn:hover { box-shadow: 0 4px 16px color-mix(in srgb, var(--app-accent-deep) 35%, transparent); transform: translateY(-1px); }
 .co-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .co-btn-outline { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; border: 1px solid var(--app-border); border-radius: 10px; background: transparent; color: var(--app-text); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 200ms ease; }
-.co-btn-outline:hover { border-color: var(--app-accent); color: var(--app-accent); }
+.co-btn-outline:hover { border-color: var(--app-accent); color: var(--app-accent-ink); }
 /* Escolhido. Estava escrito em `style` com o azul antigo da BusUp — nao
    acompanhava o tema nem se podia mudar de operador. */
 .co-btn-outline-on { border-color: var(--app-accent); color: var(--primary-ink); font-weight: 700; }
@@ -3705,7 +3709,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .co-trip { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 14px; border: 1px solid var(--app-border); border-radius: 12px; background: var(--app-surface); cursor: pointer; text-align: left; transition: all 200ms ease; }
 .co-trip:hover { border-color: var(--app-accent); box-shadow: 0 2px 8px color-mix(in srgb, var(--app-accent) 10%, transparent); transform: translateY(-1px); }
 .co-trip-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.co-trip-code { display: flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; border-radius: 10px; background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent); font-size: 13px; font-weight: 800; flex-shrink: 0; }
+.co-trip-code { display: flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; border-radius: 10px; background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent-ink); font-size: 13px; font-weight: 800; flex-shrink: 0; }
 .co-trip-details { display: flex; flex-direction: column; min-width: 0; }
 .co-trip-details strong { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .co-trip-details span { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--app-text-muted); }
@@ -3749,7 +3753,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .bus-pay-body { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 12px; }
 .bus-pay-card { width: 100%; max-width: 480px; background: var(--app-surface-strong); border: 1px solid var(--app-border); border-radius: 14px; padding: 16px; }
 .bus-pay-route-card { display: flex; align-items: center; gap: 12px; }
-.bus-pay-route-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent); flex-shrink: 0; }
+.bus-pay-route-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; background: color-mix(in srgb, var(--app-accent) 8%, transparent); color: var(--app-accent-ink); flex-shrink: 0; }
 .bus-pay-route-text { display: flex; flex-direction: column; min-width: 0; }
 .bus-pay-route-text strong { font-size: 15px; font-weight: 700; color: var(--app-text); }
 .bus-pay-route-text span { font-size: 12px; color: var(--app-text-muted); margin-top: 2px; }
@@ -3768,7 +3772,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .bus-pay-btn:active:not(:disabled) { transform: translateY(0); }
 .bus-pay-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .bus-pay-btn-outline { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; border: 1px solid var(--app-border); border-radius: 10px; background: transparent; color: var(--app-text); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-.bus-pay-btn-outline:hover { border-color: var(--app-accent); color: var(--app-accent); }
+.bus-pay-btn-outline:hover { border-color: var(--app-accent); color: var(--app-accent-ink); }
 .bus-pay-error { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 480px; padding: 10px 12px; background: color-mix(in srgb, var(--app-danger) 8%, transparent); border: 1px solid color-mix(in srgb, var(--app-danger) 18%, transparent); border-radius: 10px; color: var(--app-danger); font-size: 13px; }
 .bus-pay-error span { flex: 1; }
 .bus-pay-error button { border: none; background: none; color: var(--app-danger); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
@@ -3922,7 +3926,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .checkout-trip-route strong {
   font-size: 14px;
   font-weight: 700;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .checkout-trip-route span {
@@ -4180,7 +4184,7 @@ html[data-theme="dark"] .otp-digit:focus {
 }
 
 .portal-section-title svg {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   opacity: 0.7;
 }
 
@@ -4224,7 +4228,7 @@ html[data-theme="dark"] .otp-digit:focus {
   border-radius: 6px;
   background: var(--app-surface-soft);
   border: 1px solid var(--app-border);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   word-break: break-all;
 }
 
@@ -4289,7 +4293,7 @@ html[data-theme="dark"] .otp-digit:focus {
 }
 
 .portal-package-price {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
@@ -4324,7 +4328,7 @@ html[data-theme="dark"] .otp-digit:focus {
 }
 
 .portal-payment-note svg {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   flex: 0 0 auto;
 }
 
@@ -4485,7 +4489,7 @@ html[data-theme="dark"] .otp-digit:focus {
 
 .driver-trip-card span {
   font-size: 11px;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-weight: 800;
 }
 
@@ -4523,7 +4527,7 @@ html[data-theme="dark"] .otp-digit:focus {
 }
 
 .driver-trip-hero span {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
   font-size: 13px;
   font-weight: 800;
 }
@@ -4558,7 +4562,7 @@ html[data-theme="dark"] .otp-digit:focus {
 }
 
 .driver-metrics svg {
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .driver-metrics span,
@@ -4872,7 +4876,7 @@ html[data-theme="dark"] .otp-digit:focus {
   gap: 6px;
   font-size: 13px;
   cursor: pointer;
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 .branding-slot-upload input { display: none; }
 .branding-slot-upload span {
@@ -4971,7 +4975,7 @@ html[data-theme="dark"] .otp-digit:focus {
   background: color-mix(in srgb, var(--app-accent) 8%, var(--app-surface));
   box-shadow: inset 0 0 0 1px var(--app-accent);
 }
-.bzsched-mode svg { flex: none; color: var(--app-accent); }
+.bzsched-mode svg { flex: none; color: var(--app-accent-ink); }
 .bzsched-mode span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .bzsched-mode b { font-size: 13.5px; font-weight: 700; }
 .bzsched-mode small { font-size: 11.5px; color: var(--app-text-muted); }
@@ -4998,7 +5002,7 @@ html[data-theme="dark"] .otp-digit:focus {
   font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
   color: var(--app-text-muted);
 }
-.bzsched-h3 svg { color: var(--app-accent); }
+.bzsched-h3 svg { color: var(--app-accent-ink); }
 
 .bzsched-main-head {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -5008,7 +5012,7 @@ html[data-theme="dark"] .otp-digit:focus {
 .bzsched-count-pill {
   padding: 4px 11px; border-radius: 999px; font-size: 12px; font-weight: 700;
   background: color-mix(in srgb, var(--app-accent) 12%, transparent);
-  color: var(--app-accent);
+  color: var(--app-accent-ink);
 }
 
 .bzsched-times { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
@@ -5026,7 +5030,7 @@ html[data-theme="dark"] .otp-digit:focus {
   border: 1px dashed var(--app-border); border-radius: 10px;
   background: none; color: var(--app-text-muted);
 }
-.bzsched-add:hover { border-color: var(--app-accent); color: var(--app-accent); }
+.bzsched-add:hover { border-color: var(--app-accent); color: var(--app-accent-ink); }
 
 /* Sentido da partida: dois botoes lado a lado em vez de um select.
    Sao duas opcoes fixas e mutuamente exclusivas, e a escolha muda o que se
@@ -5083,7 +5087,7 @@ html[data-theme="dark"] .otp-digit:focus {
   box-shadow: 0 -2px 18px rgba(0, 0, 0, 0.06);
 }
 .bzsched-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; min-width: 0; }
-.bzsched-total { display: inline-flex; align-items: baseline; gap: 8px; color: var(--app-accent); }
+.bzsched-total { display: inline-flex; align-items: baseline; gap: 8px; color: var(--app-accent-ink); }
 .bzsched-total svg { align-self: center; }
 .bzsched-total strong { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 .bzsched-total span { font-size: 13px; }
@@ -5104,7 +5108,7 @@ html[data-theme="dark"] .otp-digit:focus {
   border-radius: 8px; border: 1px solid var(--app-border);
   background: var(--app-surface); color: var(--app-text);
 }
-.bzcal-nav:hover:not(:disabled) { border-color: var(--app-accent); color: var(--app-accent); }
+.bzcal-nav:hover:not(:disabled) { border-color: var(--app-accent); color: var(--app-accent-ink); }
 .bzcal-nav:disabled { opacity: .3; cursor: default; }
 
 .bzcal-shortcuts { display: inline-flex; flex-wrap: wrap; gap: 5px; }
@@ -5113,7 +5117,7 @@ html[data-theme="dark"] .otp-digit:focus {
   font-size: 12px; font-weight: 600; border-radius: 999px;
   border: 1px solid var(--app-border); background: var(--app-surface); color: var(--app-text);
 }
-.bzcal-shortcut:hover:not(:disabled) { border-color: var(--app-accent); color: var(--app-accent); }
+.bzcal-shortcut:hover:not(:disabled) { border-color: var(--app-accent); color: var(--app-accent-ink); }
 .bzcal-shortcut.is-quiet { color: var(--app-text-muted); }
 .bzcal-shortcut:disabled { opacity: .35; cursor: default; }
 
@@ -5135,7 +5139,7 @@ html[data-theme="dark"] .otp-digit:focus {
   letter-spacing: .3px; color: var(--app-text-muted);
   background: none; border: 0; border-radius: 6px;
 }
-.bzcal-weekday:hover { color: var(--app-accent); background: color-mix(in srgb, var(--app-accent) 10%, transparent); }
+.bzcal-weekday:hover { color: var(--app-accent-ink); background: color-mix(in srgb, var(--app-accent) 10%, transparent); }
 .bzcal-empty { height: 32px; }
 .bzcal-day {
   height: 32px; display: grid; place-items: center; cursor: pointer; position: relative;
@@ -5188,7 +5192,7 @@ html[data-theme="dark"] .otp-digit:focus {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: 10px; margin-bottom: 12px;
 }
-.bztw-count { display: inline-flex; align-items: baseline; gap: 8px; color: var(--app-accent); }
+.bztw-count { display: inline-flex; align-items: baseline; gap: 8px; color: var(--app-accent-ink); }
 .bztw-count svg { align-self: center; }
 .bztw-count strong { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
 .bztw-count span { font-size: 13px; color: var(--app-text-muted); }
@@ -5386,7 +5390,7 @@ html[data-theme="dark"] .fare-matrix td input.fare-matrix-empty { background: co
 .bus-pay-accept [data-slot=checkbox] { width: 18px; height: 18px; flex: none; margin-top: 1px; cursor: pointer; }
 .bus-pay-terms-link {
   padding: 0; border: 0; background: none; font: inherit; font-weight: 700;
-  color: var(--app-accent); text-decoration: underline; text-underline-offset: 2px;
+  color: var(--app-accent-ink); text-decoration: underline; text-underline-offset: 2px;
   cursor: pointer;
 }
 

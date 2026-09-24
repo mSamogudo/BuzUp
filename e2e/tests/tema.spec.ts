@@ -8,7 +8,9 @@ import { irPara } from './apoio'
  *  sobrevive a um recarregamento. Sao as tres coisas que a migracao das fases
  *  seguintes nao pode partir. */
 
-const teal = '#087d99'
+/** O ciano oficial da TPM-TUR. Fixado de proposito: e um contrato de
+ *  marca, e se mudar sem querer alguem tem de dar por isso. */
+const ciano = '#00a1cd'
 
 async function lerPrimary(page: import('@playwright/test').Page) {
   return page.evaluate(() =>
@@ -23,7 +25,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('abre com o tema TPM-TUR e mostra a lista de presets', async ({ page }) => {
-  expect(await lerPrimary(page)).toBe(teal)
+  expect(await lerPrimary(page)).toBe(ciano)
 
   await page.locator('.tc-listbox-botao').click()
   const opcoes = page.locator('.tc-listbox [role=option]')
@@ -36,7 +38,7 @@ test('trocar de preset repinta, e repor devolve o TPM-TUR', async ({ page }) => 
   await page.locator('.tc-listbox-botao').click()
   await page.locator('.tc-listbox [role=option]').nth(4).click()
 
-  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).not.toBe(teal)
+  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).not.toBe(ciano)
 
   // A barra lateral tem de acompanhar: muitos presets nao trazem variaveis de
   // barra e sao derivadas do proprio preset. Sem isso ficava navy num tema
@@ -44,16 +46,16 @@ test('trocar de preset repinta, e repor devolve o TPM-TUR', async ({ page }) => 
   const barra = await page.evaluate(
     () => getComputedStyle(document.querySelector('.admin-sidebar')!).backgroundColor,
   )
-  expect(barra).not.toBe('rgb(16, 45, 79)')
+  expect(barra).not.toBe('rgb(3, 49, 107)')  // o marinho oficial
 
   await page.getByRole('button', { name: /repor tpm-tur/i }).click()
-  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).toBe(teal)
+  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).toBe(ciano)
 })
 
 test('a escolha sobrevive a um recarregamento', async ({ page }) => {
   await page.locator('.tc-listbox-botao').click()
   await page.locator('.tc-listbox [role=option]').nth(4).click()
-  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).not.toBe(teal)
+  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).not.toBe(ciano)
   const escolhido = await lerPrimary(page)
 
   await page.reload({ waitUntil: 'networkidle' })
@@ -62,7 +64,7 @@ test('a escolha sobrevive a um recarregamento', async ({ page }) => {
   // Nao deixar o ambiente sujo para os testes seguintes.
   await page.getByRole('button', { name: /personalizar tema/i }).click()
   await page.getByRole('button', { name: /repor tpm-tur/i }).click()
-  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).toBe(teal)
+  await expect.poll(() => lerPrimary(page), { timeout: 10_000 }).toBe(ciano)
 })
 
 test('o arredondamento muda e fica marcado', async ({ page }) => {

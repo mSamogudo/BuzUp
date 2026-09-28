@@ -39,6 +39,7 @@ export default function CheetahLandingPage() {
           ela foi feita para ser, e é o que o site oficial faz. */}
       <section className="che-hero">
         <div className="che-hero-in">
+          <div className="che-hero-topo">
           <div className="che-hero-copy">
             <span className="bzlp-badge">{i.hero.badge}</span>
             <h1>{i.hero.h1} <span>{i.hero.h1destaque}</span></h1>
@@ -68,16 +69,21 @@ export default function CheetahLandingPage() {
               decoding="async"
             />
           </div>
+          </div>
+
+          {/* A compra começa DENTRO da chapa, e não a cavalo dela.
+              Estava a seguir ao hero, com margem negativa a puxá-lo para cima:
+              o desenho lia-se bem, mas a conta nunca fechava — mesmo com a
+              chapa no mínimo, a coluna de texto mais o respiro já valiam
+              548px, e somados à barra e aos 435px que o cartão mede em ecrã
+              médio davam 1001px numa dobra de 900. Aqui dentro, a chapa e o
+              cartão são um bloco só e cabem na primeira vista por construção,
+              em vez de por subtracção. */}
+          <div className="che-hero-busca">
+            <HeroBusca textos={t.heroBusca} />
+          </div>
         </div>
       </section>
-
-      {/* A compra começa aqui, e não a um clique de distância. O cartão fica a
-          cavalo entre o hero e a página — metade sobre cada um. */}
-      <div className="che-hero-busca">
-        <div className="che-hero-busca-in">
-          <HeroBusca textos={t.heroBusca} />
-        </div>
-      </div>
 
       {/* PROVAS — os quatro pontos que o site oficial destaca. */}
       <section className="bzlp-sec" id="porque">

@@ -155,16 +155,37 @@
    para ser, e e tambem o que o site oficial faz. */
 .che-hero {
   position: relative;
-  /* A mesma altura do hero da TPM-TUR, e pelo mesmo motivo: e a chapa que da
-     peso a marca antes de qualquer texto. Os 88vh cedem aos 760px em ecras
-     altos, para o hero nao crescer sem fim num monitor em pe.
+  /* A CHAPA E O CARTAO CABEM JUNTOS NA PRIMEIRA VISTA.
+     A altura do hero nao e um numero escolhido: e o que sobra depois de tirar
+     a barra e a parte do cartao que fica abaixo dele. Por isso e uma conta e
+     nao um `88vh` — com altura fixa, o cartao acabava 113px abaixo da dobra
+     num ecra de 900px, e a accao principal da pagina ficava por ver.
 
-     `flex` + `align-items: center` porque a altura passou a ser imposta e nao
-     calculada: sem isto o conteudo encostava ao topo e sobrava uma faixa
-     preta vazia em baixo. */
+     `svh` e nao `vh`: no telemovel o `vh` conta com a barra do browser
+     recolhida, e o cartao voltava a cair fora da primeira vista enquanto ela
+     estivesse aberta.
+
+     O `clamp` poe um chao e um tecto: abaixo de 420px a chapa deixava de
+     conseguir com o texto, e acima de 760px crescia sem fim num monitor em pe
+     — 760px e a altura do hero da TPM-TUR, e e o limite certo.
+
+     `align-items: center` porque a altura e imposta e nao calculada: sem isto
+     o conteudo encostava ao topo e sobrava faixa preta em baixo. */
   display: flex;
   align-items: center;
-  min-height: min(88vh, 760px);
+  --nav-h: 72px;
+  /* A chapa E o cartao sao um bloco so, e esse bloco e a primeira vista menos
+     a barra. Nao ha aqui subtraccao nenhuma da altura do cartao: ele vive la
+     dentro, por isso a conta fecha por construcao.
+
+     `svh` e nao `vh`: no telemovel o `vh` conta com a barra do browser
+     recolhida, e o bloco caia fora da primeira vista enquanto ela estivesse
+     aberta.
+
+     `min-height` e nao `height`: em ecras baixos ou com o cartao empilhado o
+     conteudo manda, a chapa cresce e a pagina rola — que e o correcto.
+     Prometer uma altura que o conteudo nao cabe daria texto cortado. */
+  min-height: calc(100svh - var(--nav-h));
   background: linear-gradient(158deg, var(--navy) 0%, var(--navy2) 62%, var(--navy3) 100%);
   color: var(--on-navy);
   overflow: hidden;
@@ -188,13 +209,24 @@
   width: 100%;              /* filho de um flex: sem isto encolhia ao conteudo */
   max-width: 1120px;
   margin: 0 auto;
-  /* O fundo e maior do que o topo porque o cartao de pesquisa sobe 54px por
-     cima desta chapa: sem a folga, a linha do grupo ficava por baixo dele. */
-  padding: 64px 22px 96px;
+  /* O respiro encolhe com a altura do ecra. Fixo em 64/96 punha um chao de
+     160px que, somado a coluna de texto, nao deixava a chapa descer o
+     suficiente num portatil baixo. */
+  padding: clamp(24px, 4svh, 56px) 22px clamp(24px, 4svh, 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(20px, 4svh, 40px);
+}
+
+/* O par texto/imagem. O cartao e irmao disto, e nao coluna: a largura toda e
+   dele, como no site oficial. */
+.che-hero-topo {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 40px;
   align-items: center;
+  min-height: 0;   /* filho de flex: sem isto nao encolhia abaixo do conteudo */
 }
 .che-hero-copy h1 {
   margin: 14px 0 0;
@@ -225,19 +257,32 @@
 }
 .che-hero-grupo a { color: var(--gold); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .che-hero-art { display: flex; justify-content: center; }
+/* As variaveis vivem em `.che-hero` e herdam ate aqui — e delas que a altura
+   maxima da imagem depende. */
 .che-hero-art img {
   display: block;
-  width: 100%;
-  max-width: 400px;
+  /* Limitada pela ALTURA e nao pela largura: e a altura que e escassa agora
+     que a chapa encolhe com o ecra. Presa a `max-width`, uma imagem de
+     proporcao 1000x1444 empurrava a chapa para alem do que a conta lhe dava e
+     o cartao voltava a cair fora da vista.
+     A conta tira da primeira vista tudo o que nao e imagem: a barra, o cartao
+     (que agora esta dentro da chapa) e os respiros.
+
+     O `max(200px, ...)` e o que impede o colapso: sem ele, num ecra de 844px
+     com o cartao empilhado a 553px a conta dava 29px e a imagem desaparecia —
+     ficavam 20x29 pixeis de carrinha. Abaixo desse chao a chapa cresce e a
+     pagina rola, que e preferivel a uma imagem que nao se ve. */
+  width: auto;
+  max-width: 100%;
+  max-height: max(200px, min(578px, calc(100svh - var(--nav-h, 72px) - var(--cartao-h, 234px) - 190px)));
   height: auto;
   /* `object-fit` nao entra aqui: a imagem tem proporcao propria e e ela que
      manda. Esticar uma composicao recortada le-se logo. */
   filter: drop-shadow(0 26px 46px rgba(0, 0, 0, 0.45));
 }
 
-/* O cartao de pesquisa assenta a cavalo entre o hero e a pagina. */
-.che-hero-busca { position: relative; z-index: 3; margin-top: -54px; }
-.che-hero-busca-in { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 22px; }
+/* Vive dentro da chapa: nem margem negativa, nem contentor proprio. */
+.che-hero-busca { position: relative; z-index: 3; width: 100%; }
 
 /* ── Provas ────────────────────────────────────────────────────────── */
 
@@ -449,8 +494,58 @@
 
 /* ── Ecras estreitos ───────────────────────────────────────────────── */
 
+/* Abaixo de 1080px o cartao passa a 435px, e a conta tem de saber disso. O
+   chao do hero desce para 340px porque e o que ainda deixa respirar o titulo,
+   o texto e os dois botoes — abaixo disso a chapa deixava de fazer o trabalho
+   dela. E o cartao aperta: os atalhos de destino sao o que ali ha de mais
+   dispensavel, e valem 50px que a primeira vista precisa mais. */
+/* O limite de baixo nao e decorativo: `.bzlp-cheetah .bz-busca-campos` vale
+   0,2,0 e batia o `.bz-busca-campos` de `comum/busca.css` que poe UMA coluna
+   abaixo de 560px. Sem o `min-width`, um telemovel de 390px ficava com origem,
+   trocar e destino lado a lado em 146px cada — tres colunas onde nao cabem
+   tres palavras. */
+@media (min-width: 561px) and (max-width: 1080px) {
+  /* O cartao partilhado passa aqui a duas colunas e da ao botao de trocar uma
+     FILA INTEIRA, o que o leva de 234 para 435px — e com isso a primeira vista
+     deixava de chegar. Tres colunas resolvem sem perder nada: origem, trocar e
+     destino na primeira fila; data, volta e passageiros na segunda. O botao
+     volta a ser o disco que e entre os dois campos, que e onde ele pertence.
+
+     Escrito aqui e nao em `comum/busca.css` de proposito: aquele ficheiro e
+     partilhado com a TPM-TUR, que nao tem este problema — o cartao dela vive
+     fora da chapa e pode crescer. */
+  .bzlp-cheetah .bz-busca-campos,
+  .bzlp-cheetah .bz-busca-campos.tem-volta {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .bzlp-cheetah .bz-busca-inverter {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    grid-column: auto;
+    margin-bottom: 3px;
+  }
+  .bzlp-cheetah .bz-busca-inverter:hover { transform: rotate(180deg); }
+  .che-hero { --cartao-h: 300px; }
+}
+/* Abaixo de 560px o cartao vai a 553px e a chapa ja empilhou a imagem por
+   cima do texto. Aqui a promessa DEIXA DE SER POSSIVEL — so a barra mais o
+   cartao comem 625px de um telemovel de 844px, e sobravam 219px para uma
+   imagem, um titulo, um texto e dois botoes. A conta passa a servir so de
+   minimo e a pagina rola, que e o que se espera num telemovel. */
+@media (max-width: 560px) {
+  /* Um campo por linha: 553px. Somados a barra, sobram 219px de um telemovel
+     de 844px para uma imagem, um titulo, um texto e dois botoes — a primeira
+     vista DEIXA DE CHEGAR, e a chapa cresce e a pagina rola. E o que se
+     espera num telemovel, e e melhor do que cortar o texto. */
+  .che-hero { --cartao-h: 553px; }
+}
+
 @media (max-width: 980px) {
-  .che-hero-in { grid-template-columns: 1fr; gap: 28px; padding: 44px 22px 78px; }
+  .che-hero-topo { grid-template-columns: 1fr; gap: 24px; }
+  /* Empilhada, e a largura que manda: a conta da altura so servia enquanto a
+     imagem dividia a fila com o texto. */
+  .che-hero-art img { max-height: none; max-width: 280px; width: 100%; }
   .che-hero-art { order: -1; }
   .che-hero-art img { max-width: 280px; }
   .che-provas { grid-template-columns: repeat(2, 1fr); }
@@ -459,7 +554,6 @@
 }
 @media (max-width: 620px) {
   .che-provas { grid-template-columns: 1fr; }
-  .che-hero-busca { margin-top: -38px; }
   /* No telemovel a barra e logotipo + CTA + hamburger, e nao havia largura
      para os tres: o botao partia "Comprar bilhete" em duas linhas e empurrava
      a barra de 72px para 84px. O logotipo cede os 28px que faltavam e o texto

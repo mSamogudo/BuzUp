@@ -180,6 +180,37 @@
   .bzlp-cheetah .che-parceiro:hover { transform: translate3d(0, -2px, 0); border-color: var(--blue); }
 }
 
+/* ── A frota a estacionar ──────────────────────────────────────────────
+   As tres viaturas entram pela direita e TRAVAM nos seus lugares. A
+   desaceleracao e a animacao toda: e o que estacionar parece de perto.
+
+   O PERCURSO E CURTO — 16 a 26% da largura, e nao o ecra inteiro. Nao e
+   modestia: as viaturas foram recortadas na fronteira onde se tapam umas as
+   outras, e essas arestas so ficam escondidas quando as tres estao nos seus
+   lugares. Um percurso longo poria-as a nu a meio do caminho.
+
+   A de TRAS chega primeiro e as da frente vao-na tapando, com 150ms entre
+   cada. E assim que uma fila se forma; ao contrario, as ultimas a chegar
+   apareciam por tras das que ja la estavam.
+
+   900ms, que e mais do que os 300 de uma interface — e isto nao e interface, e
+   uma faixa de marca que se ve uma vez por visita, e uma travagem de 200ms nao
+   se leria como travagem. Transicao e nao fotogramas: dispara uma vez e nao ha
+   nada para interromper. */
+
+.che-frota-v {
+  opacity: 0;
+  transform: translate3d(var(--de, 20%), 0, 0);
+  transition:
+    transform 900ms var(--che-ease-out),
+    opacity 420ms ease;
+  transition-delay: calc(var(--ordem, 0) * 150ms);
+}
+.che-frota[data-chegou] .che-frota-v {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
 /* ── A rota ────────────────────────────────────────────────────────────
    A linha que liga as paragens DESENHA-SE ao rolar, e os pontos acendem-se um
    a um. Nao e ornamento: e a unica animacao deste site que explica uma coisa —
@@ -250,6 +281,9 @@
     transition: opacity 240ms ease;
   }
   .che-onda { animation: none; }
+  /* A frota aparece ja estacionada: o que ela mostra e a frota, nao a manobra. */
+  .che-frota-v { transform: none; transition: opacity 240ms ease; }
+  .che-frota[data-chegou] .che-frota-v { transform: none; }
   .che-prova .che-prova-ico svg * { stroke-dasharray: none; stroke-dashoffset: 0; transition: none; }
   .bzlp-cheetah .che-servico:hover,
   .bzlp-cheetah .che-servico[data-recuado] { transform: none; opacity: 1; }

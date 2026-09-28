@@ -4,6 +4,7 @@ import { ArrowRight, Bus, Clock3, Snowflake, Wifi } from "lucide-react";
 import CheRevela from "./CheRevela";
 import HeroArte from "./HeroArte";
 import HeroDecoracoes from "./HeroDecoracoes";
+import FrotaChegada from "./FrotaChegada";
 import RotaParagens from "./RotaParagens";
 import HeroBusca from "../comum/HeroBusca";
 import CheetahPagina, { pedido, useCheetahMeta } from "./CheetahChrome";
@@ -205,8 +206,24 @@ export default function CheetahLandingPage() {
         </div>
       </section>
 
+      {/* A FROTA — as três viaturas entram e estacionam. Fica depois da rota
+          porque a ordem de leitura é: o que fazemos, por onde passamos, e em
+          quê. Ver FrotaChegada. */}
+      <section className="bzlp-sec alt" id="frota">
+        <div className="bzlp-wrap">
+          <CheRevela>
+            <div className="bzlp-sechead">
+              <div className="bzlp-kicker">{i.frota.kicker}</div>
+              <h2 className="bzlp-h2">{i.frota.h2}</h2>
+              <p className="bzlp-lead">{i.frota.lead}</p>
+            </div>
+          </CheRevela>
+          <FrotaChegada />
+        </div>
+      </section>
+
       {/* PARCEIROS */}
-      <section className="bzlp-sec alt" id="parceiros">
+      <section className="bzlp-sec" id="parceiros">
         <div className="bzlp-wrap">
           <CheRevela>
             <div className="bzlp-sechead">

@@ -542,6 +542,43 @@
 .che-servico.che-s-laranja h3 span { color: #fff; }
 .che-servico.che-s-laranja .che-servico-cta { background: var(--ink); color: #fff; }
 
+/* ── A frota ───────────────────────────────────────────────────────────
+   Tres viaturas recortadas da mesma fotografia, postas nas posicoes que
+   ocupavam nela. `position: absolute` em percentagem porque e assim que a fila
+   se mantem igual em qualquer largura: se fossem colocadas em pixeis, a
+   composicao desfazia-se ao encolher o ecra.
+
+   `aspect-ratio` no contentor reserva a altura ANTES de as imagens chegarem —
+   sem ele a pagina saltava quando a primeira carregasse. */
+.che-frota {
+  position: relative;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.che-frota-v {
+  position: absolute;
+  display: block;
+  height: auto;
+  /* A ordem de desenho e de tras para a frente: a da direita fica por cima, que
+     e como estao na fotografia. Sem isto as arestas de corte apareciam. */
+  z-index: calc(var(--ordem) + 1);
+}
+
+/* No telemovel a faixa sai das margens e vai de bordo a bordo. Tres viaturas
+   numa moldura de 1,73:1 dentro de 346px deixavam a mais pequena com 55px de
+   altura — os 44px das margens sao 13% que ali fazem diferenca.
+   Continua pequena: um telemovel nao tem largura para tres viaturas lado a
+   lado, e a alternativa seria cortar a fila, que e perder a fila. */
+@media (max-width: 700px) {
+  .che-frota {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+}
+
 /* ── A rota ────────────────────────────────────────────────────────── */
 
 .che-rota { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }

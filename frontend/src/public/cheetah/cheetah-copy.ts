@@ -161,6 +161,14 @@ const PT = {
         { t: "África do Sul", paragens: ["Komatipoort — Estação de serviço Engen", "Nelspruit — Ilanga Mall, entrada Mopani", "Nelspruit — Riverside Mall"] },
       ],
     },
+    frota: {
+      kicker: "A frota",
+      h2: "As viaturas que o levam",
+      /* Só se diz o que a marca já diz de si própria — o ar condicionado e o
+         Wi-Fi vêm das provas do site oficial. Lugares e anos de matrícula não
+         se inventam. */
+      lead: "Minibus e carrinhas para grupos de todos os tamanhos. Toda a frota é climatizada e tem Wi-Fi a bordo.",
+    },
     parceiros: {
       kicker: "Parceiros",
       h2: "Quem anda connosco",
@@ -505,6 +513,11 @@ const EN: typeof PT = {
         { t: "Mozambique", paragens: ["Praia do Tofo — Tofo Market", "Tofo — Babalaza Supermarket", "Maputo — Fatima's Backpackers, Av. Mao Tse Tung", "Maputo — Mundo's restaurant, Av. Eduardo Mondlane", "Matola — Shoprite, main gates"] },
         { t: "South Africa", paragens: ["Komatipoort — Engen service station", "Nelspruit — Ilanga Mall, Mopani entrance", "Nelspruit — Riverside Mall"] },
       ],
+    },
+    frota: {
+      kicker: "The fleet",
+      h2: "The vehicles that take you",
+      lead: "Minibuses and vans for groups of every size. The whole fleet is air-conditioned and has Wi-Fi on board.",
     },
     parceiros: {
       kicker: "Partners",

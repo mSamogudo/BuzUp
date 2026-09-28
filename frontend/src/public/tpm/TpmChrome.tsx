@@ -30,8 +30,20 @@ export const TELEFONE_FIXO = "+258 21 418 684";
 export const TELEFONE_FIXO_HREF = "tel:+258214186884";
 export const MORADA = "Maputo, Moçambique · 1104";
 
-const LOGO_CLARO = "/assets/tpm-tur-logo/tpm_light.png"; // wordmark escuro, para fundo claro
-const LOGO_ESCURO = "/assets/tpm-tur-logo/tpm_dark.png"; // wordmark claro, para fundo escuro
+/* Os PNG de origem tem 2172px e 2508px de largura e pesavam 1093KB e 285KB —
+ * mais de um megabyte so para uma barra que os mostra a 64px de altura. Estes
+ * sao os mesmos logotipos a 180px, que e o DOBRO da maior utilizacao na web (o
+ * ecra de arranque, a 84px), em WebP SEM PERDAS.
+ *
+ * Sem perdas e nao com perdas, e isso foi medido: a 92 de qualidade o erro
+ * chegava a 161/255 nos pixeis com tinta e um quarto deles desviava mais de
+ * 12. Num logotipo com "TRANSPORTE E TURISMO" em corpo miudo isso ve-se, e um
+ * logotipo e um bem de marca. Os 14KB que se poupavam nao pagam isso.
+ *
+ * Os PNG grandes ficam para os PDF, mas do lado do BACKEND — ele le de
+ * `backend/static/assets/`, que e uma copia separada desta. */
+const LOGO_CLARO = "/assets/tpm-tur-logo/tpm_light.webp"; // wordmark escuro, para fundo claro
+const LOGO_ESCURO = "/assets/tpm-tur-logo/tpm_dark.webp"; // wordmark claro, para fundo escuro
 
 /* Créditos do rodapé: o sistema e quem o fez.
  *

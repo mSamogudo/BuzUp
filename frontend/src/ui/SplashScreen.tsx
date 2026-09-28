@@ -41,10 +41,11 @@ const BUSUP: Marca = {
 
 const TPM: Marca = {
   id: "tpm",
-  /* A versão de 2508px pesa 285KB. Num ecrã que tem de aparecer no instante,
-     isso é o suficiente para se ver a chapa vazia primeiro. Esta é a mesma
-     imagem a 720px — 56KB — que é o dobro da altura de uso, para ecrãs densos. */
-  logo: { src: "/assets/tpm-tur-logo/tpm_dark_splash.png", w: 720, h: 180, alt: "TPM-TUR, S.A." },
+  /* O mesmo ficheiro que a barra e o rodapé usam: 720x180 em WebP sem perdas,
+     43KB contra os 285KB do PNG de origem. Um só ficheiro para as três
+     utilizações significa também que o do arranque já está em cache quando a
+     barra aparece. */
+  logo: { src: "/assets/tpm-tur-logo/tpm_dark.webp", w: 720, h: 180, alt: "TPM-TUR, S.A." },
   sistema: { src: "/assets/busup/logo-dark.png", w: 444, h: 165 },
   updigital: { src: "/assets/up-digital-logo/up_digital_light.png", w: 447, h: 180 },
 };

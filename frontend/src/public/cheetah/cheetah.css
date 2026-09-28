@@ -155,6 +155,16 @@
    para ser, e e tambem o que o site oficial faz. */
 .che-hero {
   position: relative;
+  /* A mesma altura do hero da TPM-TUR, e pelo mesmo motivo: e a chapa que da
+     peso a marca antes de qualquer texto. Os 88vh cedem aos 760px em ecras
+     altos, para o hero nao crescer sem fim num monitor em pe.
+
+     `flex` + `align-items: center` porque a altura passou a ser imposta e nao
+     calculada: sem isto o conteudo encostava ao topo e sobrava uma faixa
+     preta vazia em baixo. */
+  display: flex;
+  align-items: center;
+  min-height: min(88vh, 760px);
   background: linear-gradient(158deg, var(--navy) 0%, var(--navy2) 62%, var(--navy3) 100%);
   color: var(--on-navy);
   overflow: hidden;
@@ -175,9 +185,12 @@
 .che-hero-in {
   position: relative;
   z-index: 1;
+  width: 100%;              /* filho de um flex: sem isto encolhia ao conteudo */
   max-width: 1120px;
   margin: 0 auto;
-  padding: 56px 22px 64px;
+  /* O fundo e maior do que o topo porque o cartao de pesquisa sobe 54px por
+     cima desta chapa: sem a folga, a linha do grupo ficava por baixo dele. */
+  padding: 64px 22px 96px;
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 40px;
@@ -215,7 +228,7 @@
 .che-hero-art img {
   display: block;
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   height: auto;
   /* `object-fit` nao entra aqui: a imagem tem proporcao propria e e ela que
      manda. Esticar uma composicao recortada le-se logo. */
@@ -437,7 +450,7 @@
 /* ── Ecras estreitos ───────────────────────────────────────────────── */
 
 @media (max-width: 980px) {
-  .che-hero-in { grid-template-columns: 1fr; gap: 28px; padding: 44px 22px 56px; }
+  .che-hero-in { grid-template-columns: 1fr; gap: 28px; padding: 44px 22px 78px; }
   .che-hero-art { order: -1; }
   .che-hero-art img { max-width: 280px; }
   .che-provas { grid-template-columns: repeat(2, 1fr); }
@@ -447,6 +460,21 @@
 @media (max-width: 620px) {
   .che-provas { grid-template-columns: 1fr; }
   .che-hero-busca { margin-top: -38px; }
+  /* No telemovel a barra e logotipo + CTA + hamburger, e nao havia largura
+     para os tres: o botao partia "Comprar bilhete" em duas linhas e empurrava
+     a barra de 72px para 84px. O logotipo cede os 28px que faltavam e o texto
+     do botao deixa de poder quebrar. */
+  .bzlp-cheetah .bzlp-nav-in img { height: 32px; width: auto; }
+  .bzlp-cheetah .bzlp-nav-cta {
+    /* 12px entre tres elementos numa barra de 346px uteis e espaco que o
+       texto do botao precisa mais. */
+    gap: 8px;
+  }
+  .bzlp-cheetah .bzlp-nav-cta .bzlp-btn {
+    white-space: nowrap;
+    font-size: 13.5px;
+    padding: 9px 12px;
+  }
   .che-cta-in { flex-direction: column; align-items: flex-start; padding: 40px 22px; }
   .che-parceiro { width: calc(50% - 8px); height: 80px; }
 }

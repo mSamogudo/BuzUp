@@ -33,11 +33,26 @@
   --navy2: #0f1012;
   --navy3: #0b0c0d;
 
+  /* A tipografia da marca, declarada em `cheetah-fontes.css` e alojada nesta
+     aplicacao. */
+  font-family: 'DM Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
+
   --vermelho-marca: #ea1d23;   /* o oficial, para chapa e titulos grandes */
+  /* DUAS COISAS DIFERENTES, e confundi-las custou-me o botao principal.
+     `--amarelo` e o AMARELO DA MARCA: o botao de comprar, os destaques. E
+     constante nos dois temas, porque a marca e.
+     `--chapa-*` sao os dois extremos do gradiente do hero, e ESSES escurecem
+     no tema escuro. Enquanto o `--gold` apontava ao `--amarelo` e o `--amarelo`
+     escurecia com a chapa, o botao "Comprar bilhete" virava castanho sobre
+     castanho e desaparecia. */
+  --amarelo: #f8c70f;
+  --chapa-de: #f8c70f;
+  --chapa-para: #f17317;
+  --laranja: #f17317;          /* o 3o cartao de servico */
   --blue: #d71a20;             /* a cor que PINTA botoes — branco por cima da 5,17:1 */
   --blue2: #c9181e;            /* a cor que e LETRA — sobre branco da 5,78:1 */
   --blue-bright: #ef555a;
-  --gold: #f8c70f;
+  --gold: var(--amarelo);
   --gold-ink: #141618;         /* a regra do amarelo: a tinta e sempre esta */
 
   --ink: #17191c;
@@ -86,6 +101,16 @@
   --blue2: #f16c70;            /* letra sobre o cartao escuro: 5,74:1 */
   --blue-bright: #f38286;
 
+  /* A CHAPA DO HERO CONTINUA QUENTE, so que fundo. Virar tudo preto era o que
+     este site fazia antes e matava a marca; um castanho-alaranjado mantem-na
+     e aceita tinta clara. Medido: branco 7,48:1 e o amarelo por cima 4,69:1,
+     no pior ponto do gradiente. */
+  --chapa-de: #7a4a05;
+  --chapa-para: #7a2f05;
+  --vermelho-marca: #ef555a;
+  /* O `--amarelo` NAO entra aqui: o botao de comprar continua amarelo vivo,
+     e sobre ele a tinta e sempre o preto da marca — 11,37:1 nos dois temas. */
+
   --ink: #f2f3f4;
   --muted-ink: #9aa0a8;        /* 6,42:1 sobre o cartao */
   --line: #2b3036;
@@ -95,6 +120,45 @@
   --on-navy: #ffffff;
   --on-navy-soft: #c9ccd0;
 }
+
+/* A DECLARACAO NA CAIXA NAO CHEGA, e isto custou-me uma medicao a perceber:
+   a `font-family` herda-se, mas a heranca perde para QUALQUER regra directa no
+   elemento, seja qual for a especificidade. Ha uma regra global em `h1..h6`
+   que poe Manrope, e era ela que ganhava — os titulos continuavam em Manrope
+   com a DM Sans declarada logo acima. Nomear os elementos resolve. */
+.bzlp-cheetah h1,
+.bzlp-cheetah h2,
+.bzlp-cheetah h3,
+.bzlp-cheetah h4,
+.bzlp-cheetah h5,
+.bzlp-cheetah h6,
+.bzlp-cheetah p,
+.bzlp-cheetah a,
+.bzlp-cheetah li,
+.bzlp-cheetah span,
+.bzlp-cheetah label,
+.bzlp-cheetah th,
+.bzlp-cheetah td,
+.bzlp-cheetah button,
+.bzlp-cheetah input,
+.bzlp-cheetah textarea,
+.bzlp-cheetah select {
+  font-family: 'DM Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* No tema claro a chapa e clara e a tinta e o preto da marca; no escuro
+   inverte-se. Escrito aqui e nao nos tokens porque `--ink` serve a pagina
+   inteira e nao so a chapa. */
+.bzlp-cheetah[data-theme="dark"] .che-hero,
+.bzlp-cheetah[data-theme="dark"] .che-hero-copy h1,
+.bzlp-cheetah[data-theme="dark"] .che-hero-grupo a { color: #fff; }
+.bzlp-cheetah[data-theme="dark"] .che-hero-copy p,
+.bzlp-cheetah[data-theme="dark"] .che-hero-grupo { color: rgba(255, 255, 255, 0.88); }
+.bzlp-cheetah[data-theme="dark"] .che-hero .bzlp-badge { background: #fff; color: #141618; }
+/* O cartao laranja escurece o suficiente para aceitar tinta branca: 5,50:1. */
+.bzlp-cheetah[data-theme="dark"] .che-servico.che-s-laranja { background: #a8500f; color: #fff; }
+.bzlp-cheetah[data-theme="dark"] .che-servico.che-s-laranja .che-servico-cta { background: #fff; color: #7a2f05; }
+.bzlp-cheetah[data-theme="dark"] .che-servico.che-s-branco { background: var(--surface); }
 
 /* ── Botoes ────────────────────────────────────────────────────────── */
 
@@ -115,12 +179,16 @@
 }
 .bzlp-cheetah .bzlp-btn.outline:hover { background: color-mix(in srgb, var(--blue) 8%, transparent); }
 
-/* Sobre as chapas pretas da marca o vermelho de letra da 3,14:1 e chumba: o
-   botao vazado ganha ali tinta branca, que da 18,14:1. Medido, nao deduzido. */
-.che-hero .bzlp-btn.outline,
+/* A chamada final continua a ser chapa preta, e ali o vermelho de letra da
+   3,14:1 e chumba — leva tinta branca, 18,14:1.
+   O HERO deixou de ser preto: ali o botao vazado leva a tinta da propria
+   chapa, que e o preto da marca a 6,22:1. */
 .che-cta .bzlp-btn.outline { color: #fff; }
-.che-hero .bzlp-btn.outline:hover,
 .che-cta .bzlp-btn.outline:hover { background: rgba(255, 255, 255, 0.12); }
+.che-hero .bzlp-btn.outline { color: var(--ink); border-color: var(--ink); }
+.che-hero .bzlp-btn.outline:hover { background: rgba(0, 0, 0, 0.08); }
+.bzlp-cheetah[data-theme="dark"] .che-hero .bzlp-btn.outline { color: #fff; border-color: #fff; }
+.bzlp-cheetah[data-theme="dark"] .che-hero .bzlp-btn.outline:hover { background: rgba(255, 255, 255, 0.14); }
 
 /* O mapa que o cartao de pesquisa partilhado pede (ver comum/busca.css). */
 .bzlp-cheetah .bz-busca {
@@ -148,216 +216,353 @@
 .bzlp-cheetah .bzlp-nav { border-bottom: 1px solid var(--line-soft); }
 
 /* ── HERO ──────────────────────────────────────────────────────────────
-   Duas colunas, e nao uma fotografia de fundo inteiro como a da TPM-TUR: a
-   unica imagem que a Cheetah tem e uma composicao VERTICAL recortada (1000 x
-   1444, com transparencia) — o passageiro, a carrinha e a praia. Esticada a
-   toda a largura ficava um borrao; ao lado do texto e o que ela foi feita
-   para ser, e e tambem o que o site oficial faz. */
+   AMARELO E LARANJA, e nao preto. A primeira versao deste site era escura e
+   sobria; a marca nao e isso — o site oficial abre numa chapa quente, com
+   manchas de chita e riscas, e e dai que vem a energia que a empresa vende.
+
+   A TINTA E O PRETO DA MARCA, e isso nao foi escolha de gosto. O site oficial
+   poe o titulo a BRANCO sobre este amarelo: da 1,59:1, e nao se le. Medidos,
+   sobre o pior ponto do gradiente:
+     branco ............ 1,59  chumba
+     vermelho oficial .. 1,53  chumba
+     preto da marca .... 6,22  passa corpo de texto
+   A palavra de destaque ganha um bloco vermelho por baixo e fica branca —
+   4,47:1 num tamanho de display, com folga. E mais forte do que o original, e
+   le-se.
+
+   A ALTURA continua a ser a primeira vista menos a barra, com o cartao de
+   pesquisa la dentro: a chapa e o cartao sao um bloco so e cabem por
+   construcao, e nao por subtraccao. */
 .che-hero {
   position: relative;
-  /* A CHAPA E O CARTAO CABEM JUNTOS NA PRIMEIRA VISTA.
-     A altura do hero nao e um numero escolhido: e o que sobra depois de tirar
-     a barra e a parte do cartao que fica abaixo dele. Por isso e uma conta e
-     nao um `88vh` — com altura fixa, o cartao acabava 113px abaixo da dobra
-     num ecra de 900px, e a accao principal da pagina ficava por ver.
-
-     `svh` e nao `vh`: no telemovel o `vh` conta com a barra do browser
-     recolhida, e o cartao voltava a cair fora da primeira vista enquanto ela
-     estivesse aberta.
-
-     O `clamp` poe um chao e um tecto: abaixo de 420px a chapa deixava de
-     conseguir com o texto, e acima de 760px crescia sem fim num monitor em pe
-     — 760px e a altura do hero da TPM-TUR, e e o limite certo.
-
-     `align-items: center` porque a altura e imposta e nao calculada: sem isto
-     o conteudo encostava ao topo e sobrava faixa preta em baixo. */
   display: flex;
   align-items: center;
   --nav-h: 72px;
-  /* A chapa E o cartao sao um bloco so, e esse bloco e a primeira vista menos
-     a barra. Nao ha aqui subtraccao nenhuma da altura do cartao: ele vive la
-     dentro, por isso a conta fecha por construcao.
-
-     `svh` e nao `vh`: no telemovel o `vh` conta com a barra do browser
-     recolhida, e o bloco caia fora da primeira vista enquanto ela estivesse
-     aberta.
-
-     `min-height` e nao `height`: em ecras baixos ou com o cartao empilhado o
-     conteudo manda, a chapa cresce e a pagina rola — que e o correcto.
-     Prometer uma altura que o conteudo nao cabe daria texto cortado. */
   min-height: calc(100svh - var(--nav-h));
-  background: linear-gradient(158deg, var(--navy) 0%, var(--navy2) 62%, var(--navy3) 100%);
-  color: var(--on-navy);
+  background: linear-gradient(118deg, var(--chapa-de) 0%, var(--chapa-de) 34%, var(--chapa-para) 100%);
+  color: var(--ink);
   overflow: hidden;
 }
-/* A mancha de chita da marca, em amarelo, a sair do canto. Decorativa: e
-   `aria-hidden` no markup e nao leva informacao nenhuma. */
-.che-hero::before {
-  content: "";
-  position: absolute;
-  top: -120px;
-  right: -90px;
-  width: 460px;
-  height: 460px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--gold) 26%, transparent) 0%, transparent 68%);
-  pointer-events: none;
-}
+
 .che-hero-in {
   position: relative;
-  z-index: 1;
-  width: 100%;              /* filho de um flex: sem isto encolhia ao conteudo */
+  z-index: 2;
+  width: 100%;
   max-width: 1120px;
   margin: 0 auto;
-  /* O respiro encolhe com a altura do ecra. Fixo em 64/96 punha um chao de
-     160px que, somado a coluna de texto, nao deixava a chapa descer o
-     suficiente num portatil baixo. */
-  padding: clamp(24px, 4svh, 56px) 22px clamp(24px, 4svh, 56px);
+  /* O respiro encolhe com a altura do ecra; fixo punha um chao que nao deixava
+     a chapa descer num portatil baixo. O fundo e maior por causa da onda. */
+  padding: clamp(24px, 4svh, 56px) 22px clamp(56px, 8svh, 92px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: clamp(20px, 4svh, 40px);
 }
 
-/* O par texto/imagem. O cartao e irmao disto, e nao coluna: a largura toda e
-   dele, como no site oficial. */
 .che-hero-topo {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 40px;
   align-items: center;
-  min-height: 0;   /* filho de flex: sem isto nao encolhia abaixo do conteudo */
+  min-height: 0;
 }
+
 .che-hero-copy h1 {
   margin: 14px 0 0;
-  font-size: clamp(38px, 5vw, 60px);
-  line-height: 1.04;
+  font-size: clamp(38px, 5vw, 62px);
+  line-height: 1.06;
   letter-spacing: -0.03em;
-  font-weight: 900;
+  font-weight: 700;
 }
-/* "e rápido." em amarelo sobre o preto da marca: 11,37:1. */
-.che-hero-copy h1 span { color: var(--gold); }
+/* A palavra de destaque: branca sobre um bloco vermelho inclinado. O bloco e
+   um pseudo-elemento por tras, para o texto continuar a ser texto — copiavel,
+   pesquisavel e legivel por um leitor de ecra. */
+.che-hero-copy h1 .che-palavra { display: inline-block; }
+.che-hero-copy h1 .che-destaque {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.16em;
+  color: #fff;
+  isolation: isolate;
+}
+.che-hero-copy h1 .che-destaque::before {
+  content: "";
+  position: absolute;
+  inset: 0.06em -0.02em 0.1em;
+  background: var(--vermelho-marca);
+  border-radius: 6px;
+  transform: rotate(-1.2deg);
+  z-index: -1;
+}
 .che-hero-copy p {
   margin: 20px 0 0;
-  max-width: 46ch;
+  max-width: 44ch;
   font-size: 17px;
   line-height: 1.62;
-  color: var(--on-navy-soft);
+  /* Preto puxado para tras: 6,22:1 no pior ponto do gradiente, sem gritar
+     tanto como o titulo. */
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
+  font-weight: 500;
 }
 .che-hero .bzlp-badge {
-  background: color-mix(in srgb, var(--vermelho-marca) 88%, transparent);
+  background: var(--ink);
   color: #fff;
   border: 0;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 .che-hero-cta { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; align-items: center; }
 .che-hero-grupo {
   margin: 18px 0 0;
-  font-size: 14px;
-  color: var(--on-navy-soft);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
 }
-.che-hero-grupo a { color: var(--gold); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.che-hero-grupo a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 .che-hero-art { display: flex; justify-content: center; }
-/* As variaveis vivem em `.che-hero` e herdam ate aqui — e delas que a altura
-   maxima da imagem depende. */
 .che-hero-art img {
   display: block;
-  /* Limitada pela ALTURA e nao pela largura: e a altura que e escassa agora
-     que a chapa encolhe com o ecra. Presa a `max-width`, uma imagem de
-     proporcao 1000x1444 empurrava a chapa para alem do que a conta lhe dava e
-     o cartao voltava a cair fora da vista.
-     A conta tira da primeira vista tudo o que nao e imagem: a barra, o cartao
-     (que agora esta dentro da chapa) e os respiros.
-
-     O `max(200px, ...)` e o que impede o colapso: sem ele, num ecra de 844px
-     com o cartao empilhado a 553px a conta dava 29px e a imagem desaparecia —
-     ficavam 20x29 pixeis de carrinha. Abaixo desse chao a chapa cresce e a
-     pagina rola, que e preferivel a uma imagem que nao se ve. */
+  /* Limitada pela ALTURA e nao pela largura: e a altura que e escassa. O
+     `max(200px, ...)` impede o colapso — sem ele, num telemovel com o cartao
+     empilhado a conta dava 29px e a carrinha desaparecia. */
   width: auto;
   max-width: 100%;
   max-height: max(200px, min(578px, calc(100svh - var(--nav-h, 72px) - var(--cartao-h, 234px) - 190px)));
   height: auto;
-  /* `object-fit` nao entra aqui: a imagem tem proporcao propria e e ela que
-     manda. Esticar uma composicao recortada le-se logo. */
-  filter: drop-shadow(0 26px 46px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 26px 46px rgba(120, 60, 0, 0.32));
 }
 
 /* Vive dentro da chapa: nem margem negativa, nem contentor proprio. */
 .che-hero-busca { position: relative; z-index: 3; width: 100%; }
 
-/* ── Provas ────────────────────────────────────────────────────────── */
+/* ── Decoracao do hero ─────────────────────────────────────────────────
+   As manchas de chita e as riscas que o site oficial espalha pela chapa.
+   Em SVG e por tras de tudo (`z-index: 0`), e `aria-hidden` no markup: nao
+   levam informacao nenhuma. Tres camadas, para se moverem a velocidades
+   diferentes com o scroll e o ponteiro — e dai que vem a profundidade. */
+.che-hero-deco {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.che-hero-deco svg { position: absolute; display: block; }
+/* AS POSICOES SAO UMA DECISAO DE LEGIBILIDADE, e nao de composicao.
+   A primeira versao punha as manchas a 0,5 de opacidade por tras da coluna de
+   texto: o paragrafo passava a ler-se contra tinta preta a meio caminho, e o
+   contraste que eu tinha medido contra o amarelo deixava de valer.
+   Agora vivem todas nas MARGENS — fora da faixa que o texto ocupa — e a
+   opacidade e baixa o suficiente para nao competirem com nada. */
+.che-deco-manchas-1 { top: -12%; left: -7%; width: 240px; opacity: 0.16; }
+.che-deco-manchas-2 { bottom: -6%; right: -4%; width: 210px; opacity: 0.14; }
+.che-deco-riscas { top: 6%; right: 34%; width: 190px; opacity: 0.24; }
+.che-deco-cruz { top: 9%; right: 27%; width: 34px; opacity: 0.6; }
+.che-deco-x { bottom: 14%; left: 2%; width: 30px; opacity: 0.4; }
 
+/* Abaixo de 980px a imagem sobe para cima do texto e a chapa fica apertada:
+   o que sobra sao as duas manchas dos cantos. As riscas e os sinais saem. */
+@media (max-width: 980px) {
+  .che-deco-riscas, .che-deco-cruz, .che-deco-x { display: none; }
+  .che-deco-manchas-1 { width: 170px; }
+  .che-deco-manchas-2 { width: 150px; }
+}
+
+/* ── A onda ────────────────────────────────────────────────────────────
+   A curva organica que separa a chapa do branco. E a assinatura do site
+   oficial e vale mais do que uma linha recta: corta a chapa sem a fechar. */
+.che-onda {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;          /* -1px: sem ele, o arredondamento deixa uma risca */
+  width: 100%;
+  height: clamp(48px, 7vw, 92px);
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+}
+.che-onda path { fill: var(--surface); }
+
+/* ── Provas ────────────────────────────────────────────────────────────
+   Centradas e sem caixa, como no oficial: quatro icones de traco fino sobre
+   branco. Eram cartoes com moldura — e isso fazia-as competir com os cartoes
+   de servico, que sao a peca que deve ganhar a pagina. */
 .che-provas {
-  list-style: none;      /* sem preflight, o browser poe marcadores e recuo */
+  list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  gap: 34px 24px;
 }
 .che-prova {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 24px 22px;
-  transition: border-color 0.18s, transform 0.18s;
+  text-align: center;
+  background: none;
+  border: 0;
+  padding: 0;
 }
-.che-prova:hover { border-color: var(--blue); transform: translateY(-2px); }
 .che-prova-ico {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  background: color-mix(in srgb, var(--blue) 12%, transparent);
-  color: var(--blue2);
-  margin-bottom: 15px;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 18px;
+  color: var(--vermelho-marca);
 }
-.che-prova h3 { margin: 0 0 8px; font-size: 16.5px; font-weight: 800; letter-spacing: -0.01em; }
-.che-prova p { margin: 0; font-size: 14px; line-height: 1.62; color: var(--muted-ink); }
+/* O traco DESENHA-SE ao entrar. `stroke-dasharray` grande o bastante para
+   qualquer um destes icones, e o `dashoffset` a fechar. */
+.che-prova-ico svg { width: 100%; height: 100%; }
+.che-prova h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.che-prova p {
+  margin: 0 auto;
+  max-width: 30ch;
+  font-size: 14px;
+  line-height: 1.64;
+  color: var(--muted-ink);
+}
 
-/* ── Servicos ──────────────────────────────────────────────────────── */
+/* ── Servicos ──────────────────────────────────────────────────────────
+   Tres cartoes altos de cor cheia — vermelho, branco, laranja. E a peca mais
+   reconhecivel do site oficial e a que mais trabalho faz: diz em tres blocos
+   o que a empresa vende.
 
-.che-servicos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+   AS CORES LEVARAM UM AJUSTE, medido. O vermelho oficial #ea1d23 com tinta
+   branca da 4,47:1 e chumba corpo de texto por 0,03; o #d71a20 — o mesmo
+   vermelho 8% mais fundo, que ja e a cor de accao deste site — da 5,17.
+   No cartao laranja o oficial poe tinta branca, que da 2,91: aqui a tinta e
+   o preto da marca, 6,22. Parece o mesmo cartao e le-se. */
+.che-servicos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+/* O `CheRevela` mete um elemento proprio entre a grelha e o cartao. Sem estas
+   duas linhas era ELE o item da grelha e esticava, enquanto o cartao la dentro
+   ficava pela altura do seu texto — tres cartoes de alturas diferentes, que e
+   o oposto de tres escolhas lado a lado. */
+.che-servicos > * { display: flex; }
+.che-servicos > * > .che-servico { flex: 1; }
+
 .che-servico {
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 16px;
+  padding: 38px 30px 32px;
+  min-height: 420px;
+  border: 0;
   overflow: hidden;
-  transition: border-color 0.18s, box-shadow 0.18s;
-}
-.che-servico:hover { border-color: var(--blue); box-shadow: 0 18px 38px -26px rgba(0, 0, 0, 0.5); }
-.che-servico-head {
-  background: linear-gradient(135deg, var(--navy), var(--navy2));
-  color: var(--on-navy);
-  padding: 22px;
+  position: relative;
+  /* Os tres levam elevacao. Sem ela o cartao claro do meio desaparecia contra
+     o fundo da seccao — e o do meio e justamente o que o site oficial poe em
+     destaque. */
+  box-shadow: 0 16px 36px -24px rgba(0, 0, 0, 0.45);
 }
 .che-servico-etiq {
-  display: inline-block;
-  margin-bottom: 12px;
-  padding: 4px 11px;
+  display: block;
+  margin-bottom: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.che-servico h3 {
+  margin: 0 0 16px;
+  font-size: clamp(28px, 2.6vw, 36px);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.che-servico-sub {
+  margin: 0 0 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+.che-servico-body { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.che-servico-body p { margin: 0; font-size: 14.5px; line-height: 1.66; }
+.che-servico-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  align-self: flex-start;
+  margin-top: 22px;
+  min-height: 42px;
+  padding: 0 20px;
   border-radius: 999px;
-  background: var(--gold);
-  color: var(--gold-ink);
-  font-size: 10.5px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.che-servico-head h3 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.015em; }
-.che-servico-body { display: flex; flex-direction: column; gap: 12px; padding: 22px; flex: 1; }
-.che-servico-body p { margin: 0; font-size: 14.5px; line-height: 1.62; color: var(--muted-ink); }
-.che-servico-extra {
-  margin-top: auto;
-  padding-top: 14px;
-  border-top: 1px solid var(--line-soft);
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--ink);
+
+/* Quando um cartao esta sob o rato os OUTROS recuam. O grupo reage, e nao so
+   o cartao apontado: um cartao que cresce sozinho parece um botao, tres que se
+   reorganizam parecem uma escolha. O movimento e minimo — 2% e meio ponto de
+   opacidade — porque isto ve-se dezenas de vezes. */
+@media (hover: hover) and (pointer: fine) {
+  .bzlp-cheetah .che-servico {
+    transition:
+      transform 260ms cubic-bezier(0.23, 1, 0.32, 1),
+      opacity 260ms ease,
+      box-shadow 260ms ease;
+  }
+  .bzlp-cheetah .che-servico:hover {
+    transform: translate3d(0, -6px, 0);
+    box-shadow: 0 26px 50px -28px rgba(0, 0, 0, 0.55);
+  }
+  .bzlp-cheetah .che-servico[data-recuado] {
+    transform: scale(0.98);
+    opacity: 0.86;
+  }
+  .bzlp-cheetah .che-servico-cta { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+  .bzlp-cheetah .che-servico:hover .che-servico-cta { transform: translate3d(4px, 0, 0); }
 }
-.che-servico-extra strong { color: var(--blue2); }
+
+/* Vermelho — o servico diario, que e o principal. */
+.che-servico.che-s-vermelho { background: var(--blue); color: #fff; }
+.che-servico.che-s-vermelho .che-servico-etiq,
+.che-servico.che-s-vermelho .che-servico-sub { color: rgba(255, 255, 255, 0.92); }
+.che-servico.che-s-vermelho h3 span { color: var(--amarelo); }
+.che-servico.che-s-vermelho .che-servico-cta { background: #fff; color: var(--blue2); }
+
+/* Branco — o do meio, que no oficial se destaca por ser o claro. */
+.che-servico.che-s-branco {
+  background: #f7f7f7;
+  color: var(--ink);
+  /* Cor sobre cor quase igual: os outros dois tem a cor a fazer de limite,
+     este precisa de um. */
+  outline: 1px solid var(--line);
+  outline-offset: -1px;
+}
+.che-servico.che-s-branco .che-servico-etiq { color: var(--muted-ink); }
+.che-servico.che-s-branco .che-servico-sub { color: var(--blue2); }
+.che-servico.che-s-branco h3 span { color: var(--blue2); }
+.che-servico.che-s-branco .che-servico-cta { background: var(--blue); color: #fff; }
+
+/* Laranja — as excursoes. Tinta preta e nao branca, por contraste. */
+.che-servico.che-s-laranja { background: var(--laranja); color: var(--ink); }
+.che-servico.che-s-laranja .che-servico-etiq,
+.che-servico.che-s-laranja .che-servico-sub { color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.che-servico.che-s-laranja h3 span { color: #fff; }
+.che-servico.che-s-laranja .che-servico-cta { background: var(--ink); color: #fff; }
 
 /* ── A rota ────────────────────────────────────────────────────────── */
 

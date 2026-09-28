@@ -4,6 +4,7 @@ import { Menu, Moon, Sun, Ticket, X } from "lucide-react";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
 import { useCheetahCopy } from "./cheetah-copy";
 import "../landing/landing.css";
+import "./cheetah-fontes.css";
 import "../comum/busca.css";
 import "../comum/formulario.css";
 import "./cheetah.css";

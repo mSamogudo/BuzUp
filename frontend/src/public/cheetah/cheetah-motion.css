@@ -143,10 +143,7 @@
 .bzlp-cheetah .che-prova.che-rev {
   transition:
     clip-path var(--che-t-revela) var(--che-ease-in-out) calc(var(--i, 0) * 80ms),
-    opacity var(--che-t-revela) var(--che-ease-out) calc(var(--i, 0) * 80ms),
-    transform var(--che-t-hover) var(--che-ease-out),
-    border-color var(--che-t-hover) ease,
-    box-shadow var(--che-t-hover) ease;
+    opacity var(--che-t-revela) var(--che-ease-out) calc(var(--i, 0) * 80ms);
 }
 
 /* ── Cartoes ───────────────────────────────────────────────────────────
@@ -154,17 +151,13 @@
    para se sentir que respondem, pouco para incomodar. */
 
 @media (hover: hover) and (pointer: fine) {
-  .bzlp-cheetah .che-prova,
-  .bzlp-cheetah .che-servico,
   .bzlp-cheetah .che-contacto-cartao {
     transition:
       transform var(--che-t-hover) var(--che-ease-out),
       border-color var(--che-t-hover) ease,
       box-shadow var(--che-t-hover) ease;
   }
-  .bzlp-cheetah .che-prova:hover,
   .bzlp-cheetah .che-contacto-cartao:hover { transform: translate3d(0, -2px, 0); }
-  .bzlp-cheetah .che-servico:hover { transform: translate3d(0, -4px, 0); }
 
   /* O icone inclina-se dentro da caixa dele. O `will-change` fica de fora: e
      um elemento pequeno e prometer uma camada por cada icone da pagina custa
@@ -173,7 +166,7 @@
   .bzlp-cheetah .che-contacto-ico {
     transition: transform var(--che-t-hover) var(--che-ease-out), background-color var(--che-t-hover) ease;
   }
-  .bzlp-cheetah .che-prova:hover .che-prova-ico,
+  .bzlp-cheetah .che-prova:hover .che-prova-ico { transform: scale(1.08); }
   .bzlp-cheetah .che-contacto-cartao:hover .che-contacto-ico {
     transform: rotate(-6deg) scale(1.06);
     background: color-mix(in srgb, var(--blue) 18%, transparent);
@@ -207,16 +200,35 @@
   background: var(--blue);
 }
 
-/* ── A mancha do hero ──────────────────────────────────────────────────
-   Deriva devagar, sem inicio nem fim visiveis. E decoracao de uma pagina de
-   marca, que e o unico sitio onde isto se admite — e mesmo assim e lenta ao
-   ponto de nao chamar a atencao para si. */
+/* ── A onda ────────────────────────────────────────────────────────────
+   Desliza devagar e sem inicio nem fim visiveis. Uma onda parada le-se como um
+   recorte; uma que se move de leve le-se como agua. E lenta ao ponto de nao
+   chamar a atencao para si — 16 segundos de ida e volta, e nao mais do que 2%
+   de largura, para nao deixar buraco nos lados. */
 
-@keyframes che-deriva {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-26px, 22px, 0) scale(1.08); }
+@keyframes che-onda-desliza {
+  from { transform: translate3d(-1.5%, 0, 0) scaleX(1.03); }
+  to { transform: translate3d(1.5%, 0, 0) scaleX(1.03); }
 }
-.che-hero::before { animation: che-deriva 18s ease-in-out infinite; }
+.che-onda { animation: che-onda-desliza 16s ease-in-out infinite alternate; }
+
+/* ── Os icones das provas ──────────────────────────────────────────────
+   O traco DESENHA-SE quando a prova entra no ecra, em vez de aparecer feito.
+   Faz o que uma revelacao deve fazer — mostrar a coisa a formar-se — e num
+   icone de linha custa uma propriedade so.
+
+   Os 220 de `dasharray` sao folgados de proposito: e mais do que o
+   comprimento de qualquer traco destes icones de 24x24, e um valor a mais so
+   atrasa o inicio do desenho, enquanto um valor a menos deixaria o traco por
+   fechar. Medir cada caminho em JS custava mais do que vale. */
+
+.che-prova .che-prova-ico svg * {
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  transition: stroke-dashoffset 900ms var(--che-ease-out);
+  transition-delay: calc(var(--i, 0) * 80ms + 140ms);
+}
+.che-prova[data-visivel] .che-prova-ico svg * { stroke-dashoffset: 0; }
 
 /* ── Quem pediu menos movimento ────────────────────────────────────────
    Menos e mais suave, e nao zero: o que ajuda a perceber fica, o que so
@@ -237,7 +249,10 @@
     transform: none;
     transition: opacity 240ms ease;
   }
-  .che-hero::before { animation: none; }
+  .che-onda { animation: none; }
+  .che-prova .che-prova-ico svg * { stroke-dasharray: none; stroke-dashoffset: 0; transition: none; }
+  .bzlp-cheetah .che-servico:hover,
+  .bzlp-cheetah .che-servico[data-recuado] { transform: none; opacity: 1; }
   .che-paragens[data-anima] .che-paragem::after { transform: scaleY(1); }
   .che-paragens[data-anima] .che-paragem::before { transform: scale(1); opacity: 1; }
   .bzlp-cheetah .che-prova.che-rev { transform: none; transition: opacity 240ms ease; }

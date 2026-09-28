@@ -1,4 +1,4 @@
-import Reveal from "../landing/Reveal";
+import CheRevela from "./CheRevela";
 import { FileWarning } from "lucide-react";
 import CheetahPagina, { CheetahIntro, EMAIL_RESERVAS, useCheetahMeta } from "./CheetahChrome";
 import { useCheetahCopy } from "./cheetah-copy";
@@ -65,14 +65,14 @@ export default function TermosPage() {
 
             <div className="che-termos-corpo">
               {c.seccoes.map((s, n) => (
-                <Reveal key={s.h} delay={n * 30}>
+                <CheRevela key={s.h}>
                   <article className="che-termo" id={id(n)}>
                     <h2>{s.h}</h2>
                     {s.p.map((paragrafo) => (
                       <p key={paragrafo}>{comEmail(paragrafo)}</p>
                     ))}
                   </article>
-                </Reveal>
+                </CheRevela>
               ))}
             </div>
           </div>

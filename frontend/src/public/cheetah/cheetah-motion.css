@@ -1,0 +1,250 @@
+/* Movimento do site da Cheetah Express.
+ *
+ * SEPARADO dos outros dois ficheiros de proposito: quem quiser perceber o que
+ * se mexe e porque, le um ficheiro so. E quem quiser desligar tudo tira um
+ * import.
+ *
+ * O QUE MANDOU NAS DECISOES. Cada animacao aqui passou por duas perguntas —
+ * quantas vezes se ve, e que trabalho faz. Uma landing institucional ve-se uma
+ * vez por visita, e e ai que mora o orcamento de encanto; uma tabela de
+ * horarios le-se com os olhos parados, e por isso NAO se mexe. As linhas dos
+ * quadros nao tem entrada escalonada nenhuma: escalonar dados que a pessoa
+ * esta a tentar ler e a interface a lutar com quem a le.
+ *
+ * O QUE NAO MEXE, e e deliberado:
+ *   - as linhas dos quadros de horarios (dados a serem lidos)
+ *   - os campos do formulario de pesquisa (accao principal; so resposta ao
+ *     toque, nada decorativo)
+ *   - a barra de navegacao, para alem do que ja fazia
+ *
+ * CURVAS. As embutidas do CSS sao fracas demais para se notarem. Estas vem do
+ * vocabulario corrente de interface, nao foram inventadas aqui, e sao as
+ * mesmas em todo o site. `ease-in` nao aparece uma unica vez: comeca devagar,
+ * atrasando exactamente o instante em que a pessoa esta a olhar.
+ */
+
+.bzlp-cheetah {
+  --che-ease-out: cubic-bezier(0.23, 1, 0.32, 1);      /* entradas e saidas */
+  --che-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);  /* movimento no ecra */
+
+  --che-t-toque: 160ms;   /* resposta ao toque */
+  --che-t-hover: 200ms;   /* passagem do rato */
+  --che-t-entra: 420ms;   /* entrada de um elemento */
+  --che-t-revela: 620ms;  /* revelacao de uma seccao ao rolar */
+}
+
+/* ── Resposta ao toque ─────────────────────────────────────────────────
+   O `:active` e uma pressao a serio tambem no telemovel, por isso nao leva
+   porta de `hover`. O `scale` apanha o rotulo e o icone com ele — e isso que
+   o faz ler como carregar numa coisa fisica, em vez de uma cor a mudar. */
+
+.bzlp-cheetah .bzlp-btn,
+.bzlp-cheetah .bzlp-icon-btn,
+.bzlp-cheetah .bz-busca-btn,
+.bzlp-cheetah .bz-busca-atalho,
+.bzlp-cheetah .bz-busca-tipo-btn,
+.bzlp-cheetah .bzlp-burger {
+  transition:
+    transform var(--che-t-toque) var(--che-ease-out),
+    background-color var(--che-t-hover) ease,
+    border-color var(--che-t-hover) ease,
+    color var(--che-t-hover) ease;
+}
+.bzlp-cheetah .bzlp-btn:active,
+.bzlp-cheetah .bzlp-icon-btn:active,
+.bzlp-cheetah .bz-busca-btn:active:not(:disabled),
+.bzlp-cheetah .bz-busca-atalho:active,
+.bzlp-cheetah .bz-busca-tipo-btn:active,
+.bzlp-cheetah .bzlp-burger:active {
+  transform: scale(0.97);
+}
+
+/* O disco de trocar origem e destino ja rodava meia volta ao passar o rato.
+   Ao carregar, fecha a volta — a accao completa-se em vez de voltar atras. */
+.bzlp-cheetah .bz-busca-inverter:active { transform: rotate(360deg) scale(0.94); }
+
+/* ── Barra ─────────────────────────────────────────────────────────────
+   Vê-se em todas as páginas e o tempo todo: só o imperceptível é aceitável.
+   O sublinhado cresce do centro, e nao aparece feito. */
+
+@media (hover: hover) and (pointer: fine) {
+  .bzlp-cheetah .bzlp-links a {
+    position: relative;
+    transition: color var(--che-t-hover) ease;
+  }
+  .bzlp-cheetah .bzlp-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--blue);
+    transform: scaleX(0);
+    transition: transform var(--che-t-hover) var(--che-ease-out);
+  }
+  .bzlp-cheetah .bzlp-links a:hover::after,
+  .bzlp-cheetah .bzlp-links a[aria-current="page"]::after { transform: scaleX(1); }
+
+  /* O logotipo responde, mas quase nada: é um link que se vê sempre. */
+  .bzlp-cheetah .bzlp-nav-in > a { transition: opacity var(--che-t-hover) ease; }
+  .bzlp-cheetah .bzlp-nav-in > a:hover { opacity: 0.82; }
+}
+
+/* ── Entrada do hero ───────────────────────────────────────────────────
+   Corre uma vez, ao montar. `animation` e nao `transition` porque nada disto
+   e interrompivel — e uma entrada, dispara e acaba.
+   O escalonamento e de 70ms e vem por `--i`: a ordem de leitura e a ordem da
+   entrada, e nao se escreve um `nth-child` por elemento. */
+
+@keyframes che-sobe {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.che-entra {
+  opacity: 0;
+  animation: che-sobe var(--che-t-entra) var(--che-ease-out) forwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ── Revelacao ao rolar ────────────────────────────────────────────────
+   `clip-path` em vez de so opacidade: a seccao DESCOBRE-SE de cima para
+   baixo em vez de aparecer inteira mais clara. E das poucas propriedades fora
+   de `transform`/`opacity` que nao obriga o browser a refazer o layout.
+
+   Dispara UMA vez. Voltar a animar cada vez que se passa por ali e a pagina a
+   discutir com quem a le. */
+
+.che-rev {
+  clip-path: inset(0 0 42% 0);
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition:
+    clip-path var(--che-t-revela) var(--che-ease-in-out),
+    opacity var(--che-t-revela) var(--che-ease-out),
+    transform var(--che-t-revela) var(--che-ease-out);
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+.che-rev[data-visivel] {
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Quando a revelacao e o hover vivem no MESMO elemento — um cartao que e o
+   proprio item da lista — os dois disputam `transform`, e a regra de hover,
+   sendo mais especifica, apagava a transicao da revelacao INTEIRA: o cartao
+   aparecia de golpe em vez de se descobrir.
+   Aqui o cartao revela-se so por recorte e opacidade, e `transform` fica
+   inteiro para o hover. As duas coisas deixam de se pisar. */
+.bzlp-cheetah .che-prova.che-rev { transform: none; }
+.bzlp-cheetah .che-prova.che-rev[data-visivel] { transform: none; }
+.bzlp-cheetah .che-prova.che-rev {
+  transition:
+    clip-path var(--che-t-revela) var(--che-ease-in-out) calc(var(--i, 0) * 80ms),
+    opacity var(--che-t-revela) var(--che-ease-out) calc(var(--i, 0) * 80ms),
+    transform var(--che-t-hover) var(--che-ease-out),
+    border-color var(--che-t-hover) ease,
+    box-shadow var(--che-t-hover) ease;
+}
+
+/* ── Cartoes ───────────────────────────────────────────────────────────
+   Vêem-se dezenas de vezes: 2px de subida e a moldura a acender. O suficiente
+   para se sentir que respondem, pouco para incomodar. */
+
+@media (hover: hover) and (pointer: fine) {
+  .bzlp-cheetah .che-prova,
+  .bzlp-cheetah .che-servico,
+  .bzlp-cheetah .che-contacto-cartao {
+    transition:
+      transform var(--che-t-hover) var(--che-ease-out),
+      border-color var(--che-t-hover) ease,
+      box-shadow var(--che-t-hover) ease;
+  }
+  .bzlp-cheetah .che-prova:hover,
+  .bzlp-cheetah .che-contacto-cartao:hover { transform: translate3d(0, -2px, 0); }
+  .bzlp-cheetah .che-servico:hover { transform: translate3d(0, -4px, 0); }
+
+  /* O icone inclina-se dentro da caixa dele. O `will-change` fica de fora: e
+     um elemento pequeno e prometer uma camada por cada icone da pagina custa
+     mais do que poupa. */
+  .bzlp-cheetah .che-prova-ico,
+  .bzlp-cheetah .che-contacto-ico {
+    transition: transform var(--che-t-hover) var(--che-ease-out), background-color var(--che-t-hover) ease;
+  }
+  .bzlp-cheetah .che-prova:hover .che-prova-ico,
+  .bzlp-cheetah .che-contacto-cartao:hover .che-contacto-ico {
+    transform: rotate(-6deg) scale(1.06);
+    background: color-mix(in srgb, var(--blue) 18%, transparent);
+  }
+
+  /* Os logotipos dos parceiros sobem menos ainda: sao uma faixa de prova, nao
+     um menu. */
+  .bzlp-cheetah .che-parceiro {
+    transition: transform var(--che-t-hover) var(--che-ease-out), border-color var(--che-t-hover) ease;
+  }
+  .bzlp-cheetah .che-parceiro:hover { transform: translate3d(0, -2px, 0); border-color: var(--blue); }
+}
+
+/* ── A rota ────────────────────────────────────────────────────────────
+   A linha que liga as paragens DESENHA-SE ao rolar, e os pontos acendem-se um
+   a um. Nao e ornamento: e a unica animacao deste site que explica uma coisa —
+   que aquilo e um percurso, com uma ordem, e nao uma lista de moradas.
+   O progresso vem do JS (ver RotaParagens.tsx) por `--progresso`. */
+
+.che-paragem::after { transform-origin: top; }
+.che-paragens[data-anima] .che-paragem::after { transform: scaleY(var(--progresso, 0)); }
+.che-paragens[data-anima] .che-paragem::before {
+  transform: scale(var(--ponto, 0.4));
+  opacity: var(--ponto, 0.35);
+  transition:
+    transform 320ms var(--che-ease-out),
+    opacity 320ms var(--che-ease-out),
+    background-color 320ms ease;
+}
+.che-paragens[data-anima] .che-paragem[data-aceso]::before {
+  background: var(--blue);
+}
+
+/* ── A mancha do hero ──────────────────────────────────────────────────
+   Deriva devagar, sem inicio nem fim visiveis. E decoracao de uma pagina de
+   marca, que e o unico sitio onde isto se admite — e mesmo assim e lenta ao
+   ponto de nao chamar a atencao para si. */
+
+@keyframes che-deriva {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-26px, 22px, 0) scale(1.08); }
+}
+.che-hero::before { animation: che-deriva 18s ease-in-out infinite; }
+
+/* ── Quem pediu menos movimento ────────────────────────────────────────
+   Menos e mais suave, e nao zero: o que ajuda a perceber fica, o que so
+   desloca sai. As entradas passam a ser so de opacidade, as revelacoes
+   deixam de recortar, a deriva para, e as respostas ao toque ficam — carregar
+   num botao continua a ter de dar sinal. */
+
+@media (prefers-reduced-motion: reduce) {
+  .bzlp-cheetah *,
+  .bzlp-cheetah *::before,
+  .bzlp-cheetah *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .che-entra { opacity: 1; animation: none; }
+  .che-rev {
+    clip-path: none;
+    transform: none;
+    transition: opacity 240ms ease;
+  }
+  .che-hero::before { animation: none; }
+  .che-paragens[data-anima] .che-paragem::after { transform: scaleY(1); }
+  .che-paragens[data-anima] .che-paragem::before { transform: scale(1); opacity: 1; }
+  .bzlp-cheetah .che-prova.che-rev { transform: none; transition: opacity 240ms ease; }
+  .bzlp-cheetah .che-prova:hover,
+  .bzlp-cheetah .che-servico:hover,
+  .bzlp-cheetah .che-parceiro:hover,
+  .bzlp-cheetah .che-contacto-cartao:hover { transform: none; }
+  .bzlp-cheetah .che-prova:hover .che-prova-ico,
+  .bzlp-cheetah .che-contacto-cartao:hover .che-contacto-ico { transform: none; }
+}

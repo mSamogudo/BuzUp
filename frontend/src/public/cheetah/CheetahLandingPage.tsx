@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Bus, Clock3, Snowflake, Wifi } from "lucide-react";
-import Reveal from "../landing/Reveal";
+import CheRevela from "./CheRevela";
+import HeroArte from "./HeroArte";
+import RotaParagens from "./RotaParagens";
 import HeroBusca from "../comum/HeroBusca";
 import CheetahPagina, { pedido, useCheetahMeta } from "./CheetahChrome";
 import { useCheetahCopy } from "./cheetah-copy";
@@ -40,11 +42,16 @@ export default function CheetahLandingPage() {
       <section className="che-hero">
         <div className="che-hero-in">
           <div className="che-hero-topo">
+          {/* A entrada do hero é escalonada pela ordem de LEITURA: distintivo,
+              título, texto, acções, e o cartão de compra por último. `--i` diz
+              a posição; o CSS põe os 70ms entre cada. */}
           <div className="che-hero-copy">
-            <span className="bzlp-badge">{i.hero.badge}</span>
-            <h1>{i.hero.h1} <span>{i.hero.h1destaque}</span></h1>
-            <p>{i.hero.lead}</p>
-            <div className="che-hero-cta">
+            <span className="bzlp-badge che-entra">{i.hero.badge}</span>
+            <h1 className="che-entra" style={{ "--i": 1 } as React.CSSProperties}>
+              {i.hero.h1} <span>{i.hero.h1destaque}</span>
+            </h1>
+            <p className="che-entra" style={{ "--i": 2 } as React.CSSProperties}>{i.hero.lead}</p>
+            <div className="che-hero-cta che-entra" style={{ "--i": 3 } as React.CSSProperties}>
               <Link to="/comprar" className="bzlp-btn gold">
                 {t.comum.comprarBilhete} <ArrowRight size={17} aria-hidden />
               </Link>
@@ -52,23 +59,15 @@ export default function CheetahLandingPage() {
                 {t.comum.verHorarios}
               </Link>
             </div>
-            <p className="che-hero-grupo">
+            <p className="che-hero-grupo che-entra" style={{ "--i": 4 } as React.CSSProperties}>
               {i.hero.grupo}{" "}
               <Link to="/cheetah-express/contactos">{t.comum.falarConnosco}</Link>
             </p>
           </div>
-          <div className="che-hero-art">
-            {/* `width`/`height` reais do ficheiro: reservam o espaço e evitam
-                o salto da página enquanto carrega. `eager` porque está acima
-                da dobra — adiá-la só atrasava o que se vê primeiro. */}
-            <img
-              src="/landing/cheetah/hero-autocarro.png"
-              alt={i.hero.fotoAlt}
-              width={1000}
-              height={1444}
-              decoding="async"
-            />
-          </div>
+          {/* Paralaxe ao rolar e inclinação a seguir o ponteiro — ver
+              HeroArte. `width`/`height` reais do ficheiro ficam lá dentro:
+              reservam o espaço e evitam o salto da página enquanto carrega. */}
+          <HeroArte src="/landing/cheetah/hero-autocarro.png" alt={i.hero.fotoAlt} />
           </div>
 
           {/* A compra começa DENTRO da chapa, e não a cavalo dela.
@@ -79,7 +78,7 @@ export default function CheetahLandingPage() {
               médio davam 1001px numa dobra de 900. Aqui dentro, a chapa e o
               cartão são um bloco só e cabem na primeira vista por construção,
               em vez de por subtracção. */}
-          <div className="che-hero-busca">
+          <div className="che-hero-busca che-entra" style={{ "--i": 5 } as React.CSSProperties}>
             <HeroBusca textos={t.heroBusca} />
           </div>
         </div>
@@ -88,23 +87,21 @@ export default function CheetahLandingPage() {
       {/* PROVAS — os quatro pontos que o site oficial destaca. */}
       <section className="bzlp-sec" id="porque">
         <div className="bzlp-wrap">
-          <Reveal>
+          <CheRevela>
             <div className="bzlp-sechead">
               <div className="bzlp-kicker">{i.provas.kicker}</div>
               <h2 className="bzlp-h2">{i.provas.h2}</h2>
             </div>
-          </Reveal>
+          </CheRevela>
           <ul className="che-provas">
             {i.provas.itens.map((p, n) => {
               const Icone = PROVAS_ICON[n];
               return (
-                <Reveal key={p.t} delay={n * 60}>
-                  <li className="che-prova">
-                    <span className="che-prova-ico"><Icone size={22} aria-hidden /></span>
-                    <h3>{p.t}</h3>
-                    <p>{p.p}</p>
-                  </li>
-                </Reveal>
+                <CheRevela as="li" className="che-prova" key={p.t} ordem={n}>
+                  <span className="che-prova-ico"><Icone size={22} aria-hidden /></span>
+                  <h3>{p.t}</h3>
+                  <p>{p.p}</p>
+                </CheRevela>
               );
             })}
           </ul>
@@ -114,15 +111,15 @@ export default function CheetahLandingPage() {
       {/* SERVIÇOS — os três do site oficial. */}
       <section className="bzlp-sec alt" id="servicos">
         <div className="bzlp-wrap">
-          <Reveal>
+          <CheRevela>
             <div className="bzlp-sechead">
               <div className="bzlp-kicker">{i.servicos.kicker}</div>
               <h2 className="bzlp-h2">{i.servicos.h2}</h2>
             </div>
-          </Reveal>
+          </CheRevela>
           <div className="che-servicos">
             {i.servicos.itens.map((s, n) => (
-              <Reveal key={s.id} delay={n * 70}>
+              <CheRevela key={s.id} ordem={n}>
                 <article className="che-servico">
                   <div className="che-servico-head">
                     <span className="che-servico-etiq">{s.etiqueta}</span>
@@ -133,7 +130,7 @@ export default function CheetahLandingPage() {
                     <p className="che-servico-extra">{s.extra}</p>
                   </div>
                 </article>
-              </Reveal>
+              </CheRevela>
             ))}
           </div>
           <div style={{ textAlign: "center", marginTop: 30 }}>
@@ -147,25 +144,21 @@ export default function CheetahLandingPage() {
       {/* A ROTA — as paragens fixas, de sul para norte. */}
       <section className="bzlp-sec" id="rota">
         <div className="bzlp-wrap">
-          <Reveal>
+          <CheRevela>
             <div className="bzlp-sechead">
               <div className="bzlp-kicker">{i.rota.kicker}</div>
               <h2 className="bzlp-h2">{i.rota.h2}</h2>
               <p className="bzlp-lead">{i.rota.lead}</p>
             </div>
-          </Reveal>
+          </CheRevela>
           <div className="che-rota">
             {i.rota.lados.map((lado, n) => (
-              <Reveal key={lado.t} delay={n * 70}>
+              <CheRevela key={lado.t} ordem={n}>
                 <div className="che-rota-lado">
                   <h3>{lado.t}</h3>
-                  <ul className="che-paragens">
-                    {lado.paragens.map((p) => (
-                      <li className="che-paragem" key={p}>{p}</li>
-                    ))}
-                  </ul>
+                  <RotaParagens paragens={lado.paragens} />
                 </div>
-              </Reveal>
+              </CheRevela>
             ))}
           </div>
         </div>
@@ -174,13 +167,13 @@ export default function CheetahLandingPage() {
       {/* PARCEIROS */}
       <section className="bzlp-sec alt" id="parceiros">
         <div className="bzlp-wrap">
-          <Reveal>
+          <CheRevela>
             <div className="bzlp-sechead">
               <div className="bzlp-kicker">{i.parceiros.kicker}</div>
               <h2 className="bzlp-h2">{i.parceiros.h2}</h2>
               <p className="bzlp-lead">{i.parceiros.lead}</p>
             </div>
-          </Reveal>
+          </CheRevela>
           <ul className="che-parceiros">
             {PARCEIROS.map((p) => (
               <li className="che-parceiro" key={p.f}>

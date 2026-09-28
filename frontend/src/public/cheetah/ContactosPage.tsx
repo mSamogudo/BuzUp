@@ -1,5 +1,5 @@
 import { Building2, Mail, Ticket } from "lucide-react";
-import Reveal from "../landing/Reveal";
+import CheRevela from "./CheRevela";
 import FormularioPedido from "../comum/FormularioPedido";
 import CheetahPagina, {
   CheetahIntro, EMAIL_GERAL, EMAIL_RESERVAS, MORADA, useCheetahMeta,
@@ -28,16 +28,16 @@ export default function ContactosPage() {
       <section className="bzlp-sec">
         <div className="bzlp-wrap">
           <div className="che-contactos">
-            <Reveal>
+            <CheRevela>
               <FormularioPedido
                 textos={c.form}
                 email={EMAIL_RESERVAS}
                 prefixoAssunto="Cheetah Express"
                 dicaTelefone="+258 84 000 0000"
               />
-            </Reveal>
+            </CheRevela>
 
-            <Reveal delay={80}>
+            <CheRevela ordem={1}>
               <div className="che-contacto-cartoes">
                 <div className="che-contacto-cartao">
                   <span className="che-contacto-ico"><Ticket size={20} aria-hidden /></span>
@@ -60,7 +60,7 @@ export default function ContactosPage() {
                   <span>{MORADA}</span>
                 </div>
               </div>
-            </Reveal>
+            </CheRevela>
           </div>
         </div>
       </section>

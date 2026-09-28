@@ -8,6 +8,7 @@ import "../comum/busca.css";
 import "../comum/formulario.css";
 import "./cheetah.css";
 import "./cheetah-paginas.css";
+import "./cheetah-motion.css";
 
 /* A moldura das páginas da Cheetah Express — barra, menu de telemóvel e rodapé.
  *

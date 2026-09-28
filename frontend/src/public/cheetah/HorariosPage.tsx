@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BedDouble, Info } from "lucide-react";
-import Reveal from "../landing/Reveal";
+import CheRevela from "./CheRevela";
 import CheetahPagina, { CheetahIntro, useCheetahMeta } from "./CheetahChrome";
 import { useCheetahCopy } from "./cheetah-copy";
 
@@ -37,7 +37,7 @@ export default function HorariosPage() {
 
           <div className="che-percursos">
             {h.percursos.map((p, n) => (
-              <Reveal key={p.id} delay={n * 50}>
+              <CheRevela key={p.id}>
                 <article className="che-percurso" id={p.id}>
                   <header className="che-percurso-head">
                     <h2>{p.nome}</h2>
@@ -87,7 +87,7 @@ export default function HorariosPage() {
                     </div>
                   </div>
                 </article>
-              </Reveal>
+              </CheRevela>
             ))}
           </div>
         </div>

@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "url": "http://localhost:3008",
+      "port": 3008
+    },
+    {
+      "name": "backend",
+      "url": "http://localhost:8008",
+      "port": 8008
+    }
+  ]
+}

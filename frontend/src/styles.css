@@ -279,6 +279,17 @@ img {
    4. Splash Screen
    ========================================================================== */
 
+/* ── Ecra de arranque ──────────────────────────────────────────────────────
+   Vestido com a marca de quem esta a entrar (ver ui/SplashScreen.tsx). Cada
+   operador tem a sua chapa: quem abre o site da TPM-TUR ou da Cheetah ve a
+   marca DELES primeiro, e nao a do fornecedor.
+
+   Contrastes medidos sobre cada chapa:
+     branco sobre o marinho #03316b ....... 11,90:1
+     preto da marca sobre o amarelo ....... 11,37:1
+     preto da marca sobre o laranja ........ 6,22:1  (o pior ponto da Cheetah)
+   Por isso a Cheetah e a unica que leva tinta ESCURA — e tambem as variantes
+   de tinta escura dos tres logotipos. */
 .splash-screen {
   position: fixed;
   inset: 0;
@@ -287,47 +298,88 @@ img {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 30px;
+  padding: 32px 22px 26px;
   background: var(--app-sidebar);
-}
-
-/* O degrade para no meio do caminho de proposito. No escuro o teal clareia
-   para #35b9d8 e branco por cima da 2,31:1; a 65% do caminho ate ao navy da
-   6,93:1 no claro e 4,67:1 no escuro — passa AA nos dois. */
-.splash-logo {
-  width: 80px;
-  height: 80px;
-  display: grid;
-  place-items: center;
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--app-accent-deep), color-mix(in srgb, var(--app-accent) 65%, var(--app-accent-deep)));
   color: #ffffff;
-  font-family: Manrope, sans-serif;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: -1px;
-  animation: splashPulse 2s ease-in-out infinite;
-  box-shadow:
-    0 0 40px color-mix(in srgb, var(--app-accent) 25%, transparent),
-    0 0 80px color-mix(in srgb, var(--app-accent) 10%, transparent);
 }
 
-.splash-text {
-  color: var(--app-sidebar-text-strong);
-  font-family: Manrope, sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  animation: splashFadeIn 600ms ease 200ms both;
+/* As tres chapas. */
+.splash-screen.splash-cheetah {
+  background: linear-gradient(118deg, #f8c70f 0%, #f8c70f 34%, #f17317 100%);
+  color: #141618;
 }
+
+/* O logotipo de quem recebe. A altura manda; a largura sai da proporcao do
+   ficheiro, que vem nos atributos do `img`. */
+.splash-marca {
+  display: block;
+  width: auto;
+  height: clamp(58px, 9vw, 84px);
+  max-width: min(76vw, 420px);
+  object-fit: contain;
+  /* Aparece em vez de surgir de golpe: e a primeira coisa que se ve. */
+  animation: splashFadeIn 420ms ease both;
+}
+
+/* Quem poe a tecnologia e quem a fez, em baixo. A mesma formula dos rodapes
+   dos sites — o arranque e a pagina dizem a mesma coisa. */
+.splash-creditos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 0 22px;
+  font-family: Manrope, Inter, system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.82;
+  animation: splashFadeIn 600ms ease 260ms both;
+}
+.splash-creditos img {
+  display: block;
+  width: auto;
+  height: 20px;
+  object-fit: contain;
+}
+.splash-creditos-sep { opacity: 0.5; }
+
+/* O ecra de espera ENTRE paginas: a chapa e o indicador, sem apresentacao.
+   A apresentacao ja foi feita ao entrar, e repeti-la a cada clique no menu faz
+   uma espera de dezenas de milissegundos parecer longa. */
+.splash-leve .splash-creditos { display: none; }
 
 .splash-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.10);
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.14);
   border-top-color: var(--app-accent-strong);
   border-radius: 50%;
   animation: spinLoader 800ms linear infinite;
+}
+/* Sobre a chapa clara da Cheetah o anel branco desaparecia. */
+.splash-cheetah .splash-spinner {
+  border-color: rgba(20, 22, 24, 0.16);
+  border-top-color: #d71a20;
+}
+
+/* Quem pediu menos movimento. Os aparecimentos saem — sao enfeite, e o
+   conteudo aparece na mesma. O INDICADOR FICA A RODAR: nao e decoracao, e o
+   unico sinal de que a aplicacao esta a trabalhar, e tira-lo deixaria um ecra
+   que parece congelado. Menos e mais suave, nao zero.
+
+   Esta regra cobre so o ecra de arranque. O resto da aplicacao nao tem guarda
+   nenhuma de movimento reduzido — e uma divida que fica registada aqui, e nao
+   uma coisa para resolver de passagem num ecra de carregamento. */
+@media (prefers-reduced-motion: reduce) {
+  .splash-marca,
+  .splash-creditos { animation: none; }
 }
 
 /* ==========================================================================
@@ -3327,7 +3379,10 @@ html[data-theme="dark"] .admin-user-chip {
   border-color: rgba(255, 255, 255, 0.05);
 }
 
-html[data-theme="dark"] .splash-screen {
+/* So a chapa da BusUp segue o tema. As dos operadores sao da MARCA deles e
+   nao da preferencia de quem visita — um ecra de arranque e um momento de
+   marca, nao uma superficie tematizavel. */
+html[data-theme="dark"] .splash-screen.splash-busup {
   background: var(--app-bg);
 }
 

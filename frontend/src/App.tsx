@@ -74,7 +74,7 @@ const DriverPortalPage = lazy(() => import("./driver/DriverPortalPage"));
 const ProfilePage = lazy(() => import("./profile/ProfilePage"));
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { BrandingProvider } from "./lib/branding";
-import SplashScreen from "./ui/SplashScreen";
+import SplashScreen, { SplashLeve } from "./ui/SplashScreen";
 import PwaInstallPrompt from "./ui/PwaInstallPrompt";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -104,8 +104,12 @@ function AppContent() {
     <>
       <Toaster position="top-right" />
       <PwaInstallPrompt />
-      {/* Uma so fronteira de espera: o ecra que falta e sempre o proximo. */}
-      <Suspense fallback={<SplashScreen />}>
+      {/* Uma so fronteira de espera: o ecra que falta e sempre o proximo.
+          O ecra AQUI e o leve — so a chapa da marca e o indicador. O completo,
+          com os tres logotipos, e do arranque: entre paginas do mesmo site o
+          codigo chega em dezenas de milissegundos, e uma apresentacao inteira
+          nesse tempo faz a espera parecer maior do que e. */}
+      <Suspense fallback={<SplashLeve />}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/tpm-tur" element={<TpmTurLandingPage />} />

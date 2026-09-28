@@ -362,7 +362,17 @@
   right: 0;
   bottom: -1px;          /* -1px: sem ele, o arredondamento deixa uma risca */
   width: 100%;
-  height: clamp(48px, 7vw, 92px);
+  /* O TECTO DE 112px E UMA CONTA, e nao gosto. A camada da frente — a opaca —
+     arranca a 15,5% da altura do SVG (o `V3.72` de 24 no caminho). Como a onda
+     esta ancorada ao fundo da chapa, o topo dela e `fundo - H`, e o branco
+     opaco comeca em `fundo - H + 0,155H`. Para esse branco nao subir por tras
+     do cartao de pesquisa, que acaba 95px acima do fundo:
+         0,845 x H <= 95   ->   H <= 112
+     Acima disso a chapa amarela fica branca dos lados do cartao e ele passa a
+     flutuar meio no amarelo, meio no branco.
+     O original poe esta onda a 260px porque o hero dele nao tem cartao nenhum
+     — tem um botao pequeno, e sobra-lhe meio ecra. */
+  height: clamp(56px, 8.5vw, 112px);
   z-index: 1;
   display: block;
   pointer-events: none;

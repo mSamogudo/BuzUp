@@ -22,6 +22,19 @@ const TpmServicosPage = lazy(() => import("./public/tpm/ServicosPage"));
 const TpmFrotaPage = lazy(() => import("./public/tpm/FrotaPage"));
 const TpmPoliticasPage = lazy(() => import("./public/tpm/PoliticasPage"));
 const TpmContactosPage = lazy(() => import("./public/tpm/ContactosPage"));
+// O site da Cheetah Express, o segundo operador com site proprio. Mesma
+// arrumacao: uma pagina por rota, cada uma so carregada quando alguem la vai.
+//
+// NOTA: cada cliente corre a sua instancia (tpm-tur.updigital.co.mz, e a
+// Cheetah tera a sua), mas o repositorio e um so — logo estas rotas existem
+// em TODAS as instancias. Na da TPM-TUR o hero da Cheetah mostraria paragens
+// da TPM-TUR. Ninguem la chega (nao ha link e o dominio e outro), mas fica
+// dito: e consequencia de um repositorio com varias instancias, e nao um
+// descuido.
+const CheetahLandingPage = lazy(() => import("./public/cheetah/CheetahLandingPage"));
+const CheetahHorariosPage = lazy(() => import("./public/cheetah/HorariosPage"));
+const CheetahContactosPage = lazy(() => import("./public/cheetah/ContactosPage"));
+const CheetahTermosPage = lazy(() => import("./public/cheetah/TermosPage"));
 const BookingPage = lazy(() => import("./public/booking/BookingPage"));
 const DashboardPage = lazy(() => import("./admin/DashboardPage"));
 const RoutesPage = lazy(() => import("./admin/RoutesPage"));
@@ -101,6 +114,10 @@ function AppContent() {
         <Route path="/tpm-tur/frota" element={<TpmFrotaPage />} />
         <Route path="/tpm-tur/nossas-politicas" element={<TpmPoliticasPage />} />
         <Route path="/tpm-tur/contactos" element={<TpmContactosPage />} />
+        <Route path="/cheetah-express" element={<CheetahLandingPage />} />
+        <Route path="/cheetah-express/horarios" element={<CheetahHorariosPage />} />
+        <Route path="/cheetah-express/contactos" element={<CheetahContactosPage />} />
+        <Route path="/cheetah-express/termos" element={<CheetahTermosPage />} />
         <Route path="/baixar" element={<DownloadPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/comprar" element={<BookingPage />} />

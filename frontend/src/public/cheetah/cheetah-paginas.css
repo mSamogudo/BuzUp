@@ -1,0 +1,291 @@
+/* O que so as paginas internas da Cheetah Express tem: os quadros de
+ * horarios, as condicoes de transporte e os contactos.
+ *
+ * Carregado DEPOIS de `cheetah.css`, que ja poe os tokens da marca na caixa.
+ *
+ * NOTA SOBRE O TAILWIND. Este projecto corre sem `preflight`, ou seja, os
+ * defaults do browser estao todos vivos: as `table` vem com
+ * `border-collapse: separate` e espacamento proprio, os `th` vem a negrito e
+ * centrados, as `ul` vem com marcadores e recuo, e os `h1..h6` e `p` trazem
+ * margens. Nada disto se herda de um reset — tem de estar escrito. E o que os
+ * blocos abaixo fazem, e e por isso que parecem verbosos.
+ */
+
+/* ── Quadros de horarios ───────────────────────────────────────────── */
+
+.che-percursos { display: grid; gap: 28px; }
+
+.che-percurso {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.che-percurso-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--navy), var(--navy2));
+  color: var(--on-navy);
+}
+.che-percurso-head h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--on-navy);
+}
+.che-percurso-dias {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-ink);          /* 11,37:1 — a regra do amarelo */
+  font-size: 12px;
+  font-weight: 800;
+}
+.che-percurso-corpo { padding: 8px 24px 24px; }
+
+.che-bloco + .che-bloco { margin-top: 22px; }
+.che-bloco h3 {
+  margin: 20px 0 10px;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue2);
+}
+
+/* O quadro. `border-collapse` e obrigatorio sem preflight: em `separate` as
+   celulas vinham com folga propria e as linhas nao encostavam. */
+.che-quadro {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.che-quadro caption { text-align: left; }         /* default e `center` */
+.che-quadro th,
+.che-quadro td {
+  padding: 11px 12px;
+  text-align: left;                                /* o `th` vem centrado */
+  vertical-align: top;
+  border-bottom: 1px solid var(--line-soft);
+}
+.che-quadro thead th {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted-ink);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.che-quadro tbody tr:last-child td { border-bottom: 0; }
+.che-quadro td:first-child { font-weight: 700; white-space: nowrap; }
+.che-quadro td:nth-child(2) { color: var(--muted-ink); line-height: 1.5; }
+/* A hora e o dado que se procura: alinhada a direita, em numeros de largura
+   fixa, para as linhas se lerem em coluna. */
+.che-quadro td:last-child,
+.che-quadro thead th:last-child {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+/* Precos */
+.che-precos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.che-precos-rot {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-ink);
+}
+.che-preco {
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1.5px solid var(--blue);
+  color: var(--blue2);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+.che-preco-nota { font-size: 13px; color: var(--muted-ink); }
+.che-dormida {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* O aviso da fronteira. Nao e decoracao: e a informacao que faz a diferenca
+   entre apanhar e perder um voo do outro lado. */
+.che-aviso {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin: 0 0 32px;
+  padding: 18px 20px;
+  background: color-mix(in srgb, var(--gold) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.che-aviso svg { flex: 0 0 auto; margin-top: 2px; color: var(--blue2); }
+
+/* ── Condicoes de transporte ───────────────────────────────────────── */
+
+.che-termos { display: grid; grid-template-columns: 0.32fr 0.68fr; gap: 44px; align-items: start; }
+/* O indice acompanha a leitura. Em ecra estreito deixa de ser fixo — ver
+   o media query no fim. */
+.che-termos-indice { position: sticky; top: 92px; }
+.che-termos-indice h2 {
+  margin: 0 0 14px;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-ink);
+}
+.che-termos-indice ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: sec; }
+.che-termos-indice li { counter-increment: sec; }
+.che-termos-indice a {
+  display: block;
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--muted-ink);
+  transition: background 0.15s, color 0.15s;
+}
+.che-termos-indice a::before { content: counter(sec) ". "; font-weight: 800; color: var(--blue2); }
+.che-termos-indice a:hover { background: var(--bg); color: var(--ink); }
+
+.che-termos-corpo { display: grid; gap: 34px; }
+.che-termo h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.che-termo p { margin: 0 0 12px; font-size: 15px; line-height: 1.68; color: var(--muted-ink); }
+.che-termo p:last-child { margin-bottom: 0; }
+.che-termo a { color: var(--blue2); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* O aviso de que o texto e provisorio. Fica no topo e nao no rodape: quem o
+   ler tem de saber ANTES de o ler, nao depois. */
+.che-rascunho {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  margin-bottom: 36px;
+  padding: 16px 18px;
+  border-left: 4px solid var(--blue);
+  background: color-mix(in srgb, var(--blue) 7%, var(--surface));
+  border-radius: 0 12px 12px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.che-rascunho svg { flex: 0 0 auto; margin-top: 1px; color: var(--blue2); }
+
+/* ── Contactos ─────────────────────────────────────────────────────── */
+
+.che-contactos { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: start; }
+.che-contacto-cartoes { display: grid; gap: 16px; }
+.che-contacto-cartao {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px 24px;
+}
+.che-contacto-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+  color: var(--blue2);
+  margin-bottom: 13px;
+}
+.che-contacto-cartao h2 { margin: 0 0 6px; font-size: 17px; font-weight: 800; color: var(--ink); }
+.che-contacto-cartao p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: var(--muted-ink); }
+.che-contacto-cartao a {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue2);
+  word-break: break-word;       /* os emails sao longos e a coluna e estreita */
+}
+.che-contacto-cartao a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.che-contacto-cartao span { font-size: 15px; font-weight: 700; color: var(--ink); }
+
+/* ── Ecras estreitos ───────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .che-termos { grid-template-columns: 1fr; gap: 28px; }
+  .che-termos-indice { position: static; }
+  .che-contactos { grid-template-columns: 1fr; gap: 28px; }
+}
+
+/* Abaixo de 768px o quadro de tres colunas deixa de se ler: a coluna do local
+   e uma morada inteira e ficava com duas palavras por linha. Cada linha passa
+   a um cartao, com os rotulos escritos por `data-*` em vez de repetidos no
+   markup — o cabecalho da tabela desaparece com eles. */
+@media (max-width: 768px) {
+  .che-quadro thead { display: none; }
+  .che-quadro,
+  .che-quadro tbody,
+  .che-quadro tr,
+  .che-quadro td { display: block; width: auto; }
+  .che-quadro tr {
+    padding: 13px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .che-quadro tbody tr:last-child { border-bottom: 0; }
+  .che-quadro td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+  .che-quadro td:first-child {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .che-quadro td:nth-child(2) { font-size: 13.5px; }
+  .che-quadro td:last-child {
+    display: inline-block;
+    margin-top: 7px;
+    padding: 3px 11px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--blue) 11%, transparent);
+    color: var(--blue2);
+    text-align: left;
+    font-size: 14px;
+  }
+  .che-percurso-corpo { padding: 4px 18px 20px; }
+  .che-percurso-head { padding: 18px; }
+}

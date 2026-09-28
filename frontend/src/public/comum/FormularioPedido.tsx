@@ -52,8 +52,10 @@ export default function FormularioPedido({
 }: {
   textos: TextosFormulario;
   email: string;
-  telefone: string;
-  telefoneHref: string;
+  /* Opcionais: a Cheetah Express nao publica telefone — so enderecos de
+     email — e o aviso dela nao usa o marcador `{telefone}`. */
+  telefone?: string;
+  telefoneHref?: string;
   /** Vai a frente do assunto do email — "TPM-TUR", "Cheetah Express". Sem
    *  ele, quem recebe ve so "Aluguer de autocarro" sem saber de onde veio. */
   prefixoAssunto: string;
@@ -156,8 +158,10 @@ export default function FormularioPedido({
               com o idioma. */}
           {f.aviso.split(/(\{email\}|\{telefone\})/).map((parte, i) =>
             parte === "{email}" ? <a key={i} href={`mailto:${EMAIL}`}>{EMAIL}</a>
-              : parte === "{telefone}" ? <a key={i} href={telefoneHref}>{telefone}</a>
-                : <span key={i}>{parte}</span>,
+              : parte === "{telefone}" && telefone
+                ? <a key={i} href={telefoneHref}>{telefone}</a>
+                : parte === "{telefone}" ? null
+                  : <span key={i}>{parte}</span>,
           )}
         </output>
       )}

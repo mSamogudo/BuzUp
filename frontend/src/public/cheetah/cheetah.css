@@ -1,0 +1,452 @@
+/* Site da Cheetah Express — a mesma lingua de desenho da landing BusUp
+ * (`bzlp-*`), vestida com a marca do operador.
+ *
+ * AO CONTRARIO DA TPM-TUR, as cores NAO vem do preset global. O preset que a
+ * aplicacao carrega (`themes/tpm-tur.css`) e navy/ciano/dourado; a Cheetah e
+ * preto/vermelho/amarelo. Por isso esta caixa escreve os seus proprios
+ * valores em cima dos nomes que o `.bzlp` ja usa — e so dentro dela. Nada
+ * global muda: o portal de gestao, o login e o site da TPM-TUR ficam como
+ * estao. Trocar o preset por operador e o desenho correcto para um SaaS
+ * multi-cliente, mas e outro projecto.
+ *
+ * CONTRASTES, todos medidos e nao supostos:
+ *
+ *   branco sobre #d71a20 .......... 5,17:1   o botao principal, tema claro
+ *   #141618 sobre #ef555a ......... 5,28:1   o botao principal, tema escuro
+ *   #c9181e sobre branco .......... 5,78:1   o vermelho quando e LETRA
+ *   #141618 sobre #F8C70F ........ 11,37:1   a regra do amarelo
+ *   branco sobre #F8C70F .......... 1,59:1   PROIBIDO
+ *   #F8C70F sobre #141618 ........ 11,37:1   o amarelo sobre o preto da marca
+ *
+ * O vermelho oficial e o #EA1D23, e sobre branco da 4,47:1 — passa para chapa
+ * e titulos grandes, chumba para corpo de texto e para tinta de botao. Por
+ * isso ha tres vermelhos e nao um: o da marca para PINTAR, um 8% mais fundo
+ * para os BOTOES e outro para as LETRAS. A diferenca nao se ve; o chao de
+ * contraste sente-se.
+ */
+
+.bzlp-cheetah {
+  /* O tom fundo da marca: barra, rodape e as chapas escuras. No `.bzlp` estes
+     nomes chamam-se "navy" porque nasceram na BusUp — o nome fica, a cor e a
+     desta empresa. */
+  --navy: #141618;
+  --navy2: #0f1012;
+  --navy3: #0b0c0d;
+
+  --vermelho-marca: #ea1d23;   /* o oficial, para chapa e titulos grandes */
+  --blue: #d71a20;             /* a cor que PINTA botoes — branco por cima da 5,17:1 */
+  --blue2: #c9181e;            /* a cor que e LETRA — sobre branco da 5,78:1 */
+  --blue-bright: #ef555a;
+  --gold: #f8c70f;
+  --gold-ink: #141618;         /* a regra do amarelo: a tinta e sempre esta */
+
+  --ink: #17191c;
+  --muted-ink: #5f656d;
+  --line: #e2e4e8;
+  --line-soft: #eef0f2;
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ok: #1d7a5f;
+
+  /* Sobre o preto da marca. 18,14:1 e 11,26:1 — os dois unicos tons de que a
+     pagina precisa. */
+  --on-navy: #ffffff;
+  --on-navy-soft: #c9ccd0;
+
+  /* O `.bzlp-btn` e os primitivos do shadcn leem estes nomes do preset global,
+     que e o da TPM-TUR. Redefinidos aqui, param a caixa. */
+  --primary: var(--blue);
+  --primary-foreground: #ffffff;
+  --primary-ink: var(--blue2);
+  --destructive: #b3261e;
+  --success: var(--ok);
+  --warning: var(--gold);
+  --warning-foreground: var(--gold-ink);
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --border: var(--line);
+  --muted-foreground: var(--muted-ink);
+  --sidebar: var(--navy);
+}
+
+/* Tema escuro. Existe bloco proprio — ao contrario da TPM-TUR, que herda o
+   `[data-theme=dark]` do preset — precisamente porque esta caixa nao usa o
+   preset. A pagina escreve `data-theme` nela propria, e e aqui que casa. */
+.bzlp-cheetah[data-theme="dark"] {
+  --navy: #0b0c0d;
+  --navy2: #08090a;
+  --navy3: #050606;
+
+  /* O vermelho tem de subir: o #d71a20 sobre um cartao escuro da 3,0:1 e
+     desaparece. Este da 4,93:1 contra o cartao, e leva tinta ESCURA por cima
+     (5,28:1) — ao contrario do tema claro, onde leva branca. */
+  --blue: #ef555a;
+  --primary-foreground: #141618;
+  --blue2: #f16c70;            /* letra sobre o cartao escuro: 5,74:1 */
+  --blue-bright: #f38286;
+
+  --ink: #f2f3f4;
+  --muted-ink: #9aa0a8;        /* 6,42:1 sobre o cartao */
+  --line: #2b3036;
+  --line-soft: #23272c;
+  --bg: #0f1113;
+  --surface: #1a1d20;
+  --on-navy: #ffffff;
+  --on-navy-soft: #c9ccd0;
+}
+
+/* ── Botoes ────────────────────────────────────────────────────────── */
+
+/* O amarelo e a unica cor "loud" da marca e fica para a accao principal —
+   comprar. A tinta por cima e sempre o preto da marca, nos dois temas: branco
+   sobre este amarelo da 1,59:1. */
+.bzlp-cheetah .bzlp-btn.gold {
+  background: var(--gold);
+  color: var(--gold-ink);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.bzlp-cheetah .bzlp-btn.gold:hover { background: color-mix(in srgb, var(--gold) 86%, white); }
+
+.bzlp-cheetah .bzlp-btn.outline {
+  background: transparent;
+  color: var(--blue2);
+  border: 1.5px solid currentColor;
+}
+.bzlp-cheetah .bzlp-btn.outline:hover { background: color-mix(in srgb, var(--blue) 8%, transparent); }
+
+/* Sobre as chapas pretas da marca o vermelho de letra da 3,14:1 e chumba: o
+   botao vazado ganha ali tinta branca, que da 18,14:1. Medido, nao deduzido. */
+.che-hero .bzlp-btn.outline,
+.che-cta .bzlp-btn.outline { color: #fff; }
+.che-hero .bzlp-btn.outline:hover,
+.che-cta .bzlp-btn.outline:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* O mapa que o cartao de pesquisa partilhado pede (ver comum/busca.css). */
+.bzlp-cheetah .bz-busca {
+  --busca-superficie: var(--surface);
+  --busca-ink: var(--ink);
+  --busca-ink-fraca: var(--muted-ink);
+  --busca-linha: var(--line);
+  --busca-linha-suave: var(--line-soft);
+  --busca-accao: var(--blue);
+  --busca-accao-ink: var(--primary-foreground);
+  --busca-accao-texto: var(--blue2);
+  --busca-accao-escura: var(--navy);
+}
+/* O mesmo para o formulario de pedido. */
+.bzlp-cheetah .bz-form {
+  --form-titulo-ink: var(--ink);
+  --form-link: var(--blue2);
+}
+
+/* ── Barra ─────────────────────────────────────────────────────────── */
+
+/* Altura fixa. Presa ao logotipo, mudava de altura com ele e partia a dobra. */
+.bzlp-cheetah .bzlp-nav-in { min-height: 72px; }
+.bzlp-cheetah .bzlp-links a:hover { color: var(--blue2); }
+.bzlp-cheetah .bzlp-nav { border-bottom: 1px solid var(--line-soft); }
+
+/* ── HERO ──────────────────────────────────────────────────────────────
+   Duas colunas, e nao uma fotografia de fundo inteiro como a da TPM-TUR: a
+   unica imagem que a Cheetah tem e uma composicao VERTICAL recortada (1000 x
+   1444, com transparencia) — o passageiro, a carrinha e a praia. Esticada a
+   toda a largura ficava um borrao; ao lado do texto e o que ela foi feita
+   para ser, e e tambem o que o site oficial faz. */
+.che-hero {
+  position: relative;
+  background: linear-gradient(158deg, var(--navy) 0%, var(--navy2) 62%, var(--navy3) 100%);
+  color: var(--on-navy);
+  overflow: hidden;
+}
+/* A mancha de chita da marca, em amarelo, a sair do canto. Decorativa: e
+   `aria-hidden` no markup e nao leva informacao nenhuma. */
+.che-hero::before {
+  content: "";
+  position: absolute;
+  top: -120px;
+  right: -90px;
+  width: 460px;
+  height: 460px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--gold) 26%, transparent) 0%, transparent 68%);
+  pointer-events: none;
+}
+.che-hero-in {
+  position: relative;
+  z-index: 1;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 56px 22px 64px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 40px;
+  align-items: center;
+}
+.che-hero-copy h1 {
+  margin: 14px 0 0;
+  font-size: clamp(38px, 5vw, 60px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 900;
+}
+/* "e rápido." em amarelo sobre o preto da marca: 11,37:1. */
+.che-hero-copy h1 span { color: var(--gold); }
+.che-hero-copy p {
+  margin: 20px 0 0;
+  max-width: 46ch;
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--on-navy-soft);
+}
+.che-hero .bzlp-badge {
+  background: color-mix(in srgb, var(--vermelho-marca) 88%, transparent);
+  color: #fff;
+  border: 0;
+}
+.che-hero-cta { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; align-items: center; }
+.che-hero-grupo {
+  margin: 18px 0 0;
+  font-size: 14px;
+  color: var(--on-navy-soft);
+}
+.che-hero-grupo a { color: var(--gold); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.che-hero-art { display: flex; justify-content: center; }
+.che-hero-art img {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  /* `object-fit` nao entra aqui: a imagem tem proporcao propria e e ela que
+     manda. Esticar uma composicao recortada le-se logo. */
+  filter: drop-shadow(0 26px 46px rgba(0, 0, 0, 0.45));
+}
+
+/* O cartao de pesquisa assenta a cavalo entre o hero e a pagina. */
+.che-hero-busca { position: relative; z-index: 3; margin-top: -54px; }
+.che-hero-busca-in { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 22px; }
+
+/* ── Provas ────────────────────────────────────────────────────────── */
+
+.che-provas {
+  list-style: none;      /* sem preflight, o browser poe marcadores e recuo */
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.che-prova {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px 22px;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.che-prova:hover { border-color: var(--blue); transform: translateY(-2px); }
+.che-prova-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+  color: var(--blue2);
+  margin-bottom: 15px;
+}
+.che-prova h3 { margin: 0 0 8px; font-size: 16.5px; font-weight: 800; letter-spacing: -0.01em; }
+.che-prova p { margin: 0; font-size: 14px; line-height: 1.62; color: var(--muted-ink); }
+
+/* ── Servicos ──────────────────────────────────────────────────────── */
+
+.che-servicos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.che-servico {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.che-servico:hover { border-color: var(--blue); box-shadow: 0 18px 38px -26px rgba(0, 0, 0, 0.5); }
+.che-servico-head {
+  background: linear-gradient(135deg, var(--navy), var(--navy2));
+  color: var(--on-navy);
+  padding: 22px;
+}
+.che-servico-etiq {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.che-servico-head h3 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.015em; }
+.che-servico-body { display: flex; flex-direction: column; gap: 12px; padding: 22px; flex: 1; }
+.che-servico-body p { margin: 0; font-size: 14.5px; line-height: 1.62; color: var(--muted-ink); }
+.che-servico-extra {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.che-servico-extra strong { color: var(--blue2); }
+
+/* ── A rota ────────────────────────────────────────────────────────── */
+
+.che-rota { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.che-rota-lado {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 26px 24px;
+}
+.che-rota-lado h3 {
+  margin: 0 0 18px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue2);
+}
+.che-paragens { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.che-paragem {
+  position: relative;
+  padding: 0 0 20px 26px;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.che-paragem:last-child { padding-bottom: 0; }
+/* O ponto e a linha que os liga: a rota le-se como uma rota, e nao como uma
+   lista. Ambos decorativos. */
+.che-paragem::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid var(--blue);
+}
+.che-paragem:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 18px;
+  bottom: 2px;
+  width: 1.5px;
+  background: var(--line);
+}
+
+/* ── Parceiros ─────────────────────────────────────────────────────── */
+
+.che-parceiros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.che-parceiro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 168px;
+  height: 92px;
+  padding: 16px;
+  background: #fff;             /* os logotipos sao feitos para fundo branco */
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.che-parceiro img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+/* ── Chamada final ─────────────────────────────────────────────────── */
+
+.che-cta {
+  background: linear-gradient(135deg, var(--navy), var(--navy2));
+  color: var(--on-navy);
+}
+.che-cta-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 48px 22px;
+}
+.che-cta h2 { margin: 0 0 8px; font-size: clamp(24px, 3vw, 31px); font-weight: 800; letter-spacing: -0.02em; }
+.che-cta p { margin: 0; max-width: 52ch; font-size: 15.5px; line-height: 1.6; color: var(--on-navy-soft); }
+.che-cta-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* ── Faixa de entrada das paginas ──────────────────────────────────── */
+
+.che-intro {
+  background: linear-gradient(140deg, var(--navy), var(--navy2));
+  color: var(--on-navy);
+  padding: 44px 0 52px;
+}
+.che-intro-migalha {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--on-navy-soft);
+  margin-bottom: 16px;
+}
+.che-intro-migalha a:hover { color: var(--gold); }
+.che-intro h1 { margin: 0 0 12px; font-size: clamp(30px, 4vw, 44px); font-weight: 900; letter-spacing: -0.028em; }
+.che-intro p { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.62; color: var(--on-navy-soft); }
+
+/* ── Rodape ────────────────────────────────────────────────────────── */
+
+/* O rodape e preto nos DOIS temas — por isso as variantes de tinta clara dos
+   creditos servem sempre, sem alternancia. */
+.bzlp-cheetah .bzlp-foot { background: var(--navy2); color: var(--on-navy-soft); }
+.bzlp-cheetah .bzlp-foot a:hover { color: var(--gold); }
+.bzlp-cheetah .bzlp-foot h4 { color: var(--on-navy); }
+.bzlp-cheetah .bzlp-foot-bar { border-top: 1px solid rgba(255, 255, 255, 0.10); }
+.che-foot-bar-in {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+}
+.che-creditos { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.che-creditos img { display: block; }
+.che-creditos-sep { opacity: 0.45; }
+
+/* ── Ecras estreitos ───────────────────────────────────────────────── */
+
+@media (max-width: 980px) {
+  .che-hero-in { grid-template-columns: 1fr; gap: 28px; padding: 44px 22px 56px; }
+  .che-hero-art { order: -1; }
+  .che-hero-art img { max-width: 280px; }
+  .che-provas { grid-template-columns: repeat(2, 1fr); }
+  .che-servicos { grid-template-columns: 1fr; }
+  .che-rota { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .che-provas { grid-template-columns: 1fr; }
+  .che-hero-busca { margin-top: -38px; }
+  .che-cta-in { flex-direction: column; align-items: flex-start; padding: 40px 22px; }
+  .che-parceiro { width: calc(50% - 8px); height: 80px; }
+}

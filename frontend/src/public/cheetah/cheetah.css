@@ -230,6 +230,19 @@
   display: flex;
   align-items: center;
   --nav-h: 72px;
+  /* A ALTURA DA ONDA E UM ORCAMENTO, e por isso vive aqui e nao so na regra
+     dela: a altura maxima da imagem e o respiro desta chapa saem do que ela
+     deixa. Mudar este numero re-arruma a chapa toda sozinho.
+
+     ACIMA DE 160px A ONDA PASSA POR TRAS DO CARTAO, e isso e deliberado. A
+     camada opaca arranca a 15,5% da altura do SVG, logo o branco comeca em
+     `fundo - 0,845H`; para ficar abaixo do cartao seria preciso `H <= 160`, e
+     a onda do site oficial equivale a 359px aqui. Escolhido o tamanho, o
+     cartao fica com branco por tras dos cantos de baixo — e le-se bem, porque
+     ele tem moldura e sombra proprias e passa a ler-se como POUSADO sobre a
+     onda, que e exactamente a composicao do original. Sem a sombra isto nao
+     funcionaria. */
+  --onda-h: clamp(64px, 18vw, 260px);
   min-height: calc(100svh - var(--nav-h));
   background: linear-gradient(118deg, var(--chapa-de) 0%, var(--chapa-de) 34%, var(--chapa-para) 100%);
   color: var(--ink);
@@ -244,11 +257,14 @@
   margin: 0 auto;
   /* O respiro encolhe com a altura do ecra; fixo punha um chao que nao deixava
      a chapa descer num portatil baixo. O fundo e maior por causa da onda. */
-  padding: clamp(24px, 4svh, 56px) 22px clamp(56px, 8svh, 92px);
+  /* O fundo nao leva respiro proprio: quem o faz e a onda, que ocupa esse
+     espaco. Dar-lhe padding em cima do orcamento dela empurrava o cartao para
+     fora da primeira vista. */
+  padding: clamp(18px, 3svh, 32px) 22px 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: clamp(20px, 4svh, 40px);
+  gap: clamp(16px, 2.6svh, 26px);
 }
 
 .che-hero-topo {
@@ -260,8 +276,10 @@
 }
 
 .che-hero-copy h1 {
-  margin: 14px 0 0;
-  font-size: clamp(38px, 5vw, 62px);
+  margin: 10px 0 0;
+  /* Era `5vw, 62px`. Cedeu 10px de tecto para a onda poder crescer: a chapa e
+     a primeira vista inteira, e as duas coisas disputam a mesma altura. */
+  font-size: clamp(34px, 4.1vw, 52px);
   line-height: 1.06;
   letter-spacing: -0.03em;
   font-weight: 700;
@@ -287,10 +305,12 @@
   z-index: -1;
 }
 .che-hero-copy p {
-  margin: 20px 0 0;
-  max-width: 44ch;
-  font-size: 17px;
-  line-height: 1.62;
+  margin: 14px 0 0;
+  /* Mais largo E mais pequeno: alargar tira-lhe uma linha, e uma linha a menos
+     vale mais altura do que a que se perde no corpo da letra. */
+  max-width: 54ch;
+  font-size: 15.5px;
+  line-height: 1.6;
   /* Preto puxado para tras: 6,22:1 no pior ponto do gradiente, sem gritar
      tanto como o titulo. */
   color: color-mix(in srgb, var(--ink) 88%, transparent);
@@ -312,7 +332,7 @@
      empilhado a conta dava 29px e a carrinha desaparecia. */
   width: auto;
   max-width: 100%;
-  max-height: max(200px, min(578px, calc(100svh - var(--nav-h, 72px) - var(--cartao-h, 234px) - 190px)));
+  max-height: max(170px, min(578px, calc(100svh - var(--nav-h, 72px) - var(--cartao-h, 234px) - var(--onda-h, 112px) - 60px)));
   height: auto;
   filter: drop-shadow(0 26px 46px rgba(120, 60, 0, 0.32));
 }
@@ -362,17 +382,9 @@
   right: 0;
   bottom: -1px;          /* -1px: sem ele, o arredondamento deixa uma risca */
   width: 100%;
-  /* O TECTO DE 112px E UMA CONTA, e nao gosto. A camada da frente — a opaca —
-     arranca a 15,5% da altura do SVG (o `V3.72` de 24 no caminho). Como a onda
-     esta ancorada ao fundo da chapa, o topo dela e `fundo - H`, e o branco
-     opaco comeca em `fundo - H + 0,155H`. Para esse branco nao subir por tras
-     do cartao de pesquisa, que acaba 95px acima do fundo:
-         0,845 x H <= 95   ->   H <= 112
-     Acima disso a chapa amarela fica branca dos lados do cartao e ele passa a
-     flutuar meio no amarelo, meio no branco.
-     O original poe esta onda a 260px porque o hero dele nao tem cartao nenhum
-     — tem um botao pequeno, e sobra-lhe meio ecra. */
-  height: clamp(56px, 8.5vw, 112px);
+  /* Vem do orcamento definido em `.che-hero`. A 1440 de largura da 260px, que
+     e a altura a que o divisor do site oficial renderiza. */
+  height: var(--onda-h, 112px);
   z-index: 1;
   display: block;
   pointer-events: none;
@@ -571,6 +583,14 @@
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;
+  /* AS VIATURAS COMECAM FORA DA CAIXA, deslocadas 16 a 26% para a direita a
+     espera de entrar. Sem este recorte ocupavam esse espaco no layout e a
+     pagina ganhava barra horizontal ate a faixa aparecer no ecra — 56px de
+     excesso a 1080 de largura, medidos.
+     E o recorte melhora o efeito: em vez de existirem fora da moldura e
+     deslizarem para dentro, as viaturas EMERGEM da borda, que e o que se ve
+     quando um carro entra num parque. */
+  overflow: hidden;
 }
 .che-frota-v {
   position: absolute;

@@ -4,6 +4,7 @@ import { ArrowRight, Bus, Clock3, Snowflake, Wifi } from "lucide-react";
 import CheRevela from "./CheRevela";
 import HeroArte from "./HeroArte";
 import HeroDecoracoes from "./HeroDecoracoes";
+import OndaCheetah from "./OndaCheetah";
 import FrotaChegada from "./FrotaChegada";
 import RotaParagens from "./RotaParagens";
 import HeroBusca from "../comum/HeroBusca";
@@ -109,12 +110,7 @@ export default function CheetahLandingPage() {
           </div>
         </div>
 
-        {/* A onda que separa a chapa do branco — a assinatura do site oficial.
-            `preserveAspectRatio="none"` para ela esticar à largura da página
-            em vez de manter a proporção e deixar falhas nos lados. */}
-        <svg className="che-onda" viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden focusable="false">
-          <path d="M0,54 C220,96 420,10 720,34 C1000,56 1220,96 1440,58 L1440,90 L0,90 Z" />
-        </svg>
+        <OndaCheetah />
       </section>
 
       {/* PROVAS — os quatro pontos que o site oficial destaca. */}

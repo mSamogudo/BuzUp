@@ -237,11 +237,21 @@
    chamar a atencao para si — 16 segundos de ida e volta, e nao mais do que 2%
    de largura, para nao deixar buraco nos lados. */
 
-@keyframes che-onda-desliza {
-  from { transform: translate3d(-1.5%, 0, 0) scaleX(1.03); }
-  to { transform: translate3d(1.5%, 0, 0) scaleX(1.03); }
-}
-.che-onda { animation: che-onda-desliza 16s ease-in-out infinite alternate; }
+/* Cada camada desliza ao SEU ritmo, e e isso que faz a onda ondular.
+   Com uma duracao so as tres moviam-se em bloco e via-se um recorte a abanar;
+   19, 15 e 23 segundos sao primos entre si de proposito — o conjunto so volta
+   a repetir-se ao fim de horas, e a olho nunca se repete.
+
+   `scaleX(1.06)` e mais largo do que o ecra para o deslize nao deixar falha
+   nos lados. Sao os caminhos que se movem, e nao o `svg`: mover o elemento
+   inteiro arrastaria as tres camadas juntas e perdia-se todo o efeito. */
+@keyframes che-onda-a { from { transform: translate3d(-2%, 0, 0) scaleX(1.06); } to { transform: translate3d(2%, 0, 0) scaleX(1.06); } }
+@keyframes che-onda-b { from { transform: translate3d(1.6%, 0, 0) scaleX(1.06); } to { transform: translate3d(-1.6%, 0, 0) scaleX(1.06); } }
+@keyframes che-onda-c { from { transform: translate3d(-1.1%, 0, 0) scaleX(1.06); } to { transform: translate3d(1.1%, 0, 0) scaleX(1.06); } }
+
+.che-onda-tras { animation: che-onda-a 19s ease-in-out infinite alternate; }
+.che-onda-meio { animation: che-onda-b 15s ease-in-out infinite alternate; }
+.che-onda-frente { animation: che-onda-c 23s ease-in-out infinite alternate; }
 
 /* ── Os icones das provas ──────────────────────────────────────────────
    O traco DESENHA-SE quando a prova entra no ecra, em vez de aparecer feito.
@@ -280,7 +290,9 @@
     transform: none;
     transition: opacity 240ms ease;
   }
-  .che-onda { animation: none; }
+  .che-onda-tras,
+  .che-onda-meio,
+  .che-onda-frente { animation: none; }
   /* A frota aparece ja estacionada: o que ela mostra e a frota, nao a manobra. */
   .che-frota-v { transform: none; transition: opacity 240ms ease; }
   .che-frota[data-chegou] .che-frota-v { transform: none; }

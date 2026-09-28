@@ -367,7 +367,13 @@
   display: block;
   pointer-events: none;
 }
+/* As tres camadas pintam-se da cor do que vem A SEGUIR, nao da chapa: a onda
+   e o conteudo a subir por cima da marca, e nao a marca a descer.
+   As duas de tras a 33%, como no original — e o degrade dessas tres opacidades
+   que da profundidade a curva. */
 .che-onda path { fill: var(--surface); }
+.che-onda-tras { fill-opacity: 0.33; }
+.che-onda-meio { fill-opacity: 0.33; }
 
 /* ── Provas ────────────────────────────────────────────────────────────
    Centradas e sem caixa, como no oficial: quatro icones de traco fino sobre

@@ -79,6 +79,10 @@ const PT = {
     passageiro1: "passageiro",
     passageiroN: "passageiros",
     dataVazia: "dd/mm/aaaa",
+    erroPercurso: "Indique a origem e o destino.",
+    erroMesmoLugar: "A origem e o destino não podem ser o mesmo lugar.",
+    erroData: "Escolha a data de ida.",
+    erroVolta: "Escolha a data de regresso.",
   },
 
   inicio: {
@@ -497,6 +501,10 @@ const EN: typeof PT = {
     passageiro1: "passenger",
     passageiroN: "passengers",
     dataVazia: "dd/mm/yyyy",
+    erroPercurso: "Please choose where you are travelling from and to.",
+    erroMesmoLugar: "Origin and destination cannot be the same place.",
+    erroData: "Please choose the outbound date.",
+    erroVolta: "Please choose the return date.",
   },
 
   inicio: {

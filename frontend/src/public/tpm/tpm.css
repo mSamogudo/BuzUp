@@ -445,204 +445,31 @@
   padding: 0 22px;
 }
 
-.tpm-busca {
-  margin: 0;
-  max-width: none;
-  background: var(--surface);
-  /* O hero poe `color: #fff` para o texto se ler sobre a fotografia. Dentro
-     deste cartao branco isso era branco sobre branco: o gatilho do Select do
-     shadcn nao define cor propria — conta com a herdada — e "1 passageiro"
-     saia invisivel, a 1,00:1. */
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: 0 22px 48px -22px rgba(0, 0, 0, 0.45);
-}
+/* O CARTAO DE PESQUISA saiu daqui para `public/comum/busca.css` quando a
+   Cheetah Express passou a precisar do mesmo. As classes chamavam-se
+   `.tpm-busca-*` e chamam-se agora `.bz-busca-*`; nenhuma regra era de marca —
+   todas ja liam variaveis, e e isso que torna a mudanca possivel.
 
-.tpm-busca-topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-.tpm-busca-titulo {
-  margin: 0;
-  font-family: var(--font-display, inherit);
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--heading, var(--ink));
-}
-
-.tpm-busca-tipo {
-  display: inline-flex;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--line-soft);
-}
-.tpm-busca-tipo-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 0 15px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  /* Puxado 15% para a tinta: o tom fraco cheio sobre a propria faixa da
-     4,31:1 e chumba AA. */
-  color: color-mix(in srgb, var(--muted-ink) 85%, var(--ink));
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 160ms ease, color 160ms ease;
-}
-.tpm-busca-tipo-btn.is-on {
-  background: var(--surface);
-  color: var(--blue2);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
-}
-
-/* Origem e destino puxam mais largura do que a data e os passageiros: sao
-   campos de escrita livre e os nomes das paragens sao longos. */
-.tpm-busca-campos {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) minmax(0, 0.85fr) minmax(0, 0.9fr) auto;
-  gap: 10px;
-  align-items: end;
-}
-.tpm-busca-campos.tem-volta {
-  grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.85fr) auto;
-}
-
-.tpm-busca-campo { display: grid; gap: 5px; min-width: 0; }
-.tpm-busca-campo > label,
-.tpm-busca-campo > [data-slot=label] {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted-ink);
-}
-.tpm-busca-campo [data-slot=select-trigger] { width: 100%; }
-.tpm-busca-campo .campo-data-botao { height: 48px; }
-
-/* Entre os dois campos, e alinhado com eles: e ali que a pessoa olha quando
-   percebe que trocou os lugares. */
-.tpm-busca-inverter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  /* Alinhado pela base com os campos de 48px, e nao esticado ate eles: um
-     circulo de 48px ao lado de caixas de 48px lia-se como um sexto campo. */
-  margin-bottom: 3px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--navy);
-  color: #fff;
-  cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
-}
-.tpm-busca-inverter:hover { background: var(--blue2); transform: rotate(180deg); }
-/* No tema escuro o marinho do disco e quase o fundo do cartao: as setas
-   brancas liam-se, o botao nao. Ganha a cor de accao, que e o que ele e. */
-.bzlp-tpm[data-theme="dark"] .tpm-busca-inverter {
-  background: var(--blue);
-  color: var(--primary-foreground);
-}
-
-.tpm-busca-baixo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line-soft);
-}
-.tpm-busca-atalhos {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-.tpm-busca-atalhos-rotulo {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted-ink);
-}
-.tpm-busca-atalho {
-  min-height: 32px;
-  padding: 0 13px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
-}
-.tpm-busca-atalho:hover { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface)); }
-
-.tpm-busca-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 22px;
-  border: 0;
-  border-radius: 10px;
+   Fica aqui o MAPA: o cartao pede dez nomes proprios e esta caixa diz-lhe
+   quais sao os da TPM-TUR. Sem isto o cartao cai para os tokens do shadcn e
+   pinta-se de generico. */
+.bzlp-tpm .bz-busca {
+  --busca-superficie: var(--surface);
+  --busca-ink: var(--ink);
+  --busca-ink-fraca: var(--muted-ink);
+  --busca-linha: var(--line);
+  --busca-linha-suave: var(--line-soft);
   /* Ciano: e o que a paleta oficial destina a botoes. O dourado fica para
      chamadas de atencao — o CTA da barra e a palavra do titulo. */
-  background: var(--blue);
-  color: var(--primary-foreground);
-  font: inherit;
-  font-size: 14.5px;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 160ms ease, transform 140ms ease;
-}
-.tpm-busca-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--blue) 86%, var(--navy)); transform: translateY(-1px); }
-.tpm-busca-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-.tpm-busca-erro {
-  margin: 12px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--destructive);
+  --busca-accao: var(--blue);
+  --busca-accao-ink: var(--primary-foreground);
+  --busca-accao-texto: var(--blue2);
+  --busca-accao-escura: var(--navy);
 }
 
-/* Em ecra estreito a fila unica nao cabe: os campos empilham dois a dois e o
-   botao de inverter passa a ocupar a largura toda entre eles. */
-@media (max-width: 1080px) {
-  .tpm-busca-campos,
-  .tpm-busca-campos.tem-volta {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .tpm-busca-inverter { width: 100%; height: 38px; border-radius: 10px; margin-bottom: 0; grid-column: 1 / -1; }
-  .tpm-busca-inverter:hover { transform: none; }
-}
+/* Em ecra estreito o cartao sobe menos sobre a fotografia — o resto do
+   comportamento responsivo mora agora em `comum/busca.css`. */
 @media (max-width: 560px) {
-  .tpm-busca { padding: 14px; border-radius: 14px; }
-  .tpm-busca-campos,
-  .tpm-busca-campos.tem-volta { grid-template-columns: 1fr; }
-  /* Sem espaco para atalhos: o que tem de caber e a accao, a largura toda. */
-  .tpm-busca-atalhos { display: none; }
-  .tpm-busca-baixo { justify-content: stretch; }
-  .tpm-busca-btn { width: 100%; }
   .tpm-hero-busca { margin-top: -48px; }
   .tpm-hero-in { padding: 120px 22px 84px; }
 }

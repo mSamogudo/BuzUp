@@ -5,7 +5,7 @@ import {
   Check, MapPin, Phone, Route, Smartphone, Ticket, Users,
 } from "lucide-react";
 import Reveal from "../landing/Reveal";
-import HeroBooking from "./HeroBooking";
+import HeroBusca from "../comum/HeroBusca";
 import TpmPagina, { EMAIL, TELEFONE, TELEFONE_HREF, pedido, useTpmMeta } from "./TpmChrome";
 import { useTpmCopy } from "./tpm-copy";
 
@@ -113,7 +113,7 @@ export default function TpmTurLandingPage() {
           cortado pela mesma regra. */}
       <div className="tpm-hero-busca">
         <div className="tpm-hero-busca-in">
-          <HeroBooking />
+          <HeroBusca textos={t.heroBusca} />
           <div className="tpm-hero-cta">
             <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
               {i.hero.grupo} <ArrowUpRight size={16} aria-hidden />

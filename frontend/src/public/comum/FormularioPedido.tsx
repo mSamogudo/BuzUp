@@ -3,32 +3,67 @@ import { useSearchParams } from "react-router-dom";
 import { ArrowUpRight, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CampoSelect } from "../../ui/CampoSelect";
-import { EMAIL, TELEFONE, TELEFONE_HREF } from "./TpmChrome";
-import { useTpmCopy } from "./tpm-copy";
 
-/* Pedido de orçamento da TPM-TUR.
+/* Pedido de orcamento dos sites dos operadores.
  *
- * PREPARA UM EMAIL, não submete nada. Isso é deliberado, e não falta de
- * trabalho: o único endereço público que este sistema tem para formulários é
- * `POST /api/public/service-requests/`, e esse é o funil de vendas do BusUp —
- * o modelo não tem campo de operador, as opções de `interest` são
- * operador/empresa/escola, e a notificação por SMS diz "BusUp: novo pedido de
+ * PREPARA UM EMAIL, nao submete nada. Isso e deliberado, e nao falta de
+ * trabalho: o unico endereco publico que este sistema tem para formularios e
+ * `POST /api/public/service-requests/`, e esse e o funil de vendas do BusUp —
+ * o modelo nao tem campo de operador, as opcoes de `interest` sao
+ * operador/empresa/escola, e a notificacao por SMS diz "BusUp: novo pedido de
  * contacto" para o telefone comercial da UpDigital. Um pedido de aluguer de
- * autocarro da TPM-TUR entregue ali ia parar à caixa de entrada errada e
- * tocava o telefone errado.
+ * autocarro entregue ali ia parar a caixa de entrada errada e tocava o
+ * telefone errado.
  *
- * Enquanto não existir um endereço de pedidos por operador, o mailto é o que
- * põe a mensagem em mãos da TPM-TUR — e é também o que o site oficial faz. */
+ * Enquanto nao existir um endereco de pedidos por operador, o mailto e o que
+ * poe a mensagem em maos do operador — e e tambem o que os sites oficiais
+ * fazem, tanto o da TPM-TUR como o da Cheetah Express.
+ *
+ * VIVE AQUI, e nao na pasta de um operador, porque so tres coisas mudam entre
+ * eles: o texto, o endereco de destino e o prefixo do assunto. Todas entram
+ * por propriedade. */
 
+export type TextosFormulario = {
+  h3: string;
+  lead: string;
+  nome: string;
+  telefone: string;
+  email: string;
+  empresa: string;
+  assunto: string;
+  assuntoVazio: string;
+  assuntoGenerico: string;
+  assuntos: Record<string, string>;
+  mensagem: string;
+  mensagemDica: string;
+  submeter: string;
+  /** Com `{email}` e `{telefone}` onde as ligacoes entram. */
+  aviso: string;
+  corpo: { nome: string; contacto: string; email: string; empresa: string; naoIndicada: string };
+};
 
-export default function TpmFormularioPedido() {
-  const { t } = useTpmCopy();
-  const f = t.contactos.form;
-  const ASSUNTOS = f.assuntos as Record<string, string>;
+export default function FormularioPedido({
+  textos: f,
+  email: EMAIL,
+  telefone,
+  telefoneHref,
+  prefixoAssunto,
+  dicaTelefone = "84xxxxxxx",
+}: {
+  textos: TextosFormulario;
+  email: string;
+  telefone: string;
+  telefoneHref: string;
+  /** Vai a frente do assunto do email — "TPM-TUR", "Cheetah Express". Sem
+   *  ele, quem recebe ve so "Aluguer de autocarro" sem saber de onde veio. */
+  prefixoAssunto: string;
+  dicaTelefone?: string;
+}) {
+  const ASSUNTOS = f.assuntos;
 
-  /* As páginas de serviços e de frota podem trazer o assunto já escolhido em
-   * `?servico=` ou `?viatura=` — quem clicou em "Pedir orçamento" num serviço
-   * não devia ter de o escolher outra vez. */
+  /* As paginas de servicos e de frota podem trazer o assunto ja escolhido em
+   * `?servico=` ou `?viatura=` — quem clicou em "Pedir orcamento" num servico
+   * nao devia ter de o escolher outra vez. */
   const [params] = useSearchParams();
   const sugerido = params.get("servico") ?? params.get("viatura") ?? "";
 
@@ -56,14 +91,14 @@ export default function TpmFormularioPedido() {
     ].join("\n");
     const assunto = ASSUNTOS[form.assunto] ?? f.assuntoGenerico;
     window.location.assign(
-      `mailto:${EMAIL}?subject=${encodeURIComponent(`TPM-TUR — ${assunto}`)}` +
+      `mailto:${EMAIL}?subject=${encodeURIComponent(`${prefixoAssunto} — ${assunto}`)}` +
         `&body=${encodeURIComponent(corpo)}`,
     );
     setPreparado(true);
   };
 
   return (
-    <form className="bzlp-form tpm-form" onSubmit={submeter}>
+    <form className="bzlp-form bz-form" onSubmit={submeter}>
       <h3>{f.h3}</h3>
       <p className="bzlp-form-lead">{f.lead}</p>
 
@@ -75,7 +110,7 @@ export default function TpmFormularioPedido() {
         </label>
         <label>
           <span>{f.telefone}</span>
-          <Input required inputMode="tel" autoComplete="tel" maxLength={30} placeholder="84xxxxxxx"
+          <Input required inputMode="tel" autoComplete="tel" maxLength={30} placeholder={dicaTelefone}
             value={form.telefone} onChange={(e) => set("telefone", e.target.value)} />
         </label>
         <label>
@@ -115,13 +150,13 @@ export default function TpmFormularioPedido() {
           aparece, que e o que faz falta a quem nao ve o programa de email
           abrir — ou nao ve nada, porque nao ha nenhum configurado. */}
       {preparado && (
-        <output className="tpm-form-aviso">
+        <output className="bz-form-aviso">
           {/* A frase vem do dicionario com dois marcadores, para o email e o
               telefone poderem ser ligacoes e a ordem das duas partes mudar
               com o idioma. */}
           {f.aviso.split(/(\{email\}|\{telefone\})/).map((parte, i) =>
             parte === "{email}" ? <a key={i} href={`mailto:${EMAIL}`}>{EMAIL}</a>
-              : parte === "{telefone}" ? <a key={i} href={TELEFONE_HREF}>{TELEFONE}</a>
+              : parte === "{telefone}" ? <a key={i} href={telefoneHref}>{telefone}</a>
                 : <span key={i}>{parte}</span>,
           )}
         </output>

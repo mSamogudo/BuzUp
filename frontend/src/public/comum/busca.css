@@ -1,0 +1,247 @@
+/* Cartao de pesquisa de viagem — partilhado pelos sites dos operadores.
+ *
+ * Nasceu dentro da TPM-TUR (`tpm.css`, classes `.tpm-busca-*`) e saiu de la
+ * quando a Cheetah Express passou a precisar do mesmo cartao. Nao trouxe
+ * nenhuma cor de marca: as que usava ja eram variaveis, e aqui passaram a ter
+ * nomes que nao pertencem a operador nenhum.
+ *
+ * COMO SE VESTE. A caixa de cada site (`.bzlp-tpm`, `.bzlp-cheetah`) mapeia
+ * estas dez variaveis para as suas. Os valores por omissao abaixo sao os
+ * tokens do shadcn, para o cartao nunca aparecer sem cor se alguem esquecer o
+ * mapa — mas o esperado e que cada caixa o faca.
+ *
+ *   --busca-superficie    fundo do cartao
+ *   --busca-ink           texto normal
+ *   --busca-ink-fraca     rotulos e legendas
+ *   --busca-linha         molduras
+ *   --busca-linha-suave   separadores e a faixa do selector de tipo
+ *   --busca-accao         a cor que PINTA o botao principal
+ *   --busca-accao-ink     a tinta que vai POR CIMA dessa cor
+ *   --busca-accao-texto   a mesma familia, mas com contraste para ser LETRA
+ *   --busca-accao-escura  o tom mais fundo, para o hover e o disco de inverter
+ *   --busca-erro          a mensagem de validacao
+ *
+ * A distincao entre `--busca-accao` e `--busca-accao-texto` nao e um capricho:
+ * o ciano da TPM-TUR sobre branco da 3,01:1 e o vermelho da Cheetah da 4,47:1
+ * — ambos servem para pintar chapa, nenhum serve para corpo de texto.
+ */
+
+.bz-busca {
+  --busca-superficie: var(--card);
+  --busca-ink: var(--foreground);
+  --busca-ink-fraca: var(--muted-foreground);
+  --busca-linha: var(--border);
+  --busca-linha-suave: color-mix(in srgb, var(--border) 55%, var(--background));
+  --busca-accao: var(--primary);
+  --busca-accao-ink: var(--primary-foreground);
+  --busca-accao-texto: var(--primary);
+  --busca-accao-escura: var(--sidebar);
+  --busca-erro: var(--destructive);
+}
+
+/* O cartao assenta sobre a imagem do hero, por isso tem superficie propria: os
+   campos tem de se ler contra o que estiver por baixo, seja ceu claro ou
+   chapa escura. */
+.bz-busca {
+  margin: 0;
+  max-width: none;
+  background: var(--busca-superficie);
+  /* O hero poe `color: #fff` para o texto se ler sobre a imagem. Dentro deste
+     cartao claro isso era branco sobre branco: o gatilho do Select do shadcn
+     nao define cor propria — conta com a herdada — e "1 passageiro" saia
+     invisivel, a 1,00:1. */
+  color: var(--busca-ink);
+  border: 1px solid var(--busca-linha);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 22px 48px -22px rgba(0, 0, 0, 0.45);
+}
+
+.bz-busca-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.bz-busca-titulo {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--heading, var(--busca-ink));
+}
+
+.bz-busca-tipo {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--busca-linha-suave);
+}
+.bz-busca-tipo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  /* Puxado 15% para a tinta: o tom fraco cheio sobre a propria faixa da
+     4,31:1 e chumba AA. */
+  color: color-mix(in srgb, var(--busca-ink-fraca) 85%, var(--busca-ink));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.bz-busca-tipo-btn.is-on {
+  background: var(--busca-superficie);
+  color: var(--busca-accao-texto);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+}
+
+/* Origem e destino puxam mais largura do que a data e os passageiros: sao
+   campos de escrita livre e os nomes das paragens sao longos. */
+.bz-busca-campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) minmax(0, 0.85fr) minmax(0, 0.9fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.bz-busca-campos.tem-volta {
+  grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.85fr) auto;
+}
+
+.bz-busca-campo { display: grid; gap: 5px; min-width: 0; }
+.bz-busca-campo > label,
+.bz-busca-campo > [data-slot=label] {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--busca-ink-fraca);
+}
+.bz-busca-campo [data-slot=select-trigger] { width: 100%; }
+.bz-busca-campo .campo-data-botao { height: 48px; }
+
+/* Entre os dois campos, e alinhado com eles: e ali que a pessoa olha quando
+   percebe que trocou os lugares. */
+.bz-busca-inverter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  /* Alinhado pela base com os campos de 48px, e nao esticado ate eles: um
+     circulo de 48px ao lado de caixas de 48px lia-se como um sexto campo. */
+  margin-bottom: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--busca-accao-escura);
+  color: #fff;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.bz-busca-inverter:hover { background: var(--busca-accao-texto); transform: rotate(180deg); }
+/* No tema escuro o tom fundo do disco e quase o fundo do cartao: as setas
+   brancas liam-se, o botao nao. Ganha a cor de accao, que e o que ele e. */
+[data-theme="dark"] .bz-busca-inverter {
+  background: var(--busca-accao);
+  color: var(--busca-accao-ink);
+}
+
+.bz-busca-baixo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--busca-linha-suave);
+}
+.bz-busca-atalhos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.bz-busca-atalhos-rotulo {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--busca-ink-fraca);
+}
+.bz-busca-atalho {
+  min-height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--busca-linha);
+  border-radius: 999px;
+  background: var(--busca-superficie);
+  color: var(--busca-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.bz-busca-atalho:hover {
+  border-color: var(--busca-accao);
+  background: color-mix(in srgb, var(--busca-accao) 8%, var(--busca-superficie));
+}
+
+.bz-busca-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--busca-accao);
+  color: var(--busca-accao-ink);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 160ms ease, transform 140ms ease;
+}
+.bz-busca-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--busca-accao) 86%, var(--busca-accao-escura));
+  transform: translateY(-1px);
+}
+.bz-busca-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.bz-busca-erro {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--busca-erro);
+}
+
+/* Em ecra estreito a fila unica nao cabe: os campos empilham dois a dois e o
+   botao de inverter passa a ocupar a largura toda entre eles. */
+@media (max-width: 1080px) {
+  .bz-busca-campos,
+  .bz-busca-campos.tem-volta {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .bz-busca-inverter { width: 100%; height: 38px; border-radius: 10px; margin-bottom: 0; grid-column: 1 / -1; }
+  .bz-busca-inverter:hover { transform: none; }
+}
+@media (max-width: 560px) {
+  .bz-busca { padding: 14px; border-radius: 14px; }
+  .bz-busca-campos,
+  .bz-busca-campos.tem-volta { grid-template-columns: 1fr; }
+  /* Sem espaco para atalhos: o que tem de caber e a accao, a largura toda. */
+  .bz-busca-atalhos { display: none; }
+  .bz-busca-baixo { justify-content: stretch; }
+  .bz-busca-btn { width: 100%; }
+}

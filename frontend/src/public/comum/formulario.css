@@ -1,0 +1,27 @@
+/* Formulario de pedido — partilhado pelos sites dos operadores.
+ *
+ * Saiu de `tpm-paginas.css` com o componente. O grosso das regras vem do
+ * `.bzlp-form` da landing BusUp; aqui ficam so os ajustes que o cartao dos
+ * operadores precisa. Duas variaveis, mapeadas por cada caixa:
+ *
+ *   --form-titulo-ink   a tinta do titulo do cartao
+ *   --form-link         a tinta das ligacoes do aviso (tem de ser cor de LETRA)
+ */
+.bz-form { --form-titulo-ink: var(--foreground); --form-link: var(--primary); }
+
+.bz-form.bzlp-form { padding: 32px 34px 36px; }
+.bz-form h3 { font-size: 24px; letter-spacing: -0.015em; color: var(--form-titulo-ink); }
+.bz-form .bzlp-form-lead { font-size: 15px; line-height: 1.6; }
+/* O `.bzlp-form` da landing BusUp poe o botao a 100% — faz sentido na coluna
+   estreita dela, nao neste cartao largo, onde um botao da ponta a ponta grita
+   mais do que o formulario todo. */
+.bz-form .bzlp-btn { margin-top: 22px; width: auto; }
+.bz-form-aviso {
+  display: block;
+  margin-top: 16px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.bz-form-aviso a { color: var(--form-link); font-weight: 700; }
+@media (max-width: 620px) { .bz-form.bzlp-form { padding: 24px 20px 28px; } }

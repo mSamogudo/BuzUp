@@ -4,6 +4,8 @@ import { Menu, Moon, Sun, Ticket, X } from "lucide-react";
 import { useLandingPrefs, type Lang } from "../landing/useLandingPrefs";
 import { useTpmCopy } from "./tpm-copy";
 import "../landing/landing.css";
+import "../comum/busca.css";
+import "../comum/formulario.css";
 import "./tpm.css";
 import "./tpm-paginas.css";
 
@@ -15,8 +17,10 @@ import "./tpm-paginas.css";
  * páginas para trás.
  *
  * A ordem dos imports de CSS é deliberada e não se troca: landing.css põe o
- * vocabulário `bzlp-*`, tpm.css veste-o com a marca, tpm-paginas.css acrescenta
- * o que só as páginas novas têm. Quem importar isto recebe a cascata já certa.
+ * vocabulário `bzlp-*`, os de `comum/` acrescentam o cartão de pesquisa e o
+ * formulário de pedido (partilhados com a Cheetah Express), tpm.css veste tudo
+ * com a marca e tpm-paginas.css junta o que só as páginas novas têm. Quem
+ * importar isto recebe a cascata já certa.
  */
 
 export const EMAIL = "info@tpmtur.co.mz";

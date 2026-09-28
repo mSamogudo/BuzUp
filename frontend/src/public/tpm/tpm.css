@@ -50,9 +50,35 @@
 /* A tinta sobre dourado ja vem do preset em ambos os temas (--warning-foreground). */
 
 /* HERO fotográfico — a frota é o produto; o texto vem por cima do navy. */
+/* ── A dobra ──────────────────────────────────────────────────────────────
+   Herói, cartão de busca e faixa de prova são UM bloco com a altura do ecrã
+   menos a barra. Antes o herói tinha
+   `min-height: min(88vh, 760px)` e o cartão vinha a seguir, subindo 76px: num
+   ecrã de 900px o herói ocupava 760, o cartão começava aos 684 e o fundo dele
+   caía por volta dos 960 — fora do ecrã. Quem chegava à página não via aquilo
+   que a página existe para fazer.
+
+   Aqui o herói é o elemento elástico: o cartão e a faixa têm a altura que o
+   conteúdo deles pede, e o que sobra vai todo para a fotografia. Assim a
+   dobra fecha certa em qualquer altura de ecrã sem números mágicos. */
+.tpm-dobra {
+  display: flex;
+  flex-direction: column;
+  /* 72 = a altura da barra, fixada em `tpm-paginas.css` com
+     `.bzlp-tpm .bzlp-nav-in { min-height: 71px }` mais 1px de bordo. Os dois
+     números andam juntos: se um mudar, o outro tem de mudar. Era a altura do
+     conteúdo da barra que mandava, e bastou o logótipo encolher para a dobra
+     ficar 12px curta.
+
+     `svh` e não `vh`: em telemóvel a barra do browser recolhe ao rolar, e com
+     `vh` o cartão ficava debaixo dela precisamente no primeiro ecrã. */
+  min-height: calc(100svh - 72px);
+}
+
 .tpm-hero {
   position: relative;
-  min-height: min(88vh, 760px);
+  /* Cresce para o que sobrar da dobra; nunca encolhe abaixo do seu conteúdo. */
+  flex: 1 1 auto;
   display: flex;
   align-items: flex-end;
   color: #fff;
@@ -100,20 +126,20 @@
 
 .tpm-hero-in {
   width: 100%;
-  max-width: 1180px;
+  /* 1120, como o `.bzlp-wrap` das secções e como a barra. Estava em 1180 e
+     era o único bloco fora da grelha: o logótipo da barra e o título do herói
+     começavam a 30px um do outro, e o desalinhamento via-se ao rolar. */
+  max-width: 1120px;
   margin: 0 auto;
-  /* Folga em baixo para o cartao, que sobe 76px para dentro da fotografia:
-     sem ela o titulo ficava debaixo do cartao. */
-  padding: 150px 22px 110px;
-}
-.tpm-hero .bzlp-badge {
-  background: color-mix(in srgb, var(--gold) 16%, transparent);
-  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
-  color: color-mix(in srgb, var(--gold) 62%, white);
+  /* 52 em baixo: a faixa de fotografia que fica por baixo do cartão, como na
+     tela. Em cima 72 e não 150 — o herói já cresce sozinho para preencher a
+     dobra, e 150 fixos empurravam o cartão para fora do ecrã em portáteis. */
+  padding: 72px 22px 52px;
 }
 .tpm-hero h1 {
-  font-size: clamp(34px, 5.4vw, 58px);
-  font-weight: 800;
+  /* 60px no topo da escala e peso 700, como a tela. */
+  font-size: clamp(34px, 4.4vw, 60px);
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.06;
   margin: 18px 0 0;
@@ -127,11 +153,81 @@
   color: rgba(255, 255, 255, 0.86);
   max-width: 46ch;
 }
-.tpm-hero-cta {
+/* O caminho do grupo, em texto sobre a fotografia. Era um botão contornado
+   por baixo do cartão: um segundo botão a seguir a "Procurar viagens" pedia
+   uma decisão a quem já tinha o formulário à frente. Em texto continua a
+   estar lá para quem precisa dele, sem competir. */
+.tpm-hero-grupo {
+  margin: 20px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.82);
+}
+.tpm-hero-grupo a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.tpm-hero-grupo a:hover { color: var(--gold, #f9ae00); }
+
+/* ── Faixa de prova, o terceiro andar da dobra ────────────────────────────
+   Fecha a dobra e, ao mostrar-se cortada em ecrãs baixos, é ela que diz a
+   quem chega que a página continua. Substituiu a secção "Vantagens", que
+   eram cinco frases não verificáveis ("conforto devido ao alto padrão dos
+   autocarros"); estes três são factos: a parceria que consta do registo da
+   empresa, o bilhete que fica no telemóvel, o lugar que se escolhe no mapa. */
+.tpm-dobra-prova {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.tpm-dobra-prova-in {
+  width: 100%;
+  /* 1120, a mesma medida do herói acima e das secções abaixo. */
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 40px;
+}
+.tpm-dobra-prova-item {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 28px;
+  align-items: flex-start;
+  gap: 11px;
+  min-width: 0;
+}
+.tpm-dobra-prova-item svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--blue2);
+}
+.tpm-dobra-prova-item strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--heading, var(--ink));
+}
+.tpm-dobra-prova-item span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted-ink);
+}
+/* Em ecrã estreito as três descrições custavam 120px à dobra. Ficam as três
+   afirmações, em fila corrida: continuam a dizer o que importa em metade da
+   altura, e a explicação de cada uma está na página de destino. */
+@media (max-width: 900px) {
+  .tpm-dobra-prova-in {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding: 12px 22px;
+  }
+  .tpm-dobra-prova-item span { display: none; }
+  .tpm-dobra-prova-item strong { font-size: 13px; }
+  .tpm-dobra-prova-item svg { width: 15px; height: 15px; margin-top: 1px; }
 }
 .tpm-hero-chips {
   display: flex;
@@ -149,37 +245,6 @@
   padding: 7px 13px;
   backdrop-filter: blur(6px);
 }
-
-/* Passos da compra em 3 cartões — o fluxo real do portal, sem promessas de mais. */
-.tpm-steps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-}
-@media (max-width: 820px) { .tpm-steps { grid-template-columns: 1fr; } }
-.tpm-step {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 26px 24px;
-  transition: border-color 0.18s ease, transform 0.18s ease;
-}
-.tpm-step:hover { border-color: var(--blue); transform: translateY(-2px); }
-.tpm-step-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: var(--navy);
-  color: #fff;
-  font-weight: 800;
-  font-size: 16px;
-  margin-bottom: 14px;
-}
-.tpm-step h3 { font-size: 17.5px; margin: 0 0 8px; }
-.tpm-step p { font-size: 14px; line-height: 1.6; color: var(--muted-ink); margin: 0; }
 
 /* Serviços B2B + particulares. */
 .tpm-services {
@@ -219,29 +284,6 @@
   margin-top: 8px;
 }
 .tpm-service-body a:hover { color: var(--blue2); }
-.tpm-services-extra {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 26px;
-  align-items: center;
-}
-.tpm-services-extra > span { font-size: 13px; color: var(--muted-ink); margin-right: 4px; }
-.tpm-services-extra a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 8px 14px;
-}
-.tpm-services-extra a:hover { border-color: var(--blue); color: var(--blue2); }
-
 /* Frota — grelha fotográfica. */
 /* Cabecalho da frota: titulo a esquerda, apoio ao lado. */
 .tpm-frota-head {
@@ -432,21 +474,10 @@
    campos tem de se ler contra o que estiver por baixo, seja ceu claro ou
    chapa escura. A largura e maior do que a do texto acima de proposito — e
    a accao principal da pagina, nao um apendice do titulo. */
-/* Metade sobre a fotografia, metade sobre a pagina. */
-.tpm-hero-busca {
-  position: relative;
-  z-index: 3;
-  margin-top: -76px;
-}
-.tpm-hero-busca-in {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 22px;
-}
-
 .tpm-busca {
-  margin: 0;
+  /* Dentro do herói, a seguir ao texto de entrada. */
+  margin: 32px 0 0;
+  width: 100%;
   max-width: none;
   background: var(--surface);
   /* O hero poe `color: #fff` para o texto se ler sobre a fotografia. Dentro
@@ -460,21 +491,14 @@
   box-shadow: 0 22px 48px -22px rgba(0, 0, 0, 0.45);
 }
 
+/* Só o selector de ida/volta vive aqui. O título "Encontre a sua viagem" saiu
+   — repetia o <h1> logo acima e custava os 33px que faltavam à dobra. */
 .tpm-busca-topo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-.tpm-busca-titulo {
-  margin: 0;
-  font-family: var(--font-display, inherit);
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--heading, var(--ink));
+  margin-bottom: 12px;
 }
 
 .tpm-busca-tipo {
@@ -509,24 +533,35 @@
 }
 
 /* Origem e destino puxam mais largura do que a data e os passageiros: sao
-   campos de escrita livre e os nomes das paragens sao longos. */
+   campos de escrita livre e os nomes das paragens sao longos.
+   A ultima coluna e o botao de procurar, que passou a viver na propria fila —
+   `minmax(190px, auto)` e a largura de "Procurar viagens" mais o icone, e e o
+   que impede o que acontecia antes: com a volta ligada a fila ganhava uma
+   coluna, o botao encolhia e o rotulo quebrava em duas linhas. */
 .tpm-busca-campos {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1.25fr) minmax(0, 0.85fr) minmax(0, 0.9fr) auto;
+  grid-template-columns:
+    minmax(0, 1.2fr) auto minmax(0, 1.2fr)
+    minmax(0, 0.8fr) minmax(0, 0.85fr) minmax(190px, auto);
   gap: 10px;
   align-items: end;
 }
 .tpm-busca-campos.tem-volta {
-  grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.85fr) auto;
+  grid-template-columns:
+    minmax(0, 1fr) auto minmax(0, 1fr)
+    minmax(0, 0.72fr) minmax(0, 0.72fr) minmax(0, 0.78fr) minmax(190px, auto);
 }
 
 .tpm-busca-campo { display: grid; gap: 5px; min-width: 0; }
+/* Caixa normal, e não versaletes. "ORIGEM DESTINO IDA PASSAGEIROS" em
+   maiúsculas espaçadas lia-se como uma fila de etiquetas de formulário
+   administrativo e roubava atenção aos campos. */
 .tpm-busca-campo > label,
 .tpm-busca-campo > [data-slot=label] {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--muted-ink);
 }
 .tpm-busca-campo [data-slot=select-trigger] { width: 100%; }
@@ -534,66 +569,28 @@
 
 /* Entre os dois campos, e alinhado com eles: e ali que a pessoa olha quando
    percebe que trocou os lugares. */
+/* Caixa contornada da altura dos campos, e não um disco marinho. O disco era
+   a mancha mais escura do cartão e puxava o olho para uma acção secundária —
+   trocar origem por destino — antes dos próprios campos. Contornado, alinha
+   com eles e só se nota quando se procura. */
 .tpm-busca-inverter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 42px;
-  height: 42px;
-  /* Alinhado pela base com os campos de 48px, e nao esticado ate eles: um
-     circulo de 48px ao lado de caixas de 48px lia-se como um sexto campo. */
-  margin-bottom: 3px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--navy);
-  color: #fff;
-  cursor: pointer;
-  transition: background 160ms ease, transform 160ms ease;
-}
-.tpm-busca-inverter:hover { background: var(--blue2); transform: rotate(180deg); }
-/* No tema escuro o marinho do disco e quase o fundo do cartao: as setas
-   brancas liam-se, o botao nao. Ganha a cor de accao, que e o que ele e. */
-.bzlp-tpm[data-theme="dark"] .tpm-busca-inverter {
-  background: var(--blue);
-  color: var(--primary-foreground);
-}
-
-.tpm-busca-baixo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line-soft);
-}
-.tpm-busca-atalhos {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-.tpm-busca-atalhos-rotulo {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted-ink);
-}
-.tpm-busca-atalho {
-  min-height: 32px;
-  padding: 0 13px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  height: 48px;
+  border: 1px solid var(--input, var(--line));
+  border-radius: 10px;
   background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  color: var(--navy-ink, var(--ink));
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition: border-color 160ms ease, color 160ms ease, transform 200ms ease;
 }
-.tpm-busca-atalho:hover { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface)); }
+.tpm-busca-inverter:hover {
+  border-color: var(--blue);
+  color: var(--blue2);
+  transform: rotate(180deg);
+}
 
 .tpm-busca-btn {
   display: inline-flex;
@@ -601,7 +598,9 @@
   justify-content: center;
   gap: 8px;
   height: 48px;
-  padding: 0 22px;
+  /* 18 e nao 22: o botao vive agora numa coluna da fila, e cada pixel de
+     `padding` sai da largura dos campos ao lado. */
+  padding: 0 18px;
   border: 0;
   border-radius: 10px;
   /* Ciano: e o que a paleta oficial destina a botoes. O dourado fica para
@@ -629,20 +628,18 @@
    botao de inverter passa a ocupar a largura toda entre eles. */
 @media (max-width: 1080px) {
   .tpm-busca-campos,
-  .tpm-busca-campos.tem-volta {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
+  .tpm-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Origem e destino ficam com a fila toda — sao os campos de texto longo — e
+     a data e os passageiros ficam a par. Duas colunas em vez de uma poupam
+     uma fila de 68px, que e exactamente o que falta para o cartao caber na
+     dobra de um telemovel de 844px de altura. */
+  .tpm-busca-campo.is-largo { grid-column: 1 / -1; }
   .tpm-busca-inverter { width: 100%; height: 38px; border-radius: 10px; margin-bottom: 0; grid-column: 1 / -1; }
   .tpm-busca-inverter:hover { transform: none; }
+  .tpm-busca-btn { grid-column: 1 / -1; width: 100%; }
 }
 @media (max-width: 560px) {
-  .tpm-busca { padding: 14px; border-radius: 14px; }
-  .tpm-busca-campos,
-  .tpm-busca-campos.tem-volta { grid-template-columns: 1fr; }
-  /* Sem espaco para atalhos: o que tem de caber e a accao, a largura toda. */
-  .tpm-busca-atalhos { display: none; }
-  .tpm-busca-baixo { justify-content: stretch; }
-  .tpm-busca-btn { width: 100%; }
-  .tpm-hero-busca { margin-top: -48px; }
-  .tpm-hero-in { padding: 120px 22px 84px; }
+  .tpm-busca { padding: 14px; border-radius: 14px; margin-top: 20px; }
+  .tpm-hero-in { padding: 40px 22px 26px; }
+  .tpm-hero-grupo { margin-top: 12px; font-size: 13.5px; }
 }

@@ -36,14 +36,6 @@ export default function HeroBooking() {
 
   const hoje = useMemo(() => paraIso(new Date()), []);
 
-  /** Atalhos de destino. Nao sao "populares" — nao ha dados de procura — sao
-   *  simplesmente paragens que o `sellable=1` devolveu, ou seja, que tem
-   *  partidas futuras a venda. Chamar-lhes outra coisa seria inventar. */
-  const atalhos = useMemo(
-    () => stops.filter((s) => String(s.id) !== origem && String(s.id) !== destino).slice(0, 4),
-    [stops, origem, destino],
-  );
-
   useEffect(() => {
     let vivo = true;
     fetch("/api/public/trips/?sellable=1", { headers: { "Content-Type": "application/json" } })
@@ -76,9 +68,12 @@ export default function HeroBooking() {
   const semParagens = stops.length === 0;
 
   return (
-    <form className="tpm-busca" onSubmit={submeter}>
+    /* O cartao nao tem titulo visivel. Tinha "Encontre a sua viagem", que
+       repetia o <h1> a dois centimetros de distancia e custava os 33px que
+       faltavam para a fila de campos caber na dobra. O nome continua a
+       existir para quem navega por leitor de ecra, em `aria-label`. */
+    <form className="tpm-busca" onSubmit={submeter} aria-label={b.titulo}>
       <div className="tpm-busca-topo">
-        <h2 className="tpm-busca-titulo">{b.titulo}</h2>
         <div className="tpm-busca-tipo" role="group" aria-label={b.tipoViagem}>
           {([["ida", b.soIda], ["idaevolta", b.idaVolta]] as const).map(([chave, rotulo]) => (
             <button
@@ -96,7 +91,10 @@ export default function HeroBooking() {
       </div>
 
       <div className={`tpm-busca-campos${tipo === "idaevolta" ? " tem-volta" : ""}`}>
-        <div className="tpm-busca-campo">
+        {/* `is-largo`: em telemovel a origem e o destino ocupam a fila toda e
+            as datas ficam a par. Marcado por classe, e nao por `nth-child`,
+            porque a coluna da volta aparece e desaparece e mudava a contagem. */}
+        <div className="tpm-busca-campo is-largo">
           <label htmlFor="busca-origem">{b.origem}</label>
           <StopCombo
             exclude={destino}
@@ -120,7 +118,7 @@ export default function HeroBooking() {
           <ArrowLeftRight aria-hidden size={16} />
         </button>
 
-        <div className="tpm-busca-campo">
+        <div className="tpm-busca-campo is-largo">
           <label htmlFor="busca-destino">{b.destino}</label>
           <StopCombo
             exclude={origem}
@@ -156,22 +154,19 @@ export default function HeroBooking() {
             <option key={n} value={n}>{n} {n === 1 ? b.passageiro1 : b.passageiroN}</option>
           ))}
         </CampoSelect>
-      </div>
 
-      {/* O botao vive numa linha propria, e nao no fim da fila dos campos:
-          com a volta ligada a fila ganha uma coluna e o botao encolhia ate
-          "Procurar" quebrar em duas linhas. */}
-      <div className="tpm-busca-baixo">
-        {atalhos.length > 0 && !destino ? (
-          <div className="tpm-busca-atalhos">
-            <span className="tpm-busca-atalhos-rotulo">{b.destinosAVenda}</span>
-            {atalhos.map((s) => (
-              <button className="tpm-busca-atalho" key={s.id} onClick={() => setDestino(String(s.id))} type="button">
-                {s.name}
-              </button>
-            ))}
-          </div>
-        ) : <span />}
+        {/* O botao voltou para o fim da fila dos campos. Estava numa linha
+            propria porque, com a volta ligada, a fila ganhava uma coluna e o
+            botao encolhia ate "Procurar" quebrar em duas linhas; a coluna dele
+            passou a ter `minmax(190px, auto)` no CSS, que e a largura que o
+            rotulo mais o icone precisam, e o problema deixou de existir. A
+            linha que ele ocupava custava 76px — era o que faltava para o
+            cartao caber na dobra.
+
+            Com ele saiu tambem a fila de atalhos de destino. Era ruido na
+            unica superficie da pagina onde se vende: quatro paragens sem
+            ordem de importancia (nao ha dados de procura) ao lado dos campos
+            onde a pessoa ja estava a escrever o destino. */}
         <button className="tpm-busca-btn" disabled={semParagens} type="submit">
           <Search aria-hidden size={18} /> {b.procurar}
         </button>

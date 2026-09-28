@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  ArrowRight, ArrowUpRight, BusFront, CarFront, CheckCircle2, Download,
-  Check, MapPin, Phone, Route, Smartphone, Ticket, Users,
+  Armchair, ArrowRight, ArrowUpRight, BusFront, CheckCircle2, Download,
+  Handshake, Phone, Route, Smartphone, Ticket, Users,
 } from "lucide-react";
 import Reveal from "../landing/Reveal";
 import HeroBooking from "./HeroBooking";
@@ -15,7 +15,25 @@ import { useTpmCopy } from "./tpm-copy";
  * são os de lá; não se inventam números que a operação não confirmou.
  *
  * A barra e o rodapé saíram daqui para `TpmChrome`, e o texto para
- * `tpm-copy.ts`. Esta página fica com a composição das secções. */
+ * `tpm-copy.ts`. Esta página fica com a composição das secções.
+ *
+ * A DOBRA É UM BLOCO. Fotografia, cartão de busca e faixa de prova vivem
+ * dentro de `.tpm-dobra`, que mede a altura do ecrã menos a barra. O cartão
+ * caía fora do primeiro ecrã (o herói tinha 760px fixos e o cartão começava
+ * aos 684) — a acção da página só aparecia a quem rolasse.
+ *
+ * O QUE SAIU, E PORQUÊ. Dez blocos abaixo da dobra passaram a sete:
+ *  - "O seu bilhete, em três passos": o formulário é o fluxo, e a primeira
+ *    pergunta da FAQ repetia-o quase palavra por palavra.
+ *  - "Vantagens", cinco afirmações não verificáveis, deram lugar aos três
+ *    factos da faixa de prova, na dobra.
+ *  - A faixa final de três cartões de contacto: email, telefone, comprar,
+ *    app e portal estavam todos no CTA acima E no rodapé.
+ *  - "Ver todas as partidas" no herói, "Comprar no browser" na faixa da app,
+ *    e a tira "Também ao seu dispor": cópias de acções já presentes.
+ *  - Os dois botões centrados "ver todos" / "ver a frota completa" subiram
+ *    para junto dos títulos das secções.
+ * Nada disto apagou informação que só existisse nesses blocos. */
 
 /* Os ids das âncoras e as fotografias não mudam com o idioma: os primeiros são
  * URL, as segundas são as mesmas imagens. */
@@ -77,6 +95,62 @@ const CLIENTES: { f: string; nome: string }[] = [
   { f: "mm.png", nome: "MM" },
 ];
 
+/* Metade dos clientes em cada tira do carrossel. O corte ao meio segue a ordem
+ * do array acima, que é a do site oficial: a primeira fila fica com as
+ * instituições e os bancos, a segunda com as restantes organizações. */
+const CLIENTES_FILA_A = CLIENTES.slice(0, 17);
+const CLIENTES_FILA_B = CLIENTES.slice(17);
+
+/** Uma tira do carrossel de clientes.
+ *
+ *  A lista entra DUAS vezes. A animação desliza a tira -50% do próprio
+ *  comprimento, por isso no instante em que reinicia a segunda cópia está
+ *  exactamente onde a primeira começou — a emenda nunca se vê, e não é preciso
+ *  uma linha de JavaScript para o loop ser infinito.
+ *
+ *  A cópia leva `aria-hidden` e texto alternativo vazio: sem isso um leitor de
+ *  ecrã anunciava as 34 organizações a dobrar. */
+function TiraClientes({
+  itens,
+  sentido,
+  logoDe,
+}: {
+  itens: typeof CLIENTES;
+  sentido: "para-esquerda" | "para-direita";
+  logoDe: string;
+}) {
+  const grupo = (copia: boolean) => (
+    <ul className="tpm-carrossel-grupo" aria-hidden={copia || undefined}>
+      {itens.map((c) => (
+        <li className="tpm-cliente" key={`${copia ? "copia" : "orig"}-${c.f}`}>
+          {/* Sem `loading="lazy"`, e com `fetchPriority="low"`.
+              Numa grelha parada o lazy é a escolha certa; numa tira que
+              desfila não é: cada logótipo só começava a descarregar quando já
+              estava à vista, e entrava em branco pela borda. Um cartão branco
+              a atravessar o ecrã lê-se como defeito, não como espera.
+              A prioridade baixa é o que impede que estes 34 ficheiros
+              disputem largura de banda com a fotografia do herói, que é o
+              que tem de pintar primeiro. */}
+          <img src={`/landing/tpm/clientes/${c.f}`} alt={copia ? "" : `${logoDe} ${c.nome}`}
+            width={283} height={188} fetchPriority="low" decoding="async" />
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <div className="tpm-carrossel">
+      <div className={`tpm-carrossel-tira ${sentido}`}>
+        {grupo(false)}
+        {grupo(true)}
+      </div>
+    </div>
+  );
+}
+
+/* Ícones da faixa de prova, na ordem do array `confianca` do tpm-copy. */
+const PROVA_ICON = [Handshake, Smartphone, Armchair];
+
 export default function TpmTurLandingPage() {
   const { hash } = useLocation();
   const { t } = useTpmCopy();
@@ -95,38 +169,64 @@ export default function TpmTurLandingPage() {
 
   return (
     <TpmPagina>
-      {/* HERO */}
-      <section className="tpm-hero">
-        <img className="tpm-hero-photo" src="/landing/tpm/coaches.webp"
-          alt={i.hero.fotoAlt} width={1920} height={1920}
-          fetchPriority="high" decoding="sync" />
-        <div className="tpm-hero-in">
-          <span className="bzlp-badge">{i.hero.badge}</span>
-          <h1>{i.hero.h1}<br />{i.hero.h1b} <span>{i.hero.h1destaque}</span></h1>
-          <p>{i.hero.lead}</p>
-        </div>
-      </section>
+      {/* ── A DOBRA ──────────────────────────────────────────────────────
+          Fotografia, cartão de busca e faixa de prova são um bloco com a
+          altura do ecrã menos a barra. O cartão deixou de cair fora do
+          primeiro ecrã: é a acção da página e é a primeira coisa que se vê. */}
+      <div className="tpm-dobra">
+        {/* O cartão vive DENTRO do herói, e não a cavalo na aresta de baixo
+            como antes. Ficava metade sobre a fotografia e metade sobre a
+            página: a aresta cortava-o ao meio e a acção principal aparecia
+            partida entre dois fundos. Aqui assenta inteiro sobre a imagem,
+            com uma faixa de fotografia por baixo — é o que a tela desenha.
+            O `overflow:hidden` do <section> deixou de ser um problema porque
+            já nada transborda. */}
+        <section className="tpm-hero">
+          <img className="tpm-hero-photo" src="/landing/tpm/coaches.webp"
+            alt={i.hero.fotoAlt} width={1920} height={1920}
+            fetchPriority="high" decoding="sync" />
+          <div className="tpm-hero-in">
+            {/* Sem etiqueta por cima do título. Dizia "TPM-TUR, S.A. —
+                Transporte e Turismo", que é o que o logótipo da barra já diz
+                a três centímetros dali, e empurrava o título para baixo. */}
+            <h1>{i.hero.h1}<br />{i.hero.h1b} <span>{i.hero.h1destaque}</span></h1>
+            <p>{i.hero.lead}</p>
+            <HeroBooking />
+            {/* Um caminho secundário, e não dois, e em texto e não em botão:
+                um segundo botão ao lado de "Procurar viagens" disputava-lhe a
+                atenção. "Ver todas as partidas" saiu — era o que o botão do
+                próprio formulário faz, a dois centímetros de distância. */}
+            <p className="tpm-hero-grupo">
+              {i.hero.grupo}{" "}
+              <a href={pedido("Pedido de orçamento TPM-TUR")}>{t.comum.pedirOrcamento}</a>
+            </p>
+          </div>
+        </section>
 
-      {/* O cartao de busca atravessa a dobra da fotografia: metade sobre a
-          imagem, metade sobre a pagina. Vive FORA do <section>, que tem
-          `overflow:hidden` para a foto nao transbordar — la dentro seria
-          cortado pela mesma regra. */}
-      <div className="tpm-hero-busca">
-        <div className="tpm-hero-busca-in">
-          <HeroBooking />
-          <div className="tpm-hero-cta">
-            <a href={pedido("Pedido de orçamento TPM-TUR")} className="bzlp-btn outline">
-              {i.hero.grupo} <ArrowUpRight size={16} aria-hidden />
-            </a>
-            <Link to="/comprar" className="bzlp-ghost">
-              {i.hero.todasPartidas} <ArrowUpRight size={15} aria-hidden />
-            </Link>
+        {/* Três factos, não cinco afirmações. Substitui a secção "Vantagens",
+            que dizia coisas como "conforto devido ao alto padrão dos
+            autocarros" — não verificável, e por isso sem valor para quem
+            decide. Estes três verificam-se: a parceria consta do registo da
+            empresa, o bilhete fica no telemóvel, o lugar escolhe-se no mapa. */}
+        <div className="tpm-dobra-prova">
+          <div className="tpm-dobra-prova-in">
+            {i.confianca.map((c, n) => {
+              const Icone = PROVA_ICON[n];
+              return (
+                <div className="tpm-dobra-prova-item" key={c.t}>
+                  <Icone size={18} aria-hidden strokeWidth={2} />
+                  <div>
+                    <strong>{c.t}</strong>
+                    <span>{c.p}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* QUEM SOMOS — a ordem e a do site oficial: quem somos, o que
-          fazemos, porque connosco, o que conduzimos. */}
+      {/* 1 · QUEM SOMOS */}
       <section className="bzlp-sec" id="sobre">
         <div className="bzlp-wrap">
           <Reveal>
@@ -150,14 +250,19 @@ export default function TpmTurLandingPage() {
         </div>
       </section>
 
-      {/* SERVIÇOS */}
+      {/* 2 · SERVIÇOS */}
       <section className="bzlp-sec alt" id="servicos">
         <div className="bzlp-wrap">
           <Reveal>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.servicos.kicker}</div>
-              <h2 className="bzlp-h2">{i.servicos.h2}</h2>
-              <p className="bzlp-lead">{i.servicos.lead}</p>
+            <div className="tpm-sechead-linha">
+              <div>
+                <div className="bzlp-kicker left">{i.servicos.kicker}</div>
+                <h2 className="bzlp-h2 left">{i.servicos.h2}</h2>
+                <p className="bzlp-lead left">{i.servicos.lead}</p>
+              </div>
+              <Link to="/tpm-tur/servicos" className="tpm-sec-link">
+                {i.servicos.verTodos} <ArrowRight size={17} aria-hidden />
+              </Link>
             </div>
           </Reveal>
           <div className="tpm-services">
@@ -177,48 +282,15 @@ export default function TpmTurLandingPage() {
               );
             })}
           </div>
-          <div className="tpm-services-extra">
-            <span>{i.servicos.tambem}</span>
-            <Link to="/tpm-tur/servicos#transfers"><MapPin size={15} aria-hidden /> {i.servicos.transfers}</Link>
-            <Link to="/tpm-tur/servicos#rent-a-car"><CarFront size={15} aria-hidden /> {i.servicos.rentACar}</Link>
-          </div>
-          <div style={{ textAlign: "center", marginTop: 28 }}>
-            <Link to="/tpm-tur/servicos" className="bzlp-btn outline">
-              {i.servicos.verTodos} <ArrowRight size={17} aria-hidden />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* VANTAGENS — os cinco pontos do site oficial. */}
-      <section className="bzlp-sec" id="vantagens">
+      {/* 3 · FROTA */}
+      <section className="bzlp-sec" id="frota">
         <div className="bzlp-wrap">
-          <Reveal>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.vantagens.kicker}</div>
-              <h2 className="bzlp-h2">{i.vantagens.h2}</h2>
-            </div>
-          </Reveal>
-          <ul className="tpm-vantagens">
-            {i.vantagens.itens.map((v, n) => (
-              <Reveal key={v} delay={(n % 3) * 60}>
-                <li>
-                  <span className="tpm-vantagem-ico"><Check size={18} aria-hidden strokeWidth={2.4} /></span>
-                  {v}
-                </li>
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* FROTA */}
-      <section className="bzlp-sec alt" id="frota">
-        <div className="bzlp-wrap">
-          {/* Cabecalho a esquerda, e nao centrado: esta era a terceira
-              seccao seguida com a mesma composicao — etiqueta ao meio,
-              titulo ao meio, fila de cartoes iguais. Tres iguais em fila
-              fazem a pagina parecer gerada. */}
+          {/* Cabecalho a esquerda, e nao centrado: duas seccoes seguidas com a
+              mesma composicao — etiqueta ao meio, titulo ao meio, fila de
+              cartoes iguais — fazem a pagina parecer gerada. */}
           <Reveal>
             <div className="tpm-frota-head">
               <div>
@@ -230,6 +302,9 @@ export default function TpmTurLandingPage() {
                 {/* As marcas da frota, tal como o site oficial as nomeia em
                     NOSSOS AUTOCARROS. */}
                 <p className="tpm-frota-marcas">{i.frota.marcas}</p>
+                <Link to="/tpm-tur/frota" className="tpm-sec-link">
+                  {i.frota.verCompleta} <ArrowRight size={17} aria-hidden />
+                </Link>
               </div>
             </div>
           </Reveal>
@@ -244,63 +319,11 @@ export default function TpmTurLandingPage() {
               </Reveal>
             ))}
           </div>
-          <div style={{ textAlign: "center", marginTop: 32 }}>
-            <Link to="/tpm-tur/frota" className="bzlp-btn outline">
-              {i.frota.verCompleta} <ArrowRight size={17} aria-hidden />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* CLIENTES E PARCEIROS — no site oficial fecha a pagina inicial. */}
-      <section className="bzlp-sec" id="clientes">
-        <div className="bzlp-wrap">
-          <Reveal>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.clientes.kicker}</div>
-              <h2 className="bzlp-h2">{i.clientes.h2}</h2>
-              <p className="bzlp-lead">{i.clientes.lead}</p>
-            </div>
-          </Reveal>
-          <ul className="tpm-clientes">
-            {CLIENTES.map((c) => (
-              <li className="tpm-cliente" key={c.f}>
-                <img src={`/landing/tpm/clientes/${c.f}`} alt={`${i.clientes.logoDe} ${c.nome}`}
-                  width={283} height={188} loading="lazy" decoding="async" />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* COMO VIAJAR */}
-      <section className="bzlp-sec" id="viagens">
-        <div className="bzlp-wrap">
-          <Reveal>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.passos.kicker}</div>
-              <h2 className="bzlp-h2">{i.passos.h2}</h2>
-              <p className="bzlp-lead">{i.passos.lead}</p>
-            </div>
-          </Reveal>
-          <div className="tpm-steps">
-            {i.passos.itens.map((s, n) => (
-              <Reveal key={s.h} delay={n * 70}>
-                <div className="tpm-step">
-                  <span className="tpm-step-num">{n + 1}</span>
-                  <h3>{s.h}</h3>
-                  <p>{s.p}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-          <div style={{ textAlign: "center", marginTop: 32 }}>
-            <Link to="/comprar" className="bzlp-btn">{i.passos.botao} <ArrowRight size={17} aria-hidden /></Link>
-          </div>
-        </div>
-      </section>
-
-      {/* APP DO PASSAGEIRO */}
+      {/* 4 · APP DO PASSAGEIRO — o único lugar da página onde se descarrega.
+          "Comprar no browser" saiu daqui: era a quarta cópia da mesma acção. */}
       <section className="tpm-app" id="app">
         <div className="tpm-app-in">
           <Reveal>
@@ -321,14 +344,14 @@ export default function TpmTurLandingPage() {
               </ul>
               <div className="tpm-app-cta">
                 <Link to="/baixar" className="bzlp-btn gold"><Download size={18} aria-hidden /> {i.app.descarregar}</Link>
-                <Link to="/comprar" className="bzlp-btn outline"><Smartphone size={17} aria-hidden /> {i.app.browser}</Link>
               </div>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* 5 · FAQ — a pergunta "como instalo a app Android" saiu: a faixa da
+          app, imediatamente acima, é a resposta e traz o botão. */}
       <section className="bzlp-sec alt" id="faq">
         <div className="bzlp-wrap tpm-faq-wrap">
           <Reveal>
@@ -358,13 +381,35 @@ export default function TpmTurLandingPage() {
         </div>
       </section>
 
-      {/* CTA FINAL — dois caminhos, e nao dois botoes iguais.
+      {/* 6 · CLIENTES E PARCEIROS — as 34 organizações em duas tiras a
+          desfilar em sentidos opostos. Em grelha eram uma parede de logótipos
+          que ninguém percorre; a desfilar ocupam menos de metade da altura. */}
+      <section className="bzlp-sec" id="clientes">
+        <div className="bzlp-wrap">
+          <Reveal>
+            <div className="bzlp-sechead">
+              <div className="bzlp-kicker">{i.clientes.kicker}</div>
+              <h2 className="bzlp-h2">{i.clientes.h2}</h2>
+              <p className="bzlp-lead">{i.clientes.lead}</p>
+            </div>
+          </Reveal>
+        </div>
+        {/* Fora do `bzlp-wrap`: as tiras vão de ponta a ponta do ecrã, que é o
+            que faz o movimento parecer contínuo em vez de preso numa caixa. */}
+        <TiraClientes itens={CLIENTES_FILA_A} logoDe={i.clientes.logoDe} sentido="para-esquerda" />
+        <TiraClientes itens={CLIENTES_FILA_B} logoDe={i.clientes.logoDe} sentido="para-direita" />
+      </section>
+
+      {/* 7 · CTA FINAL — dois caminhos, e nao dois botoes iguais.
           "Comprar bilhete" e auto-servico, instantaneo, de quem vai viajar;
           "Pedir orcamento" e uma conversa comercial com uma empresa. Lado a
           lado e com o mesmo peso, obrigavam cada visitante a ler os dois para
           descobrir qual era o seu. O dourado — a cor que a marca reserva para
-          "olha para aqui" — deixa de pintar a faixa toda e passa a marcar a
-          accao do caminho do passageiro. */}
+          "olha para aqui" — marca a accao do caminho do passageiro.
+
+          A faixa de três cartões de contacto que vinha depois disto saiu: o
+          email, o telefone, o "comprar bilhete", a app e o portal estavam
+          todos aqui em cima E no rodapé. */}
       <section className="tpm-escolha" id="contacto">
         <div className="bzlp-wrap">
           <div className="tpm-escolha-head">
@@ -396,28 +441,6 @@ export default function TpmTurLandingPage() {
                 </a>
               </div>
             </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="bzlp-cta" style={{ paddingTop: 40, paddingBottom: 40 }}>
-        <div className="bzlp-wrap">
-          <div className="bzlp-contact" style={{ marginTop: 0 }}>
-            <div className="bzlp-contact-card">
-              <small>{i.contactoStrip.comercial}</small>
-              <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
-              <a href={TELEFONE_HREF}>{TELEFONE}</a>
-            </div>
-            <div className="bzlp-contact-card">
-              <small>{i.contactoStrip.passageiros}</small>
-              <Link to="/comprar" style={{ color: "inherit" }}>{i.contactoStrip.comprar}</Link>
-              <Link to="/baixar" style={{ color: "inherit" }}>{i.contactoStrip.app}</Link>
-            </div>
-            <div className="bzlp-contact-card">
-              <small>{i.contactoStrip.emLinha}</small>
-              <Link to="/login" style={{ color: "inherit" }}>{i.contactoStrip.portal}</Link>
-              <a href="https://updigital.co.mz" target="_blank" rel="noreferrer">updigital.co.mz</a>
-            </div>
           </div>
         </div>
       </section>

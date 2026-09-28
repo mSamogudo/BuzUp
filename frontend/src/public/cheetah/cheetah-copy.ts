@@ -62,7 +62,6 @@ const PT = {
   },
 
   comum: {
-    verHorarios: "Ver horários",
     pedirOrcamento: "Pedir orçamento",
     falarConnosco: "Falar connosco",
     comprarBilhete: "Comprar bilhete",
@@ -105,7 +104,6 @@ const PT = {
       h1destaque: "e rápido.",
       lead: "O seu transporte n.º 1 entre Nelspruit e Moçambique. Compre o bilhete online e embarque — Maputo, Matola, Tofo e África do Sul, todos os dias.",
       fotoAlt: "Carrinha da frota Cheetah Express, com o passageiro e a praia ao fundo",
-      grupo: "Precisa de transporte para um grupo?",
     },
     provas: {
       kicker: "Porquê connosco",
@@ -409,7 +407,6 @@ const EN: typeof PT = {
   },
 
   comum: {
-    verHorarios: "See the timetable",
     pedirOrcamento: "Request a quote",
     falarConnosco: "Get in touch",
     comprarBilhete: "Buy a ticket",
@@ -452,7 +449,6 @@ const EN: typeof PT = {
       h1destaque: "and fast.",
       lead: "Your no. 1 shuttle between Nelspruit and Mozambique. Book online and board — Maputo, Matola, Tofo and South Africa, every day.",
       fotoAlt: "A Cheetah Express shuttle, with a passenger and the beach behind",
-      grupo: "Travelling as a group?",
     },
     provas: {
       kicker: "Why travel with us",

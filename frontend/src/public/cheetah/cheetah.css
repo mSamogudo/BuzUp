@@ -150,10 +150,8 @@
    inverte-se. Escrito aqui e nao nos tokens porque `--ink` serve a pagina
    inteira e nao so a chapa. */
 .bzlp-cheetah[data-theme="dark"] .che-hero,
-.bzlp-cheetah[data-theme="dark"] .che-hero-copy h1,
-.bzlp-cheetah[data-theme="dark"] .che-hero-grupo a { color: #fff; }
-.bzlp-cheetah[data-theme="dark"] .che-hero-copy p,
-.bzlp-cheetah[data-theme="dark"] .che-hero-grupo { color: rgba(255, 255, 255, 0.88); }
+.bzlp-cheetah[data-theme="dark"] .che-hero-copy h1 { color: #fff; }
+.bzlp-cheetah[data-theme="dark"] .che-hero-copy p { color: rgba(255, 255, 255, 0.88); }
 .bzlp-cheetah[data-theme="dark"] .che-hero .bzlp-badge { background: #fff; color: #141618; }
 /* O cartao laranja escurece o suficiente para aceitar tinta branca: 5,50:1. */
 .bzlp-cheetah[data-theme="dark"] .che-servico.che-s-laranja { background: #a8500f; color: #fff; }
@@ -179,16 +177,10 @@
 }
 .bzlp-cheetah .bzlp-btn.outline:hover { background: color-mix(in srgb, var(--blue) 8%, transparent); }
 
-/* A chamada final continua a ser chapa preta, e ali o vermelho de letra da
-   3,14:1 e chumba — leva tinta branca, 18,14:1.
-   O HERO deixou de ser preto: ali o botao vazado leva a tinta da propria
-   chapa, que e o preto da marca a 6,22:1. */
+/* A chamada final e chapa preta, e ali o vermelho de letra da 3,14:1 e
+   chumba — leva tinta branca, 18,14:1. */
 .che-cta .bzlp-btn.outline { color: #fff; }
 .che-cta .bzlp-btn.outline:hover { background: rgba(255, 255, 255, 0.12); }
-.che-hero .bzlp-btn.outline { color: var(--ink); border-color: var(--ink); }
-.che-hero .bzlp-btn.outline:hover { background: rgba(0, 0, 0, 0.08); }
-.bzlp-cheetah[data-theme="dark"] .che-hero .bzlp-btn.outline { color: #fff; border-color: #fff; }
-.bzlp-cheetah[data-theme="dark"] .che-hero .bzlp-btn.outline:hover { background: rgba(255, 255, 255, 0.14); }
 
 /* O mapa que o cartao de pesquisa partilhado pede (ver comum/busca.css). */
 .bzlp-cheetah .bz-busca {
@@ -310,20 +302,6 @@
   border: 0;
   font-weight: 700;
   letter-spacing: 0.1em;
-}
-.che-hero-cta { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; align-items: center; }
-.che-hero-grupo {
-  margin: 18px 0 0;
-  font-size: 14.5px;
-  font-weight: 500;
-  color: color-mix(in srgb, var(--ink) 82%, transparent);
-}
-.che-hero-grupo a {
-  color: var(--ink);
-  font-weight: 700;
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
 }
 
 .che-hero-art { display: flex; justify-content: center; }

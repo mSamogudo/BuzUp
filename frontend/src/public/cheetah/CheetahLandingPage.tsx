@@ -82,19 +82,12 @@ export default function CheetahLandingPage() {
                 {i.hero.h1destaque}
               </span>
             </h1>
-            <p className="che-entra" style={{ "--i": 2 } as React.CSSProperties}>{i.hero.lead}</p>
-            <div className="che-hero-cta che-entra" style={{ "--i": 3 } as React.CSSProperties}>
-              <Link to="/comprar" className="bzlp-btn gold">
-                {t.comum.comprarBilhete} <ArrowRight size={17} aria-hidden />
-              </Link>
-              <Link to="/cheetah-express/horarios" className="bzlp-btn outline">
-                {t.comum.verHorarios}
-              </Link>
-            </div>
-            <p className="che-hero-grupo che-entra" style={{ "--i": 4 } as React.CSSProperties}>
-              {i.hero.grupo}{" "}
-              <Link to="/cheetah-express/contactos">{t.comum.falarConnosco}</Link>
-            </p>
+            <p className="che-entra" style={{ "--i": 3 } as React.CSSProperties}>{i.hero.lead}</p>
+            {/* Os dois botões e a linha do grupo saíram daqui. O cartão de
+                pesquisa logo abaixo É a acção do hero, e um par de botões por
+                cima dele era um segundo conjunto de acções a competir com a
+                primeira — sem contar que "Comprar bilhete" já está na barra.
+                Quem procura horários ou grupos tem-nos na navegação. */}
           </div>
           {/* Paralaxe ao rolar e inclinação a seguir o ponteiro — ver
               HeroArte. `width`/`height` reais do ficheiro ficam lá dentro:
@@ -110,7 +103,7 @@ export default function CheetahLandingPage() {
               médio davam 1001px numa dobra de 900. Aqui dentro, a chapa e o
               cartão são um bloco só e cabem na primeira vista por construção,
               em vez de por subtracção. */}
-          <div className="che-hero-busca che-entra" style={{ "--i": 5 } as React.CSSProperties}>
+          <div className="che-hero-busca che-entra" style={{ "--i": 3.8 } as React.CSSProperties}>
             <HeroBusca textos={t.heroBusca} />
           </div>
         </div>

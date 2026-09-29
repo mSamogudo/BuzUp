@@ -216,11 +216,6 @@
 .bzc-btn--fantasma:hover { background: rgba(234, 241, 248, .1); color: #fff; }
 .bzc-btn--sm { height: 44px; padding: 0 22px; font-size: 14.5px; }
 
-.bzc-chip {
-  display: inline-flex; align-items: center; height: 36px; padding: 0 15px;
-  border-radius: 999px; background: var(--bzc-surface); border: 1px solid var(--bzc-border);
-  font: 500 13px/1 Inter, sans-serif; color: var(--bzc-text);
-}
 
 /* ── Cartoes ───────────────────────────────────────────────────────── */
 
@@ -343,7 +338,6 @@
   display: flex; flex-direction: column; align-items: center; gap: 20px;
 }
 .bzc-hero-accoes { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
-.bzc-hero-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
 
 .bzc-hero-painel { position: relative; max-width: 1080px; margin: 40px auto 0; padding: 0 32px; }
 .bzc-etiqueta {
@@ -539,16 +533,6 @@
 }
 .bzc-mapa p { font: 400 13px/1.55 Inter, sans-serif; color: var(--bzc-muted); }
 
-/* ── Os numeros ────────────────────────────────────────────────────── */
-
-.bzc-numeros { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-.bzc-numeros > div {
-  background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 20px;
-  padding: 26px; text-align: center;
-}
-.bzc-numeros dt { font: 800 44px/1 Manrope, sans-serif; letter-spacing: -.03em; color: var(--bzc-accent-dk); }
-.bzc-numeros dd { margin-top: 10px; font: 400 13.5px/1.5 Inter, sans-serif; color: var(--bzc-muted); }
-
 /* ── Os tres passos ────────────────────────────────────────────────── */
 
 .bzc-passos { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
@@ -618,15 +602,6 @@
 }
 .bzc-passo-detalhe b { font: 700 11.5px/1 Inter, sans-serif; color: var(--bzc-text); }
 
-/* ── Casos ─────────────────────────────────────────────────────────── */
-
-.bzc-caso {
-  background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px;
-  padding: 26px; display: flex; flex-direction: column; gap: 14px;
-}
-.bzc-caso blockquote { margin: 0; font: 500 15px/1.6 Inter, sans-serif; color: var(--bzc-text); }
-.bzc-caso figcaption { margin-top: auto; font: 400 13px/1.5 Inter, sans-serif; color: var(--bzc-muted); }
-
 /* ── Precos ────────────────────────────────────────────────────────── */
 
 .bzc-plano {
@@ -688,7 +663,6 @@
   .bzc-passos,
   .bzc-eco,
   .bzc-painel-baixo { grid-template-columns: 1fr; }
-  .bzc-numeros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bzc-h1 { font-size: 40px; }
   .bzc-h2 { font-size: 28px; }
   .bzc-sec { padding: 56px 0; }
@@ -703,7 +677,7 @@
 }
 
 @media (max-width: 560px) {
-  .bzc-numeros, .bzc-foot-in, .bzc-eco-grelha { grid-template-columns: 1fr; }
+  .bzc-foot-in, .bzc-eco-grelha { grid-template-columns: 1fr; }
   .bzc-h1 { font-size: 34px; }
   .bzc-hero-accoes .bzc-btn { width: 100%; }
 }

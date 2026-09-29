@@ -202,7 +202,7 @@ export default function BusUpLandingPage() {
 
   useBusUpMeta(
     `BusUp · ${t.heroH1a} ${t.heroH1b}`,
-    t.heroLead,
+    t.heroLeadShort,
   );
 
   return (
@@ -212,19 +212,12 @@ export default function BusUpLandingPage() {
         <div aria-hidden className="bzc-hero-luz" />
 
         <div className="bzc-hero-in">
-          <span className="bzc-distintivo"><i className="bzc-ponto bzc-pulsa" />{t.heroBadge}</span>
           <h1 className="bzc-h1">{t.heroH1a}<span>{t.heroH1b}</span></h1>
-          <p className="bzc-lead" style={{ maxWidth: "54ch", fontSize: 17.5 }}>{t.heroLead}</p>
 
           <div className="bzc-hero-accoes">
             <Link className="bzc-btn bzc-btn--azul" to="/contactos">{t.ctaPrimary}</Link>
             <Link className="bzc-btn bzc-btn--ceu" to="/comprar">{t.buyTicket}</Link>
-            <a className="bzc-btn bzc-btn--linha" href="#produto">{t.ctaSecondary}</a>
           </div>
-
-          <ul className="bzc-hero-chips">
-            {t.chips.map((c) => <li className="bzc-chip" key={c}>{c}</li>)}
-          </ul>
         </div>
 
         {/* As quatro etiquetas que apontam para quem usa o quê. São decorativas:
@@ -306,26 +299,10 @@ export default function BusUpLandingPage() {
         </div>
       </section>
 
-      {/* ── PORQUÊ / NÚMEROS ──────────────────────────────────────── */}
-      <section className="bzc-sec" id="porque">
-        <div className="bzc-wrap-md">
-          <div className="bzc-sechead">
-            <h2 className="bzc-h2">{t.statsH2}</h2>
-            <p className="bzc-lead">{t.statsLead}</p>
-          </div>
-          <dl className="bzc-numeros">
-            {t.stats.map((s) => (
-              <div key={s.l}>
-                <dt className="bzc-num">{s.v}</dt>
-                <dd>{s.l}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
       {/* ── COMEÇAR EM TRÊS PASSOS ────────────────────────────────── */}
-      <section className="bzc-sec bzc-sec-alt">
+      {/* Sem a chapa alternada: os números que vinham antes levavam-na, e com
+          eles fora seriam três secções claras seguidas. */}
+      <section className="bzc-sec">
         <div className="bzc-wrap-md">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.stepsH2}</h2>
@@ -386,28 +363,6 @@ export default function BusUpLandingPage() {
                 );
               })}
             </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CASOS ─────────────────────────────────────────────────── */}
-      <section className="bzc-sec" id="casos">
-        <div className="bzc-wrap-md">
-          <div className="bzc-sechead">
-            <h2 className="bzc-h2">{t.casesH2}</h2>
-            {/* O protótipo deixou isto por preencher e não fui eu que o
-                preenchi: são depoimentos de operadores reais, e inventá-los
-                era a única coisa nesta página que não se podia desfazer. */}
-            <p className="bzc-lead">{t.casesLead}</p>
-          </div>
-          <div className="bzc-grelha-3">
-            {t.cases.map((c) => (
-              <figure className="bzc-caso" key={c.kind}>
-                <span className="bzc-rotulo">{c.kind}</span>
-                <blockquote>{c.quote}</blockquote>
-                <figcaption>{c.who}</figcaption>
-              </figure>
-            ))}
           </div>
         </div>
       </section>

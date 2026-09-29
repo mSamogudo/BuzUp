@@ -79,8 +79,6 @@ export function BotaoTema() {
 const LIGACOES = [
   { to: "/#produto", rotulo: (t: CopyBusUp) => t.navProduct },
   { to: "/#recursos", rotulo: (t: CopyBusUp) => t.navFeatures },
-  { to: "/#porque", rotulo: (t: CopyBusUp) => t.navWhy },
-  { to: "/#casos", rotulo: (t: CopyBusUp) => t.navCases },
   { to: "/precos", rotulo: (t: CopyBusUp) => t.navPricing },
   { to: "/contactos", rotulo: (t: CopyBusUp) => t.navContact },
 ];

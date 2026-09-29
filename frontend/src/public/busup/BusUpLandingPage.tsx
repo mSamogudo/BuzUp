@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, ChevronDown, Minus, Plus } from "lucide-react";
 import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital, LOGO_CLARO, LOGO_ESCURO } from "./BusUpChrome";
+import { LOGOS_ECO } from "./logos-ecossistema";
 
 /* A landing pública do BusUp — o desenho "Céu", portado do protótipo
  * `Landing BusUp - Ceu.dc.html` do projecto de desenho.
@@ -17,13 +18,6 @@ import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital, LOGO
  * traduziam. Em markup fazem as três coisas de graça.
  */
 
-const LOGOS_ECO = [
-  { src: "/ecosystem/logos/payup.webp", nome: "PayUp", url: "https://payup.updigital.co.mz" },
-  { src: "/ecosystem/logos/cashup.webp", nome: "CashUp", url: "https://cashup.updigital.co.mz" },
-  { src: "/ecosystem/logos/gateup.webp", nome: "GateUp", url: "https://gateup.updigital.co.mz" },
-  { src: "/ecosystem/logos/vura.webp", nome: "Vura", url: "https://vura.updigital.co.mz" },
-  { src: "/ecosystem/logos/ossoma.webp", nome: "Ossoma", url: "https://ossoma.updigital.co.mz" },
-];
 
 /* A ocupação da viatura no painel: 32 lugares, 22 ocupados. Os números são os
    do protótipo; o padrão é fixo para o painel não mudar a cada render. */
@@ -261,7 +255,8 @@ export default function BusUpLandingPage() {
                 </li>,
                 ...LOGOS_ECO.map((l) => (
                   <li aria-hidden={copia > 0 || undefined} key={`${copia}-${l.nome}`}>
-                    <img alt={copia === 0 ? l.nome : ""} src={l.src} />
+                    <img alt={copia === 0 ? l.nome : ""} data-logo="light" src={l.claro} />
+                    <img alt={copia === 0 ? l.nome : ""} data-logo="dark" src={l.escuro} />
                   </li>
                 )),
               ])}
@@ -497,7 +492,10 @@ export default function BusUpLandingPage() {
             <ul className="bzc-eco-grelha">
               {LOGOS_ECO.map((l) => (
                 <li key={l.nome}>
-                  <a href={l.url} rel="noopener" target="_blank"><img alt={l.nome} src={l.src} /></a>
+                  <a href={l.url} rel="noopener" target="_blank">
+                    <img alt={l.nome} data-logo="light" src={l.claro} />
+                    <img alt={l.nome} data-logo="dark" src={l.escuro} />
+                  </a>
                 </li>
               ))}
               <li>

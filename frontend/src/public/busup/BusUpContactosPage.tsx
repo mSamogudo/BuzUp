@@ -6,6 +6,7 @@ import BusUpPagina, {
 } from "./BusUpChrome";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
 import { copyContactos } from "./busup-contactos-copy";
+import { LOGOS_ECO } from "./logos-ecossistema";
 
 /* Contactos — portado do protótipo `Contactos BusUp.dc.html`.
  *
@@ -20,13 +21,6 @@ import { copyContactos } from "./busup-contactos-copy";
  * uma entrega que ninguém garante.
  */
 
-const LOGOS_ECO = [
-  { src: "/ecosystem/logos/payup.webp", nome: "PayUp", url: "https://payup.updigital.co.mz" },
-  { src: "/ecosystem/logos/cashup.webp", nome: "CashUp", url: "https://cashup.updigital.co.mz" },
-  { src: "/ecosystem/logos/gateup.webp", nome: "GateUp", url: "https://gateup.updigital.co.mz" },
-  { src: "/ecosystem/logos/vura.webp", nome: "Vura", url: "https://vura.updigital.co.mz" },
-  { src: "/ecosystem/logos/ossoma.webp", nome: "Ossoma", url: "https://ossoma.updigital.co.mz" },
-];
 
 type Campos = {
   nome: string; cargo: string; empresa: string; telefone: string; email: string;
@@ -196,7 +190,10 @@ export default function BusUpContactosPage() {
             <ul className="bzc-eco-grelha">
               {LOGOS_ECO.map((l) => (
                 <li key={l.nome}>
-                  <a href={l.url} rel="noopener" target="_blank"><img alt={l.nome} src={l.src} /></a>
+                  <a href={l.url} rel="noopener" target="_blank">
+                    <img alt={l.nome} data-logo="light" src={l.claro} />
+                    <img alt={l.nome} data-logo="dark" src={l.escuro} />
+                  </a>
                 </li>
               ))}
             </ul>

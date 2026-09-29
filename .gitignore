@@ -62,3 +62,7 @@ prompt
 output/
 .playwright-mcp/
 .impeccable/
+
+# Saida das apresentacoes: slides PNG, paginas de PDF e JSON de validacao.
+# Sao gerados e pesam 77 MB; ficam no disco, fora do historico.
+.presentation-build-*/

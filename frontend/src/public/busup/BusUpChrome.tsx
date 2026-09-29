@@ -29,7 +29,7 @@ export const MORADA = ["Av. Alberto Massavanhane, 1265", "Matola — Moçambique
 
 /** O par de logótipos: um por tema, e só um aparece. É CSS e não JavaScript
  *  para não haver um piscar entre o primeiro pintar e o tema chegar. */
-function Logotipo({ alt, altura = 26 }: { alt: string; altura?: number }) {
+export function Logotipo({ alt, altura = 26 }: { alt: string; altura?: number }) {
   return (
     <>
       <img data-logo="light" src={LOGO_CLARO} alt={alt} style={{ height: altura, width: "auto" }} />
@@ -66,7 +66,7 @@ function SelectorIdioma({ t }: { t: CopyBusUp }) {
   );
 }
 
-function BotaoTema() {
+export function BotaoTema() {
   const { effectiveTheme, toggleTheme } = useLandingPrefs();
   const rotulo = effectiveTheme === "dark" ? "Modo claro" : "Modo escuro";
   return (

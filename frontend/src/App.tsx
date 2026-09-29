@@ -20,6 +20,8 @@ import AdminLayout from "./admin/AdminLayout";
 const LandingPage = lazy(() => import("./public/busup/BusUpLandingPage"));
 const BusUpContactosPage = lazy(() => import("./public/busup/BusUpContactosPage"));
 const BusUpPrecosPage = lazy(() => import("./public/busup/BusUpPrecosPage"));
+const BusUpErroPage = lazy(() => import("./public/busup/BusUpErroPage"));
+const BusUpErrosDemo = lazy(() => import("./public/busup/BusUpErroPage").then((m) => ({ default: m.BusUpErrosDemo })));
 const TpmTurLandingPage = lazy(() => import("./public/tpm/TpmTurLandingPage"));
 // As paginas institucionais da TPM-TUR. Cada uma chega quando alguem la vai:
 // quem abre /tpm-tur para comprar um bilhete nao paga o peso das outras.
@@ -171,7 +173,14 @@ function AppContent() {
           <Route path="audit" element={<AuditPage />} />
           <Route path="branding" element={<BrandingPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* A grelha dos seis estados de erro, para os rever sem os provocar.
+            Fica fora da compilacao de producao — e uma ferramenta, nao uma
+            pagina do site. */}
+        {import.meta.env.DEV && <Route path="/erros" element={<BusUpErrosDemo />} />}
+        {/* O apanha-tudo mandava toda a gente para a raiz sem dizer nada: quem
+            escrevia mal um endereco aterrava na landing a pensar que tinha
+            clicado errado. Agora ve o 404 do desenho, com para onde ir. */}
+        <Route path="*" element={<BusUpErroPage chave="404" />} />
       </Routes>
       </Suspense>
     </>

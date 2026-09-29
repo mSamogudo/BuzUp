@@ -33,6 +33,18 @@
      4,25:1, e a 16,5px a norma pede 4,5. Dois tons mais fundo fecham a conta
      e a olho continua a ser o cinzento secundario, nao o texto principal. */
   --bzc-muted-ceu: #4E5E73;
+  /* Os tres tons dos ecras de erro. A CHAPA da pilula e fixa nos dois temas
+     — e um autocolante, nao uma superficie — mas a TINTA e o numero grande
+     tem de virar, senao o codigo em navy desaparece na tela escura. */
+  --bzc-tom-info-chapa: #E8F2FC; --bzc-tom-info-borda: #CFE6FB;
+  --bzc-tom-info-tinta: #1D5FA7; --bzc-tom-info-forte: #0D3B66;
+  --bzc-tom-aviso-chapa: #FDF6EA; --bzc-tom-aviso-borda: #F5E3C0;
+  --bzc-tom-aviso-tinta: #8A6111; --bzc-tom-aviso-forte: #96620F;
+  --bzc-tom-mau-chapa: #FDF1EF; --bzc-tom-mau-borda: #F0C9C1;
+  --bzc-tom-mau-tinta: #8E2A19; --bzc-tom-mau-forte: #A02E1B;
+  /* Uma so linha de texto tecnico por ecra. Nao vale quatro ficheiros de
+     fonte a mais: a mono do sistema diz o mesmo e nao pede rede. */
+  --bzc-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --bzc-faint: #A8B7C8;
   --bzc-navy-text: #0D3B66;
   --bzc-accent: #2D8CF0;
@@ -79,6 +91,12 @@
   --bzc-muted: #A9C2DC;
   --bzc-muted2: #8AA6C2;
   --bzc-muted-ceu: #A9C2DC;
+  --bzc-tom-info-chapa: #0E3A5E; --bzc-tom-info-borda: #22527A;
+  --bzc-tom-info-tinta: #A9C8EC; --bzc-tom-info-forte: #CFE6FB;
+  --bzc-tom-aviso-chapa: #3A2E12; --bzc-tom-aviso-borda: #5C4718;
+  --bzc-tom-aviso-tinta: #F0C36B; --bzc-tom-aviso-forte: #F0C36B;
+  --bzc-tom-mau-chapa: #3A1A14; --bzc-tom-mau-borda: #5E2A1E;
+  --bzc-tom-mau-tinta: #F5A797; --bzc-tom-mau-forte: #F5A797;
   --bzc-faint: #6F8CAA;
   --bzc-navy-text: #CFE6FB;
   --bzc-accent-dk: #5BA3F5;
@@ -830,3 +848,88 @@
 
 /* O cabecalho de ceu e mais escuro do que a tela: o lead desce um tom. */
 .bzc-contacto-topo .bzc-lead { color: var(--bzc-muted-ceu); }
+
+/* ── Ecras de erro ─────────────────────────────────────────────────────── */
+
+/* SEM A CASCA DO SITE. Um 500 com a navegacao toda por cima convida a clicar
+   em tudo menos no que resolve o problema. Fica a marca, o tema e a ajuda. */
+.bzc-erro {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, var(--bzc-sky1) 0%, var(--bzc-sky2) 44%, var(--bzc-surface) 92%);
+}
+/* Um atributo, tres tons: a pagina escolhe o par e tudo o resto le daqui. */
+.bzc-erro[data-tom="info"] { --tom-chapa: var(--bzc-tom-info-chapa); --tom-borda: var(--bzc-tom-info-borda); --tom-tinta: var(--bzc-tom-info-tinta); --tom-forte: var(--bzc-tom-info-forte); }
+.bzc-erro[data-tom="aviso"] { --tom-chapa: var(--bzc-tom-aviso-chapa); --tom-borda: var(--bzc-tom-aviso-borda); --tom-tinta: var(--bzc-tom-aviso-tinta); --tom-forte: var(--bzc-tom-aviso-forte); }
+.bzc-erro[data-tom="mau"] { --tom-chapa: var(--bzc-tom-mau-chapa); --tom-borda: var(--bzc-tom-mau-borda); --tom-tinta: var(--bzc-tom-mau-tinta); --tom-forte: var(--bzc-tom-mau-forte); }
+
+.bzc-erro-topo {
+  width: 100%; max-width: 1280px; margin: 0 auto; min-height: 88px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 14px 32px;
+}
+.bzc-erro-topo-fim { display: flex; align-items: center; gap: 10px; }
+.bzc-erro-ajuda {
+  display: inline-flex; align-items: center; height: 40px; padding: 0 16px;
+  border-radius: 999px; white-space: nowrap;
+  background: var(--bzc-surface); border: 1px solid var(--bzc-border);
+  font: 500 13.5px/1 Inter, sans-serif; color: var(--bzc-muted);
+}
+.bzc-erro-ajuda:hover { border-color: var(--bzc-accent); color: var(--bzc-accent-dk); }
+
+.bzc-erro-corpo { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px 32px 48px; }
+.bzc-erro-in {
+  max-width: 760px; width: 100%; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+}
+.bzc-erro-pilula {
+  display: inline-flex; align-items: center; gap: 10px; height: 38px;
+  padding: 0 18px; border-radius: 999px; white-space: nowrap;
+  background: var(--tom-chapa); border: 1px solid var(--tom-borda);
+  font: 700 12.5px/1 Inter, sans-serif; color: var(--tom-tinta);
+}
+.bzc-erro-pilula .bzc-ponto { background: var(--tom-tinta); }
+.bzc-erro-codigo { font: 800 96px/1 Manrope, sans-serif; letter-spacing: -.04em; color: var(--tom-forte); }
+.bzc-erro-h1 { margin: 0; font: 800 42px/1.08 Manrope, sans-serif; letter-spacing: -.03em; color: var(--bzc-text); text-wrap: balance; }
+.bzc-erro-lead { margin: 0; max-width: 56ch; font: 400 16.5px/1.65 Inter, sans-serif; color: var(--bzc-muted-ceu); text-wrap: pretty; }
+.bzc-erro-accoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 4px; }
+
+.bzc-erro-pistas {
+  margin-top: 18px; width: 100%;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;
+}
+.bzc-erro-pistas li {
+  background: var(--bzc-surface); border: 1px solid var(--bzc-border);
+  border-radius: 16px; padding: 14px 16px; text-align: left;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.bzc-erro-pistas b { font: 700 12.5px/1.3 Manrope, sans-serif; color: var(--bzc-text); }
+.bzc-erro-pistas span { font: 400 12px/1.5 Inter, sans-serif; color: var(--bzc-muted); }
+.bzc-erro-ref {
+  margin-top: 10px; font: 500 12px/1.6 var(--bzc-mono);
+  /* Onde a linha cai depende da altura do ecra: num ecra baixo apanha o ceu,
+     e ai o cinzento normal so da 4,25:1. Leva o tom mais fundo sempre. */
+  color: var(--bzc-muted-ceu); word-break: break-word;
+}
+
+.bzc-erro-rodape {
+  border-top: 1px solid var(--bzc-border); background: var(--bzc-surface);
+  padding: 18px 32px; display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+
+/* A grelha dos seis estados, para os rever sem os provocar. */
+.bzc-erro-demo { position: fixed; z-index: 30; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: var(--bzc-surface); border: 1px solid var(--bzc-border2); border-radius: 999px; padding: 5px; }
+.bzc-erro-demo button { min-height: 30px; padding: 0 13px; border: 0; border-radius: 999px; background: transparent; color: var(--bzc-muted); font: 700 12px/1 var(--bzc-mono); cursor: pointer; }
+.bzc-erro-demo button[aria-pressed="true"] { background: var(--bzc-navy); color: #fff; }
+
+@media (max-width: 760px) {
+  .bzc-erro-topo { padding: 12px 20px; min-height: 68px; }
+  .bzc-erro-corpo { padding: 6px 20px 36px; align-items: flex-start; }
+  .bzc-erro-in { gap: 14px; }
+  .bzc-erro-codigo { font-size: 62px; }
+  .bzc-erro-h1 { font-size: 26px; line-height: 1.14; }
+  .bzc-erro-lead { font-size: 14px; }
+  .bzc-erro-pistas { grid-template-columns: 1fr; margin-top: 6px; gap: 9px; }
+  .bzc-erro-accoes { width: 100%; flex-direction: column; }
+  .bzc-erro-accoes > * { width: 100%; justify-content: center; }
+}

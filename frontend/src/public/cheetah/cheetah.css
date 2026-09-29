@@ -191,16 +191,41 @@
    folga — e a do botao outro tanto, que e o que impede o que acontecia na
    TPM-TUR antes da mesma mudanca: com a volta ligada a fila ganhava uma
    coluna e o botao encolhia ate o texto quebrar. */
+/* AS COLUNAS LEVAM UM MINIMO EM PIXEIS, e nao `minmax(0, …)`.
+   Medido a 1440: a data pedia 127px e os passageiros 128 em colunas de 115 —
+   os dois controlos transbordavam a celula e era isso que fazia a fila
+   parecer apertada. Um minimo abaixo do que o controlo mede nao o encolhe,
+   so o deixa sair por fora. */
 .bz-busca--barra .bz-busca-campos {
+  gap: 12px;
   grid-template-columns:
-    214px minmax(0, 1.2fr) auto minmax(0, 1.2fr)
-    minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(190px, auto);
+    150px minmax(0, 1.15fr) 48px minmax(0, 1.15fr)
+    minmax(132px, 0.9fr) minmax(134px, 0.9fr) minmax(182px, auto);
 }
 .bz-busca--barra .bz-busca-campos.tem-volta {
   grid-template-columns:
-    214px minmax(0, 1fr) auto minmax(0, 1fr)
-    minmax(0, 0.7fr) minmax(0, 0.7fr) minmax(0, 0.74fr) minmax(178px, auto);
+    150px minmax(0, 1fr) 48px minmax(0, 1fr)
+    minmax(124px, 0.8fr) minmax(124px, 0.8fr) minmax(128px, 0.8fr) minmax(176px, auto);
 }
+/* Mais respiro a volta da fila: 16px iguais nos quatro lados deixavam o
+   cartao com o mesmo ar de uma caixa de dialogo. */
+.bz-busca--barra { padding: 18px 20px 20px; }
+
+/* O ROTULO DOS PASSAGEIROS ESTAVA 5,5px ABAIXO DOS OUTROS. Vem do
+   `CampoSelect`, que o desenha em `flex` com `line-height: 11px`, enquanto os
+   outros quatro sao `block` a 16,5px. A fila dos rotulos deixava de ser uma
+   linha, e isso ve-se mesmo sem se saber porque. */
+.bz-busca--barra .bz-busca-campo > label,
+.bz-busca--barra .bz-busca-campo > span,
+.bz-busca--barra .bz-busca-campo > [data-slot=label] {
+  display: block;
+  line-height: 16.5px;
+}
+
+/* O BOTAO DE TROCAR MEDIA 42 CONTRA OS 48 DOS CAMPOS. Com os fundos
+   alinhados, faltavam-lhe 6px em cima e o disco lia-se como um elemento de
+   outra fila. */
+.bz-busca--barra .bz-busca-inverter { width: 48px; height: 48px; }
 /* O alternador e um campo como os outros: rotulo por cima, controlo de 48px
    por baixo, para a fila assentar toda na mesma linha de base. */
 .bz-busca--barra .bz-busca-tipo {
@@ -216,6 +241,13 @@
   padding: 0 8px;
   white-space: nowrap;
 }
+/* AS SETAS DAS PASTILHAS SAEM NESTA VARIANTE. Custavam 64px de uma fila que
+   tem sete coisas para arrumar, e nao diziam nada que as palavras nao
+   digam — sao a mesma seta do botao de trocar, a dois campos de distancia.
+   Sem elas a coluna cai de 214 para 150, e os 64px vao para a origem e o
+   destino, que sao os campos onde se escreve. Na `padrao` e na `tpm` ficam:
+   la ha largura para elas. */
+.bz-busca--barra .bz-busca-tipo-btn svg { display: none; }
 
 /* A FILA UNICA SO EXISTE ENQUANTO HA LARGURA PARA ELA.
    Sem este bloco a barra nao encolhia: a regra de cima vale 0,2,0 e a que
@@ -227,7 +259,7 @@
    campos de texto longo, e o resto fica a par. */
 @media (max-width: 1080px) {
   .bz-busca--barra .bz-busca-campos,
-  .bz-busca--barra .bz-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-busca--barra .bz-busca-campos.tem-volta { gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bz-busca--barra .bz-busca-campo.is-largo { grid-column: 1 / -1; }
   .bz-busca--barra .bz-busca-inverter { width: 100%; height: 38px; grid-column: 1 / -1; }
   .bz-busca--barra .bz-busca-btn { grid-column: 1 / -1; width: 100%; }

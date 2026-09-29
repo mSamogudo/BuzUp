@@ -6,8 +6,9 @@
  * preencher — os depoimentos dos operadores — o espaço vem para aqui como
  * está, marcado, em vez de ser preenchido por mim.
  *
- * Vive à parte de `landing/landing-copy.ts`, que é o dicionário da landing
- * antiga e continua a servir o que ainda não foi migrado.
+ * A landing antiga e o seu dicionário `landing/landing-copy.ts` foram apagados
+ * quando o desenho "Céu" tomou a rota `/`; este ficheiro é hoje o único
+ * dicionário do site público do BusUp.
  */
 
 import type { Lang } from "../landing/useLandingPrefs";

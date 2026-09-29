@@ -13,9 +13,10 @@ import AdminLayout from "./admin/AdminLayout";
 //
 // O que fica ansioso e so o que se ve sempre: o login, a moldura do portal e
 // o arranque.
-/* A landing publica do BusUp — o desenho "Ceu". A antiga fica em
-   `public/LandingPage.tsx` sem rota, porque o `landing.css` dela ainda e o
-   chassis dos sites da TPM-TUR e da Cheetah Express. */
+/* A landing publica do BusUp — o desenho "Ceu". A antiga foi apagada, mas a
+   pasta `public/landing/` fica: o `landing.css` e o chassis dos sites da
+   TPM-TUR e da Cheetah Express, o `Reveal` anima as paginas da TPM-TUR e o
+   `useLandingPrefs` guarda o tema e o idioma dos tres. */
 const LandingPage = lazy(() => import("./public/busup/BusUpLandingPage"));
 const BusUpContactosPage = lazy(() => import("./public/busup/BusUpContactosPage"));
 const BusUpPrecosPage = lazy(() => import("./public/busup/BusUpPrecosPage"));

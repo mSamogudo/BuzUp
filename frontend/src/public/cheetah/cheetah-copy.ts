@@ -30,6 +30,48 @@ import { useLandingPrefs, type Lang } from "../landing/useLandingPrefs";
  * de as conseguir dizer a um motorista de chapa em Maputo.
  */
 
+/* A FORMA DE UM PERCURSO, escrita e nao inferida.
+ *
+ * O `EN` e declarado como `typeof PT`, e sem um tipo proprio os campos vazios
+ * dos percursos de sentido unico — `nota: ""`, `precos: []` — inferiam tipos
+ * diferentes dos dos outros e o ingles deixava de encaixar. Escrever a forma
+ * resolve isso e serve de documentacao: quem acrescentar um percurso ve aqui
+ * o que tem de preencher.
+ *
+ * `tipo` e o que distingue um SENTIDO de um DIA. Nao e cosmetica: chamar
+ * "volta" ao segundo dia de uma viagem com dormida ensinaria ao passageiro
+ * que pode apanha-lo para regressar, e nao pode. */
+type Sentido = "ida" | "volta" | "dia1" | "dia2" | "unico";
+
+type Painel = {
+  tipo: Sentido;
+  t: string;
+  /** Paragem, local e hora. A duracao do painel NAO se escreve aqui: e a
+   *  diferenca entre a primeira e a ultima hora, e a pagina calcula-a, para
+   *  nao poder divergir dos dados. */
+  linhas: [string, string, string][];
+};
+
+type Percurso = {
+  id: string;
+  nome: string;
+  /** Curto, para o quadro-resumo. */
+  dias: string;
+  /** Inteiro, para o cabecalho do cartao. */
+  diasLongo: string;
+  duracao: string;
+  preco: string;
+  /** `true` quando o preco mostrado e o mais baixo de varios. */
+  desde: boolean;
+  /** Vazio quando nao ha nada a avisar. */
+  nota: string;
+  dormida: string;
+  /** O detalhe dos precos, so quando ha mais do que um. */
+  precos: string[];
+  paineis: Painel[];
+};
+
+
 const PT = {
   nav: {
     inicio: "Início",
@@ -188,34 +230,61 @@ const PT = {
     migalha: "Horários",
     titulo: "Horários e preços",
     descricao: "Todos os nossos percursos, com as paragens, as horas e o preço de ida. Os preços estão em rands e em meticais — a conversão é aproximada e acompanha o câmbio do dia.",
-    colunas: { paragem: "Paragem", local: "Local", hora: "Hora" },
+
+    /* O quadro-resumo, antes de tudo. Quem chega aqui quer saber em que dias
+       pode ir, quanto demora e quanto custa; cinco cartões parecidos obrigavam
+       a ler os cinco para responder. */
+    resumo: {
+      h2: "Os cinco percursos, de relance",
+      legenda: "Resumo dos percursos: dias, duração e preço",
+      percurso: "Percurso",
+      dias: "Dias",
+      duracao: "Duração",
+      preco: "Preço, só ida",
+    },
+
+    colunas: { paragem: "Paragem", hora: "Hora" },
+    legendaQuadro: "paragens e horas",
     parte: "Parte",
     chega: "Chega",
-    diaSeguinte: "No dia seguinte, de Maputo",
-    preco: "Preço",
-    soIda: "por pessoa, só ida",
-    incluiDormida: "Inclui dormida",
-    aviso: "As horas são as de partida previstas. A travessia da fronteira de Ressano Garcia pode acrescentar tempo à viagem, sobretudo em fins-de-semana e feriados — recomendamos que conte com isso ao marcar ligações.",
+    cerca: "cerca de",
+    desde: "desde",
+    precoRotulo: "Preço",
+    precoDesdeRotulo: "Preço, desde",
+    precoDetalhe: "Preço por pessoa, só ida",
+
+    /* O SENTIDO NÃO PODE DEPENDER DA COR. Cada distintivo leva a palavra e,
+       nos que têm direcção, uma seta; quem não distinga o vermelho do preto lê
+       "IDA" e "VOLTA" e vê as setas apontarem para lados opostos.
+       DIA 1 e DIA 2 são de outra família de propósito: não são sentidos, são a
+       mesma viagem partida em dois dias, e confundi-los seria ensinar ao
+       passageiro que pode apanhar o segundo painel para voltar. */
+    sentidos: { ida: "Ida", volta: "Volta", dia1: "Dia 1", dia2: "Dia 2", unico: "Sentido único" },
+
+    aviso: "As horas são as de partida previstas, e os tempos de viagem são a diferença entre elas. A travessia da fronteira de Ressano Garcia pode acrescentar tempo à viagem, sobretudo em fins-de-semana e feriados — recomendamos que conte com isso ao marcar ligações.",
+
     percursos: [
       {
         id: "maputo-nelspruit",
         nome: "Maputo ↔ Nelspruit",
-        dias: "Todos os dias, de segunda a domingo",
-        precos: ["R450", "≈ 1 800 MT"],
-        blocos: [
-          { t: "Parte de Moçambique", linhas: [
+        dias: "Todos os dias",
+        diasLongo: "Todos os dias, de segunda a domingo",
+        duracao: "4h30 a 5h",
+        preco: "R450 · ≈ 1 800 MT",
+        desde: false,
+        nota: "Dois serviços por dia, um em cada sentido — escolha o painel do sentido em que viaja.",
+        dormida: "",
+        precos: [],
+        paineis: [
+          { tipo: "ida", t: "Maputo → Nelspruit", linhas: [
             ["Maputo", "Restaurante Mundo's, Av. Eduardo Mondlane", "05:30"],
             ["Matola", "Shoprite, portão principal", "06:00"],
-          ]},
-          { t: "Chega a Nelspruit", linhas: [
             ["Nelspruit", "Ilanga Mall, entrada Mopani", "09:30"],
             ["Nelspruit", "Riverside Mall", "10:00"],
           ]},
-          { t: "Parte de Nelspruit", linhas: [
+          { tipo: "volta", t: "Nelspruit → Maputo", linhas: [
             ["Nelspruit", "Riverside Mall", "15:30"],
             ["Nelspruit", "Ilanga Mall, entrada Mopani", "16:00"],
-          ]},
-          { t: "Chega a Moçambique", linhas: [
             ["Matola", "Shoprite, portão principal", "20:00"],
             ["Maputo", "Restaurante Mundo's, Av. Eduardo Mondlane", "20:30"],
           ]},
@@ -225,15 +294,23 @@ const PT = {
         id: "tofo-nelspruit",
         nome: "Tofo → Maputo → Nelspruit",
         dias: "Terças e sextas",
-        dormida: true,
-        precos: ["Quarto privado no Fatima's: R1 500 · ≈ 6 750 MT", "Dormitório no Fatima's: R1 200 · ≈ 5 400 MT"],
-        blocos: [
-          { t: "Parte do Tofo", linhas: [
+        diasLongo: "Terças e sextas",
+        duracao: "2 dias, com dormida",
+        preco: "R1 200 · ≈ 5 400 MT",
+        desde: true,
+        nota: "Não são dois sentidos: é uma viagem só, partida em dois dias.",
+        dormida: "A mesma viagem, em dois dias: dorme-se no Fatima's Backpackers, em Maputo, entre o Dia 1 e o Dia 2.",
+        precos: [
+          "Quarto privado no Fatima's: R1 500 · ≈ 6 750 MT",
+          "Dormitório no Fatima's: R1 200 · ≈ 5 400 MT",
+        ],
+        paineis: [
+          { tipo: "dia1", t: "Tofo → Maputo", linhas: [
             ["Tofo", "Mercado do Tofo", "05:30"],
             ["Tofo", "Supermercado Babalaza", "06:00"],
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung, e Mundo's", "15:30"],
           ]},
-          { t: "No dia seguinte, de Maputo", linhas: [
+          { tipo: "dia2", t: "Maputo → Nelspruit", linhas: [
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "05:10"],
             ["Maputo", "Restaurante Mundo's", "05:30"],
             ["Nelspruit", "Ilanga Mall, entrada Mopani", "09:30"],
@@ -245,16 +322,24 @@ const PT = {
         id: "nelspruit-tofo",
         nome: "Nelspruit → Maputo → Tofo",
         dias: "Domingos e quartas",
-        dormida: true,
-        precos: ["Quarto privado no Fatima's: R1 500 · ≈ 6 750 MT", "Dormitório no Fatima's: R1 200 · ≈ 5 400 MT"],
-        blocos: [
-          { t: "Parte de Nelspruit", linhas: [
+        diasLongo: "Domingos e quartas",
+        duracao: "2 dias, com dormida",
+        preco: "R1 200 · ≈ 5 400 MT",
+        desde: true,
+        nota: "Não são dois sentidos: é uma viagem só, partida em dois dias.",
+        dormida: "A mesma viagem, em dois dias: dorme-se no Fatima's Backpackers, em Maputo, entre o Dia 1 e o Dia 2.",
+        precos: [
+          "Quarto privado no Fatima's: R1 500 · ≈ 6 750 MT",
+          "Dormitório no Fatima's: R1 200 · ≈ 5 400 MT",
+        ],
+        paineis: [
+          { tipo: "dia1", t: "Nelspruit → Maputo", linhas: [
             ["Nelspruit", "Riverside Mall", "15:30"],
             ["Nelspruit", "Ilanga Mall, entrada Mopani", "16:00"],
             ["Komatipoort", "Estação de serviço Engen", "17:00"],
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung, e Mundo's", "20:00"],
           ]},
-          { t: "No dia seguinte, de Maputo", linhas: [
+          { tipo: "dia2", t: "Maputo → Tofo", linhas: [
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "06:30"],
             ["Maputo", "Restaurante Mundo's", "07:00"],
             ["Tofo", "Mercado do Tofo", "15:30"],
@@ -265,9 +350,15 @@ const PT = {
         id: "tofo-maputo",
         nome: "Tofo → Maputo",
         dias: "Terças e sextas",
-        precos: ["R600", "≈ 2 500 MT"],
-        blocos: [
-          { t: "Parte do Tofo", linhas: [
+        diasLongo: "Terças e sextas",
+        duracao: "cerca de 10h",
+        preco: "R600 · ≈ 2 500 MT",
+        desde: false,
+        nota: "",
+        dormida: "",
+        precos: [],
+        paineis: [
+          { tipo: "unico", t: "Tofo → Maputo", linhas: [
             ["Tofo", "Mercado do Tofo", "05:30"],
             ["Tofo", "Supermercado Babalaza", "06:00"],
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "15:30"],
@@ -278,18 +369,23 @@ const PT = {
         id: "maputo-tofo",
         nome: "Maputo → Tofo",
         dias: "Segundas e quintas",
-        precos: ["2 500 MT"],
-        blocos: [
-          { t: "Parte de Maputo", linhas: [
+        diasLongo: "Segundas e quintas",
+        duracao: "cerca de 9h",
+        preco: "2 500 MT",
+        desde: false,
+        nota: "",
+        dormida: "",
+        precos: [],
+        paineis: [
+          { tipo: "unico", t: "Maputo → Tofo", linhas: [
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "06:30"],
             ["Tofo", "Praia do Tofo", "15:30"],
           ]},
         ],
       },
-    ],
+    ] as Percurso[],
     cta: { h2: "Já sabe quando viaja?", p: "Escolha o percurso e a data e compre o bilhete online — chega-lhe ao telemóvel." },
   },
-
   contactos: {
     meta: {
       titulo: "Contactos — Cheetah Express",
@@ -538,34 +634,52 @@ const EN: typeof PT = {
     migalha: "Timetable",
     titulo: "Timetable and fares",
     descricao: "All our services, with stops, times and the one-way fare. Fares are shown in rands and meticais — the conversion is approximate and tracks the day's rate.",
-    colunas: { paragem: "Stop", local: "Place", hora: "Time" },
+
+    resumo: {
+      h2: "All five services at a glance",
+      legenda: "Summary of services: days, journey time and fare",
+      percurso: "Service",
+      dias: "Days",
+      duracao: "Journey time",
+      preco: "Fare, one way",
+    },
+
+    colunas: { paragem: "Stop", hora: "Time" },
+    legendaQuadro: "stops and times",
     parte: "Departs",
     chega: "Arrives",
-    diaSeguinte: "The following day, from Maputo",
-    preco: "Fare",
-    soIda: "per person, one way",
-    incluiDormida: "Overnight included",
-    aviso: "Times shown are scheduled departures. Crossing the Ressano Garcia / Lebombo border can add to the journey, especially at weekends and on public holidays — please allow for it when planning connections.",
+    cerca: "about",
+    desde: "from",
+    precoRotulo: "Fare",
+    precoDesdeRotulo: "Fare, from",
+    precoDetalhe: "Fare per person, one way",
+
+    sentidos: { ida: "Outbound", volta: "Return", dia1: "Day 1", dia2: "Day 2", unico: "One way" },
+
+    aviso: "Times shown are scheduled departures, and journey times are the difference between them. Crossing the Ressano Garcia / Lebombo border can add to the journey, especially at weekends and on public holidays — please allow for it when planning connections.",
+
     percursos: [
       {
         id: "maputo-nelspruit",
         nome: "Maputo ↔ Nelspruit",
-        dias: "Every day, Monday to Sunday",
-        precos: ["R450", "≈ MT 1,800"],
-        blocos: [
-          { t: "Departs Mozambique", linhas: [
+        dias: "Every day",
+        diasLongo: "Every day, Monday to Sunday",
+        duracao: "4h30 to 5h",
+        preco: "R450 · ≈ MT 1,800",
+        desde: false,
+        nota: "Two services a day, one in each direction — pick the panel for the way you are travelling.",
+        dormida: "",
+        precos: [],
+        paineis: [
+          { tipo: "ida", t: "Maputo → Nelspruit", linhas: [
             ["Maputo", "Mundo's restaurant, Av. Eduardo Mondlane", "05:30"],
             ["Matola", "Shoprite, main gates", "06:00"],
-          ]},
-          { t: "Arrives Nelspruit", linhas: [
             ["Nelspruit", "Ilanga Mall, Mopani entrance", "09:30"],
             ["Nelspruit", "Riverside Mall", "10:00"],
           ]},
-          { t: "Departs Nelspruit", linhas: [
+          { tipo: "volta", t: "Nelspruit → Maputo", linhas: [
             ["Nelspruit", "Riverside Mall", "15:30"],
             ["Nelspruit", "Ilanga Mall, Mopani entrance", "16:00"],
-          ]},
-          { t: "Arrives Mozambique", linhas: [
             ["Matola", "Shoprite, main gates", "20:00"],
             ["Maputo", "Mundo's restaurant, Av. Eduardo Mondlane", "20:30"],
           ]},
@@ -575,15 +689,23 @@ const EN: typeof PT = {
         id: "tofo-nelspruit",
         nome: "Tofo → Maputo → Nelspruit",
         dias: "Tuesdays and Fridays",
-        dormida: true,
-        precos: ["Private room at Fatima's: R1,500 · ≈ MT 6,750", "Dormitory at Fatima's: R1,200 · ≈ MT 5,400"],
-        blocos: [
-          { t: "Departs Tofo", linhas: [
-            ["Tofo", "Tofo Market", "05:30"],
-            ["Tofo", "Babalaza Supermarket", "06:00"],
+        diasLongo: "Tuesdays and Fridays",
+        duracao: "2 days, overnight included",
+        preco: "R1,200 · ≈ MT 5,400",
+        desde: true,
+        nota: "These are not two directions: it is one journey, split over two days.",
+        dormida: "One journey over two days: you stay overnight at Fatima's Backpackers in Maputo, between Day 1 and Day 2.",
+        precos: [
+          "Private room at Fatima's: R1,500 · ≈ MT 6,750",
+          "Dorm bed at Fatima's: R1,200 · ≈ MT 5,400",
+        ],
+        paineis: [
+          { tipo: "dia1", t: "Tofo → Maputo", linhas: [
+            ["Tofo", "Tofo market", "05:30"],
+            ["Tofo", "Babalaza supermarket", "06:00"],
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung, and Mundo's", "15:30"],
           ]},
-          { t: "The following day, from Maputo", linhas: [
+          { tipo: "dia2", t: "Maputo → Nelspruit", linhas: [
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "05:10"],
             ["Maputo", "Mundo's restaurant", "05:30"],
             ["Nelspruit", "Ilanga Mall, Mopani entrance", "09:30"],
@@ -595,19 +717,27 @@ const EN: typeof PT = {
         id: "nelspruit-tofo",
         nome: "Nelspruit → Maputo → Tofo",
         dias: "Sundays and Wednesdays",
-        dormida: true,
-        precos: ["Private room at Fatima's: R1,500 · ≈ MT 6,750", "Dormitory at Fatima's: R1,200 · ≈ MT 5,400"],
-        blocos: [
-          { t: "Departs Nelspruit", linhas: [
+        diasLongo: "Sundays and Wednesdays",
+        duracao: "2 days, overnight included",
+        preco: "R1,200 · ≈ MT 5,400",
+        desde: true,
+        nota: "These are not two directions: it is one journey, split over two days.",
+        dormida: "One journey over two days: you stay overnight at Fatima's Backpackers in Maputo, between Day 1 and Day 2.",
+        precos: [
+          "Private room at Fatima's: R1,500 · ≈ MT 6,750",
+          "Dorm bed at Fatima's: R1,200 · ≈ MT 5,400",
+        ],
+        paineis: [
+          { tipo: "dia1", t: "Nelspruit → Maputo", linhas: [
             ["Nelspruit", "Riverside Mall", "15:30"],
             ["Nelspruit", "Ilanga Mall, Mopani entrance", "16:00"],
             ["Komatipoort", "Engen service station", "17:00"],
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung, and Mundo's", "20:00"],
           ]},
-          { t: "The following day, from Maputo", linhas: [
+          { tipo: "dia2", t: "Maputo → Tofo", linhas: [
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "06:30"],
             ["Maputo", "Mundo's restaurant", "07:00"],
-            ["Tofo", "Tofo Market", "15:30"],
+            ["Tofo", "Tofo market", "15:30"],
           ]},
         ],
       },
@@ -615,11 +745,17 @@ const EN: typeof PT = {
         id: "tofo-maputo",
         nome: "Tofo → Maputo",
         dias: "Tuesdays and Fridays",
-        precos: ["R600", "≈ MT 2,500"],
-        blocos: [
-          { t: "Departs Tofo", linhas: [
-            ["Tofo", "Tofo Market", "05:30"],
-            ["Tofo", "Babalaza Supermarket", "06:00"],
+        diasLongo: "Tuesdays and Fridays",
+        duracao: "about 10h",
+        preco: "R600 · ≈ MT 2,500",
+        desde: false,
+        nota: "",
+        dormida: "",
+        precos: [],
+        paineis: [
+          { tipo: "unico", t: "Tofo → Maputo", linhas: [
+            ["Tofo", "Tofo market", "05:30"],
+            ["Tofo", "Babalaza supermarket", "06:00"],
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "15:30"],
           ]},
         ],
@@ -628,18 +764,23 @@ const EN: typeof PT = {
         id: "maputo-tofo",
         nome: "Maputo → Tofo",
         dias: "Mondays and Thursdays",
-        precos: ["MT 2,500"],
-        blocos: [
-          { t: "Departs Maputo", linhas: [
+        diasLongo: "Mondays and Thursdays",
+        duracao: "about 9h",
+        preco: "MT 2,500",
+        desde: false,
+        nota: "",
+        dormida: "",
+        precos: [],
+        paineis: [
+          { tipo: "unico", t: "Maputo → Tofo", linhas: [
             ["Maputo", "Fatima's Backpackers, Av. Mao Tse Tung", "06:30"],
             ["Tofo", "Tofo beach", "15:30"],
           ]},
         ],
       },
-    ],
-    cta: { h2: "Know when you are travelling?", p: "Pick the route and the date and book online — the ticket lands on your phone." },
+    ] as Percurso[],
+    cta: { h2: "Know when you are travelling?", p: "Pick the service and the date and buy online — the ticket reaches your phone." },
   },
-
   contactos: {
     meta: {
       titulo: "Contact — Cheetah Express",

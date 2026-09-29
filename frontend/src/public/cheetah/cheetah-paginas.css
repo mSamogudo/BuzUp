@@ -11,9 +11,40 @@
  * blocos abaixo fazem, e e por isso que parecem verbosos.
  */
 
-/* ── Quadros de horarios ───────────────────────────────────────────── */
+/* ── Horarios: o resumo, e depois cada viagem ──────────────────────── */
 
-.che-percursos { display: grid; gap: 28px; }
+/* O QUADRO-RESUMO. Cinco linhas antes de 1700px de cartoes: dias, duracao e
+   preco de cada percurso, e o nome leva ao cartao dele. */
+.che-resumo {
+  margin: 0 0 40px;
+  padding: 24px 26px 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.che-resumo h2 {
+  margin: 0 0 16px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+/* O alvo cresce, o texto nao: tinham 18px de altura tocavel e a WCAG 2.2
+   pede 24 como minimo. O `padding` fica DENTRO da ligacao, por isso o
+   espacamento visual nao muda. */
+.che-quadro--resumo td a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  font-weight: 700;
+  color: var(--blue2);
+}
+.che-quadro--resumo td a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.che-quadro--resumo td:last-child { font-variant-numeric: tabular-nums; }
+
+/* ── O cartao de um percurso ───────────────────────────────────────── */
+
+.che-percursos { display: grid; gap: 26px; }
 
 .che-percurso {
   background: var(--surface);
@@ -23,46 +54,103 @@
 }
 .che-percurso-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 20px;
   flex-wrap: wrap;
-  padding: 20px 24px;
+  padding: 20px 26px;
   background: linear-gradient(135deg, var(--navy), var(--navy2));
   color: var(--on-navy);
 }
 .che-percurso-head h2 {
-  margin: 0;
+  margin: 0 0 4px;
   font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.015em;
   color: var(--on-navy);
 }
-.che-percurso-dias {
+.che-percurso-dias { margin: 0; font-size: 13px; font-weight: 600; color: var(--on-navy-soft); }
+/* A linha que desfaz a confusao antes de ela acontecer: dois sentidos ou uma
+   viagem em dois dias. Em amarelo porque e um aviso e nao uma legenda —
+   11,37:1 sobre a chapa preta, que e a regra do amarelo. */
+.che-percurso-nota { margin: 7px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--gold); }
+
+.che-percurso-preco { margin: 0; text-align: right; }
+.che-percurso-preco span {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--on-navy-soft);
+}
+.che-percurso-preco strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
+/* ── Um painel = UMA viagem ────────────────────────────────────────── */
+
+.che-percurso-corpo { padding: 22px 26px 24px; display: grid; gap: 30px; align-items: start; }
+.che-percurso-corpo.tem-dois { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* O SENTIDO DISTINGUE-SE POR TRES COISAS AO MESMO TEMPO — palavra, seta e cor
+   — e nunca so pela cor. Quem nao distinga o vermelho do preto le "Ida" e
+   "Volta" e ve as setas apontarem para lados opostos; e os dois tons diferem
+   muito em claridade, por isso tambem se separam em cinzentos.
+
+   O AMARELO DOS DIAS E DE OUTRA FAMILIA DE PROPOSITO. Dia 1 e Dia 2 NAO sao
+   sentidos: sao a mesma viagem partida em dois. Dar-lhes as cores da ida e da
+   volta ensinaria ao passageiro que pode apanhar o segundo para regressar. */
+.che-painel { border-top: 4px solid var(--painel-cor, var(--line)); padding-top: 13px; }
+.che-sent--ida   { --painel-cor: var(--blue); --painel-ink: var(--primary-foreground); }
+.che-sent--volta { --painel-cor: var(--navy); --painel-ink: var(--on-navy); }
+.che-sent--dia1,
+.che-sent--dia2  { --painel-cor: var(--gold); --painel-ink: var(--gold-ink); }
+.che-sent--unico { --painel-cor: var(--line); --painel-ink: var(--ink); }
+
+.che-painel-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.che-painel-sent {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--gold);
-  color: var(--gold-ink);          /* 11,37:1 — a regra do amarelo */
-  font-size: 12px;
-  font-weight: 800;
-}
-.che-percurso-corpo { padding: 8px 24px 24px; }
-
-.che-bloco + .che-bloco { margin-top: 22px; }
-.che-bloco h3 {
-  margin: 20px 0 10px;
-  font-size: 11.5px;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--painel-cor);
+  color: var(--painel-ink);
+  font-size: 10.5px;
   font-weight: 900;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--blue2);
+}
+.che-sent--unico .che-painel-sent { background: var(--line-soft); }
+.che-painel-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.che-painel-meta {
+  margin: 5px 0 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-ink);
 }
 
-/* O quadro. `border-collapse` e obrigatorio sem preflight: em `separate` as
-   celulas vinham com folga propria e as linhas nao encostavam. */
+/* ── O quadro ──────────────────────────────────────────────────────── */
+
+/* DUAS COLUNAS E NAO TRES. "Paragem" e "Local" eram duas colunas a dizer o
+   mesmo sitio, com rotulos de quem faz horarios e nao de quem os le. A cidade
+   e a linha que se procura; o local e a morada, e vive por baixo dela.
+
+   `border-collapse` e obrigatorio sem preflight: em `separate` as celulas
+   vinham com folga propria e as linhas nao encostavam. */
 .che-quadro {
   width: 100%;
   border-collapse: collapse;
@@ -71,70 +159,100 @@
 .che-quadro caption { text-align: left; }         /* default e `center` */
 .che-quadro th,
 .che-quadro td {
-  padding: 11px 12px;
+  padding: 12px 0;
   text-align: left;                                /* o `th` vem centrado */
   vertical-align: top;
   border-bottom: 1px solid var(--line-soft);
 }
 .che-quadro thead th {
-  font-size: 11px;
+  padding: 0 0 8px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted-ink);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 .che-quadro tbody tr:last-child td { border-bottom: 0; }
-.che-quadro td:first-child { font-weight: 700; white-space: nowrap; }
-.che-quadro td:nth-child(2) { color: var(--muted-ink); line-height: 1.5; }
 /* A hora e o dado que se procura: alinhada a direita, em numeros de largura
    fixa, para as linhas se lerem em coluna. */
 .che-quadro td:last-child,
 .che-quadro thead th:last-child {
+  padding-left: 12px;
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  font-size: 16px;
   font-weight: 800;
 }
+.che-quadro--resumo th,
+.che-quadro--resumo td { padding: 14px 12px; }
+.che-quadro--resumo th:first-child,
+.che-quadro--resumo td:first-child { padding-left: 0; }
+.che-quadro--resumo th:last-child,
+.che-quadro--resumo td:last-child { padding-right: 0; font-size: 14.5px; }
 
-/* Precos */
-.che-precos {
+.che-paragem-nome { font-size: 15px; font-weight: 700; }
+.che-paragem-local { display: block; margin-top: 2px; font-size: 13px; line-height: 1.45; color: var(--muted-ink); }
+/* A primeira e a ultima paragem de cada viagem. PALAVRA e nao cor. */
+.che-extremo {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--line-soft);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+/* A TINTA E ESCURA E NAO VERMELHA, e a razao nao e contraste a chumbar.
+   Medido como deve ser, `--blue2` sobre este tom da 4,59:1 — passa, mas com
+   nove centesimas de folga num texto de 10px, e qualquer retoque futuro em
+   `--blue` ou `--surface` parte-o sem ninguem dar por isso. A tinta escura
+   da 14,46:1 e o tom rosado fica, por isso a celula continua a dizer
+   "partida" a vista. Quem separa os dois extremos e a PALAVRA, e essa nao
+   mudou.
+
+   NOTA PARA QUEM MEDIR ISTO OUTRA VEZ: `color-mix` computa para
+   `color(srgb r g b)` com os canais em 0..1. Um medidor que espere `rgb()`
+   le-os como 0..255 e devolve valores absurdos — foi o que me fez ver aqui
+   um 3,61 que nao existe, e um 1,19 no aviso da fronteira, que mede 16,43. */
+.che-quadro tbody tr:first-child .che-extremo {
+  background: color-mix(in srgb, var(--blue) 12%, var(--surface));
+  color: var(--ink);
+}
+
+/* ── O pe do cartao: a dormida e o detalhe dos precos ──────────────── */
+
+.che-percurso-pe { padding: 0 26px 24px; }
+.che-dormida {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
+  gap: 9px;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 600;
 }
+.che-dormida svg { flex: 0 0 auto; }
+.che-precos { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 .che-precos-rot {
-  font-size: 11px;
+  margin: 0 0 4px;
+  font-size: 10.5px;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-ink);
 }
-.che-preco {
-  padding: 6px 13px;
-  border-radius: 999px;
-  border: 1.5px solid var(--blue);
-  color: var(--blue2);
-  font-size: 13.5px;
-  font-weight: 800;
-}
-.che-preco-nota { font-size: 13px; color: var(--muted-ink); }
-.che-dormida {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--gold) 20%, transparent);
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 700;
-}
+.che-precos ul { margin: 0; padding: 0; list-style: none; font-size: 14px; color: var(--ink); }
+.che-precos li { padding: 3px 0; }
 
 /* O aviso da fronteira. Nao e decoracao: e a informacao que faz a diferenca
    entre apanhar e perder um voo do outro lado. */
@@ -248,44 +366,56 @@
   .che-termos { grid-template-columns: 1fr; gap: 28px; }
   .che-termos-indice { position: static; }
   .che-contactos { grid-template-columns: 1fr; gap: 28px; }
+  /* Os dois paineis deixam de caber lado a lado: um debaixo do outro, e a
+     regua de cor de cada um continua a dizer qual e qual. */
+  .che-percurso-corpo.tem-dois { grid-template-columns: 1fr; gap: 26px; }
 }
 
-/* Abaixo de 768px o quadro de tres colunas deixa de se ler: a coluna do local
-   e uma morada inteira e ficava com duas palavras por linha. Cada linha passa
-   a um cartao, com os rotulos escritos por `data-*` em vez de repetidos no
-   markup — o cabecalho da tabela desaparece com eles. */
+/* Abaixo de 768px o quadro de duas colunas ainda se le — a cidade a negrito e
+   a hora a direita — mas o resumo de quatro nao. Esse passa a cartoes, um por
+   percurso, com os rotulos escritos por `data-*` em vez de repetidos no
+   markup; o cabecalho da tabela desaparece com eles. */
 @media (max-width: 768px) {
-  .che-quadro thead { display: none; }
-  .che-quadro,
-  .che-quadro tbody,
-  .che-quadro tr,
-  .che-quadro td { display: block; width: auto; }
-  .che-quadro tr {
-    padding: 13px 0;
+  .che-percurso-corpo { padding: 16px 18px 20px; }
+  .che-percurso-head { padding: 18px; }
+  .che-percurso-pe { padding: 0 18px 20px; }
+  .che-resumo { padding: 20px 18px 6px; }
+
+  .che-quadro--resumo thead { display: none; }
+  .che-quadro--resumo,
+  .che-quadro--resumo tbody,
+  .che-quadro--resumo tr,
+  .che-quadro--resumo td { display: block; width: auto; }
+  .che-quadro--resumo tr {
+    padding: 14px 0;
     border-bottom: 1px solid var(--line-soft);
   }
-  .che-quadro tbody tr:last-child { border-bottom: 0; }
-  .che-quadro td {
+  .che-quadro--resumo tbody tr:last-child { border-bottom: 0; }
+  .che-quadro--resumo td {
     padding: 0;
     border: 0;
     white-space: normal;
+    font-size: 13.5px;
+    color: var(--muted-ink);
   }
-  .che-quadro td:first-child {
-    font-size: 15px;
-    font-weight: 800;
-    margin-bottom: 2px;
-  }
-  .che-quadro td:nth-child(2) { font-size: 13.5px; }
-  .che-quadro td:last-child {
-    display: inline-block;
-    margin-top: 7px;
-    padding: 3px 11px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--blue) 11%, transparent);
-    color: var(--blue2);
+  .che-quadro--resumo td:first-child { margin-bottom: 4px; font-size: 16px; }
+  .che-quadro--resumo td:last-child {
+    margin-top: 6px;
     text-align: left;
-    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
   }
-  .che-percurso-corpo { padding: 4px 18px 20px; }
-  .che-percurso-head { padding: 18px; }
+  /* O rotulo que o cabecalho deixou de dar, agora dentro da celula. */
+  .che-quadro--resumo td[data-rot]::before {
+    content: attr(data-rot) ": ";
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-ink);
+  }
+
+  /* A hora ganha ar: o nome da paragem e a morada por cima ja ocupam duas
+     linhas, e a coluna estreita deixava-a colada a elas. */
+  .che-quadro td:last-child { font-size: 15px; padding-left: 10px; }
 }

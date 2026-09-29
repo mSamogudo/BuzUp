@@ -108,16 +108,34 @@ function BotaoTema() {
   );
 }
 
+/* Um botão só, do mesmo feitio do tema, e não a caixa segmentada PT|EN.
+ *
+ * A caixa ocupava 75px na barra — quase o dobro do botão de tema ao lado — e
+ * com dois feitios diferentes lado a lado os dois controlos não se liam como
+ * o par que são. Um par de discos iguais lê-se de relance.
+ *
+ * MOSTRA O IDIOMA ACTUAL, não o de destino. É o contrário do botão de tema,
+ * que mostra a lua para onde vai — mas é o que a caixa segmentada já dizia
+ * (o PT vinha realçado), e é a convenção da web para selectores de idioma.
+ * Trocar o sentido agora deixava a mesma letra a querer dizer o oposto.
+ *
+ * O `aria-label` inclui a letra visível de propósito: quem usa comando de voz
+ * diz "carregar PT", e um nome acessível que não contenha o rótulo visível
+ * quebra essa ligação. */
 function SelectorIdioma() {
   const { t, lang, setLang } = useTpmCopy();
+  const outro: Lang = lang === "pt" ? "en" : "pt";
+  const accao = t.nav.mudarIdioma;
   return (
-    <div className="bzlp-lang" role="group" aria-label={t.nav.idioma}>
-      {(["pt", "en"] as Lang[]).map((l) => (
-        <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
-          {l.toUpperCase()}
-        </button>
-      ))}
-    </div>
+    <button
+      aria-label={`${t.nav.idioma}: ${lang.toUpperCase()} — ${accao}`}
+      className="bzlp-icon-btn tpm-btn-idioma"
+      onClick={() => setLang(outro)}
+      title={accao}
+      type="button"
+    >
+      {lang.toUpperCase()}
+    </button>
   );
 }
 

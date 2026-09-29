@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Mail, MapPin, Phone, Ticket } from "lucide-react";
 import Reveal from "../landing/Reveal";
-import FormularioPedido from "../comum/FormularioPedido";
+import TpmFormularioPedido from "./TpmFormularioPedido";
 import TpmPagina, {
   EMAIL, MORADA, TELEFONE, TELEFONE_FIXO, TELEFONE_FIXO_HREF, TELEFONE_HREF,
   TpmIntro, useTpmMeta,
@@ -98,13 +98,7 @@ export default function ContactosPage() {
         <div className="bzlp-wrap">
           <Reveal>
             <div className="tpm-form-wrap">
-              <FormularioPedido
-                textos={t.contactos.form}
-                email={EMAIL}
-                telefone={TELEFONE}
-                telefoneHref={TELEFONE_HREF}
-                prefixoAssunto="TPM-TUR"
-              />
+              <TpmFormularioPedido />
             </div>
           </Reveal>
         </div>

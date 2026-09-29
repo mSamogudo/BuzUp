@@ -140,7 +140,14 @@ function TpmNav({ activa }: { activa?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const burgerRef = useRef<HTMLButtonElement | null>(null);
-  const logo = effectiveTheme === "dark" ? LOGO_ESCURO : LOGO_CLARO;
+  /* UM logótipo na BARRA, nos dois temas. Ela deixou de acompanhar o tema — é
+     sempre branca, como o rodapé é sempre marinho — e por isso a tinta escura
+     serve sempre. Alternar o ficheiro trocava a identidade a meio da visita a
+     quem carregasse no botão do tema.
+
+     O PAINEL DO MENU é a excepção, e por isso `effectiveTheme` continua aqui:
+     esse segue o tema e no escuro é marinho (#0e2748). A tinta escura ali
+     desaparecia, o que é o defeito oposto ao que se veio corrigir. */
   const NAV = navegacao(t.nav);
 
   useEffect(() => {
@@ -170,7 +177,7 @@ function TpmNav({ activa }: { activa?: string }) {
               de uma âncora vazia — é artefacto de arrastar, não desenho: assim
               o logótipo não seria clicável nem teria nome acessível. */}
           <Link to="/tpm-tur" aria-label={t.nav.paginaInicial}>
-            <img src={logo} alt={t.nav.logoAlt} height={64} style={{ display: "block" }} />
+            <img src={LOGO_CLARO} alt={t.nav.logoAlt} height={56} style={{ display: "block" }} />
           </Link>
           <nav className="bzlp-links" aria-label="TPM-TUR">
             {NAV.map((n) => (
@@ -197,7 +204,7 @@ function TpmNav({ activa }: { activa?: string }) {
         <div className="bzlp-sheet" onClick={() => setMenuOpen(false)}>
           <div className="bzlp-sheet-panel" onClick={(e) => e.stopPropagation()}>
             <div className="bzlp-sheet-head">
-              <img src={logo} alt="TPM-TUR" height={40} />
+              <img src={effectiveTheme === "dark" ? LOGO_ESCURO : LOGO_CLARO} alt="TPM-TUR" height={40} />
               <button className="bzlp-sheet-close" aria-label={t.nav.fecharMenu} onClick={() => setMenuOpen(false)}>
                 <X size={24} aria-hidden />
               </button>

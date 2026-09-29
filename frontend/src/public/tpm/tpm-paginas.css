@@ -531,14 +531,42 @@
    conteúdo: `.tpm-dobra` subtrai estes mesmos 72 ao ecrã, e com a altura a
    vir do conteúdo bastava mexer no logótipo para a dobra deixar de fechar.
    Os dois 72 andam juntos — se um mudar, o outro tem de mudar. */
-.bzlp-tpm .bzlp-nav-in { padding-top: 6px; padding-bottom: 6px; min-height: 71px; gap: 20px; }
-.bzlp-tpm .bzlp-nav-in > a > img { height: 34px; }
+/* A BARRA É BRANCA NOS DOIS TEMAS, e não uma superfície que os acompanha.
+   É a mesma decisão que o rodapé já tinha tomada no sentido inverso — navy
+   sempre, e por isso os créditos usam sempre a tinta clara. Aqui vale para o
+   logótipo: com a barra a mudar de cor era preciso trocar o ficheiro entre
+   temas, e a identidade mudava a meio da visita a quem carregasse na lua.
+   Fixada a barra, um só logótipo serve, e é o de tinta escura.
 
-/* Marinho, e não o cinzento do vocabulário partilhado: numa barra branca o
-   cinzento lia-se como estado desactivado. */
-.bzlp-tpm .bzlp-links { gap: 28px; }
-.bzlp-tpm .bzlp-links a { white-space: nowrap; font-weight: 500; color: var(--navy-ink, var(--ink)); }
+   As tintas ficam em variáveis locais porque os tokens do tema aqui não
+   servem: `--navy-ink` vale #f7f7f7 no tema escuro, e escrevê-lo sobre esta
+   barra branca dava texto branco sobre branco. */
+.bzlp-tpm .bzlp-nav {
+  --nav-ink: #03316b;
+  --nav-linha: #dfe5ec;
+  background: #ffffff;
+  border-bottom-color: var(--nav-linha);
+}
+.bzlp-tpm .bzlp-nav.is-scrolled { border-bottom-color: var(--nav-linha); }
+
+.bzlp-tpm .bzlp-nav-in { padding-top: 6px; padding-bottom: 6px; min-height: 71px; gap: 16px; }
+
+/* O logótipo sobe de 34 para 48px e ganha camada própria: a barra tem
+   `backdrop-filter`, que cria contexto de empilhamento, e é o `z-index` que
+   garante que o logótipo fica por cima do véu e da linha de baixo em vez de
+   ser atravessado por eles.
+
+   56 e não mais: com os 6px de folga da barra dá 68, que cabe nos 71 de
+   `min-height` e deixa a barra nos 72 exactos que a dobra subtrai ao ecrã.
+   A 64 a barra passava a 73 e a dobra ficava um pixel curta. */
+.bzlp-tpm .bzlp-nav-in > a { position: relative; z-index: 2; display: flex; align-items: center; }
+.bzlp-tpm .bzlp-nav-in > a > img { height: 56px; width: auto; }
+
+.bzlp-tpm .bzlp-links { gap: 22px; }
+.bzlp-tpm .bzlp-links a { white-space: nowrap; font-weight: 500; color: var(--nav-ink); }
 .bzlp-tpm .bzlp-links a:hover { color: var(--blue2); }
+.bzlp-tpm .bzlp-nav .bzlp-ghost { color: var(--nav-ink); }
+.bzlp-tpm .bzlp-nav .bzlp-burger { color: var(--nav-ink); }
 
 /* As duas letras ficam com o corpo e o peso que a pílula lhes dava, senão o
    disco do idioma lia-se mais fraco do que o do tema ao lado. */
@@ -549,7 +577,7 @@
 }
 
 /* Idioma e tema são o mesmo disco: é isso que os faz ler como um par. */
-.bzlp-tpm .bzlp-tools { display: flex; align-items: center; gap: 12px; }
+.bzlp-tpm .bzlp-tools { display: flex; align-items: center; gap: 10px; }
 .bzlp-tpm .bzlp-tools .bzlp-icon-btn,
 .bzlp-tpm .bzlp-sheet-tools .bzlp-icon-btn {
   width: 44px;
@@ -557,6 +585,16 @@
   min-height: 44px;
   padding: 0;
   border-radius: 999px;
+}
+/* Na barra as tintas são as dela, e não as do tema — a barra é branca nos
+   dois. No painel do menu, que segue o tema, ficam as do tema. */
+.bzlp-tpm .bzlp-nav .bzlp-icon-btn {
+  background: #ffffff;
+  border-color: var(--nav-linha);
+  color: var(--nav-ink);
+}
+.bzlp-tpm .bzlp-nav .bzlp-icon-btn:hover { border-color: var(--blue); }
+.bzlp-tpm .bzlp-sheet-tools .bzlp-icon-btn {
   background: var(--surface);
   color: var(--navy-ink, var(--ink));
 }

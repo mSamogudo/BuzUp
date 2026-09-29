@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Mail, MapPin, Phone, Ticket } from "lucide-react";
 import Reveal from "../landing/Reveal";
-import TpmFormularioPedido from "./TpmFormularioPedido";
+import FormularioPedido from "../comum/FormularioPedido";
 import TpmPagina, {
   EMAIL, MORADA, TELEFONE, TELEFONE_FIXO, TELEFONE_FIXO_HREF, TELEFONE_HREF,
   TpmIntro, useTpmMeta,
@@ -70,35 +70,47 @@ export default function ContactosPage() {
                 </article>
               </div>
 
-              <div className="tpm-mapa">
-                {/* O `title` não estava no original e é o que um leitor de ecrã
-                    anuncia ao chegar aqui: sem ele, o enquadramento é só
-                    "frame". O `loading="lazy"` evita que o mapa do Google pese
-                    no carregamento de quem nunca chega a rolar até aqui. */}
-                <iframe
-                  src={MAPA}
-                  title={c.mapaTitulo}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-                <div className="tpm-mapa-barra">
-                  <span>{MORADA}</span>
-                  <a href={MAPA_LINK} target="_blank" rel="noreferrer">
-                    {c.abrirMapa} <ArrowUpRight size={16} aria-hidden />
-                  </a>
-                </div>
-              </div>
+              {/* O formulário ocupa a coluna larga, onde estava o mapa. Era
+                  uma ilha de 820px centrada na secção seguinte: não alinhava
+                  nem com os cartões à esquerda nem com o mapa à direita, e
+                  quem chegava à página de contactos tinha de rolar para
+                  encontrar a única coisa que ali se faz. */}
+              <FormularioPedido
+                textos={c.form}
+                email={EMAIL}
+                telefone={TELEFONE}
+                telefoneHref={TELEFONE_HREF}
+                prefixoAssunto="TPM-TUR"
+              />
             </div>
           </Reveal>
         </div>
       </section>
 
+      {/* O mapa desceu para aqui, à largura toda. Ao lado dos cartões estava
+          a ocupar o melhor lugar da página para mostrar uma morada que o
+          cartão "Encontre-nos" já escreve por extenso. */}
       <section className="bzlp-sec alt">
         <div className="bzlp-wrap">
           <Reveal>
-            <div className="tpm-form-wrap">
-              <TpmFormularioPedido />
+            <div className="tpm-mapa">
+              {/* O `title` não estava no original e é o que um leitor de ecrã
+                  anuncia ao chegar aqui: sem ele, o enquadramento é só
+                  "frame". O `loading="lazy"` evita que o mapa do Google pese
+                  no carregamento de quem nunca chega a rolar até aqui. */}
+              <iframe
+                src={MAPA}
+                title={c.mapaTitulo}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="tpm-mapa-barra">
+                <span>{MORADA}</span>
+                <a href={MAPA_LINK} target="_blank" rel="noreferrer">
+                  {c.abrirMapa} <ArrowUpRight size={16} aria-hidden />
+                </a>
+              </div>
             </div>
           </Reveal>
         </div>

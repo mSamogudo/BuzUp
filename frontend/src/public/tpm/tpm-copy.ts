@@ -47,9 +47,13 @@ const PT = {
     app: "App do passageiro",
     empresa: "Empresa",
     contactos: "Contactos",
+    apoio: "Apoio",
+    perguntas: "Perguntas frequentes",
     tecnologia: "Tecnologia",
     desenvolvidoPor: "Desenvolvido por",
-    direitos: "TPM-TUR, S.A. · Transporte e Turismo. Tecnologia BusUp · UpDigital.",
+    // O crédito de tecnologia saiu daqui: em baixo são os logótipos da BusUp e
+    // da UpDigital que assinam, e dizê-lo outra vez por extenso era repetir.
+    direitos: "TPM-TUR, S.A. · Todos os direitos reservados",
   },
 
   comum: {
@@ -469,9 +473,11 @@ const EN: typeof PT = {
     app: "Passenger app",
     empresa: "Company",
     contactos: "Contact",
+    apoio: "Support",
+    perguntas: "Frequently asked questions",
     tecnologia: "Technology by",
     desenvolvidoPor: "Built by",
-    direitos: "TPM-TUR, S.A. · Transport and Tourism. Technology by BusUp · UpDigital.",
+    direitos: "TPM-TUR, S.A. · All rights reserved",
   },
 
   comum: {

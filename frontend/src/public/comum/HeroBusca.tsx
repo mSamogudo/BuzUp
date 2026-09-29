@@ -57,7 +57,20 @@ export type TextosBusca = {
 const pad = (n: number) => String(n).padStart(2, "0");
 const paraIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-export default function HeroBusca({ textos: b }: { textos: TextosBusca }) {
+/** Como o cartao se apresenta.
+ *
+ *  `padrao` e o que sempre foi, e e o que a Cheetah Express usa.
+ *
+ *  `tpm` e o desenho aprovado na tela da TPM-TUR: sem titulo visivel, sem a
+ *  fila de atalhos de destino, e com o botao de procurar dentro da fila dos
+ *  campos em vez de numa linha propria. Nao e so gosto — a linha propria
+ *  custava 76px, e eram esses 76px que faziam o cartao cair fora do primeiro
+ *  ecra. A variante existe para que essa mudanca nao chegue a Cheetah, que
+ *  partilha este componente e onde ninguem a pediu. */
+type Variante = "padrao" | "tpm";
+
+export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: TextosBusca; variante?: Variante }) {
+  const tpm = variante === "tpm";
   const navegar = useNavigate();
   const [stops, setStops] = useState<ComboOpt[]>([]);
   const [origem, setOrigem] = useState("");
@@ -110,9 +123,16 @@ export default function HeroBusca({ textos: b }: { textos: TextosBusca }) {
   const semParagens = stops.length === 0;
 
   return (
-    <form className="bz-busca" onSubmit={submeter}>
+    <form
+      aria-label={tpm ? b.titulo : undefined}
+      className={`bz-busca${tpm ? " bz-busca--tpm" : ""}`}
+      onSubmit={submeter}
+    >
       <div className="bz-busca-topo">
-        <h2 className="bz-busca-titulo">{b.titulo}</h2>
+        {/* Na variante da TPM o titulo sai do ecra mas nao do documento: vive
+            no `aria-label` do formulario, para quem navega por leitor de ecra
+            continuar a saber o que este bloco e. */}
+        {tpm ? null : <h2 className="bz-busca-titulo">{b.titulo}</h2>}
         <div className="bz-busca-tipo" role="group" aria-label={b.tipoViagem}>
           {([["ida", b.soIda], ["idaevolta", b.idaVolta]] as const).map(([chave, rotulo]) => (
             <button
@@ -130,7 +150,7 @@ export default function HeroBusca({ textos: b }: { textos: TextosBusca }) {
       </div>
 
       <div className={`bz-busca-campos${tipo === "idaevolta" ? " tem-volta" : ""}`}>
-        <div className="bz-busca-campo">
+        <div className="bz-busca-campo is-largo">
           <label htmlFor="busca-origem">{b.origem}</label>
           <StopCombo
             exclude={destino}
@@ -154,7 +174,7 @@ export default function HeroBusca({ textos: b }: { textos: TextosBusca }) {
           <ArrowLeftRight aria-hidden size={16} />
         </button>
 
-        <div className="bz-busca-campo">
+        <div className="bz-busca-campo is-largo">
           <label htmlFor="busca-destino">{b.destino}</label>
           <StopCombo
             exclude={origem}
@@ -190,26 +210,36 @@ export default function HeroBusca({ textos: b }: { textos: TextosBusca }) {
             <option key={n} value={n}>{n} {n === 1 ? b.passageiro1 : b.passageiroN}</option>
           ))}
         </CampoSelect>
+
+        {tpm ? (
+          <button className="bz-busca-btn" disabled={semParagens} type="submit">
+            <Search aria-hidden size={18} /> {b.procurar}
+          </button>
+        ) : null}
       </div>
 
-      {/* O botao vive numa linha propria, e nao no fim da fila dos campos:
-          com a volta ligada a fila ganha uma coluna e o botao encolhia ate
-          "Procurar" quebrar em duas linhas. */}
-      <div className="bz-busca-baixo">
-        {atalhos.length > 0 && !destino ? (
-          <div className="bz-busca-atalhos">
-            <span className="bz-busca-atalhos-rotulo">{b.destinosAVenda}</span>
-            {atalhos.map((s) => (
-              <button className="bz-busca-atalho" key={s.id} onClick={() => setDestino(String(s.id))} type="button">
-                {s.name}
-              </button>
-            ))}
-          </div>
-        ) : <span />}
-        <button className="bz-busca-btn" disabled={semParagens} type="submit">
-          <Search aria-hidden size={18} /> {b.procurar}
-        </button>
-      </div>
+      {/* Na variante `padrao` o botao vive numa linha propria porque, com a
+          volta ligada, a fila ganha uma coluna e o botao encolhia ate
+          "Procurar" quebrar em duas linhas. Na `tpm` o botao esta dentro da
+          fila e a coluna dele leva uma largura minima no CSS, que resolve o
+          mesmo problema sem gastar uma linha inteira. */}
+      {tpm ? null : (
+        <div className="bz-busca-baixo">
+          {atalhos.length > 0 && !destino ? (
+            <div className="bz-busca-atalhos">
+              <span className="bz-busca-atalhos-rotulo">{b.destinosAVenda}</span>
+              {atalhos.map((s) => (
+                <button className="bz-busca-atalho" key={s.id} onClick={() => setDestino(String(s.id))} type="button">
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          ) : <span />}
+          <button className="bz-busca-btn" disabled={semParagens} type="submit">
+            <Search aria-hidden size={18} /> {b.procurar}
+          </button>
+        </div>
+      )}
 
       {erro ? <p className="bz-busca-erro" role="alert">{erro}</p> : null}
     </form>

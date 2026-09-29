@@ -1,6 +1,6 @@
 import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, Moon, Sun, Ticket, X } from "lucide-react";
+import { Mail, Menu, Moon, Phone, Sun, Ticket, X } from "lucide-react";
 import { useLandingPrefs, type Lang } from "../landing/useLandingPrefs";
 import { useTpmCopy } from "./tpm-copy";
 import "../landing/landing.css";
@@ -108,34 +108,23 @@ function BotaoTema() {
   );
 }
 
-/* Um botão só, do mesmo feitio do tema, e não a caixa segmentada PT|EN.
+/* Pílula PT|EN, como a tela desenha.
  *
- * A caixa ocupava 75px na barra — quase o dobro do botão de tema ao lado — e
- * com dois feitios diferentes lado a lado os dois controlos não se liam como
- * o par que são. Um par de discos iguais lê-se de relance.
- *
- * MOSTRA O IDIOMA ACTUAL, não o de destino. É o contrário do botão de tema,
- * que mostra a lua para onde vai — mas é o que a caixa segmentada já dizia
- * (o PT vinha realçado), e é a convenção da web para selectores de idioma.
- * Trocar o sentido agora deixava a mesma letra a querer dizer o oposto.
- *
- * O `aria-label` inclui a letra visível de propósito: quem usa comando de voz
- * diz "carregar PT", e um nome acessível que não contenha o rótulo visível
- * quebra essa ligação. */
+ * Esteve um disco só, com a letra do idioma activo, para emparelhar com o
+ * botão do tema. A tela levou a decisão noutro sentido e é essa que aqui se
+ * aplica: os dois idiomas ficam à vista e vê-se qual está activo sem ter de
+ * interpretar uma letra solta. O botão do tema continua redondo — são coisas
+ * diferentes, uma escolhe entre dois estados nomeados e a outra alterna. */
 function SelectorIdioma() {
   const { t, lang, setLang } = useTpmCopy();
-  const outro: Lang = lang === "pt" ? "en" : "pt";
-  const accao = t.nav.mudarIdioma;
   return (
-    <button
-      aria-label={`${t.nav.idioma}: ${lang.toUpperCase()} — ${accao}`}
-      className="bzlp-icon-btn tpm-btn-idioma"
-      onClick={() => setLang(outro)}
-      title={accao}
-      type="button"
-    >
-      {lang.toUpperCase()}
-    </button>
+    <div className="bzlp-lang" role="group" aria-label={t.nav.idioma}>
+      {(["pt", "en"] as Lang[]).map((l) => (
+        <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -186,6 +175,9 @@ function TpmNav({ activa }: { activa?: string }) {
           </nav>
           <div className="bzlp-nav-cta">
             <div className="bzlp-tools"><SelectorIdioma /><BotaoTema /></div>
+            {/* Separa as ferramentas das acções: à esquerda escolhe-se como se
+                lê a página, à direita faz-se alguma coisa com ela. */}
+            <span className="tpm-nav-sep" aria-hidden />
             <Link to="/login" className="bzlp-ghost">{t.nav.entrar}</Link>
             <Link to="/comprar" className="bzlp-btn sm gold"><Ticket size={16} aria-hidden /> {t.nav.comprar}</Link>
             <button ref={burgerRef} className="bzlp-burger" aria-label={t.nav.abrirMenu} onClick={() => setMenuOpen(true)}>
@@ -224,14 +216,23 @@ function TpmFooter() {
   return (
     <footer className="bzlp-foot">
       <div className="bzlp-foot-in">
+        {/* O telefone e o email subiram para a coluna da marca, a branco e com
+            o ícone a dourado. Estavam numa terceira coluna de ligações, com o
+            mesmo peso de "Nossas políticas" — e são o contacto principal de
+            quem chega ao fim da página sem ter encontrado o que queria. */}
         <div className="bzlp-foot-brand">
-          <img src={LOGO_ESCURO} alt="TPM-TUR, S.A." height={64} style={{ display: "block" }} />
+          <img src={LOGO_ESCURO} alt="TPM-TUR, S.A." height={36} style={{ display: "block" }} />
           <p>{t.rodape.tagline}</p>
+          <div className="tpm-foot-contacto">
+            <a href={TELEFONE_HREF}><Phone size={16} aria-hidden /> {TELEFONE}</a>
+            <a href={`mailto:${EMAIL}`}><Mail size={16} aria-hidden /> {EMAIL}</a>
+          </div>
         </div>
         <div className="bzlp-foot-cols">
           <nav aria-label={t.rodape.viagens}>
             <h4>{t.rodape.viagens}</h4>
             <Link to="/comprar">{t.nav.comprar}</Link>
+            <Link to="/tpm-tur/frota">{t.nav.frota}</Link>
             <Link to="/baixar">{t.rodape.app}</Link>
             <Link to="/login">{t.nav.entrarPortal}</Link>
           </nav>
@@ -239,16 +240,15 @@ function TpmFooter() {
             <h4>{t.rodape.empresa}</h4>
             <Link to="/tpm-tur/sobre-nos">{t.nav.sobre}</Link>
             <Link to="/tpm-tur/servicos">{t.nav.servicos}</Link>
-            <Link to="/tpm-tur/frota">{t.nav.frota}</Link>
-            <Link to="/tpm-tur/nossas-politicas">{t.nav.politicas}</Link>
-            <Link to="/tpm-tur/contactos">{t.nav.contactos}</Link>
           </nav>
-          <nav aria-label={t.rodape.contactos}>
-            <h4>{t.rodape.contactos}</h4>
-            <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
-            <a href={TELEFONE_FIXO_HREF}>{TELEFONE_FIXO}</a>
-            <a href={TELEFONE_HREF}>{TELEFONE}</a>
-            <span>{MORADA}</span>
+          {/* "Apoio" separa o que é institucional do que é ajuda: antes as
+              perguntas, os contactos e as políticas estavam misturados com
+              "Sobre nós" na coluna Empresa. */}
+          <nav aria-label={t.rodape.apoio}>
+            <h4>{t.rodape.apoio}</h4>
+            <Link to="/tpm-tur#faq">{t.rodape.perguntas}</Link>
+            <Link to="/tpm-tur/contactos">{t.nav.contactos}</Link>
+            <Link to="/tpm-tur/nossas-politicas">{t.nav.politicas}</Link>
           </nav>
         </div>
       </div>

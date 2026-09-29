@@ -24,6 +24,31 @@
 .tpm-politicas > * > *,
 .tpm-proposito > * > * { flex: 1; }
 
+/* ── O rodapé, como a tela o desenha ──────────────────────────────────
+   Quatro colunas: a marca, e depois Viagens, Empresa e Apoio. A coluna larga
+   à esquerda leva o logótipo, a frase da empresa e — a diferença que importa
+   — o telefone e o email, a branco e com o ícone a dourado. Estavam numa
+   terceira coluna de ligações, com o mesmo peso de "Nossas políticas", e são
+   o contacto de quem chega ao fim da página sem ter encontrado o que queria. */
+.bzlp-tpm .bzlp-foot-in { grid-template-columns: 1.7fr 3fr; gap: 48px; }
+.bzlp-tpm .bzlp-foot-brand img { height: 36px; width: auto; }
+.bzlp-tpm .bzlp-foot-brand p { max-width: 38ch; }
+.tpm-foot-contacto { margin-top: 20px; display: flex; flex-direction: column; gap: 2px; }
+.tpm-foot-contacto a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+.tpm-foot-contacto a:hover { color: var(--blue-bright); }
+.tpm-foot-contacto svg { flex: none; color: var(--gold); }
+@media (max-width: 760px) {
+  .bzlp-tpm .bzlp-foot-in { grid-template-columns: 1fr; gap: 28px; }
+}
+
 /* O rodapé só dá `display:block` e tipografia aos LINKS. A morada é um
    `<span>`: ficava colada ao telefone e, por não apanhar a regra, saía num
    corpo maior que o resto da coluna. Recebe o mesmo tratamento. */
@@ -159,6 +184,72 @@
   --form-link: var(--blue2);
 }
 
+/* ── A variante TPM do cartão de busca ────────────────────────────────
+   O cartão vive em `public/comum` e é partilhado com a Cheetah Express. O
+   desenho da tela só vale para a TPM-TUR, por isso tudo o que aqui se muda é
+   por baixo de `.bz-busca--tpm` — a Cheetah não apanha nada disto.
+
+   A mudança que importa é o botão ter entrado na fila dos campos. A linha
+   própria que ele ocupava custava 76px, e eram esses 76px que empurravam o
+   cartão para fora do primeiro ecrã. A coluna dele leva `minmax(190px, auto)`
+   — a largura de "Procurar viagens" mais o ícone — que é o que impede o que
+   acontecia antes: com a volta ligada a fila ganhava uma coluna, o botão
+   encolhia e o rótulo quebrava em duas linhas. */
+.bz-busca--tpm .bz-busca-topo { justify-content: flex-start; margin-bottom: 12px; }
+.bz-busca--tpm .bz-busca-campos {
+  grid-template-columns:
+    minmax(0, 1.2fr) auto minmax(0, 1.2fr)
+    minmax(0, 0.8fr) minmax(0, 0.85fr) minmax(190px, auto);
+}
+.bz-busca--tpm .bz-busca-campos.tem-volta {
+  grid-template-columns:
+    minmax(0, 1fr) auto minmax(0, 1fr)
+    minmax(0, 0.72fr) minmax(0, 0.72fr) minmax(0, 0.78fr) minmax(190px, auto);
+}
+/* Caixa normal, e não versaletes: "ORIGEM DESTINO IDA PASSAGEIROS" em
+   maiúsculas espaçadas lia-se como uma fila de etiquetas de formulário
+   administrativo e roubava atenção aos campos. */
+.bz-busca--tpm .bz-busca-campo > label,
+.bz-busca--tpm .bz-busca-campo > [data-slot=label] {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+/* Caixa contornada da altura dos campos, e não um disco marinho. O disco era
+   a mancha mais escura do cartão e puxava o olho para uma acção secundária —
+   trocar origem por destino — antes dos próprios campos. */
+.bz-busca--tpm .bz-busca-inverter {
+  width: 42px;
+  height: 48px;
+  margin-bottom: 0;
+  border: 1px solid var(--input, var(--line));
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--navy-ink, var(--ink));
+}
+.bz-busca--tpm .bz-busca-inverter:hover {
+  border-color: var(--blue);
+  color: var(--blue2);
+}
+.bz-busca--tpm .bz-busca-btn { padding: 0 18px; }
+
+@media (max-width: 1080px) {
+  /* Origem e destino ficam com a fila toda — são os campos de texto longo — e
+     a data e os passageiros ficam a par. Duas colunas em vez de uma poupam
+     uma fila de 68px, que é o que falta para o cartão caber na dobra de um
+     telemóvel de 844px de altura. */
+  .bz-busca--tpm .bz-busca-campos,
+  .bz-busca--tpm .bz-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-busca--tpm .bz-busca-campo.is-largo { grid-column: 1 / -1; }
+  .bz-busca--tpm .bz-busca-inverter { width: 100%; height: 38px; grid-column: 1 / -1; }
+  .bz-busca--tpm .bz-busca-btn { grid-column: 1 / -1; width: 100%; }
+}
+@media (max-width: 560px) {
+  .bz-busca--tpm .bz-busca-campos,
+  .bz-busca--tpm .bz-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* ── Vantagens ────────────────────────────────────────────────────── */
 
 /* Os cinco pontos que o site oficial lista. Trés numa fila, dois na seguinte —
@@ -206,6 +297,36 @@
   color: var(--muted-ink);
 }
 
+/* ── Cabeçalho de secção com a ligação na própria linha ───────────────
+   Serviços e Frota acabavam num botão contornado centrado, "Ver todos os
+   serviços" e "Ver a frota completa". Três secções seguidas a terminar com o
+   mesmo gesto fazem a página parecer gerada, e o botão só aparecia a quem
+   percorresse a secção inteira. A ligação subiu para junto do título. */
+.tpm-sechead-linha {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+.tpm-sechead-linha > div { min-width: 0; }
+.tpm-sec-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--blue2);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.tpm-sec-link:hover { color: var(--navy-ink, var(--ink)); }
+@media (max-width: 760px) {
+  .tpm-sechead-linha { flex-direction: column; align-items: flex-start; gap: 14px; }
+}
+
 /* ── Clientes e parceiros ─────────────────────────────────────────── */
 
 .tpm-clientes {
@@ -242,6 +363,68 @@
   display: block;
 }
 @media (max-width: 560px) { .tpm-clientes { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
+
+/* ── Carrossel de clientes (página inicial) ───────────────────────────
+   A grelha acima serve as páginas institucionais, onde a lista completa é o
+   assunto. Na página inicial as 34 organizações em grelha eram uma parede de
+   250px de altura que ninguém lê; em duas tiras a desfilar ocupam 200 e
+   convidam a seguir com o olho.
+
+   O loop é infinito sem uma linha de JavaScript: cada tira contém a lista
+   DUAS vezes e desliza exactamente -50% do próprio comprimento, por isso no
+   instante em que a animação reinicia a segunda cópia está onde a primeira
+   começou — a emenda nunca se vê. A segunda cópia leva `aria-hidden` no
+   markup, senão um leitor de ecrã anunciava as 34 organizações a dobrar.
+
+   As duas tiras vão em sentidos opostos E em velocidades diferentes. Com a
+   mesma duração ficavam um espelho exacto e liam-se como um só bloco a
+   abrir-se ao meio. */
+.tpm-carrossel {
+  overflow: hidden;
+  /* Desvanece as pontas: sem isto um logótipo fica cortado a meio na aresta,
+     e um logótipo cortado parece um defeito, não um movimento. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+}
+.tpm-carrossel + .tpm-carrossel { margin-top: 18px; }
+.tpm-carrossel-tira {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+@keyframes tpm-desfilar {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.tpm-carrossel-tira.para-esquerda { animation: tpm-desfilar 46s linear infinite; }
+.tpm-carrossel-tira.para-direita { animation: tpm-desfilar 58s linear infinite reverse; }
+.tpm-carrossel-grupo {
+  list-style: none;
+  margin: 0;
+  /* O `padding-right` mantém a folga entre a última peça de uma cópia e a
+     primeira da seguinte: sem ele as duas colavam-se na emenda. */
+  padding: 0 18px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+/* Reaproveita o cartão branco fixo de `.tpm-cliente` — os logótipos vêm com
+   fundo branco gravado e num tema escuro seriam rectângulos brancos. Aqui só
+   se fixa a largura, que numa fila não vem da grelha. */
+.tpm-carrossel-grupo .tpm-cliente {
+  width: 150px;
+  flex: none;
+}
+/* Quem pediu menos movimento ao sistema vê as tiras quietas — e continua a
+   ver logótipos, não um vazio. */
+@media (prefers-reduced-motion: reduce) {
+  .tpm-carrossel-tira.para-esquerda,
+  .tpm-carrossel-tira.para-direita { animation: none; }
+}
+@media (max-width: 560px) {
+  .tpm-carrossel-grupo .tpm-cliente { width: 118px; }
+  .tpm-carrossel-grupo { gap: 12px; padding-right: 12px; }
+}
 
 /* ── CTA final da pagina inicial ──────────────────────────────────── */
 
@@ -343,7 +526,71 @@
 /* O logótipo cresceu de 30 para 64px, como na tela. A barra não tem altura
    fixa — sai do conteúdo mais o `padding` — por isso a folga encolhe para os
    76px de altura que a tela desenhou, em vez de a barra crescer para 88. */
-.bzlp-tpm .bzlp-nav-in { padding-top: 6px; padding-bottom: 6px; }
+/* ── A barra, como a tela a desenha ───────────────────────────────────
+   Branca, 72px de altura, logótipo a 34px. A altura é FIXA e não sai do
+   conteúdo: `.tpm-dobra` subtrai estes mesmos 72 ao ecrã, e com a altura a
+   vir do conteúdo bastava mexer no logótipo para a dobra deixar de fechar.
+   Os dois 72 andam juntos — se um mudar, o outro tem de mudar. */
+.bzlp-tpm .bzlp-nav-in { padding-top: 6px; padding-bottom: 6px; min-height: 71px; gap: 20px; }
+.bzlp-tpm .bzlp-nav-in > a > img { height: 34px; }
+
+/* Marinho, e não o cinzento do vocabulário partilhado: numa barra branca o
+   cinzento lia-se como estado desactivado. */
+.bzlp-tpm .bzlp-links { gap: 28px; }
+.bzlp-tpm .bzlp-links a { white-space: nowrap; font-weight: 500; color: var(--navy-ink, var(--ink)); }
+.bzlp-tpm .bzlp-links a:hover { color: var(--blue2); }
+
+/* Pílula PT|EN: os dois idiomas à vista, o activo em marinho cheio. */
+.bzlp-tpm .bzlp-lang {
+  height: 36px;
+  padding: 3px;
+  box-sizing: border-box;
+  gap: 2px;
+  border-radius: 999px;
+  border-color: var(--line);
+  background: var(--muted, var(--line-soft));
+  overflow: visible;
+}
+.bzlp-tpm .bzlp-lang button {
+  height: 28px;
+  min-width: 38px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--navy-ink, var(--ink));
+  font-weight: 700;
+}
+.bzlp-tpm .bzlp-lang button[aria-pressed="true"] {
+  background: var(--navy-ink, var(--ink));
+  color: var(--surface);
+}
+
+/* O botão do tema é redondo e do tamanho de um alvo de toque. */
+.bzlp-tpm .bzlp-tools { display: flex; align-items: center; gap: 12px; }
+.bzlp-tpm .bzlp-tools .bzlp-icon-btn,
+.bzlp-tpm .bzlp-sheet-tools .bzlp-icon-btn {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--navy-ink, var(--ink));
+}
+
+/* Separa as ferramentas das acções. */
+.bzlp-tpm .tpm-nav-sep { width: 1px; height: 24px; flex: none; background: var(--line); }
+@media (max-width: 900px) { .bzlp-tpm .tpm-nav-sep { display: none; } }
+
+.bzlp-tpm .bzlp-nav-cta { gap: 12px; }
+.bzlp-tpm .bzlp-nav-cta .bzlp-btn { white-space: nowrap; height: 44px; padding: 0 20px; }
+
+/* Entre os 900 (onde os links desaparecem) e os 1060 a fila não cabe com tudo
+   dentro. "Entrar" recolhe primeiro — já recolhe abaixo dos 900, continua no
+   painel do menu, e num site de bilhetes é a acção menos usada da barra. */
+@media (max-width: 1060px) {
+  .bzlp-tpm .bzlp-links { gap: 18px; }
+  .bzlp-tpm .bzlp-nav-cta > .bzlp-ghost { display: none; }
+}
 
 /* O selector de idioma vive ao lado do botão de tema. Abaixo dos 900px o
    `.bzlp-tools` da barra desaparece (regra de landing.css) e ambos passam a

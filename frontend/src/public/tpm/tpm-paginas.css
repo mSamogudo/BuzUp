@@ -289,13 +289,8 @@
   place-items: center;
 }
 
-/* As marcas da frota, por baixo do resumo da secção. */
-.tpm-frota-marcas {
-  margin: 12px 0 0;
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: var(--muted-ink);
-}
+/* `.tpm-frota-marcas` desapareceu com o parágrafo das marcas, que saiu do
+   cabeçalho da frota. */
 
 /* ── Cabeçalho de secção com a ligação na própria linha ───────────────
    Serviços e Frota acabavam num botão contornado centrado, "Ver todos os

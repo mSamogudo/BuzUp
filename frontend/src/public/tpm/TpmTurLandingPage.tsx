@@ -323,11 +323,12 @@ export default function TpmTurLandingPage() {
                 <div className="bzlp-kicker left">{i.frota.kicker}</div>
                 <h2 className="bzlp-h2 left">{i.frota.h2}<br />{i.frota.h2b}</h2>
               </div>
+              {/* Só a ligação. Aqui estavam dois parágrafos — o resumo das
+                  quatro categorias e a lista de marcas da frota — e o
+                  cabeçalho pesava mais do que as quatro fotografias que vêm a
+                  seguir, que são o assunto da secção. As categorias já estão
+                  escritas debaixo de cada fotografia. */}
               <div>
-                <p className="bzlp-lead left">{i.frota.lead}</p>
-                {/* As marcas da frota, tal como o site oficial as nomeia em
-                    NOSSOS AUTOCARROS. */}
-                <p className="tpm-frota-marcas">{i.frota.marcas}</p>
                 <Link to="/tpm-tur/frota" className="tpm-sec-link">
                   {i.frota.verCompleta} <ArrowRight size={17} aria-hidden />
                 </Link>

@@ -293,9 +293,12 @@
   align-items: end;
   margin-bottom: 36px;
 }
-.tpm-frota-head .bzlp-lead { max-width: 46ch; }
+/* A coluna da direita tem só a ligação: encosta ao fim da linha, à altura do
+   título, que é o mesmo gesto que os cabeçalhos de Serviços já fazem. */
+.tpm-frota-head > div:last-child { display: flex; justify-content: flex-end; }
 @media (max-width: 860px) {
   .tpm-frota-head { grid-template-columns: 1fr; gap: 16px; align-items: start; }
+  .tpm-frota-head > div:last-child { justify-content: flex-start; }
 }
 
 /* Quatro cartoes iguais em fila liam-se como uma prateleira de miniaturas.
@@ -354,11 +357,21 @@
   background: linear-gradient(160deg, var(--navy), var(--navy2));
   color: #fff;
 }
+/* O par — telemóvel e texto — fica CENTRADO no bloco, em vez de encostado à
+   esquerda. A coluna do texto era `1fr`, ou seja 760px, mas o parágrafo tem
+   `max-width: 52ch` (~430px): sobravam mais de 300px de vazio só do lado
+   direito, e a secção lia-se desequilibrada. Com a coluna medida pelo que lá
+   cabe — 560, que é o que o <h2> precisa para não quebrar — e
+   `justify-content: center`, a folga reparte-se pelos dois lados.
+
+   O texto continua alinhado à esquerda: a lista de três pontos com o visto
+   é uma lista, e uma lista centrada perde a coluna por onde o olho desce. */
 .tpm-app-in {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 260px minmax(0, 560px);
   gap: 56px;
   align-items: center;
+  justify-content: center;
   max-width: 1120px;
   margin: 0 auto;
   padding: 72px 22px;

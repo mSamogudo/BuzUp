@@ -108,23 +108,29 @@ function BotaoTema() {
   );
 }
 
-/* Pílula PT|EN, como a tela desenha.
+/* Um botão que ALTERNA, com o mesmo feitio do botão do tema ao lado — o
+ * padrão que a Cheetah Express já usa.
  *
- * Esteve um disco só, com a letra do idioma activo, para emparelhar com o
- * botão do tema. A tela levou a decisão noutro sentido e é essa que aqui se
- * aplica: os dois idiomas ficam à vista e vê-se qual está activo sem ter de
- * interpretar uma letra solta. O botão do tema continua redondo — são coisas
- * diferentes, uma escolhe entre dois estados nomeados e a outra alterna. */
+ * Esteve aqui a pílula PT|EN: 86px de largura para dizer o que uma palavra
+ * diz, e ao lado de um disco de 44px liam-se como dois controlos sem relação.
+ * Em par, e do mesmo tamanho, lêem-se de relance como o que são — as duas
+ * maneiras de mudar como a página se apresenta.
+ *
+ * MOSTRA A LÍNGUA PARA ONDE SE VAI, e não a actual. É a pergunta de quem
+ * carrega, é o que o botão do tema faz com a lua, e é o que a Cheetah faz. */
 function SelectorIdioma() {
   const { t, lang, setLang } = useTpmCopy();
+  const outra: Lang = lang === "pt" ? "en" : "pt";
   return (
-    <div className="bzlp-lang" role="group" aria-label={t.nav.idioma}>
-      {(["pt", "en"] as Lang[]).map((l) => (
-        <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)}>
-          {l.toUpperCase()}
-        </button>
-      ))}
-    </div>
+    <button
+      aria-label={t.nav.mudarIdioma}
+      className="bzlp-icon-btn tpm-btn-idioma"
+      onClick={() => setLang(outra)}
+      title={t.nav.mudarIdioma}
+      type="button"
+    >
+      {outra.toUpperCase()}
+    </button>
   );
 }
 

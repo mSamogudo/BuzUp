@@ -708,9 +708,25 @@
 /* ── Faixa de entrada das paginas ──────────────────────────────────── */
 
 .che-intro {
+  position: relative;
   background: linear-gradient(140deg, var(--navy), var(--navy2));
   color: var(--on-navy);
-  padding: 44px 0 52px;
+  /* A folga de baixo tem de contar com a onda, senão o parágrafo assentava
+     sobre a curva. Os 52 de respiro mais a altura dela.
+     A onda é mais baixa do que a da landing de propósito: lá são 260px numa
+     chapa de 828, aqui a faixa tem ~250 e a mesma proporção comia-lhe metade.
+     72 sobre 250 dá a mesma leitura sem engolir o título. */
+  --onda-h: clamp(40px, 6vw, 72px);
+  padding: 44px 0 calc(52px + var(--onda-h));
+}
+/* A migalha de pão tinha 19px de altura — abaixo dos 24 que a WCAG 2.2 pede
+   como mínimo para um alvo. Não é só o toque: num ecrã pequeno falha-se e
+   acaba-se noutro sítio. */
+.che-intro-migalha a,
+.che-intro-migalha [aria-current] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
 }
 .che-intro-migalha {
   display: flex;

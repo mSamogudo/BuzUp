@@ -2,6 +2,7 @@ import { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, Moon, Sun, Ticket, X } from "lucide-react";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
+import OndaCheetah from "./OndaCheetah";
 import { useCheetahCopy } from "./cheetah-copy";
 import "../landing/landing.css";
 import "./cheetah-fontes.css";
@@ -281,6 +282,10 @@ export function CheetahIntro({ migalha, titulo, descricao }: { migalha: string; 
         <h1>{titulo}</h1>
         <p>{descricao}</p>
       </div>
+      {/* A mesma onda que fecha a chapa da landing. A fronteira aqui é a
+          mesma — faixa escura em cima, branco em baixo — e sem ela as páginas
+          interiores fechavam a régua onde a inicial ondula. */}
+      <OndaCheetah />
     </section>
   );
 }

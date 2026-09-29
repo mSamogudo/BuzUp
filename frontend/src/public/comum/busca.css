@@ -119,6 +119,10 @@
 
 .bz-busca-campo { display: grid; gap: 5px; min-width: 0; }
 .bz-busca-campo > label,
+/* Na variante `barra` o tipo de viagem e um campo, e o que o nomeia e um
+   `<span>`: o que ele nomeia sao dois botoes e nao um controlo. Leva a mesma
+   tinta e o mesmo tamanho dos outros rotulos, para a fila assentar. */
+.bz-busca-campo > span,
 .bz-busca-campo > [data-slot=label] {
   font-size: 11px;
   font-weight: 800;

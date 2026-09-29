@@ -249,6 +249,12 @@
 @keyframes che-onda-b { from { transform: translate3d(1.6%, 0, 0) scaleX(1.06); } to { transform: translate3d(-1.6%, 0, 0) scaleX(1.06); } }
 @keyframes che-onda-c { from { transform: translate3d(-1.1%, 0, 0) scaleX(1.06); } to { transform: translate3d(1.1%, 0, 0) scaleX(1.06); } }
 
+/* O DESFILE DOS PARCEIROS. Linear e nao `ease`: uma fita que acelera e trava
+   le-se como um carrossel a saltar de cartao em cartao, e isto nao tem
+   paragens — anda sempre. 30 segundos por volta da uns 30px por segundo, que
+   e devagar o suficiente para se ler um logotipo de passagem. */
+@keyframes che-desfile { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-33.3333%, 0, 0); } }
+
 .che-onda-tras { animation: che-onda-a 19s ease-in-out infinite alternate; }
 .che-onda-meio { animation: che-onda-b 15s ease-in-out infinite alternate; }
 .che-onda-frente { animation: che-onda-c 23s ease-in-out infinite alternate; }
@@ -293,6 +299,8 @@
   .che-onda-tras,
   .che-onda-meio,
   .che-onda-frente { animation: none; }
+  /* A fita dos parceiros para, e fica a primeira copia a vista. */
+  .che-parceiros { animation: none; }
   /* A frota aparece ja estacionada: o que ela mostra e a frota, nao a manobra. */
   .che-frota-v { transform: none; transition: opacity 240ms ease; }
   .che-frota[data-chegou] .che-frota-v { transform: none; }

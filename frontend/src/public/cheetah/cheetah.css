@@ -182,6 +182,60 @@
 .che-cta .bzlp-btn.outline { color: #fff; }
 .che-cta .bzlp-btn.outline:hover { background: rgba(255, 255, 255, 0.12); }
 
+/* A BARRA DE PESQUISA: uma fila so, e o tipo de viagem dentro dela.
+   Era tres filas — titulo e alternador, campos, atalhos e botao — e media
+   234px. O desenho pedia a imagem ao dobro, e esses 129px sao exactamente o
+   que ela ganhou. O titulo nao se perdeu: vive no `aria-label` do formulario.
+
+   A coluna do alternador leva 190px fixos — a largura de "Ida e volta" com
+   folga — e a do botao outro tanto, que e o que impede o que acontecia na
+   TPM-TUR antes da mesma mudanca: com a volta ligada a fila ganhava uma
+   coluna e o botao encolhia ate o texto quebrar. */
+.bz-busca--barra .bz-busca-campos {
+  grid-template-columns:
+    214px minmax(0, 1.2fr) auto minmax(0, 1.2fr)
+    minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(190px, auto);
+}
+.bz-busca--barra .bz-busca-campos.tem-volta {
+  grid-template-columns:
+    214px minmax(0, 1fr) auto minmax(0, 1fr)
+    minmax(0, 0.7fr) minmax(0, 0.7fr) minmax(0, 0.74fr) minmax(178px, auto);
+}
+/* O alternador e um campo como os outros: rotulo por cima, controlo de 48px
+   por baixo, para a fila assentar toda na mesma linha de base. */
+.bz-busca--barra .bz-busca-tipo {
+  height: 48px;
+  box-sizing: border-box;
+}
+/* `nowrap` e obrigatorio: medido, "Ida e volta" partia-se em duas linhas
+   dentro da pastilha e desalinhava a fila toda. */
+.bz-busca--barra .bz-busca-tipo-btn {
+  flex: 1 1 0;
+  justify-content: center;
+  min-height: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* A FILA UNICA SO EXISTE ENQUANTO HA LARGURA PARA ELA.
+   Sem este bloco a barra nao encolhia: a regra de cima vale 0,2,0 e a que
+   `busca.css` tem para ecras estreitos vale 0,1,0, por isso ganhava a larga e
+   as sete colunas ficavam a zero — medido, `214px 0 0 0 0 0 190px` num
+   telemovel de 390. A TPM-TUR tem o mesmo bloco pela mesma razao.
+
+   Duas colunas e nao uma: origem e destino levam a fila toda, porque sao os
+   campos de texto longo, e o resto fica a par. */
+@media (max-width: 1080px) {
+  .bz-busca--barra .bz-busca-campos,
+  .bz-busca--barra .bz-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-busca--barra .bz-busca-campo.is-largo { grid-column: 1 / -1; }
+  .bz-busca--barra .bz-busca-inverter { width: 100%; height: 38px; grid-column: 1 / -1; }
+  .bz-busca--barra .bz-busca-btn { grid-column: 1 / -1; width: 100%; }
+  /* O tipo de viagem volta a ocupar a fila toda: as duas pastilhas lado a
+     lado numa meia-coluna de 160px nao cabiam sem partir o texto. */
+  .bz-busca--barra .bz-busca-campo:first-child { grid-column: 1 / -1; }
+}
+
 /* O mapa que o cartao de pesquisa partilhado pede (ver comum/busca.css). */
 .bzlp-cheetah .bz-busca {
   --busca-superficie: var(--surface);
@@ -332,7 +386,13 @@
      empilhado a conta dava 29px e a carrinha desaparecia. */
   width: auto;
   max-width: 100%;
-  max-height: max(170px, min(578px, calc(100svh - var(--nav-h, 72px) - var(--cartao-h, 234px) - var(--onda-h, 112px) - 60px)));
+  /* O TECTO SUBIU DE 578 PARA 520 EFECTIVOS, e a conta mudou de forma.
+     Antes subtraia a onda inteira, para a carrinha nunca lhe tocar. Agora
+     nao: a onda arranca a 15% da sua altura e o que esta acima disso e
+     transparente, por isso a imagem pode descer para la sem nada por cima.
+     E o que o desenho pede — a carrinha pousada na curva. Em troca, o
+     `--cartao-h` desceu de 234 para 112: o cartao passou a uma fila so. */
+  max-height: max(170px, min(520px, calc(100svh - var(--nav-h, 72px) - var(--cartao-h, 112px) - 170px)));
   height: auto;
   filter: drop-shadow(0 26px 46px rgba(120, 60, 0, 0.32));
 }
@@ -391,11 +451,52 @@
 }
 /* As tres camadas pintam-se da cor do que vem A SEGUIR, nao da chapa: a onda
    e o conteudo a subir por cima da marca, e nao a marca a descer.
-   As duas de tras a 33%, como no original — e o degrade dessas tres opacidades
-   que da profundidade a curva. */
-.che-onda path { fill: var(--surface); }
-.che-onda-tras { fill-opacity: 0.33; }
-.che-onda-meio { fill-opacity: 0.33; }
+   Na chapa as duas de tras vao a 33%, como no original — e o degrade dessas
+   tres opacidades que da profundidade a curva. */
+.che-onda-tras   { fill: var(--onda-tras, var(--surface)); fill-opacity: var(--onda-op, 0.33); }
+.che-onda-meio   { fill: var(--onda-meio, var(--surface)); fill-opacity: var(--onda-op, 0.33); }
+.che-onda-frente { fill: var(--onda-frente, var(--surface)); }
+
+/* A MESMA ONDA ENTRE SECCOES.
+   A chapa nao e a unica junta da pagina: cada mudanca de faixa passou a ser
+   uma onda, e e o que faz a landing ler-se como uma coisa so em vez de uma
+   pilha de blocos. Mais baixa do que a da chapa — 96px contra os 260 de la —
+   porque ali a onda E a composicao e aqui e so a costura.
+
+   CABE NO RESPIRO DE BAIXO DA SECCAO e nao empurra nada: as seccoes tem 64px
+   de `padding-bottom` e a curva so comeca a 15% da altura do SVG, por isso os
+   96px lem-se como ~80 e nao tocam no texto. */
+.bzlp-cheetah { --onda-seccao-h: clamp(56px, 7vw, 96px); }
+.che-onda--seccao { height: var(--onda-seccao-h); }
+
+/* As duas direccoes de uma junta. A opacidade sobe a 1: entre duas faixas
+   quase iguais — branco e cinzento claro — as camadas a 33% desapareciam e a
+   curva nao se via. Aqui sao tres tons cheios, e o degrade vem das cores. */
+.che-onda--para-escuro {
+  --onda-tras: color-mix(in srgb, var(--navy) 42%, #ffffff);
+  --onda-meio: color-mix(in srgb, var(--navy) 78%, #ffffff);
+  --onda-frente: var(--navy);
+  --onda-op: 1;
+}
+.che-onda--para-claro {
+  --onda-tras: color-mix(in srgb, var(--surface) 42%, var(--navy));
+  --onda-meio: color-mix(in srgb, var(--surface) 76%, var(--navy));
+  --onda-frente: var(--surface);
+  --onda-op: 1;
+}
+/* A seccao que hospeda uma onda de junta precisa de ser o referencial dela e
+   de a cortar nos lados — o deslize sai 2% para fora de proposito.
+
+   O RESPIRO DE BAIXO TEM DE CONTAR COM A CURVA, e os 64px que a seccao ja
+   tinha nao chegavam: medido, o ultimo paragrafo das provas ficava 16px
+   DEBAIXO da onda. A camada opaca arranca a 15,5% da altura do SVG, ou seja
+   ocupa 84,5% dela; os 18px por cima disso sao a folga que separa a letra da
+   curva. */
+.bzlp-cheetah .bzlp-sec.tem-onda {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: calc(var(--onda-seccao-h) * 0.85 + 18px);
+}
 
 /* ── Provas ────────────────────────────────────────────────────────────
    Centradas e sem caixa, como no oficial: quatro icones de traco fino sobre
@@ -451,6 +552,26 @@
    vermelho 8% mais fundo, que ja e a cor de accao deste site — da 5,17.
    No cartao laranja o oficial poe tinta branca, que da 2,91: aqui a tinta e
    o preto da marca, 6,22. Parece o mesmo cartao e le-se. */
+/* A FAIXA DOS SERVICOS E PRETA, como no site oficial: os tres cartoes de cor
+   cheia precisam de um fundo que os deixe gritar, e sobre o cinzento claro
+   competiam com ele. O vermelho do sobrescrito nao sobrevive a esta troca —
+   #C9181E sobre #141618 da 2,80:1 com 11px de letra — e por isso passa ao
+   vermelho claro da marca, que da 4,97:1. */
+.bzlp-cheetah .bzlp-sec.che-sec-preta { background: var(--navy); }
+.che-sec-preta .bzlp-kicker { color: var(--blue-bright); }
+.che-sec-preta .bzlp-h2 { color: var(--on-navy); }
+.che-sec-preta .bzlp-lead { color: var(--on-navy-soft); }
+/* O botao de contorno tinha letra vermelha e moldura cinzenta clara: sobre
+   preto nao se lia nenhuma das duas. */
+.bzlp-cheetah .che-sec-preta .bzlp-btn.outline {
+  color: var(--on-navy);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.bzlp-cheetah .che-sec-preta .bzlp-btn.outline:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--on-navy);
+}
+
 .che-servicos {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -665,21 +786,38 @@
 
 /* ── Parceiros ─────────────────────────────────────────────────────── */
 
+/* UM DESFILE CONTINUO, e nao uma grelha parada.
+   A fita leva TRES copias da mesma fila e desliza exactamente um terco: ao
+   fim do percurso a segunda copia esta onde a primeira estava e o corte nao
+   se ve. Tres e nao duas porque com duas a fita ficava mais estreita do que a
+   janela e abria-se um buraco a direita a meio da volta.
+
+   O espaco entre logotipos e `margin-right` e NAO `gap`: com `gap`, um terco
+   da fita deixava de ser um periodo exacto e via-se um salto a cada volta. */
+.che-parceiros-caixa {
+  position: relative;
+  overflow: hidden;
+  /* As pontas esbatem-se para os logotipos entrarem e sairem em vez de
+     aparecerem e desaparecerem a meio do ar. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 90px, #000 calc(100% - 90px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 90px, #000 calc(100% - 90px), transparent);
+}
 .che-parceiros {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
+  width: max-content;
+  animation: che-desfile 30s linear infinite;
 }
 .che-parceiro {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   width: 168px;
   height: 92px;
+  margin-right: 16px;
   padding: 16px;
   background: #fff;             /* os logotipos sao feitos para fundo branco */
   border: 1px solid var(--line);
@@ -842,5 +980,12 @@
     padding: 9px 12px;
   }
   .che-cta-in { flex-direction: column; align-items: flex-start; padding: 40px 22px; }
-  .che-parceiro { width: calc(50% - 8px); height: 80px; }
+  /* Eram duas colunas e tres filas; o desfile poe tudo numa fila so e devolve
+     meia pagina de rolar. O esbatimento das pontas encolhe com o ecra. */
+  .che-parceiro { width: 150px; height: 80px; margin-right: 14px; padding: 14px; }
+  .che-parceiros-caixa {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+  }
+  .che-parceiros { animation-duration: 26s; }
 }

@@ -10,6 +10,12 @@
  * Os caminhos são os do site oficial, com a geometria intacta: `viewBox`
  * de 240x24, que `preserveAspectRatio="none"` estica à largura da página.
  *
+ * SERVE QUALQUER SEPARAÇÃO, e não só a da chapa. As três camadas pintam-se
+ * das variáveis `--onda-tras`, `--onda-meio` e `--onda-frente`, que a secção
+ * de cima define conforme a cor da que vem a seguir — ver as classes
+ * `.che-onda--para-escuro` e `.che-onda--para-claro` em `cheetah.css`. Sem
+ * elas, cai na cor da superfície, que é o que a chapa sempre usou.
+ *
  * AS TRÊS CAMADAS MOVEM-SE A RITMOS DIFERENTES — 19s, 15s e 23s, números
  * primos entre si de propósito. Com a mesma duração as três deslizavam em
  * bloco e via-se um recorte a abanar; desencontradas, o perfil da onda muda

@@ -66,11 +66,21 @@ const paraIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
  *  campos em vez de numa linha propria. Nao e so gosto — a linha propria
  *  custava 76px, e eram esses 76px que faziam o cartao cair fora do primeiro
  *  ecra. A variante existe para que essa mudanca nao chegue a Cheetah, que
- *  partilha este componente e onde ninguem a pediu. */
-type Variante = "padrao" | "tpm";
+ *  partilha este componente e onde ninguem a pediu.
+ *
+ *  `barra` e o desenho aprovado na tela da Cheetah Express, e vai um passo
+ *  alem da `tpm`: o alternador de tipo de viagem desce para DENTRO da fila
+ *  dos campos, como primeiro deles, e a fila de cima desaparece por
+ *  completo. O cartao passa de 234px a ~112, e foram esses 122px que a
+ *  imagem da chapa ganhou para duplicar de tamanho. */
+type Variante = "padrao" | "tpm" | "barra";
 
 export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: TextosBusca; variante?: Variante }) {
-  const tpm = variante === "tpm";
+  /* As duas variantes nao-padrao partilham tres decisoes: o titulo sai do
+     ecra, o botao entra na fila dos campos, e a fila de atalhos desaparece.
+     Separa-las e o que difere — onde vive o alternador. */
+  const compacto = variante !== "padrao";
+  const barra = variante === "barra";
   const navegar = useNavigate();
   const [stops, setStops] = useState<ComboOpt[]>([]);
   const [origem, setOrigem] = useState("");
@@ -122,34 +132,55 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
 
   const semParagens = stops.length === 0;
 
+  /* O alternador de tipo de viagem. Vive na fila de cima nas variantes
+     `padrao` e `tpm`, e dentro da fila dos campos na `barra` — por isso e uma
+     variavel e nao markup repetido nos dois sitios. */
+  const alternador = (
+    <div className="bz-busca-tipo" role="group" aria-label={b.tipoViagem}>
+      {([["ida", b.soIda], ["idaevolta", b.idaVolta]] as const).map(([chave, rotulo]) => (
+        <button
+          aria-pressed={tipo === chave}
+          className={`bz-busca-tipo-btn${tipo === chave ? " is-on" : ""}`}
+          key={chave}
+          onClick={() => { setTipo(chave); if (chave === "ida") setVolta(""); }}
+          type="button"
+        >
+          {chave === "ida" ? <ArrowRight aria-hidden size={15} /> : <ArrowLeftRight aria-hidden size={15} />}
+          {rotulo}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <form
-      aria-label={tpm ? b.titulo : undefined}
-      className={`bz-busca${tpm ? " bz-busca--tpm" : ""}`}
+      aria-label={compacto ? b.titulo : undefined}
+      className={`bz-busca${compacto ? ` bz-busca--${variante}` : ""}`}
       onSubmit={submeter}
     >
-      <div className="bz-busca-topo">
-        {/* Na variante da TPM o titulo sai do ecra mas nao do documento: vive
-            no `aria-label` do formulario, para quem navega por leitor de ecra
-            continuar a saber o que este bloco e. */}
-        {tpm ? null : <h2 className="bz-busca-titulo">{b.titulo}</h2>}
-        <div className="bz-busca-tipo" role="group" aria-label={b.tipoViagem}>
-          {([["ida", b.soIda], ["idaevolta", b.idaVolta]] as const).map(([chave, rotulo]) => (
-            <button
-              aria-pressed={tipo === chave}
-              className={`bz-busca-tipo-btn${tipo === chave ? " is-on" : ""}`}
-              key={chave}
-              onClick={() => { setTipo(chave); if (chave === "ida") setVolta(""); }}
-              type="button"
-            >
-              {chave === "ida" ? <ArrowRight aria-hidden size={15} /> : <ArrowLeftRight aria-hidden size={15} />}
-              {rotulo}
-            </button>
-          ))}
+      {/* Nas variantes compactas o titulo sai do ecra mas nao do documento:
+          vive no `aria-label` do formulario, para quem navega por leitor de
+          ecra continuar a saber o que este bloco e. Na `barra` a fila de cima
+          desaparece de todo — nao sobra nada para ela. */}
+      {barra ? null : (
+        <div className="bz-busca-topo">
+          {compacto ? null : <h2 className="bz-busca-titulo">{b.titulo}</h2>}
+          {alternador}
         </div>
-      </div>
+      )}
 
       <div className={`bz-busca-campos${tipo === "idaevolta" ? " tem-volta" : ""}`}>
+        {barra ? (
+          /* Um campo como os outros: rotulo por cima, controlo por baixo. E um
+             `<span>` e nao um `<label>` porque o que ele nomeia sao dois
+             botoes e nao um controlo — quem os agrupa e o `role="group"` com
+             o seu proprio `aria-label`, e um `for` aqui nao teria alvo. */
+          <div className="bz-busca-campo">
+            <span aria-hidden>{b.tipoViagem}</span>
+            {alternador}
+          </div>
+        ) : null}
+
         <div className="bz-busca-campo is-largo">
           <label htmlFor="busca-origem">{b.origem}</label>
           <StopCombo
@@ -211,7 +242,7 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
           ))}
         </CampoSelect>
 
-        {tpm ? (
+        {compacto ? (
           <button className="bz-busca-btn" disabled={semParagens} type="submit">
             <Search aria-hidden size={18} /> {b.procurar}
           </button>
@@ -223,7 +254,7 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
           "Procurar" quebrar em duas linhas. Na `tpm` o botao esta dentro da
           fila e a coluna dele leva uma largura minima no CSS, que resolve o
           mesmo problema sem gastar uma linha inteira. */}
-      {tpm ? null : (
+      {compacto ? null : (
         <div className="bz-busca-baixo">
           {atalhos.length > 0 && !destino ? (
             <div className="bz-busca-atalhos">

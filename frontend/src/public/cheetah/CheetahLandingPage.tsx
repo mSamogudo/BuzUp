@@ -5,8 +5,6 @@ import CheRevela from "./CheRevela";
 import HeroArte from "./HeroArte";
 import HeroDecoracoes from "./HeroDecoracoes";
 import OndaCheetah from "./OndaCheetah";
-import FrotaChegada from "./FrotaChegada";
-import RotaParagens from "./RotaParagens";
 import HeroBusca from "../comum/HeroBusca";
 import CheetahPagina, { pedido, useCheetahMeta } from "./CheetahChrome";
 import { useCheetahCopy } from "./cheetah-copy";
@@ -106,7 +104,7 @@ export default function CheetahLandingPage() {
               cartão são um bloco só e cabem na primeira vista por construção,
               em vez de por subtracção. */}
           <div className="che-hero-busca che-entra" style={{ "--i": 3.8 } as React.CSSProperties}>
-            <HeroBusca textos={t.heroBusca} />
+            <HeroBusca textos={t.heroBusca} variante="barra" />
           </div>
         </div>
 
@@ -114,7 +112,7 @@ export default function CheetahLandingPage() {
       </section>
 
       {/* PROVAS — os quatro pontos que o site oficial destaca. */}
-      <section className="bzlp-sec" id="porque">
+      <section className="bzlp-sec tem-onda" id="porque">
         <div className="bzlp-wrap">
           <CheRevela>
             <div className="bzlp-sechead">
@@ -135,10 +133,12 @@ export default function CheetahLandingPage() {
             })}
           </ul>
         </div>
+        {/* As provas entregam a página à faixa preta dos serviços. */}
+        <OndaCheetah className="che-onda--seccao che-onda--para-escuro" />
       </section>
 
       {/* SERVIÇOS — os três do site oficial. */}
-      <section className="bzlp-sec alt" id="servicos">
+      <section className="bzlp-sec che-sec-preta tem-onda" id="servicos">
         <div className="bzlp-wrap">
           <CheRevela>
             <div className="bzlp-sechead">
@@ -177,49 +177,12 @@ export default function CheetahLandingPage() {
             </Link>
           </div>
         </div>
-      </section>
-
-      {/* A ROTA — as paragens fixas, de sul para norte. */}
-      <section className="bzlp-sec" id="rota">
-        <div className="bzlp-wrap">
-          <CheRevela>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.rota.kicker}</div>
-              <h2 className="bzlp-h2">{i.rota.h2}</h2>
-              <p className="bzlp-lead">{i.rota.lead}</p>
-            </div>
-          </CheRevela>
-          <div className="che-rota">
-            {i.rota.lados.map((lado, n) => (
-              <CheRevela key={lado.t} ordem={n}>
-                <div className="che-rota-lado">
-                  <h3>{lado.t}</h3>
-                  <RotaParagens paragens={lado.paragens} />
-                </div>
-              </CheRevela>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* A FROTA — as três viaturas entram e estacionam. Fica depois da rota
-          porque a ordem de leitura é: o que fazemos, por onde passamos, e em
-          quê. Ver FrotaChegada. */}
-      <section className="bzlp-sec alt" id="frota">
-        <div className="bzlp-wrap">
-          <CheRevela>
-            <div className="bzlp-sechead">
-              <div className="bzlp-kicker">{i.frota.kicker}</div>
-              <h2 className="bzlp-h2">{i.frota.h2}</h2>
-              <p className="bzlp-lead">{i.frota.lead}</p>
-            </div>
-          </CheRevela>
-          <FrotaChegada />
-        </div>
+        {/* Sai do preto para o branco dos parceiros. */}
+        <OndaCheetah className="che-onda--seccao che-onda--para-claro" />
       </section>
 
       {/* PARCEIROS */}
-      <section className="bzlp-sec" id="parceiros">
+      <section className="bzlp-sec tem-onda" id="parceiros">
         <div className="bzlp-wrap">
           <CheRevela>
             <div className="bzlp-sechead">
@@ -228,22 +191,38 @@ export default function CheetahLandingPage() {
               <p className="bzlp-lead">{i.parceiros.lead}</p>
             </div>
           </CheRevela>
-          <ul className="che-parceiros">
-            {PARCEIROS.map((p) => (
-              <li className="che-parceiro" key={p.f}>
-                {/* `eager` com prioridade baixa, e não `lazy`: em `lazy` os
-                    primeiros ficheiros mediam zero e a faixa abria vazia. */}
-                <img
-                  src={`/landing/cheetah/parceiros/${p.f}`}
-                  alt={p.nome}
-                  loading="eager"
-                  fetchPriority="low"
-                  decoding="async"
-                />
-              </li>
-            ))}
-          </ul>
+          {/* TRES COPIAS da mesma fila. A fita desliza exactamente um terço, e
+              ao fim do percurso a segunda copia está onde a primeira estava —
+              é assim que o laço fecha sem se ver o corte. Só a primeira fala:
+              as outras duas levam `aria-hidden` e texto alternativo vazio,
+              para um leitor de ecrã anunciar os cinco parceiros uma vez e não
+              quinze. Ver `.che-parceiros` em `cheetah.css`. */}
+          <div className="che-parceiros-caixa">
+            <ul className="che-parceiros">
+              {[0, 1, 2].flatMap((copia) =>
+                PARCEIROS.map((p) => (
+                  <li
+                    aria-hidden={copia > 0 || undefined}
+                    className="che-parceiro"
+                    key={`${copia}-${p.f}`}
+                  >
+                    {/* `eager` com prioridade baixa, e não `lazy`: em `lazy` os
+                        primeiros ficheiros mediam zero e a faixa abria vazia. */}
+                    <img
+                      src={`/landing/cheetah/parceiros/${p.f}`}
+                      alt={copia === 0 ? p.nome : ""}
+                      loading="eager"
+                      fetchPriority="low"
+                      decoding="async"
+                    />
+                  </li>
+                )),
+              )}
+            </ul>
+          </div>
         </div>
+        {/* A chamada final é escura: a onda entra nela. */}
+        <OndaCheetah className="che-onda--seccao che-onda--para-escuro" />
       </section>
 
       {/* CHAMADA FINAL — dois caminhos: comprar, ou falar connosco. */}

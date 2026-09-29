@@ -29,6 +29,10 @@
   --bzc-text: #0F1B2D;
   --bzc-muted: #5B6B7F;
   --bzc-muted2: #8A9AAD;
+  /* MEDIDO: o `--bzc-muted` sobre a paragem mais escura do ceu (#CFE6FB) da
+     4,25:1, e a 16,5px a norma pede 4,5. Dois tons mais fundo fecham a conta
+     e a olho continua a ser o cinzento secundario, nao o texto principal. */
+  --bzc-muted-ceu: #4E5E73;
   --bzc-faint: #A8B7C8;
   --bzc-navy-text: #0D3B66;
   --bzc-accent: #2D8CF0;
@@ -74,6 +78,7 @@
   --bzc-text: #EAF1F8;
   --bzc-muted: #A9C2DC;
   --bzc-muted2: #8AA6C2;
+  --bzc-muted-ceu: #A9C2DC;
   --bzc-faint: #6F8CAA;
   --bzc-navy-text: #CFE6FB;
   --bzc-accent-dk: #5BA3F5;
@@ -103,8 +108,8 @@
    soma especificidade, por isso o reset continua a valer para as ligacoes
    normais e larga as que sao botoes. O `landing.css` tem a mesma nota pela
    mesma razao; foi la que este erro apareceu primeiro. */
-.bzc a:where(:not([class*="bzc-btn"], .bzc-saltar)) { color: var(--bzc-accent-dk); text-decoration: none; }
-.bzc a:where(:not([class*="bzc-btn"], .bzc-saltar)):hover { color: var(--bzc-accent); }
+.bzc a:where(:not([class*="bzc-btn"], .bzc-saltar, .bzc-quadro-cta)) { color: var(--bzc-accent-dk); text-decoration: none; }
+.bzc a:where(:not([class*="bzc-btn"], .bzc-saltar, .bzc-quadro-cta)):hover { color: var(--bzc-accent); }
 .bzc a { text-decoration: none; }
 .bzc a:focus-visible,
 .bzc button:focus-visible,
@@ -284,7 +289,7 @@
 .bzc-foot-col { display: flex; flex-direction: column; gap: 11px; }
 .bzc-foot-col b {
   font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em;
-  text-transform: uppercase; color: rgba(234, 241, 248, .5);
+  text-transform: uppercase; color: rgba(234, 241, 248, .62);
 }
 /* O alvo cresce, o texto nao: a norma pede 24px de altura tocavel e estas
    ligacoes mediam 14. O respiro fica DENTRO da ligacao, por isso o
@@ -538,7 +543,13 @@
   display: flex; flex-direction: column;
 }
 .bzc-passos-painel > b { font: 800 20px/1.2 Manrope, sans-serif; color: #fff; }
-.bzc-passos-painel > p { margin: 8px 0 22px; max-width: 34ch; font: 400 14px/1.55 Inter, sans-serif; color: rgba(255, 255, 255, .82); }
+.bzc-passos-painel > p {
+  margin: 8px 0 22px; max-width: 34ch; font: 400 14px/1.55 Inter, sans-serif;
+  /* MEDIDO: branco a 82% sobre a paragem clara da chapa (#2278D0) da 3,56:1 e
+     a 14px a norma pede 4,5. Branco cheio da 4,55. A hierarquia contra o
+     titulo continua la — e de tamanho e de peso, nao de opacidade. */
+  color: #fff;
+}
 .bzc-passos-mock {
   margin-top: auto; background: var(--bzc-surface); border-radius: 14px 14px 0 0;
   box-shadow: 0 -8px 30px rgba(10, 46, 80, .28); padding: 14px 14px 0; display: flex; gap: 12px;
@@ -748,3 +759,74 @@
   .bzc-contacto-form { padding: 22px 20px; }
   .bzc-par { grid-template-columns: 1fr; }
 }
+
+/* ── Precos ────────────────────────────────────────────────────────── */
+
+.bzc-plano-unidade { font: 400 13px/1.55 Inter, sans-serif; color: var(--bzc-muted); }
+.bzc-notas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.bzc-notas li {
+  background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 18px;
+  padding: 22px 24px; display: flex; flex-direction: column; gap: 7px;
+}
+
+/* O QUADRO E UMA `<table>` A SERIO. Dez funcionalidades por tres planos sao
+   dados tabulares, e quem usa leitor de ecra tem de os navegar por linha e
+   coluna. `border-collapse` e obrigatorio sem preflight. */
+.bzc-quadro-caixa {
+  background: var(--bzc-surface); border: 1px solid var(--bzc-border);
+  border-radius: 22px; overflow: hidden;
+}
+.bzc-quadro { width: 100%; border-collapse: collapse; }
+.bzc-quadro caption { text-align: left; }
+.bzc-quadro th,
+.bzc-quadro td {
+  padding: 15px 18px; text-align: left; vertical-align: middle;
+  border-bottom: 1px solid var(--bzc-border);
+}
+.bzc-quadro thead th {
+  background: var(--bzc-surface2);
+  font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--bzc-muted); white-space: nowrap;
+}
+.bzc-quadro thead th:not(:first-child),
+.bzc-quadro tbody td,
+.bzc-quadro tfoot td { text-align: center; }
+.bzc-quadro tbody th { font: 500 14px/1.4 Inter, sans-serif; color: var(--bzc-text); }
+.bzc-quadro tbody td { font: 500 13.5px/1.4 Inter, sans-serif; color: var(--bzc-muted); }
+.bzc-quadro tfoot th { font: 700 13.5px/1.4 Inter, sans-serif; color: var(--bzc-text); }
+.bzc-quadro tfoot td,
+.bzc-quadro tfoot th { background: var(--bzc-surface2); border-bottom: 0; }
+.bzc-quadro-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 36px; padding: 0 18px; border-radius: 999px;
+  background: var(--bzc-accent-cheio); color: #fff;
+  font: 700 12.5px/1 Inter, sans-serif;
+}
+.bzc-quadro-cta:hover { background: var(--bzc-accent-dk); color: #fff; }
+
+@media (max-width: 900px) {
+  .bzc-notas { grid-template-columns: 1fr; }
+}
+
+/* Abaixo de 768px quatro colunas nao se leem: cada linha passa a cartao, com
+   o rotulo do plano escrito por `data-rot` em vez de repetido no markup. */
+@media (max-width: 768px) {
+  .bzc-quadro thead { display: none; }
+  .bzc-quadro, .bzc-quadro tbody, .bzc-quadro tfoot, .bzc-quadro tr,
+  .bzc-quadro td, .bzc-quadro th { display: block; width: auto; }
+  .bzc-quadro tr { padding: 14px 18px; border-bottom: 1px solid var(--bzc-border); }
+  .bzc-quadro tbody tr:last-child { border-bottom: 0; }
+  .bzc-quadro th, .bzc-quadro td { padding: 0; border: 0; text-align: left !important; }
+  .bzc-quadro tbody th, .bzc-quadro tfoot th { font-weight: 700; margin-bottom: 8px; }
+  .bzc-quadro tbody td, .bzc-quadro tfoot td { padding: 4px 0; }
+  .bzc-quadro td[data-rot]::before {
+    content: attr(data-rot) ": ";
+    font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--bzc-muted2);
+  }
+  .bzc-quadro tfoot td { display: inline-block; margin-right: 8px; }
+  .bzc-quadro tfoot td[data-rot]::before { display: block; margin-bottom: 6px; }
+}
+
+/* O cabecalho de ceu e mais escuro do que a tela: o lead desce um tom. */
+.bzc-contacto-topo .bzc-lead { color: var(--bzc-muted-ceu); }

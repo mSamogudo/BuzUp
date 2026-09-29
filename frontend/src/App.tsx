@@ -18,6 +18,7 @@ import AdminLayout from "./admin/AdminLayout";
    chassis dos sites da TPM-TUR e da Cheetah Express. */
 const LandingPage = lazy(() => import("./public/busup/BusUpLandingPage"));
 const BusUpContactosPage = lazy(() => import("./public/busup/BusUpContactosPage"));
+const BusUpPrecosPage = lazy(() => import("./public/busup/BusUpPrecosPage"));
 const TpmTurLandingPage = lazy(() => import("./public/tpm/TpmTurLandingPage"));
 // As paginas institucionais da TPM-TUR. Cada uma chega quando alguem la vai:
 // quem abre /tpm-tur para comprar um bilhete nao paga o peso das outras.
@@ -117,6 +118,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/contactos" element={<BusUpContactosPage />} />
+        <Route path="/precos" element={<BusUpPrecosPage />} />
         <Route path="/tpm-tur" element={<TpmTurLandingPage />} />
         <Route path="/tpm-tur/sobre-nos" element={<TpmSobreNosPage />} />
         <Route path="/tpm-tur/servicos" element={<TpmServicosPage />} />

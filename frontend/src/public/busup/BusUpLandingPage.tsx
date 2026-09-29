@@ -473,7 +473,7 @@ export default function BusUpLandingPage() {
           </p>
           <div className="bzc-chamada-accoes">
             <Link className="bzc-btn bzc-btn--branco" to="/contactos">{t.ctaContact} <ArrowRight aria-hidden size={16} /></Link>
-            <a className="bzc-btn bzc-btn--fantasma" href="#precos">{t.ctaPricing}</a>
+            <Link className="bzc-btn bzc-btn--fantasma" to="/precos">{t.ctaPricing}</Link>
           </div>
         </div>
       </section>

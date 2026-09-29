@@ -81,7 +81,7 @@ const LIGACOES = [
   { to: "/#recursos", rotulo: (t: CopyBusUp) => t.navFeatures },
   { to: "/#porque", rotulo: (t: CopyBusUp) => t.navWhy },
   { to: "/#casos", rotulo: (t: CopyBusUp) => t.navCases },
-  { to: "/#precos", rotulo: (t: CopyBusUp) => t.navPricing },
+  { to: "/precos", rotulo: (t: CopyBusUp) => t.navPricing },
   { to: "/contactos", rotulo: (t: CopyBusUp) => t.navContact },
 ];
 
@@ -176,7 +176,7 @@ function Rodape({ t }: { t: CopyBusUp }) {
         <nav aria-label={t.footerProduct} className="bzc-foot-col">
           <b>{t.footerProduct}</b>
           <Link to="/#produto">{t.navProduct}</Link>
-          <Link to="/#precos">{t.navPricing}</Link>
+          <Link to="/precos">{t.navPricing}</Link>
           <Link to="/contactos">{t.navContact}</Link>
           <Link className="bzc-foot-destaque" to="/login">{t.portalLogin}</Link>
         </nav>
@@ -201,7 +201,7 @@ function Rodape({ t }: { t: CopyBusUp }) {
 
       <div className="bzc-foot-barra">
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span className="bzc-rotulo" style={{ color: "rgba(234,241,248,.5)", whiteSpace: "nowrap" }}>{t.poweredBy}</span>
+          <span className="bzc-rotulo" style={{ color: "rgba(234,241,248,.62)", whiteSpace: "nowrap" }}>{t.poweredBy}</span>
           <img alt="UpDigital, Limitada" src={UPDIGITAL_ESCURO} style={{ height: 28, width: "auto", display: "block" }} />
         </div>
         <span style={{ font: "400 12px/1.5 Inter, sans-serif", color: "rgba(234,241,248,.6)", textAlign: "right" }}>

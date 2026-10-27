@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, ChevronDown, Minus, Plus } from "lucide-react";
 import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital } from "./BusUpChrome";
+import AuroraChapa from "./AuroraChapa";
 import FaixaLogotipos from "./FaixaLogotipos";
 
 /* A landing pública do BusUp — o desenho "Céu", portado do protótipo
@@ -209,6 +210,7 @@ export default function BusUpLandingPage() {
     <BusUpPagina>
       {/* ── CHAPA ─────────────────────────────────────────────────── */}
       <section className="bzc-hero" id="topo">
+        <AuroraChapa />
         <div aria-hidden className="bzc-hero-luz" />
 
         <div className="bzc-hero-in">

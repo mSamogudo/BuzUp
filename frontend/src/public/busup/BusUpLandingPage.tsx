@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, ChevronDown, Minus, Plus } from "lucide-react";
-import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital, LOGO_CLARO, LOGO_ESCURO } from "./BusUpChrome";
-import { LOGOS_ECO } from "./logos-ecossistema";
+import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital } from "./BusUpChrome";
+import FaixaLogotipos from "./FaixaLogotipos";
 
 /* A landing pública do BusUp — o desenho "Céu", portado do protótipo
  * `Landing BusUp - Ceu.dc.html` do projecto de desenho.
@@ -238,23 +238,7 @@ export default function BusUpLandingPage() {
             {t.ecoStripTitle}
           </h2>
           <p className="bzc-lead" style={{ fontSize: 14, textAlign: "center", margin: "6px auto 22px" }}>{t.logosLead}</p>
-          <div className="bzc-desfile">
-            {/* Duas cópias e um deslize de metade: ao fim do percurso a segunda
-                está onde a primeira estava, e o laço fecha sem se ver o corte. */}
-            <ul className="bzc-desfile-fita">
-              {[0, 1].flatMap((copia) => [
-                <li key={`u-${copia}`} aria-hidden={copia > 0 || undefined}>
-                  <LogotipoUpDigital alt={copia === 0 ? "UpDigital, Limitada" : ""} altura={26} />
-                </li>,
-                ...LOGOS_ECO.map((l) => (
-                  <li aria-hidden={copia > 0 || undefined} key={`${copia}-${l.nome}`}>
-                    <img alt={copia === 0 ? l.nome : ""} data-logo="light" src={l.claro} />
-                    <img alt={copia === 0 ? l.nome : ""} data-logo="dark" src={l.escuro} />
-                  </li>
-                )),
-              ])}
-            </ul>
-          </div>
+          <FaixaLogotipos />
         </div>
       </div>
 
@@ -444,22 +428,7 @@ export default function BusUpLandingPage() {
               <p className="bzc-lead" style={{ maxWidth: "46ch" }}>{t.ecoLead}</p>
               <p className="bzc-lead" style={{ maxWidth: "46ch", marginTop: 12 }}>{t.ecoNote}</p>
             </div>
-            <ul className="bzc-eco-grelha">
-              {LOGOS_ECO.map((l) => (
-                <li key={l.nome}>
-                  <a href={l.url} rel="noopener" target="_blank">
-                    <img alt={l.nome} data-logo="light" src={l.claro} />
-                    <img alt={l.nome} data-logo="dark" src={l.escuro} />
-                  </a>
-                </li>
-              ))}
-              <li>
-                <a href="https://busup.updigital.co.mz" rel="noopener" target="_blank">
-                  <img alt="BusUp" data-logo="light" src={LOGO_CLARO} />
-                  <img alt="BusUp" data-logo="dark" src={LOGO_ESCURO} />
-                </a>
-              </li>
-            </ul>
+            <FaixaLogotipos fluida />
           </div>
         </div>
       </section>

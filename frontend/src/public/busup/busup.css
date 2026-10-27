@@ -286,11 +286,10 @@
 /* ── Movimento ─────────────────────────────────────────────────────── */
 
 @keyframes bzc-pulsar { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-@keyframes bzc-desfile { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .bzc-pulsa { animation: bzc-pulsar 2.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .bzc-pulsa, .bzc-desfile-fita { animation: none; }
+  .bzc-pulsa { animation: none; }
 }
 
 /* ── Rodape ────────────────────────────────────────────────────────── */
@@ -430,21 +429,46 @@
 /* ── A fita dos logotipos ──────────────────────────────────────────── */
 
 .bzc-fita { border-top: 1px solid var(--bzc-border); background: var(--bzc-surface); padding: 40px 0 44px; }
-.bzc-desfile {
-  width: 100%; overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+/* A placa e um degrau acima do fundo da faixa; as celulas sao a superficie.
+   O seletor leva `.bzc` a frente porque o reset `.bzc ul` (0,1,1) apagava a
+   margem e o recheio: a placa encostava a esquerda e as celulas a borda.
+   Todas do mesmo tamanho, para o grupo ler como uma grelha decidida e nao
+   como cartoes soltos. A altura de cada logotipo vem do ficheiro de dados
+   (`--logo-h`) e a escala encolhe-a por igual no telemovel. */
+.bzc .bzc-produtos {
+  --bzc-celula-h: 88px;
+  --bzc-escala-logo: 1;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 176px)); gap: 12px;
+  justify-content: center; width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px;
+  background: var(--bzc-surface2); border: 1px solid var(--bzc-border); border-radius: 24px;
+  box-shadow: inset 0 1px 0 var(--bzc-wash);
 }
-.bzc-desfile-fita {
-  display: flex; align-items: center; gap: 16px; width: max-content;
-  animation: bzc-desfile 32s linear infinite;
-}
-.bzc-desfile-fita li {
-  flex: none; height: 62px; padding: 0 26px;
-  border: 1px solid var(--bzc-border); border-radius: 999px; background: var(--bzc-surface);
+.bzc .bzc-produtos--fluida { grid-template-columns: repeat(2, minmax(0, 1fr)); width: auto; }
+.bzc-produto {
+  position: relative; height: var(--bzc-celula-h); padding: 0 16px;
   display: flex; align-items: center; justify-content: center;
+  background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px;
+  transition: border-color .15s ease-out;
 }
-.bzc-desfile-fita img { max-height: 26px; max-width: 116px; object-fit: contain; display: block; }
+a.bzc-produto:hover { border-color: var(--bzc-accent); }
+.bzc-produto img {
+  height: calc(var(--logo-h) * var(--bzc-escala-logo)); width: auto; max-width: 100%;
+  object-fit: contain;
+}
+/* TEMA ESCURO: DOIS LOGOTIPOS NAO TEM VERSAO PARA NAVY. A variante escura do
+   GoUp mantem o "Up" em azul-marinho, e o nome por baixo do brasao da OSSOMA
+   e verde-escuro — sobre a celula navy os dois desaparecem. Recolorir a arte
+   esta fora de questao; a celula passa a clara e leva o ficheiro de fundo
+   claro, que e a placa para que a arte foi desenhada. */
+.bzc[data-theme="dark"] .bzc-produto[data-placa="clara"] { background: #F6F9FD; border-color: #D7E2EF; }
+.bzc[data-theme="dark"] .bzc-produto[data-placa="clara"] img[data-logo="light"] { display: block; }
+.bzc[data-theme="dark"] .bzc-produto[data-placa="clara"] img[data-logo="dark"] { display: none; }
+/* O produto desta pagina: um traco da cor da marca no topo da celula. O
+   logotipo fica como esta — marca-se a celula, nao a arte. */
+.bzc-produto[aria-current]::before {
+  content: ""; position: absolute; top: -1px; left: 22px; right: 22px; height: 2px;
+  border-radius: 0 0 2px 2px; background: var(--bzc-accent);
+}
 
 /* ── Grelhas e cartoes de funcionalidade ───────────────────────────── */
 
@@ -639,14 +663,6 @@
 /* ── Quem constroi ─────────────────────────────────────────────────── */
 
 .bzc-eco { display: grid; grid-template-columns: 1fr 1.05fr; gap: 56px; align-items: center; }
-.bzc-eco-grelha { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.bzc-eco-grelha a {
-  background: var(--bzc-surface2); border: 1px solid var(--bzc-border); border-radius: 18px;
-  padding: 20px; min-height: 88px; display: flex; align-items: center; justify-content: center;
-  transition: border-color .15s ease-out;
-}
-.bzc-eco-grelha a:hover { border-color: var(--bzc-accent); }
-.bzc-eco-grelha img { height: 34px; width: auto; max-width: 150px; object-fit: contain; display: block; }
 
 /* ── Ecras estreitos ───────────────────────────────────────────────── */
 
@@ -677,7 +693,9 @@
 }
 
 @media (max-width: 560px) {
-  .bzc-foot-in, .bzc-eco-grelha { grid-template-columns: 1fr; }
+  .bzc-foot-in { grid-template-columns: 1fr; }
+  .bzc .bzc-produtos, .bzc .bzc-produtos--fluida { grid-template-columns: repeat(2, minmax(0, 1fr)); width: auto; padding: 10px; gap: 10px; }
+  .bzc .bzc-produtos { --bzc-celula-h: 76px; --bzc-escala-logo: .87; }
   .bzc-h1 { font-size: 34px; }
   .bzc-hero-accoes .bzc-btn { width: 100%; }
 }

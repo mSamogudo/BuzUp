@@ -215,6 +215,12 @@
 .bzc-btn--fantasma { background: transparent; border: 1px solid rgba(234, 241, 248, .32); color: #fff; }
 .bzc-btn--fantasma:hover { background: rgba(234, 241, 248, .1); color: #fff; }
 .bzc-btn--sm { height: 44px; padding: 0 22px; font-size: 14.5px; }
+/* A accao secundaria: sem fundo nem borda, com seta. Mantem a altura de
+   botao para o alvo de toque; so a seta se mexe, e so `transform`. */
+.bzc-btn--seta { background: transparent; color: var(--bzc-accent-dk); padding: 0 16px; }
+.bzc-btn--seta:hover { color: var(--bzc-accent-dk); text-decoration: underline; text-underline-offset: 4px; }
+.bzc-btn--seta svg { transition: transform .15s ease-out; }
+.bzc-btn--seta:hover svg { transform: translateX(3px); }
 
 
 /* ── Cartoes ───────────────────────────────────────────────────────── */
@@ -290,6 +296,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bzc-pulsa, .bzc-aurora i { animation: none; }
+  .bzc-btn--seta svg { transition: none; }
 }
 
 /* ── Rodape ────────────────────────────────────────────────────────── */
@@ -343,9 +350,9 @@
   /* A zona calma: uma elipse por tras do titulo e dos botoes onde a aurora
      nao chega. MEDIDO: sem ela o azul da segunda linha do titulo caia para
      2,89:1 no telemovel (pede 3) e o botao "Comprar bilhete" para 4,04:1
-     (pede 4,5). Em px no eixo vertical, porque o texto nao cresce com a
+     (pede 4,5). Cobre o titulo, o lead e os dois botoes. Em px no eixo vertical, porque o texto nao cresce com a
      altura da chapa. */
-  --bzc-calma-w: 42%; --bzc-calma-h: 230px; --bzc-calma-y: 170px;
+  --bzc-calma-w: 46%; --bzc-calma-h: 300px; --bzc-calma-y: 185px;
   position: absolute; inset: 0; overflow: hidden; pointer-events: none;
   -webkit-mask-image:
     linear-gradient(180deg, #000 0%, #000 55%, transparent 92%),
@@ -400,11 +407,29 @@
 }
 .bzc-aurora[data-parado] i { animation-play-state: paused; }
 
+/* Uma grelha fina por cima da aurora, so no topo: da a chapa a textura de
+   folha de planeamento sem desenhar nada. Fica por baixo do vidro de
+   `.bzc-hero-luz`, que a apaga atras do titulo. */
+.bzc-hero-grelha {
+  --bzc-grelha-cor: rgba(13, 59, 102, .06);
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--bzc-grelha-cor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bzc-grelha-cor) 1px, transparent 1px);
+  background-size: 56px 56px; background-position: center top;
+  -webkit-mask-image: radial-gradient(75% 420px at 50% 0%, #000 0%, transparent 100%);
+  mask-image: radial-gradient(75% 420px at 50% 0%, #000 0%, transparent 100%);
+}
+.bzc[data-theme="dark"] .bzc-hero-grelha { --bzc-grelha-cor: rgba(234, 241, 248, .05); }
+
 .bzc-hero-in {
   position: relative; max-width: 900px; margin: 0 auto;
   padding: 46px 32px 0; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 20px;
 }
+/* `--bzc-muted-ceu` e nao o cinzento normal: MEDIDO, com a aurora por tras o
+   `--bzc-muted` descia a 3,98:1 no telemovel. */
+.bzc-hero-lead { max-width: 56ch; font-size: 18px; margin-top: -6px; color: var(--bzc-muted-ceu); }
 .bzc-hero-accoes { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
 
 .bzc-hero-painel { position: relative; max-width: 1080px; margin: 40px auto 0; padding: 0 32px; }
@@ -416,13 +441,27 @@
   font: 600 12.5px/1 Inter, sans-serif; color: var(--bzc-text); white-space: nowrap;
 }
 .bzc-etiqueta i { width: 6px; height: 6px; border-radius: 999px; flex: none; }
-.bzc-etiqueta--1 { left: -6px; top: 108px; }
-.bzc-etiqueta--2 { right: -8px; top: 62px; }
-.bzc-etiqueta--3 { left: 60px; top: 300px; }
-.bzc-etiqueta--4 { right: 40px; top: 330px; }
+/* O ponto do passageiro e navy e sumia na etiqueta escura. Um aro claro em
+   vez de outra cor: o codigo de cores das quatro funcoes fica o mesmo. */
+.bzc[data-theme="dark"] .bzc-etiqueta i { box-shadow: 0 0 0 1.5px rgba(234, 241, 248, .6); }
+/* Penduradas na borda do painel, com 16px para dentro — menos do que o
+   padding do painel (22px), por isso nunca tapam um numero. O painel comeca
+   a 32px da caixa (o padding acima) e acaba a 32px do fim. */
+.bzc-etiqueta--1, .bzc-etiqueta--3 { left: 32px; transform: translateX(calc(-100% + 16px)); }
+.bzc-etiqueta--2, .bzc-etiqueta--4 { left: calc(100% - 32px); transform: translateX(-16px); }
+.bzc-etiqueta--1 { top: 108px; }
+.bzc-etiqueta--2 { top: 62px; }
+.bzc-etiqueta--3 { top: 300px; }
+.bzc-etiqueta--4 { top: 330px; }
 
-/* O painel entra pelo fundo e e cortado: ve-se o topo, nao a pagina toda. */
-.bzc-painel-corte { height: 430px; overflow: hidden; border-radius: 22px 22px 0 0; }
+/* O painel entra pelo fundo e e cortado: ve-se o topo, nao a pagina toda.
+   Os ultimos 120px dissolvem-se na chapa — sem isto o corte era uma aresta
+   dura e o painel lia-se como uma caixa branca pousada. */
+.bzc-painel-corte {
+  height: 430px; overflow: hidden; border-radius: 22px 22px 0 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 120px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 120px), transparent);
+}
 .bzc-painel {
   width: 1016px; max-width: 100%;
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-bottom: 0;
@@ -735,11 +774,16 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 
 /* ── Ecras estreitos ───────────────────────────────────────────────── */
 
+/* As etiquetas saem ate ~110px para fora do painel: abaixo de 1280px ja nao
+   cabem na margem e o `overflow` da chapa cortava-as. */
+@media (max-width: 1279px) {
+  .bzc-etiqueta { display: none; }
+}
+
 @media (max-width: 1080px) {
   .bzc-nav-links { display: none; }
   .bzc-burger { display: flex; }
   .bzc-nav-fim .bzc-btn { display: none; }
-  .bzc-etiqueta { display: none; }
 }
 
 @media (max-width: 900px) {
@@ -763,10 +807,15 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 
 @media (max-width: 560px) {
   .bzc-foot-in { grid-template-columns: 1fr; }
-  .bzc-aurora { --bzc-calma-w: 80%; --bzc-calma-h: 300px; --bzc-calma-y: 190px; }
+  .bzc-aurora { --bzc-calma-w: 115%; --bzc-calma-h: 370px; --bzc-calma-y: 195px; }
   .bzc .bzc-produtos, .bzc .bzc-produtos--fluida { grid-template-columns: repeat(2, minmax(0, 1fr)); width: auto; padding: 10px; gap: 10px; }
   .bzc .bzc-produtos { --bzc-celula-h: 76px; --bzc-escala-logo: .87; }
   .bzc-h1 { font-size: 34px; }
+  .bzc-hero-lead { font-size: 16px; }
+  /* Empilhados, a sombra azul do botao principal caia por tras do texto da
+     ligacao de baixo — MEDIDO, 4,23:1. Mais curta e com 10px de folga: */
+  .bzc-hero-accoes { gap: 10px; }
+  .bzc-hero-accoes .bzc-btn--azul { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
   .bzc-hero-accoes .bzc-btn { width: 100%; }
 }
 

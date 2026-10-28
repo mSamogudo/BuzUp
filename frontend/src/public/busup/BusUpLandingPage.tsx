@@ -211,19 +211,30 @@ export default function BusUpLandingPage() {
       {/* ── CHAPA ─────────────────────────────────────────────────── */}
       <section className="bzc-hero" id="topo">
         <AuroraChapa />
+        <div aria-hidden className="bzc-hero-grelha" />
         <div aria-hidden className="bzc-hero-luz" />
 
+        {/* UMA ACÇÃO PRINCIPAL. O contacto é a venda — é ao operador que a
+            página se dirige — e leva o botão cheio. A compra do passageiro
+            fica ao lado como ligação com seta: continua à vista e com 52px de
+            alvo, mas já não disputa o olhar com o botão azul. O lead é o
+            `heroLeadShort` do ficheiro de texto, que até aqui só ia para o
+            <meta>: diz a quem serve antes de pedir o clique. */}
         <div className="bzc-hero-in">
           <h1 className="bzc-h1">{t.heroH1a}<span>{t.heroH1b}</span></h1>
+          <p className="bzc-lead bzc-hero-lead">{t.heroLeadShort}</p>
 
           <div className="bzc-hero-accoes">
             <Link className="bzc-btn bzc-btn--azul" to="/contactos">{t.ctaPrimary}</Link>
-            <Link className="bzc-btn bzc-btn--ceu" to="/comprar">{t.buyTicket}</Link>
+            <Link className="bzc-btn bzc-btn--seta" to="/comprar">
+              {t.buyTicket}<ArrowRight aria-hidden size={17} />
+            </Link>
           </div>
         </div>
 
         {/* As quatro etiquetas que apontam para quem usa o quê. São decorativas:
-            o painel por baixo já diz tudo o que elas dizem. */}
+            o painel por baixo já diz tudo o que elas dizem. Ficam penduradas
+            na borda do painel, por fora — antes tapavam a receita e uma rota. */}
         <div aria-hidden className="bzc-hero-painel" id="produto">
           <span className="bzc-etiqueta bzc-etiqueta--1"><i style={{ background: "#2A9D8F" }} />{t.tag1}</span>
           <span className="bzc-etiqueta bzc-etiqueta--2"><i style={{ background: "#2D8CF0" }} />{t.tag2}</span>

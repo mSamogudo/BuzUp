@@ -73,6 +73,15 @@
      superficies escuras e o branco que assenta sobre ele. */
   --bzc-navy: #0D3B66;
   --bzc-navy-fundo: #0A2E50;
+  /* Duas sombras e um realce, em vez de cada cartao inventar a sua. A 1 e o
+     assentar dos cartoes (uma linha curta e uma difusa); a 2 e a das pecas
+     grandes que flutuam, como a chamada. O realce e a aresta de luz no topo
+     do cartao: no claro some-se no branco, no escuro e o que separa a chapa
+     do fundo navy. Tintas em navy e nao em preto, para a sombra ser da marca. */
+  --bzc-sombra-1: 0 1px 2px rgba(13, 59, 102, .05), 0 8px 20px -12px rgba(13, 59, 102, .16);
+  --bzc-sombra-2: 0 32px 64px -32px rgba(13, 59, 102, .5);
+  --bzc-realce: inset 0 1px 0 rgba(255, 255, 255, .9);
+  --bzc-ponto-cor: rgba(13, 59, 102, .10);
 
   background: var(--bzc-bg);
   color: var(--bzc-text);
@@ -98,6 +107,11 @@
   --bzc-tom-mau-chapa: #3A1A14; --bzc-tom-mau-borda: #5E2A1E;
   --bzc-tom-mau-tinta: #F5A797; --bzc-tom-mau-forte: #F5A797;
   --bzc-faint: #6F8CAA;
+  /* No navy a sombra so se le em preto, e mais carregada. */
+  --bzc-sombra-1: 0 1px 2px rgba(0, 0, 0, .22), 0 10px 24px -12px rgba(0, 0, 0, .5);
+  --bzc-sombra-2: 0 32px 64px -28px rgba(0, 0, 0, .75);
+  --bzc-realce: inset 0 1px 0 rgba(234, 241, 248, .07);
+  --bzc-ponto-cor: rgba(234, 241, 248, .07);
   --bzc-navy-text: #CFE6FB;
   --bzc-accent-dk: #5BA3F5;
   --bzc-sky1: #0C3557;
@@ -168,6 +182,20 @@
 .bzc-wrap-sm { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 32px; }
 .bzc-sec { padding: 80px 0; }
 .bzc-sec-alt { background: var(--bzc-surface); border-top: 1px solid var(--bzc-border); }
+/* Textura de pontos nas seccoes lisas, para o fundo nao ser um vazio entre
+   duas faixas brancas. Fica por baixo do conteudo (`isolation` +
+   `z-index: -1`) e so comeca DEPOIS do titulo e da entrada: MEDIDO, um ponto
+   por tras da entrada cinzenta levava-a de 4,63:1 a 3,88:1. Assim os pontos
+   ficam a volta dos cartoes, e desvanecem no fundo para nao desenharem uma
+   aresta nova contra a seccao seguinte. */
+.bzc-sec--pontos { position: relative; isolation: isolate; }
+.bzc-sec--pontos::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(var(--bzc-ponto-cor) 1px, transparent 1.5px);
+  background-size: 22px 22px; background-position: center top;
+  -webkit-mask-image: linear-gradient(180deg, transparent 240px, #000 380px, #000 calc(100% - 140px), transparent);
+  mask-image: linear-gradient(180deg, transparent 240px, #000 380px, #000 calc(100% - 140px), transparent);
+}
 
 /* ── Tipografia ────────────────────────────────────────────────────── */
 
@@ -227,7 +255,7 @@
 
 .bzc-cartao {
   background: var(--bzc-surface); border: 1px solid var(--bzc-border);
-  border-radius: 20px; padding: 26px;
+  border-radius: 20px; padding: 26px; box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
 .bzc-cartao--grande { border-radius: 22px; }
 
@@ -330,6 +358,14 @@
 /* ── A chapa ───────────────────────────────────────────────────────── */
 
 .bzc-hero { position: relative; overflow: hidden; }
+/* A chapa acaba na faixa branca dos produtos. Era uma aresta seca entre o ceu
+   e o branco; agora os ultimos 140px desvanecem para a cor da faixa, por
+   baixo do painel (que ja se corta em transparente) e por cima da aurora. */
+.bzc-hero::after {
+  content: ""; position: absolute; inset: auto 0 0; height: 140px; pointer-events: none;
+  background: linear-gradient(180deg, transparent, var(--bzc-surface));
+}
+.bzc-hero-in, .bzc-hero-painel { z-index: 1; }
 /* Duas manchas de luz por tras de tudo: o vidro por cima do centro e o azul
    no canto superior direito. Sao as do protocolo, com as mesmas paragens. */
 .bzc-hero-luz {
@@ -536,7 +572,7 @@
 
 /* ── A fita dos logotipos ──────────────────────────────────────────── */
 
-.bzc-fita { border-top: 1px solid var(--bzc-border); background: var(--bzc-surface); padding: 40px 0 44px; }
+.bzc-fita { background: var(--bzc-surface); padding: 40px 0 44px; }
 /* A placa e um degrau acima do fundo da faixa; as celulas sao a superficie.
    O seletor leva `.bzc` a frente porque o reset `.bzc ul` (0,1,1) apagava a
    margem e o recheio: a placa encostava a esquerda e as celulas a borda.
@@ -586,6 +622,7 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 .bzc-cartao-func {
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px;
   padding: 26px 26px 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden;
+  box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
 .bzc-cartao-func .bzc-lead { font-size: 14.5px; }
 
@@ -708,7 +745,7 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 .bzc-passos-mock-corpo [data-tom="aviso"] { color: var(--bzc-aviso-ink); font-weight: 700; }
 
 .bzc-passos-lista { display: flex; flex-direction: column; gap: 12px; }
-.bzc-passos-lista > li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px; overflow: hidden; }
+.bzc-passos-lista > li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px; overflow: hidden; box-shadow: var(--bzc-realce), var(--bzc-sombra-1); }
 .bzc-passos-lista button {
   width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
   padding: 22px 24px; border: 0; background: transparent; cursor: pointer; font-family: inherit;
@@ -739,8 +776,9 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 .bzc-plano {
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px;
   padding: 28px 26px; display: flex; flex-direction: column; gap: 14px;
+  box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
-.bzc-plano[data-destaque] { border: 1.5px solid var(--bzc-accent); box-shadow: 0 20px 50px rgba(45, 140, 240, .14); }
+.bzc-plano[data-destaque] { border: 1.5px solid var(--bzc-accent); box-shadow: var(--bzc-realce), 0 20px 50px rgba(45, 140, 240, .14); }
 .bzc-plano-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .bzc-plano-selo {
   height: 26px; padding: 0 11px; border-radius: 999px; background: var(--bzc-sky2);
@@ -754,7 +792,7 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 /* ── Perguntas ─────────────────────────────────────────────────────── */
 
 .bzc-faq { display: flex; flex-direction: column; gap: 10px; }
-.bzc-faq li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px; overflow: hidden; }
+.bzc-faq li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px; overflow: hidden; box-shadow: var(--bzc-realce), var(--bzc-sombra-1); }
 .bzc-faq button {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px;
   min-height: 62px; padding: 16px 20px; border: 0; background: transparent; cursor: pointer;
@@ -765,7 +803,24 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 
 /* ── A chamada ─────────────────────────────────────────────────────── */
 
-.bzc-chamada { background: linear-gradient(150deg, #0D3B66 0%, #0A2E50 62%, #06203A 100%); padding: 80px 0; }
+/* Um painel recolhido com cantos, e nao uma faixa de ponta a ponta: entre as
+   perguntas e o ecossistema a faixa navy cortava a pagina ao meio. Recolhida,
+   le-se como a peca final e o fundo da pagina continua a correr a volta dela.
+   E so CSS, por isso serve a pagina inicial e a dos precos. O brilho azul no
+   canto e parado e fica atras do texto (MEDIDO no contraste). */
+.bzc-chamada {
+  position: relative; isolation: isolate; overflow: hidden;
+  width: calc(100% - 64px); max-width: 1216px; margin: 0 auto 80px; border-radius: 28px;
+  background: linear-gradient(150deg, #0D3B66 0%, #0A2E50 62%, #06203A 100%); padding: 80px 0;
+  box-shadow: var(--bzc-sombra-2);
+}
+.bzc-chamada::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(50% 70% at 88% 0%, rgba(45, 140, 240, .24) 0%, rgba(45, 140, 240, 0) 70%);
+}
+/* No escuro o fim do degrade e o proprio fundo: um aro de 1px por dentro
+   devolve o contorno sem mexer no tamanho da caixa. */
+.bzc[data-theme="dark"] .bzc-chamada { box-shadow: inset 0 0 0 1px var(--bzc-border2), var(--bzc-sombra-2); }
 .bzc-chamada-accoes { display: flex; gap: 12px; justify-content: center; margin-top: 28px; flex-wrap: wrap; }
 
 /* ── Quem constroi ─────────────────────────────────────────────────── */
@@ -801,7 +856,7 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   .bzc-painel-abas, .bzc-painel-filtros, .bzc-painel-busca { display: none; }
   .bzc-painel-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bzc-foot-in { grid-template-columns: 1fr 1fr; gap: 28px; }
-  .bzc-chamada { padding: 56px 0; }
+  .bzc-chamada { width: calc(100% - 40px); margin-bottom: 56px; border-radius: 22px; padding: 56px 0; }
   .bzc-eco { gap: 32px; }
 }
 

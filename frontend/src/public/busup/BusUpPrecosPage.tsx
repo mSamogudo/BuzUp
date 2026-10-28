@@ -118,7 +118,7 @@ export default function BusUpPrecosPage() {
       </section>
 
       {/* ── Perguntas ─────────────────────────────────────────── */}
-      <section className="bzc-sec">
+      <section className="bzc-sec bzc-sec--pontos">
         <div className="bzc-wrap-sm">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.faqH2}</h2>

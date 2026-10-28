@@ -299,7 +299,7 @@ export default function BusUpLandingPage() {
       {/* ── COMEÇAR EM TRÊS PASSOS ────────────────────────────────── */}
       {/* Sem a chapa alternada: os números que vinham antes levavam-na, e com
           eles fora seriam três secções claras seguidas. */}
-      <section className="bzc-sec">
+      <section className="bzc-sec bzc-sec--pontos">
         <div className="bzc-wrap-md">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.stepsH2}</h2>
@@ -393,7 +393,7 @@ export default function BusUpLandingPage() {
       </section>
 
       {/* ── PERGUNTAS ─────────────────────────────────────────────── */}
-      <section className="bzc-sec">
+      <section className="bzc-sec bzc-sec--pontos">
         <div className="bzc-wrap-sm">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.faqH2}</h2>

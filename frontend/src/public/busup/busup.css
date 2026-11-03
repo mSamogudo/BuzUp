@@ -217,8 +217,10 @@
 .bzc-h2 { font: 800 38px/1.14 Manrope, sans-serif; letter-spacing: -.025em; color: var(--bzc-text); text-wrap: balance; }
 .bzc-h3 { font: 800 19px/1.25 Manrope, sans-serif; letter-spacing: -.01em; color: var(--bzc-text); }
 .bzc-lead { font: 400 16.5px/1.6 Inter, sans-serif; color: var(--bzc-muted); text-wrap: pretty; }
+/* Entrelinha 1.3 e nao 1: quando a etiqueta parte em duas linhas (o mapa dos
+   contactos a 320px), as maiusculas das duas linhas tocavam-se. */
 .bzc-rotulo {
-  font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .14em;
+  font: 800 10.5px/1.3 Inter, sans-serif; letter-spacing: .14em;
   text-transform: uppercase; color: var(--bzc-muted);
 }
 .bzc-sechead { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; margin-bottom: 40px; }
@@ -325,11 +327,13 @@
   box-shadow: -18px 0 44px rgba(13, 59, 102, .24);
 }
 .bzc-gaveta-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.bzc-gaveta-painel a {
+/* Fora o botao de contacto: com `a` sozinho esta regra (mais especifica que
+   .bzc-btn--navy) pintava o texto dele de escuro sobre o azul-marinho. */
+.bzc-gaveta-painel a:not(.bzc-btn) {
   display: flex; align-items: center; min-height: 48px; padding: 0 10px;
   border-radius: 12px; font: 600 15px/1 Inter, sans-serif; color: var(--bzc-text);
 }
-.bzc-gaveta-painel a:hover { background: var(--bzc-surface2); }
+.bzc-gaveta-painel a:not(.bzc-btn):hover { background: var(--bzc-surface2); }
 .bzc-gaveta-tools { display: flex; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--bzc-border); }
 
 /* ── Movimento ─────────────────────────────────────────────────────── */
@@ -942,7 +946,30 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   .bzc-hero-accoes { gap: 10px; }
   .bzc-hero-accoes .bzc-btn--azul { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
   .bzc-hero-accoes .bzc-btn { width: 100%; }
+  /* O portal de exemplo: a 320px a coluna das rotas ficava com ~60px e o estado
+     ("activa", "rascunho") saia pelo lado. A lista de menus sobe para uma linha
+     so com a marca, e as rotas ficam com a largura toda. */
+  .bzc-passos-painel { padding: 28px 22px 0; }
+  .bzc-passos-mock { flex-direction: column; gap: 0; }
+  .bzc-passos-mock-nav { width: auto; padding-bottom: 10px; border-bottom: 1px solid var(--bzc-border); }
+  .bzc-passos-mock-nav span { display: none; }
+  .bzc-passos-mock-marca { margin-bottom: 0; }
+  .bzc-passos-mock-corpo { border-left: 0; padding: 12px 0 14px; }
+  .bzc-passos-mock-corpo > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .bzc-passos-mock-corpo > div > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* A barra de cima a 320px: marca, idioma, tema e menu somavam mais do que o
+   ecra, e era a marca que encolhia (o logotipo ficava deformado). A marca nao
+   encolhe; o idioma sai da barra porque ja esta dentro do menu. */
+.bzc-nav-marca { flex: none; }
+@media (max-width: 900px) {
+  .bzc-nav-in { padding: 0 20px; height: 76px; }
+}
+@media (max-width: 359px) {
+  .bzc-nav-fim > .bzc-idioma { display: none; }
+}
+
 
 /* ── Barra de accao (telemovel) ────────────────────────────────────── */
 
@@ -969,6 +996,16 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
      ha onde cair. */
   .bzc-barra-accao .bzc-btn { height: 48px; min-width: 0; padding: 0 12px; }
   .bzc-barra-accao .bzc-btn--azul { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
+}
+/* O convite para instalar a app no iPhone (fixo a 12px do fundo) ficava por
+   cima dos dois botoes — MEDIDO a 390px: convite 756–832, barra 775–844. Com a
+   barra a vista, o convite sobe a altura dela (10 + 48 + 10 + 1 de borda) e
+   desce quando ela sai. `translate` e nao `bottom`: nao mexe na caixa. */
+@media (max-width: 1080px) {
+  .pwa-install-banner { transition: translate var(--bzc-dur-entrar, .3s) var(--bzc-curva, ease-out); }
+  body:has(.bzc-barra-accao[data-visivel]) .pwa-install-banner {
+    translate: 0 calc(-69px - env(safe-area-inset-bottom, 0px));
+  }
 }
 /* Num ecra de 320px os dois nao cabem lado a lado sem cortar o texto. Fica so o
    contacto, que e a venda; o bilhete continua na chapa. */
@@ -1203,12 +1240,32 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   .bzc-erro-accoes > * { width: 100%; justify-content: center; }
 }
 
+/* Aqui no fim porque os campos, as ligacoes dos contactos e o botao do quadro
+   sao declarados mais abaixo com a mesma especificidade.
+   Dedo, nao rato (ou ecra estreito, que no fim e telemovel): alvos de 44px de altura onde o desenho os tinha mais baixos.
+   Os campos a 16px porque o Safari do iPhone faz zoom em qualquer campo abaixo
+   disso e nao volta atras sozinho. */
+@media (pointer: coarse), (max-width: 900px) {
+  .bzc-foot-col { gap: 0; }
+  .bzc-foot-col b { margin-bottom: 6px; }
+  .bzc-foot-col a, .bzc-foot-col span { min-height: 44px; }
+  .bzc-contacto-lista a { min-height: 44px; }
+  .bzc-quadro-cta { min-height: 44px; }
+  .bzc-idioma button { height: 36px; min-width: 44px; }
+  /* A marca leva para o inicio: a caixa cresce ate 44px, o logotipo fica igual. */
+  .bzc-nav-marca, .bzc-erro-topo > a { min-height: 44px; display: flex; align-items: center; }
+  .bzc-erro-ajuda { height: 44px; }
+  .bzc-contacto-form input,
+  .bzc-contacto-form select,
+  .bzc-contacto-form textarea { font-size: 16px; }
+}
+
 /* No fim do ficheiro de proposito: a subida dos cartoes e declarada mais
    acima com a mesma especificidade, e so a ultima regra ganha (a entrada da
    chapa tambem). */
 @media (prefers-reduced-motion: reduce) {
   .bzc-hero-in > *, .bzc-hero-painel { animation: none; }
-  .bzc-barra-accao, .bzc-barra-accao[data-visivel] { transition: none; }
+  .bzc-barra-accao, .bzc-barra-accao[data-visivel], .pwa-install-banner { transition: none; }
   .bzc-plano, a.bzc-produto { transition: none; }
   .bzc .bzc-plano:hover, .bzc a.bzc-produto:hover { transform: none; }
 }

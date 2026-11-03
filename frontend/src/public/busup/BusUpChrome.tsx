@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
@@ -214,9 +214,62 @@ function Rodape({ t }: { t: CopyBusUp }) {
 /** A caixa do site. O `data-theme` vive AQUI e não em `<html>`: o portal e as
  *  páginas dos operadores têm o seu próprio tema, e escrevê-lo na raiz mudava
  *  o de todos. */
+/* Só nas páginas que vendem. Em /contactos o formulário já é o destino, e nas
+ * páginas de erro a acção é outra. */
+const COM_BARRA_ACCAO = ["/", "/precos"];
+
+/* Onde a barra começa (as acções da chapa, ou o cabeçalho de /precos) e onde
+ * acaba (a chamada final, ou o rodapé se a página não tiver chamada). */
+const BARRA_DEPOIS = ".bzc-hero-accoes, .bzc-contacto-cab";
+const BARRA_ATE = ".bzc-chamada, footer";
+
+/** A barra de acção fixa no telemóvel.
+ *
+ *  Abaixo de 1080px o botão de contacto sai da barra de cima (ver `busup.css`)
+ *  e, passada a chapa, contactar ficava atrás do menu. Esta barra devolve-o ao
+ *  polegar — mas só entre a chapa e a chamada final: em cima as acções da
+ *  chapa já estão à vista, e da chamada para baixo seria a mesma acção duas
+ *  vezes e taparia o rodapé.
+ *
+ *  É `position: fixed` e entra por `transform`, por isso não empurra nada e
+ *  não conta para o CLS. Escondida fica `inert`: o teclado não tropeça em
+ *  ligações que não se vêem. */
+function BarraAccao({ raiz, t }: { raiz: RefObject<HTMLElement | null>; t: CopyBusUp }) {
+  const [visivel, setVisivel] = useState(false);
+
+  useEffect(() => {
+    const el = raiz.current;
+    const depois = el?.querySelector(BARRA_DEPOIS);
+    const ate = el?.querySelector(BARRA_ATE);
+    if (!depois || !ate || typeof IntersectionObserver === "undefined") return;
+
+    // Cada sentinela diz só o seu lado; a barra vê-se quando os dois concordam.
+    let passouChapa = false;
+    let chegouFim = false;
+    const io = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        if (e.target === depois) passouChapa = !e.isIntersecting && e.boundingClientRect.bottom < 0;
+        if (e.target === ate) chegouFim = e.isIntersecting || e.boundingClientRect.top < 0;
+      }
+      setVisivel(passouChapa && !chegouFim);
+    });
+    io.observe(depois);
+    io.observe(ate);
+    return () => io.disconnect();
+  }, [raiz]);
+
+  return (
+    <div className="bzc-barra-accao" data-visivel={visivel || undefined} inert={!visivel}>
+      <Link className="bzc-btn bzc-btn--linha" to="/comprar">{t.buyTicket}</Link>
+      <Link className="bzc-btn bzc-btn--azul" to="/contactos">{t.ctaPrimary}</Link>
+    </div>
+  );
+}
+
 export default function BusUpPagina({ children }: { children: ReactNode }) {
   const { effectiveTheme, lang } = useLandingPrefs();
   const t = copyBusUp(lang);
+  const { pathname } = useLocation();
   const raiz = useRef<HTMLDivElement | null>(null);
   useRevelar(raiz);
 
@@ -226,6 +279,7 @@ export default function BusUpPagina({ children }: { children: ReactNode }) {
       <Barra t={t} />
       <main id="conteudo">{children}</main>
       <Rodape t={t} />
+      {COM_BARRA_ACCAO.includes(pathname) && <BarraAccao key={pathname} raiz={raiz} t={t} />}
     </div>
   );
 }

@@ -80,6 +80,7 @@
      do fundo navy. Tintas em navy e nao em preto, para a sombra ser da marca. */
   --bzc-sombra-1: 0 1px 2px rgba(13, 59, 102, .05), 0 8px 20px -12px rgba(13, 59, 102, .16);
   --bzc-sombra-2: 0 32px 64px -32px rgba(13, 59, 102, .5);
+  --bzc-sombra-cima: 0 -12px 28px -18px rgba(13, 59, 102, .32);
   --bzc-realce: inset 0 1px 0 rgba(255, 255, 255, .9);
   --bzc-ponto-cor: rgba(13, 59, 102, .10);
   /* O movimento, em tres velocidades e uma curva. Toque: a resposta a um
@@ -118,6 +119,7 @@
   /* No navy a sombra so se le em preto, e mais carregada. */
   --bzc-sombra-1: 0 1px 2px rgba(0, 0, 0, .22), 0 10px 24px -12px rgba(0, 0, 0, .5);
   --bzc-sombra-2: 0 32px 64px -28px rgba(0, 0, 0, .75);
+  --bzc-sombra-cima: 0 -12px 28px -16px rgba(0, 0, 0, .6);
   --bzc-realce: inset 0 1px 0 rgba(234, 241, 248, .07);
   --bzc-ponto-cor: rgba(234, 241, 248, .07);
   --bzc-navy-text: #CFE6FB;
@@ -354,6 +356,7 @@
 }
 @media print {
   .bzc [data-revela] { opacity: 1 !important; transform: none !important; }
+  .bzc .bzc-barra-accao { display: none; }
 }
 
 /* ── Rodape ────────────────────────────────────────────────────────── */
@@ -923,6 +926,39 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   .bzc-hero-accoes .bzc-btn { width: 100%; }
 }
 
+/* ── Barra de accao (telemovel) ────────────────────────────────────── */
+
+/* Aparece no mesmo ponto em que o botao de contacto sai da barra de cima
+   (1080px). Fixa e por `transform`: nao empurra nada. A `visibility` so muda
+   no fim da saida, para a barra nao desaparecer a meio do deslize. O fundo do
+   telefone (barra do iOS) fica por baixo, nao por cima dos botoes. */
+.bzc-barra-accao { display: none; }
+@media (max-width: 1080px) {
+  .bzc-barra-accao {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    padding: 10px max(16px, calc((100% - 560px) / 2)) calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--bzc-surface); border-top: 1px solid var(--bzc-border);
+    box-shadow: var(--bzc-sombra-cima);
+    transform: translateY(calc(100% + 24px)); visibility: hidden;
+    transition: transform var(--bzc-dur-entrar) var(--bzc-curva), visibility 0s linear var(--bzc-dur-entrar);
+  }
+  .bzc-barra-accao[data-visivel] {
+    transform: none; visibility: visible;
+    transition: transform var(--bzc-dur-entrar) var(--bzc-curva), visibility 0s;
+  }
+  /* 48px de alvo; a sombra azul do botao cheio encurta, que ali em baixo nao
+     ha onde cair. */
+  .bzc-barra-accao .bzc-btn { height: 48px; min-width: 0; padding: 0 12px; }
+  .bzc-barra-accao .bzc-btn--azul { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
+}
+/* Num ecra de 320px os dois nao cabem lado a lado sem cortar o texto. Fica so o
+   contacto, que e a venda; o bilhete continua na chapa. */
+@media (max-width: 359px) {
+  .bzc-barra-accao { grid-template-columns: 1fr; }
+  .bzc-barra-accao .bzc-btn--linha { display: none; }
+}
+
 /* ── Contactos ─────────────────────────────────────────────────────── */
 
 .bzc-contacto-topo {
@@ -1154,6 +1190,7 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
    chapa tambem). */
 @media (prefers-reduced-motion: reduce) {
   .bzc-hero-in > *, .bzc-hero-painel { animation: none; }
+  .bzc-barra-accao, .bzc-barra-accao[data-visivel] { transition: none; }
   .bzc-plano, a.bzc-produto { transition: none; }
   .bzc .bzc-plano:hover, .bzc a.bzc-produto:hover { transform: none; }
 }

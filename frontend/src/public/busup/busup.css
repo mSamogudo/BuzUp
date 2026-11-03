@@ -420,9 +420,10 @@
    So as cores da marca: azul de accao, azul claro e navy. No tema claro
    assentam por cima do ceu; no escuro somam-se ao navy com `screen`. */
 .bzc-aurora {
-  --bzc-aurora-1: rgba(45, 140, 240, .20);
-  --bzc-aurora-2: rgba(91, 163, 245, .26);
-  --bzc-aurora-3: rgba(13, 59, 102, .08);
+  --bzc-aurora-1: rgba(45, 140, 240, .26);
+  --bzc-aurora-2: rgba(91, 163, 245, .32);
+  --bzc-aurora-3: rgba(13, 59, 102, .10);
+  --bzc-aurora-4: rgba(34, 120, 208, .16);
   /* A zona calma: uma elipse por tras do titulo e dos botoes onde a aurora
      nao chega. MEDIDO: sem ela o azul da segunda linha do titulo caia para
      2,89:1 no telemovel (pede 3) e o botao "Comprar bilhete" para 4,04:1
@@ -443,44 +444,61 @@
   --bzc-aurora-1: rgba(45, 140, 240, .30);
   --bzc-aurora-2: rgba(91, 163, 245, .18);
   --bzc-aurora-3: rgba(29, 95, 167, .35);
+  --bzc-aurora-4: rgba(91, 163, 245, .16);
 }
 .bzc-aurora i {
   position: absolute; display: block; border-radius: 50%;
-  will-change: transform;
-  /* Longhands e sem duracao aqui: o atalho `animation` repunha o nome a
-     `none`, e este seletor (0,1,1) vencia as classes de cada campo. */
-  animation-timing-function: ease-in-out; animation-iteration-count: infinite; animation-direction: alternate;
+  will-change: transform, opacity;
 }
 .bzc[data-theme="dark"] .bzc-aurora i { mix-blend-mode: screen; }
+/* MEDIDO (3 Nov): com 4-6% de deslize em 24-32s a aurora mexia ~2px/s e em 2s
+   nenhum pixel da chapa mudava o bastante para se ver. Agora cada campo tem
+   quatro relogios proprios, todos de vai-e-volta e de duracoes que nao se
+   dividem umas pelas outras: `translate` leva-o de um lado para o outro,
+   `rotate` a volta de uma origem afastada curva esse caminho, `scale` faz a luz
+   respirar e `opacity` sobe e desce a cor. Somados, os quatro campos cruzam-se
+   e misturam os azuis sem paragens e sem um ciclo que o olho apanhe. Cada
+   relogio arranca a meio (atraso negativo): ao abrir a pagina a luz ja vai
+   em andamento, em vez de partir do repouso. Tudo propriedades do
+   compositor: a thread principal nao trabalha. A zona calma da mascara
+   continua a proteger o texto, mexa-se a luz para onde se mexer.
+   Resultado a 1440px: ~11% da chapa muda de forma visivel a cada 2s e ~45%
+   ao longo de 12s, com o contraste do texto igual ao de antes. */
 .bzc-aurora-1 {
   width: 62%; height: 70%; left: -16%; top: -18%;
   background: radial-gradient(closest-side, var(--bzc-aurora-1), transparent);
-  transform: rotate(-14deg); animation-name: bzc-aurora-1; animation-duration: 28s;
+  transform: rotate(-14deg); transform-origin: 70% 150%;
+  animation: bzc-au-ir-1 10s ease-in-out -5s infinite alternate, bzc-au-curva 21s ease-in-out -10.5s infinite alternate,
+    bzc-au-respira 9s ease-in-out -4.5s infinite alternate, bzc-au-cor 5s ease-in-out -2.5s infinite alternate;
 }
 .bzc-aurora-2 {
   width: 58%; height: 64%; right: -14%; top: -10%;
   background: radial-gradient(closest-side, var(--bzc-aurora-2), transparent);
-  transform: rotate(12deg); animation-name: bzc-aurora-2; animation-duration: 32s;
+  transform: rotate(12deg); transform-origin: 20% 160%;
+  animation: bzc-au-ir-2 12s ease-in-out -6s infinite alternate, bzc-au-curva 24s ease-in-out -12s infinite alternate-reverse,
+    bzc-au-respira 11s ease-in-out -5.5s infinite alternate-reverse, bzc-au-cor 6s ease-in-out -3s infinite alternate;
 }
 .bzc-aurora-3 {
   width: 90%; height: 56%; left: 5%; top: 38%;
   background: radial-gradient(closest-side, var(--bzc-aurora-3), transparent);
-  animation-name: bzc-aurora-3; animation-duration: 24s;
+  transform-origin: 50% -80%;
+  animation: bzc-au-ir-3 14s ease-in-out -7s infinite alternate, bzc-au-curva 28s ease-in-out -14s infinite alternate,
+    bzc-au-respira 13s ease-in-out -6.5s infinite alternate, bzc-au-cor 7s ease-in-out -3.5s infinite alternate-reverse;
 }
-/* Poucos por cento de deslize e escala: nota-se que a luz respira, nao que
-   ha uma animacao. */
-@keyframes bzc-aurora-1 {
-  from { transform: rotate(-14deg) translate3d(0, 0, 0) scale(1); }
-  to { transform: rotate(-10deg) translate3d(6%, 4%, 0) scale(1.06); }
+.bzc-aurora-4 {
+  width: 48%; height: 54%; left: 30%; top: 20%;
+  background: radial-gradient(closest-side, var(--bzc-aurora-4), transparent);
+  transform-origin: -40% 50%;
+  animation: bzc-au-ir-4 11s ease-in-out -5.5s infinite alternate, bzc-au-curva 26s ease-in-out -13s infinite alternate-reverse,
+    bzc-au-respira 10s ease-in-out -5s infinite alternate, bzc-au-cor 5.5s ease-in-out -2.75s infinite alternate-reverse;
 }
-@keyframes bzc-aurora-2 {
-  from { transform: rotate(12deg) translate3d(0, 0, 0) scale(1); }
-  to { transform: rotate(8deg) translate3d(-5%, 5%, 0) scale(1.05); }
-}
-@keyframes bzc-aurora-3 {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(-4%, -3%, 0) scale(1.04); }
-}
+@keyframes bzc-au-ir-1 { from { translate: 0 0; } to { translate: 34% 22%; } }
+@keyframes bzc-au-ir-2 { from { translate: 0 0; } to { translate: -30% 26%; } }
+@keyframes bzc-au-ir-3 { from { translate: -12% 0; } to { translate: 14% -18%; } }
+@keyframes bzc-au-ir-4 { from { translate: -40% 10%; } to { translate: 40% -14%; } }
+@keyframes bzc-au-curva { from { rotate: -9deg; } to { rotate: 9deg; } }
+@keyframes bzc-au-respira { from { scale: .9; } to { scale: 1.16; } }
+@keyframes bzc-au-cor { from { opacity: .35; } to { opacity: 1; } }
 .bzc-aurora[data-parado] i { animation-play-state: paused; }
 
 /* Uma grelha fina por cima da aurora, so no topo: da a chapa a textura de

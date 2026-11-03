@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-/* O fundo de aurora da chapa: três campos de luz nas cores da marca.
+/* O fundo de aurora da chapa: quatro campos de luz nas cores da marca.
  *
  * É SÓ CSS. Os campos são gradientes radiais — já nascem macios, sem
  * `filter: blur`, que obrigava o browser a refazer o desfoque a cada passo da
@@ -31,6 +31,7 @@ export default function AuroraChapa() {
       <i className="bzc-aurora-1" />
       <i className="bzc-aurora-2" />
       <i className="bzc-aurora-3" />
+      <i className="bzc-aurora-4" />
     </div>
   );
 }

@@ -82,6 +82,14 @@
   --bzc-sombra-2: 0 32px 64px -32px rgba(13, 59, 102, .5);
   --bzc-realce: inset 0 1px 0 rgba(255, 255, 255, .9);
   --bzc-ponto-cor: rgba(13, 59, 102, .10);
+  /* O movimento, em tres velocidades e uma curva. Toque: a resposta a um
+     clique ou ao rato, curta para nao atrasar a mao. Subir: o cartao que se
+     levanta. Entrar: o que aparece ao abrir ou ao chegar ao ecra. A curva
+     sai depressa e assenta devagar, sem ressalto. */
+  --bzc-dur-toque: .15s;
+  --bzc-dur-subir: .22s;
+  --bzc-dur-entrar: .6s;
+  --bzc-curva: cubic-bezier(.22, 1, .36, 1);
 
   background: var(--bzc-bg);
   color: var(--bzc-text);
@@ -228,8 +236,13 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   height: 52px; padding: 0 26px; border: 0; border-radius: 999px; cursor: pointer;
   font: 700 15px/1 Inter, sans-serif; white-space: nowrap;
-  transition: background .15s ease-out, border-color .15s ease-out, color .15s ease-out;
+  transition: background var(--bzc-dur-toque) ease-out, border-color var(--bzc-dur-toque) ease-out,
+    color var(--bzc-dur-toque) ease-out, transform var(--bzc-dur-toque) ease-out, box-shadow var(--bzc-dur-toque) ease-out;
 }
+/* Ao carregar o botao desce 1px e o azul perde metade da sombra: a mao sente
+   que carregou, sem a caixa mudar de tamanho. */
+.bzc-btn:active { transform: translateY(1px); }
+.bzc-btn--azul:active { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
 .bzc-btn--azul { background: var(--bzc-accent-cheio); color: #fff; box-shadow: 0 12px 26px rgba(45, 140, 240, .32); }
 .bzc-btn--azul:hover { background: var(--bzc-accent-dk); color: #fff; }
 .bzc-btn--navy { background: var(--bzc-navy); color: #fff; }
@@ -324,7 +337,23 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bzc-pulsa, .bzc-aurora i { animation: none; }
-  .bzc-btn--seta svg { transition: none; }
+  .bzc-btn, .bzc-btn--seta svg { transition: none; }
+  .bzc-btn:active { transform: none; }
+}
+
+/* A entrada ao chegar ao ecra. Quem marca `data-revela` e `useRevelar`, e so
+   marca o que vai mostrar: sem esse codigo a regra nao apanha nada. Com
+   movimento reduzido, ou a imprimir, o que estiver marcado aparece ja. */
+.bzc [data-revela] {
+  transition: opacity var(--bzc-dur-entrar) var(--bzc-curva), transform var(--bzc-dur-entrar) var(--bzc-curva);
+  transition-delay: calc(var(--bzc-ordem, 0) * 70ms);
+}
+.bzc [data-revela=""] { opacity: 0; transform: translateY(14px); }
+@media (prefers-reduced-motion: reduce) {
+  .bzc [data-revela] { opacity: 1; transform: none; transition: none; }
+}
+@media print {
+  .bzc [data-revela] { opacity: 1 !important; transform: none !important; }
 }
 
 /* ── Rodape ────────────────────────────────────────────────────────── */
@@ -366,6 +395,14 @@
   background: linear-gradient(180deg, transparent, var(--bzc-surface));
 }
 .bzc-hero-in, .bzc-hero-painel { z-index: 1; }
+/* A entrada da chapa, uma vez, ao abrir. So CSS: corre sem esperar pelo
+   observador. O titulo sai sem atraso, porque e o maior elemento do ecra e o
+   browser so o conta como pintado quando ja se ve; o resto vem em escada. */
+@keyframes bzc-entra { from { opacity: 0; transform: translateY(12px); } }
+.bzc-hero-in > *, .bzc-hero-painel { animation: bzc-entra var(--bzc-dur-entrar) var(--bzc-curva) both; }
+.bzc-hero-in > :nth-child(2) { animation-delay: 70ms; }
+.bzc-hero-in > :nth-child(3) { animation-delay: 140ms; }
+.bzc-hero-painel { animation-delay: 220ms; }
 /* Duas manchas de luz por tras de tudo: o vidro por cima do centro e o azul
    no canto superior direito. Sao as do protocolo, com as mesmas paragens. */
 .bzc-hero-luz {
@@ -592,9 +629,13 @@
   position: relative; height: var(--bzc-celula-h); padding: 0 16px;
   display: flex; align-items: center; justify-content: center;
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px;
-  transition: border-color .15s ease-out;
+  transition: border-color var(--bzc-dur-toque) ease-out, transform var(--bzc-dur-subir) var(--bzc-curva);
 }
 a.bzc-produto:hover { border-color: var(--bzc-accent); }
+/* So com rato: num ecra de toque o `:hover` fica preso depois do toque. */
+@media (hover: hover) and (pointer: fine) {
+  a.bzc-produto:hover { transform: translateY(-2px); }
+}
 .bzc-produto img {
   height: calc(var(--logo-h) * var(--bzc-escala-logo)); width: auto; max-width: 100%;
   object-fit: contain;
@@ -779,6 +820,14 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
 .bzc-plano[data-destaque] { border: 1.5px solid var(--bzc-accent); box-shadow: var(--bzc-realce), 0 20px 50px rgba(45, 140, 240, .14); }
+/* O plano e uma escolha, por isso levanta-se 4px ao passar o rato. Os cartoes
+   das funcionalidades nao: nao sao clicaveis, e subir prometia um clique que
+   nao existe. */
+.bzc-plano { transition: transform var(--bzc-dur-subir) var(--bzc-curva), box-shadow var(--bzc-dur-subir) var(--bzc-curva); }
+@media (hover: hover) and (pointer: fine) {
+  .bzc-plano:hover { transform: translateY(-4px); box-shadow: var(--bzc-realce), var(--bzc-sombra-2); }
+  .bzc-plano[data-destaque]:hover { box-shadow: var(--bzc-realce), 0 28px 56px rgba(45, 140, 240, .22); }
+}
 .bzc-plano-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .bzc-plano-selo {
   height: 26px; padding: 0 11px; border-radius: 999px; background: var(--bzc-sky2);
@@ -1098,4 +1147,13 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   .bzc-erro-pistas { grid-template-columns: 1fr; margin-top: 6px; gap: 9px; }
   .bzc-erro-accoes { width: 100%; flex-direction: column; }
   .bzc-erro-accoes > * { width: 100%; justify-content: center; }
+}
+
+/* No fim do ficheiro de proposito: a subida dos cartoes e declarada mais
+   acima com a mesma especificidade, e so a ultima regra ganha (a entrada da
+   chapa tambem). */
+@media (prefers-reduced-motion: reduce) {
+  .bzc-hero-in > *, .bzc-hero-painel { animation: none; }
+  .bzc-plano, a.bzc-produto { transition: none; }
+  .bzc .bzc-plano:hover, .bzc a.bzc-produto:hover { transform: none; }
 }

@@ -4,6 +4,7 @@ import { Menu, Moon, Sun, X } from "lucide-react";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
 import { copyBusUp, type CopyBusUp } from "./busup-copy";
 import "./busup.css";
+import { useRevelar } from "./useRevelar";
 
 /* A casca do site público do BusUp — barra, rodapé e a caixa que põe o tema.
  *
@@ -216,9 +217,11 @@ function Rodape({ t }: { t: CopyBusUp }) {
 export default function BusUpPagina({ children }: { children: ReactNode }) {
   const { effectiveTheme, lang } = useLandingPrefs();
   const t = copyBusUp(lang);
+  const raiz = useRef<HTMLDivElement | null>(null);
+  useRevelar(raiz);
 
   return (
-    <div className="bzc" data-theme={effectiveTheme}>
+    <div className="bzc" data-theme={effectiveTheme} ref={raiz}>
       <a className="bzc-saltar" href="#conteudo">{lang === "pt" ? "Saltar para o conteúdo" : "Skip to content"}</a>
       <Barra t={t} />
       <main id="conteudo">{children}</main>

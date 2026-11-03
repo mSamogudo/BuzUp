@@ -936,7 +936,12 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
 
 @media (max-width: 560px) {
   .bzc-foot-in { grid-template-columns: 1fr; }
-  .bzc-aurora { --bzc-calma-w: 115%; --bzc-calma-h: 370px; --bzc-calma-y: 195px; }
+  /* No telemovel o texto ocupa a largura toda e o painel opaco tapa o resto:
+     com a calma a cobrir tudo, so ~9% da chapa visivel se mexia. MEDIDO (8
+     fases, 320-560px): esta forma, mais baixa e mais estreita, deixa a luz
+     passar no topo do titulo e nas margens (~22-31% de alcance, antes ~10%) e o azul da
+     segunda linha fica >=3,06:1. */
+  .bzc-aurora { --bzc-calma-w: 90%; --bzc-calma-h: 310px; --bzc-calma-y: 260px; }
   .bzc .bzc-produtos, .bzc .bzc-produtos--fluida { grid-template-columns: repeat(2, minmax(0, 1fr)); width: auto; padding: 10px; gap: 10px; }
   .bzc .bzc-produtos { --bzc-celula-h: 76px; --bzc-escala-logo: .87; }
   .bzc-h1 { font-size: 34px; }
@@ -1007,6 +1012,10 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
     translate: 0 calc(-69px - env(safe-area-inset-bottom, 0px));
   }
 }
+/* Com o menu aberto o convite (z-index 9999) ficava por cima da gaveta e
+   tapava as ultimas ligacoes — visto no Safari do iPhone. Some enquanto a
+   gaveta esta aberta e volta quando fecha. */
+body:has(.bzc-gaveta) .pwa-install-banner { visibility: hidden; }
 /* Num ecra de 320px os dois nao cabem lado a lado sem cortar o texto. Fica so o
    contacto, que e a venda; o bilhete continua na chapa. */
 @media (max-width: 359px) {
@@ -1251,7 +1260,11 @@ a.bzc-produto:hover { border-color: var(--bzc-accent); }
   .bzc-foot-col a, .bzc-foot-col span { min-height: 44px; }
   .bzc-contacto-lista a { min-height: 44px; }
   .bzc-quadro-cta { min-height: 44px; }
-  .bzc-idioma button { height: 36px; min-width: 44px; }
+  /* PT/EN: o botao fica com 36px a vista (a pilula nao cabe mais alta na barra
+     a 320px), mas o dedo apanha 46px — a area de toque sai 5px para cima e
+     para baixo, por cima da borda da pilula. */
+  .bzc-idioma button { height: 36px; min-width: 44px; position: relative; }
+  .bzc-idioma button::after { content: ""; position: absolute; inset: -5px 0; }
   /* A marca leva para o inicio: a caixa cresce ate 44px, o logotipo fica igual. */
   .bzc-nav-marca, .bzc-erro-topo > a { min-height: 44px; display: flex; align-items: center; }
   .bzc-erro-ajuda { height: 44px; }

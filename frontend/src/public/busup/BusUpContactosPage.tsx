@@ -6,7 +6,7 @@ import BusUpPagina, {
 } from "./BusUpChrome";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
 import { copyContactos } from "./busup-contactos-copy";
-import { LOGOS_ECO } from "./logos-ecossistema";
+import FaixaLogotipos from "./FaixaLogotipos";
 
 /* Contactos — portado do protótipo `Contactos BusUp.dc.html`.
  *
@@ -187,16 +187,7 @@ export default function BusUpContactosPage() {
               <p className="bzc-lead" style={{ maxWidth: "46ch" }}>{t.ecoLead}</p>
               <p className="bzc-lead" style={{ maxWidth: "46ch", marginTop: 12 }}>{t.ecoNote}</p>
             </div>
-            <ul className="bzc-eco-grelha">
-              {LOGOS_ECO.map((l) => (
-                <li key={l.nome}>
-                  <a href={l.url} rel="noopener" target="_blank">
-                    <img alt={l.nome} data-logo="light" src={l.claro} />
-                    <img alt={l.nome} data-logo="dark" src={l.escuro} />
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <FaixaLogotipos fluida />
           </div>
         </div>
       </section>

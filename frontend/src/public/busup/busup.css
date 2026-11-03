@@ -73,6 +73,24 @@
      superficies escuras e o branco que assenta sobre ele. */
   --bzc-navy: #0D3B66;
   --bzc-navy-fundo: #0A2E50;
+  /* Duas sombras e um realce, em vez de cada cartao inventar a sua. A 1 e o
+     assentar dos cartoes (uma linha curta e uma difusa); a 2 e a das pecas
+     grandes que flutuam, como a chamada. O realce e a aresta de luz no topo
+     do cartao: no claro some-se no branco, no escuro e o que separa a chapa
+     do fundo navy. Tintas em navy e nao em preto, para a sombra ser da marca. */
+  --bzc-sombra-1: 0 1px 2px rgba(13, 59, 102, .05), 0 8px 20px -12px rgba(13, 59, 102, .16);
+  --bzc-sombra-2: 0 32px 64px -32px rgba(13, 59, 102, .5);
+  --bzc-sombra-cima: 0 -12px 28px -18px rgba(13, 59, 102, .32);
+  --bzc-realce: inset 0 1px 0 rgba(255, 255, 255, .9);
+  --bzc-ponto-cor: rgba(13, 59, 102, .10);
+  /* O movimento, em tres velocidades e uma curva. Toque: a resposta a um
+     clique ou ao rato, curta para nao atrasar a mao. Subir: o cartao que se
+     levanta. Entrar: o que aparece ao abrir ou ao chegar ao ecra. A curva
+     sai depressa e assenta devagar, sem ressalto. */
+  --bzc-dur-toque: .15s;
+  --bzc-dur-subir: .22s;
+  --bzc-dur-entrar: .6s;
+  --bzc-curva: cubic-bezier(.22, 1, .36, 1);
 
   background: var(--bzc-bg);
   color: var(--bzc-text);
@@ -98,6 +116,12 @@
   --bzc-tom-mau-chapa: #3A1A14; --bzc-tom-mau-borda: #5E2A1E;
   --bzc-tom-mau-tinta: #F5A797; --bzc-tom-mau-forte: #F5A797;
   --bzc-faint: #6F8CAA;
+  /* No navy a sombra so se le em preto, e mais carregada. */
+  --bzc-sombra-1: 0 1px 2px rgba(0, 0, 0, .22), 0 10px 24px -12px rgba(0, 0, 0, .5);
+  --bzc-sombra-2: 0 32px 64px -28px rgba(0, 0, 0, .75);
+  --bzc-sombra-cima: 0 -12px 28px -16px rgba(0, 0, 0, .6);
+  --bzc-realce: inset 0 1px 0 rgba(234, 241, 248, .07);
+  --bzc-ponto-cor: rgba(234, 241, 248, .07);
   --bzc-navy-text: #CFE6FB;
   --bzc-accent-dk: #5BA3F5;
   --bzc-sky1: #0C3557;
@@ -168,6 +192,20 @@
 .bzc-wrap-sm { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 32px; }
 .bzc-sec { padding: 80px 0; }
 .bzc-sec-alt { background: var(--bzc-surface); border-top: 1px solid var(--bzc-border); }
+/* Textura de pontos nas seccoes lisas, para o fundo nao ser um vazio entre
+   duas faixas brancas. Fica por baixo do conteudo (`isolation` +
+   `z-index: -1`) e so comeca DEPOIS do titulo e da entrada: MEDIDO, um ponto
+   por tras da entrada cinzenta levava-a de 4,63:1 a 3,88:1. Assim os pontos
+   ficam a volta dos cartoes, e desvanecem no fundo para nao desenharem uma
+   aresta nova contra a seccao seguinte. */
+.bzc-sec--pontos { position: relative; isolation: isolate; }
+.bzc-sec--pontos::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(var(--bzc-ponto-cor) 1px, transparent 1.5px);
+  background-size: 22px 22px; background-position: center top;
+  -webkit-mask-image: linear-gradient(180deg, transparent 240px, #000 380px, #000 calc(100% - 140px), transparent);
+  mask-image: linear-gradient(180deg, transparent 240px, #000 380px, #000 calc(100% - 140px), transparent);
+}
 
 /* ── Tipografia ────────────────────────────────────────────────────── */
 
@@ -179,8 +217,10 @@
 .bzc-h2 { font: 800 38px/1.14 Manrope, sans-serif; letter-spacing: -.025em; color: var(--bzc-text); text-wrap: balance; }
 .bzc-h3 { font: 800 19px/1.25 Manrope, sans-serif; letter-spacing: -.01em; color: var(--bzc-text); }
 .bzc-lead { font: 400 16.5px/1.6 Inter, sans-serif; color: var(--bzc-muted); text-wrap: pretty; }
+/* Entrelinha 1.3 e nao 1: quando a etiqueta parte em duas linhas (o mapa dos
+   contactos a 320px), as maiusculas das duas linhas tocavam-se. */
 .bzc-rotulo {
-  font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .14em;
+  font: 800 10.5px/1.3 Inter, sans-serif; letter-spacing: .14em;
   text-transform: uppercase; color: var(--bzc-muted);
 }
 .bzc-sechead { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; margin-bottom: 40px; }
@@ -200,8 +240,13 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   height: 52px; padding: 0 26px; border: 0; border-radius: 999px; cursor: pointer;
   font: 700 15px/1 Inter, sans-serif; white-space: nowrap;
-  transition: background .15s ease-out, border-color .15s ease-out, color .15s ease-out;
+  transition: background var(--bzc-dur-toque) ease-out, border-color var(--bzc-dur-toque) ease-out,
+    color var(--bzc-dur-toque) ease-out, transform var(--bzc-dur-toque) ease-out, box-shadow var(--bzc-dur-toque) ease-out;
 }
+/* Ao carregar o botao desce 1px e o azul perde metade da sombra: a mao sente
+   que carregou, sem a caixa mudar de tamanho. */
+.bzc-btn:active { transform: translateY(1px); }
+.bzc-btn--azul:active { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
 .bzc-btn--azul { background: var(--bzc-accent-cheio); color: #fff; box-shadow: 0 12px 26px rgba(45, 140, 240, .32); }
 .bzc-btn--azul:hover { background: var(--bzc-accent-dk); color: #fff; }
 .bzc-btn--navy { background: var(--bzc-navy); color: #fff; }
@@ -215,13 +260,19 @@
 .bzc-btn--fantasma { background: transparent; border: 1px solid rgba(234, 241, 248, .32); color: #fff; }
 .bzc-btn--fantasma:hover { background: rgba(234, 241, 248, .1); color: #fff; }
 .bzc-btn--sm { height: 44px; padding: 0 22px; font-size: 14.5px; }
+/* A accao secundaria: sem fundo nem borda, com seta. Mantem a altura de
+   botao para o alvo de toque; so a seta se mexe, e so `transform`. */
+.bzc-btn--seta { background: transparent; color: var(--bzc-accent-dk); padding: 0 16px; }
+.bzc-btn--seta:hover { color: var(--bzc-accent-dk); text-decoration: underline; text-underline-offset: 4px; }
+.bzc-btn--seta svg { transition: transform .15s ease-out; }
+.bzc-btn--seta:hover svg { transform: translateX(3px); }
 
 
 /* ── Cartoes ───────────────────────────────────────────────────────── */
 
 .bzc-cartao {
   background: var(--bzc-surface); border: 1px solid var(--bzc-border);
-  border-radius: 20px; padding: 26px;
+  border-radius: 20px; padding: 26px; box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
 .bzc-cartao--grande { border-radius: 22px; }
 
@@ -276,21 +327,40 @@
   box-shadow: -18px 0 44px rgba(13, 59, 102, .24);
 }
 .bzc-gaveta-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.bzc-gaveta-painel a {
+/* Fora o botao de contacto: com `a` sozinho esta regra (mais especifica que
+   .bzc-btn--navy) pintava o texto dele de escuro sobre o azul-marinho. */
+.bzc-gaveta-painel a:not(.bzc-btn) {
   display: flex; align-items: center; min-height: 48px; padding: 0 10px;
   border-radius: 12px; font: 600 15px/1 Inter, sans-serif; color: var(--bzc-text);
 }
-.bzc-gaveta-painel a:hover { background: var(--bzc-surface2); }
+.bzc-gaveta-painel a:not(.bzc-btn):hover { background: var(--bzc-surface2); }
 .bzc-gaveta-tools { display: flex; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--bzc-border); }
 
 /* ── Movimento ─────────────────────────────────────────────────────── */
 
 @keyframes bzc-pulsar { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-@keyframes bzc-desfile { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .bzc-pulsa { animation: bzc-pulsar 2.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .bzc-pulsa, .bzc-desfile-fita { animation: none; }
+  .bzc-pulsa, .bzc-aurora i { animation: none; }
+  .bzc-btn, .bzc-btn--seta svg { transition: none; }
+  .bzc-btn:active { transform: none; }
+}
+
+/* A entrada ao chegar ao ecra. Quem marca `data-revela` e `useRevelar`, e so
+   marca o que vai mostrar: sem esse codigo a regra nao apanha nada. Com
+   movimento reduzido, ou a imprimir, o que estiver marcado aparece ja. */
+.bzc [data-revela] {
+  transition: opacity var(--bzc-dur-entrar) var(--bzc-curva), transform var(--bzc-dur-entrar) var(--bzc-curva);
+  transition-delay: calc(var(--bzc-ordem, 0) * 70ms);
+}
+.bzc [data-revela=""] { opacity: 0; transform: translateY(14px); }
+@media (prefers-reduced-motion: reduce) {
+  .bzc [data-revela] { opacity: 1; transform: none; transition: none; }
+}
+@media print {
+  .bzc [data-revela] { opacity: 1 !important; transform: none !important; }
+  .bzc .bzc-barra-accao { display: none; }
 }
 
 /* ── Rodape ────────────────────────────────────────────────────────── */
@@ -324,6 +394,22 @@
 /* ── A chapa ───────────────────────────────────────────────────────── */
 
 .bzc-hero { position: relative; overflow: hidden; }
+/* A chapa acaba na faixa branca dos produtos. Era uma aresta seca entre o ceu
+   e o branco; agora os ultimos 140px desvanecem para a cor da faixa, por
+   baixo do painel (que ja se corta em transparente) e por cima da aurora. */
+.bzc-hero::after {
+  content: ""; position: absolute; inset: auto 0 0; height: 140px; pointer-events: none;
+  background: linear-gradient(180deg, transparent, var(--bzc-surface));
+}
+.bzc-hero-in, .bzc-hero-painel { z-index: 1; }
+/* A entrada da chapa, uma vez, ao abrir. So CSS: corre sem esperar pelo
+   observador. O titulo sai sem atraso, porque e o maior elemento do ecra e o
+   browser so o conta como pintado quando ja se ve; o resto vem em escada. */
+@keyframes bzc-entra { from { opacity: 0; transform: translateY(12px); } }
+.bzc-hero-in > *, .bzc-hero-painel { animation: bzc-entra var(--bzc-dur-entrar) var(--bzc-curva) both; }
+.bzc-hero-in > :nth-child(2) { animation-delay: 70ms; }
+.bzc-hero-in > :nth-child(3) { animation-delay: 140ms; }
+.bzc-hero-painel { animation-delay: 220ms; }
 /* Duas manchas de luz por tras de tudo: o vidro por cima do centro e o azul
    no canto superior direito. Sao as do protocolo, com as mesmas paragens. */
 .bzc-hero-luz {
@@ -332,11 +418,116 @@
     radial-gradient(60% 50% at 50% 0%, var(--bzc-wash) 0%, transparent 70%),
     radial-gradient(38% 34% at 78% 12%, rgba(45, 140, 240, .18) 0%, rgba(45, 140, 240, 0) 70%);
 }
+/* A aurora fica por baixo da luz: o vidro de `.bzc-hero-luz` continua a
+   assentar sobre o titulo, e e ele que segura o contraste do texto. Os
+   campos ficam nos cantos e por tras do painel, longe do centro do titulo.
+   So as cores da marca: azul de accao, azul claro e navy. No tema claro
+   assentam por cima do ceu; no escuro somam-se ao navy com `screen`. */
+.bzc-aurora {
+  --bzc-aurora-1: rgba(45, 140, 240, .26);
+  --bzc-aurora-2: rgba(91, 163, 245, .32);
+  --bzc-aurora-3: rgba(13, 59, 102, .10);
+  --bzc-aurora-4: rgba(34, 120, 208, .16);
+  /* A zona calma: uma elipse por tras do titulo e dos botoes onde a aurora
+     nao chega. MEDIDO: sem ela o azul da segunda linha do titulo caia para
+     2,89:1 no telemovel (pede 3) e o botao "Comprar bilhete" para 4,04:1
+     (pede 4,5). Cobre o titulo, o lead e os dois botoes. Em px no eixo vertical, porque o texto nao cresce com a
+     altura da chapa. */
+  --bzc-calma-w: 46%; --bzc-calma-h: 300px; --bzc-calma-y: 185px;
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  -webkit-mask-image:
+    linear-gradient(180deg, #000 0%, #000 55%, transparent 92%),
+    radial-gradient(var(--bzc-calma-w) var(--bzc-calma-h) at 50% var(--bzc-calma-y), transparent 45%, #000 100%);
+  mask-image:
+    linear-gradient(180deg, #000 0%, #000 55%, transparent 92%),
+    radial-gradient(var(--bzc-calma-w) var(--bzc-calma-h) at 50% var(--bzc-calma-y), transparent 45%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.bzc[data-theme="dark"] .bzc-aurora {
+  --bzc-aurora-1: rgba(45, 140, 240, .30);
+  --bzc-aurora-2: rgba(91, 163, 245, .18);
+  --bzc-aurora-3: rgba(29, 95, 167, .35);
+  --bzc-aurora-4: rgba(91, 163, 245, .16);
+}
+.bzc-aurora i {
+  position: absolute; display: block; border-radius: 50%;
+  will-change: transform, opacity;
+}
+.bzc[data-theme="dark"] .bzc-aurora i { mix-blend-mode: screen; }
+/* MEDIDO (3 Nov): com 4-6% de deslize em 24-32s a aurora mexia ~2px/s e em 2s
+   nenhum pixel da chapa mudava o bastante para se ver. Agora cada campo tem
+   quatro relogios proprios, todos de vai-e-volta e de duracoes que nao se
+   dividem umas pelas outras: `translate` leva-o de um lado para o outro,
+   `rotate` a volta de uma origem afastada curva esse caminho, `scale` faz a luz
+   respirar e `opacity` sobe e desce a cor. Somados, os quatro campos cruzam-se
+   e misturam os azuis sem paragens e sem um ciclo que o olho apanhe. Cada
+   relogio arranca a meio (atraso negativo): ao abrir a pagina a luz ja vai
+   em andamento, em vez de partir do repouso. Tudo propriedades do
+   compositor: a thread principal nao trabalha. A zona calma da mascara
+   continua a proteger o texto, mexa-se a luz para onde se mexer.
+   Resultado a 1440px: ~11% da chapa muda de forma visivel a cada 2s e ~45%
+   ao longo de 12s, com o contraste do texto igual ao de antes. */
+.bzc-aurora-1 {
+  width: 62%; height: 70%; left: -16%; top: -18%;
+  background: radial-gradient(closest-side, var(--bzc-aurora-1), transparent);
+  transform: rotate(-14deg); transform-origin: 70% 150%;
+  animation: bzc-au-ir-1 10s ease-in-out -5s infinite alternate, bzc-au-curva 21s ease-in-out -10.5s infinite alternate,
+    bzc-au-respira 9s ease-in-out -4.5s infinite alternate, bzc-au-cor 5s ease-in-out -2.5s infinite alternate;
+}
+.bzc-aurora-2 {
+  width: 58%; height: 64%; right: -14%; top: -10%;
+  background: radial-gradient(closest-side, var(--bzc-aurora-2), transparent);
+  transform: rotate(12deg); transform-origin: 20% 160%;
+  animation: bzc-au-ir-2 12s ease-in-out -6s infinite alternate, bzc-au-curva 24s ease-in-out -12s infinite alternate-reverse,
+    bzc-au-respira 11s ease-in-out -5.5s infinite alternate-reverse, bzc-au-cor 6s ease-in-out -3s infinite alternate;
+}
+.bzc-aurora-3 {
+  width: 90%; height: 56%; left: 5%; top: 38%;
+  background: radial-gradient(closest-side, var(--bzc-aurora-3), transparent);
+  transform-origin: 50% -80%;
+  animation: bzc-au-ir-3 14s ease-in-out -7s infinite alternate, bzc-au-curva 28s ease-in-out -14s infinite alternate,
+    bzc-au-respira 13s ease-in-out -6.5s infinite alternate, bzc-au-cor 7s ease-in-out -3.5s infinite alternate-reverse;
+}
+.bzc-aurora-4 {
+  width: 48%; height: 54%; left: 30%; top: 20%;
+  background: radial-gradient(closest-side, var(--bzc-aurora-4), transparent);
+  transform-origin: -40% 50%;
+  animation: bzc-au-ir-4 11s ease-in-out -5.5s infinite alternate, bzc-au-curva 26s ease-in-out -13s infinite alternate-reverse,
+    bzc-au-respira 10s ease-in-out -5s infinite alternate, bzc-au-cor 5.5s ease-in-out -2.75s infinite alternate-reverse;
+}
+@keyframes bzc-au-ir-1 { from { translate: 0 0; } to { translate: 34% 22%; } }
+@keyframes bzc-au-ir-2 { from { translate: 0 0; } to { translate: -30% 26%; } }
+@keyframes bzc-au-ir-3 { from { translate: -12% 0; } to { translate: 14% -18%; } }
+@keyframes bzc-au-ir-4 { from { translate: -40% 10%; } to { translate: 40% -14%; } }
+@keyframes bzc-au-curva { from { rotate: -9deg; } to { rotate: 9deg; } }
+@keyframes bzc-au-respira { from { scale: .9; } to { scale: 1.16; } }
+@keyframes bzc-au-cor { from { opacity: .35; } to { opacity: 1; } }
+.bzc-aurora[data-parado] i { animation-play-state: paused; }
+
+/* Uma grelha fina por cima da aurora, so no topo: da a chapa a textura de
+   folha de planeamento sem desenhar nada. Fica por baixo do vidro de
+   `.bzc-hero-luz`, que a apaga atras do titulo. */
+.bzc-hero-grelha {
+  --bzc-grelha-cor: rgba(13, 59, 102, .06);
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--bzc-grelha-cor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bzc-grelha-cor) 1px, transparent 1px);
+  background-size: 56px 56px; background-position: center top;
+  -webkit-mask-image: radial-gradient(75% 420px at 50% 0%, #000 0%, transparent 100%);
+  mask-image: radial-gradient(75% 420px at 50% 0%, #000 0%, transparent 100%);
+}
+.bzc[data-theme="dark"] .bzc-hero-grelha { --bzc-grelha-cor: rgba(234, 241, 248, .05); }
+
 .bzc-hero-in {
   position: relative; max-width: 900px; margin: 0 auto;
   padding: 46px 32px 0; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 20px;
 }
+/* `--bzc-muted-ceu` e nao o cinzento normal: MEDIDO, com a aurora por tras o
+   `--bzc-muted` descia a 3,98:1 no telemovel. */
+.bzc-hero-lead { max-width: 56ch; font-size: 18px; margin-top: -6px; color: var(--bzc-muted-ceu); }
 .bzc-hero-accoes { display: flex; gap: 12px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
 
 .bzc-hero-painel { position: relative; max-width: 1080px; margin: 40px auto 0; padding: 0 32px; }
@@ -348,13 +539,27 @@
   font: 600 12.5px/1 Inter, sans-serif; color: var(--bzc-text); white-space: nowrap;
 }
 .bzc-etiqueta i { width: 6px; height: 6px; border-radius: 999px; flex: none; }
-.bzc-etiqueta--1 { left: -6px; top: 108px; }
-.bzc-etiqueta--2 { right: -8px; top: 62px; }
-.bzc-etiqueta--3 { left: 60px; top: 300px; }
-.bzc-etiqueta--4 { right: 40px; top: 330px; }
+/* O ponto do passageiro e navy e sumia na etiqueta escura. Um aro claro em
+   vez de outra cor: o codigo de cores das quatro funcoes fica o mesmo. */
+.bzc[data-theme="dark"] .bzc-etiqueta i { box-shadow: 0 0 0 1.5px rgba(234, 241, 248, .6); }
+/* Penduradas na borda do painel, com 16px para dentro — menos do que o
+   padding do painel (22px), por isso nunca tapam um numero. O painel comeca
+   a 32px da caixa (o padding acima) e acaba a 32px do fim. */
+.bzc-etiqueta--1, .bzc-etiqueta--3 { left: 32px; transform: translateX(calc(-100% + 16px)); }
+.bzc-etiqueta--2, .bzc-etiqueta--4 { left: calc(100% - 32px); transform: translateX(-16px); }
+.bzc-etiqueta--1 { top: 108px; }
+.bzc-etiqueta--2 { top: 62px; }
+.bzc-etiqueta--3 { top: 300px; }
+.bzc-etiqueta--4 { top: 330px; }
 
-/* O painel entra pelo fundo e e cortado: ve-se o topo, nao a pagina toda. */
-.bzc-painel-corte { height: 430px; overflow: hidden; border-radius: 22px 22px 0 0; }
+/* O painel entra pelo fundo e e cortado: ve-se o topo, nao a pagina toda.
+   Os ultimos 120px dissolvem-se na chapa — sem isto o corte era uma aresta
+   dura e o painel lia-se como uma caixa branca pousada. */
+.bzc-painel-corte {
+  height: 430px; overflow: hidden; border-radius: 22px 22px 0 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 120px), transparent);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 120px), transparent);
+}
 .bzc-painel {
   width: 1016px; max-width: 100%;
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-bottom: 0;
@@ -429,22 +634,51 @@
 
 /* ── A fita dos logotipos ──────────────────────────────────────────── */
 
-.bzc-fita { border-top: 1px solid var(--bzc-border); background: var(--bzc-surface); padding: 40px 0 44px; }
-.bzc-desfile {
-  width: 100%; overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+.bzc-fita { background: var(--bzc-surface); padding: 40px 0 44px; }
+/* A placa e um degrau acima do fundo da faixa; as celulas sao a superficie.
+   O seletor leva `.bzc` a frente porque o reset `.bzc ul` (0,1,1) apagava a
+   margem e o recheio: a placa encostava a esquerda e as celulas a borda.
+   Todas do mesmo tamanho, para o grupo ler como uma grelha decidida e nao
+   como cartoes soltos. A altura de cada logotipo vem do ficheiro de dados
+   (`--logo-h`) e a escala encolhe-a por igual no telemovel. */
+.bzc .bzc-produtos {
+  --bzc-celula-h: 88px;
+  --bzc-escala-logo: 1;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 176px)); gap: 12px;
+  justify-content: center; width: fit-content; max-width: 100%; margin: 0 auto; padding: 12px;
+  background: var(--bzc-surface2); border: 1px solid var(--bzc-border); border-radius: 24px;
+  box-shadow: inset 0 1px 0 var(--bzc-wash);
 }
-.bzc-desfile-fita {
-  display: flex; align-items: center; gap: 16px; width: max-content;
-  animation: bzc-desfile 32s linear infinite;
-}
-.bzc-desfile-fita li {
-  flex: none; height: 62px; padding: 0 26px;
-  border: 1px solid var(--bzc-border); border-radius: 999px; background: var(--bzc-surface);
+.bzc .bzc-produtos--fluida { grid-template-columns: repeat(2, minmax(0, 1fr)); width: auto; }
+.bzc-produto {
+  position: relative; height: var(--bzc-celula-h); padding: 0 16px;
   display: flex; align-items: center; justify-content: center;
+  background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px;
+  transition: border-color var(--bzc-dur-toque) ease-out, transform var(--bzc-dur-subir) var(--bzc-curva);
 }
-.bzc-desfile-fita img { max-height: 26px; max-width: 116px; object-fit: contain; display: block; }
+a.bzc-produto:hover { border-color: var(--bzc-accent); }
+/* So com rato: num ecra de toque o `:hover` fica preso depois do toque. */
+@media (hover: hover) and (pointer: fine) {
+  a.bzc-produto:hover { transform: translateY(-2px); }
+}
+.bzc-produto img {
+  height: calc(var(--logo-h) * var(--bzc-escala-logo)); width: auto; max-width: 100%;
+  object-fit: contain;
+}
+/* TEMA ESCURO: DOIS LOGOTIPOS NAO TEM VERSAO PARA NAVY. A variante escura do
+   GoUp mantem o "Up" em azul-marinho, e o nome por baixo do brasao da OSSOMA
+   e verde-escuro — sobre a celula navy os dois desaparecem. Recolorir a arte
+   esta fora de questao; a celula passa a clara e leva o ficheiro de fundo
+   claro, que e a placa para que a arte foi desenhada. */
+.bzc[data-theme="dark"] .bzc-produto[data-placa="clara"] { background: #F6F9FD; border-color: #D7E2EF; }
+.bzc[data-theme="dark"] .bzc-produto[data-placa="clara"] img[data-logo="light"] { display: block; }
+.bzc[data-theme="dark"] .bzc-produto[data-placa="clara"] img[data-logo="dark"] { display: none; }
+/* O produto desta pagina: um traco da cor da marca no topo da celula. O
+   logotipo fica como esta — marca-se a celula, nao a arte. */
+.bzc-produto[aria-current]::before {
+  content: ""; position: absolute; top: -1px; left: 22px; right: 22px; height: 2px;
+  border-radius: 0 0 2px 2px; background: var(--bzc-accent);
+}
 
 /* ── Grelhas e cartoes de funcionalidade ───────────────────────────── */
 
@@ -454,6 +688,7 @@
 .bzc-cartao-func {
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px;
   padding: 26px 26px 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden;
+  box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
 .bzc-cartao-func .bzc-lead { font-size: 14.5px; }
 
@@ -576,7 +811,7 @@
 .bzc-passos-mock-corpo [data-tom="aviso"] { color: var(--bzc-aviso-ink); font-weight: 700; }
 
 .bzc-passos-lista { display: flex; flex-direction: column; gap: 12px; }
-.bzc-passos-lista > li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px; overflow: hidden; }
+.bzc-passos-lista > li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px; overflow: hidden; box-shadow: var(--bzc-realce), var(--bzc-sombra-1); }
 .bzc-passos-lista button {
   width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
   padding: 22px 24px; border: 0; background: transparent; cursor: pointer; font-family: inherit;
@@ -607,8 +842,17 @@
 .bzc-plano {
   background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 22px;
   padding: 28px 26px; display: flex; flex-direction: column; gap: 14px;
+  box-shadow: var(--bzc-realce), var(--bzc-sombra-1);
 }
-.bzc-plano[data-destaque] { border: 1.5px solid var(--bzc-accent); box-shadow: 0 20px 50px rgba(45, 140, 240, .14); }
+.bzc-plano[data-destaque] { border: 1.5px solid var(--bzc-accent); box-shadow: var(--bzc-realce), 0 20px 50px rgba(45, 140, 240, .14); }
+/* O plano e uma escolha, por isso levanta-se 4px ao passar o rato. Os cartoes
+   das funcionalidades nao: nao sao clicaveis, e subir prometia um clique que
+   nao existe. */
+.bzc-plano { transition: transform var(--bzc-dur-subir) var(--bzc-curva), box-shadow var(--bzc-dur-subir) var(--bzc-curva); }
+@media (hover: hover) and (pointer: fine) {
+  .bzc-plano:hover { transform: translateY(-4px); box-shadow: var(--bzc-realce), var(--bzc-sombra-2); }
+  .bzc-plano[data-destaque]:hover { box-shadow: var(--bzc-realce), 0 28px 56px rgba(45, 140, 240, .22); }
+}
 .bzc-plano-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .bzc-plano-selo {
   height: 26px; padding: 0 11px; border-radius: 999px; background: var(--bzc-sky2);
@@ -622,7 +866,7 @@
 /* ── Perguntas ─────────────────────────────────────────────────────── */
 
 .bzc-faq { display: flex; flex-direction: column; gap: 10px; }
-.bzc-faq li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px; overflow: hidden; }
+.bzc-faq li { background: var(--bzc-surface); border: 1px solid var(--bzc-border); border-radius: 16px; overflow: hidden; box-shadow: var(--bzc-realce), var(--bzc-sombra-1); }
 .bzc-faq button {
   width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px;
   min-height: 62px; padding: 16px 20px; border: 0; background: transparent; cursor: pointer;
@@ -633,28 +877,42 @@
 
 /* ── A chamada ─────────────────────────────────────────────────────── */
 
-.bzc-chamada { background: linear-gradient(150deg, #0D3B66 0%, #0A2E50 62%, #06203A 100%); padding: 80px 0; }
+/* Um painel recolhido com cantos, e nao uma faixa de ponta a ponta: entre as
+   perguntas e o ecossistema a faixa navy cortava a pagina ao meio. Recolhida,
+   le-se como a peca final e o fundo da pagina continua a correr a volta dela.
+   E so CSS, por isso serve a pagina inicial e a dos precos. O brilho azul no
+   canto e parado e fica atras do texto (MEDIDO no contraste). */
+.bzc-chamada {
+  position: relative; isolation: isolate; overflow: hidden;
+  width: calc(100% - 64px); max-width: 1216px; margin: 0 auto 80px; border-radius: 28px;
+  background: linear-gradient(150deg, #0D3B66 0%, #0A2E50 62%, #06203A 100%); padding: 80px 0;
+  box-shadow: var(--bzc-sombra-2);
+}
+.bzc-chamada::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(50% 70% at 88% 0%, rgba(45, 140, 240, .24) 0%, rgba(45, 140, 240, 0) 70%);
+}
+/* No escuro o fim do degrade e o proprio fundo: um aro de 1px por dentro
+   devolve o contorno sem mexer no tamanho da caixa. */
+.bzc[data-theme="dark"] .bzc-chamada { box-shadow: inset 0 0 0 1px var(--bzc-border2), var(--bzc-sombra-2); }
 .bzc-chamada-accoes { display: flex; gap: 12px; justify-content: center; margin-top: 28px; flex-wrap: wrap; }
 
 /* ── Quem constroi ─────────────────────────────────────────────────── */
 
 .bzc-eco { display: grid; grid-template-columns: 1fr 1.05fr; gap: 56px; align-items: center; }
-.bzc-eco-grelha { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.bzc-eco-grelha a {
-  background: var(--bzc-surface2); border: 1px solid var(--bzc-border); border-radius: 18px;
-  padding: 20px; min-height: 88px; display: flex; align-items: center; justify-content: center;
-  transition: border-color .15s ease-out;
-}
-.bzc-eco-grelha a:hover { border-color: var(--bzc-accent); }
-.bzc-eco-grelha img { height: 34px; width: auto; max-width: 150px; object-fit: contain; display: block; }
 
 /* ── Ecras estreitos ───────────────────────────────────────────────── */
+
+/* As etiquetas saem ate ~110px para fora do painel: abaixo de 1280px ja nao
+   cabem na margem e o `overflow` da chapa cortava-as. */
+@media (max-width: 1279px) {
+  .bzc-etiqueta { display: none; }
+}
 
 @media (max-width: 1080px) {
   .bzc-nav-links { display: none; }
   .bzc-burger { display: flex; }
   .bzc-nav-fim .bzc-btn { display: none; }
-  .bzc-etiqueta { display: none; }
 }
 
 @media (max-width: 900px) {
@@ -672,14 +930,97 @@
   .bzc-painel-abas, .bzc-painel-filtros, .bzc-painel-busca { display: none; }
   .bzc-painel-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bzc-foot-in { grid-template-columns: 1fr 1fr; gap: 28px; }
-  .bzc-chamada { padding: 56px 0; }
+  .bzc-chamada { width: calc(100% - 40px); margin-bottom: 56px; border-radius: 22px; padding: 56px 0; }
   .bzc-eco { gap: 32px; }
 }
 
 @media (max-width: 560px) {
-  .bzc-foot-in, .bzc-eco-grelha { grid-template-columns: 1fr; }
+  .bzc-foot-in { grid-template-columns: 1fr; }
+  /* No telemovel o texto ocupa a largura toda e o painel opaco tapa o resto:
+     com a calma a cobrir tudo, so ~9% da chapa visivel se mexia. MEDIDO (8
+     fases, 320-560px): esta forma, mais baixa e mais estreita, deixa a luz
+     passar no topo do titulo e nas margens (~22-31% de alcance, antes ~10%) e o azul da
+     segunda linha fica >=3,06:1. */
+  .bzc-aurora { --bzc-calma-w: 90%; --bzc-calma-h: 310px; --bzc-calma-y: 260px; }
+  .bzc .bzc-produtos, .bzc .bzc-produtos--fluida { grid-template-columns: repeat(2, minmax(0, 1fr)); width: auto; padding: 10px; gap: 10px; }
+  .bzc .bzc-produtos { --bzc-celula-h: 76px; --bzc-escala-logo: .87; }
   .bzc-h1 { font-size: 34px; }
+  .bzc-hero-lead { font-size: 16px; }
+  /* Empilhados, a sombra azul do botao principal caia por tras do texto da
+     ligacao de baixo — MEDIDO, 4,23:1. Mais curta e com 10px de folga: */
+  .bzc-hero-accoes { gap: 10px; }
+  .bzc-hero-accoes .bzc-btn--azul { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
   .bzc-hero-accoes .bzc-btn { width: 100%; }
+  /* O portal de exemplo: a 320px a coluna das rotas ficava com ~60px e o estado
+     ("activa", "rascunho") saia pelo lado. A lista de menus sobe para uma linha
+     so com a marca, e as rotas ficam com a largura toda. */
+  .bzc-passos-painel { padding: 28px 22px 0; }
+  .bzc-passos-mock { flex-direction: column; gap: 0; }
+  .bzc-passos-mock-nav { width: auto; padding-bottom: 10px; border-bottom: 1px solid var(--bzc-border); }
+  .bzc-passos-mock-nav span { display: none; }
+  .bzc-passos-mock-marca { margin-bottom: 0; }
+  .bzc-passos-mock-corpo { border-left: 0; padding: 12px 0 14px; }
+  .bzc-passos-mock-corpo > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .bzc-passos-mock-corpo > div > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* A barra de cima a 320px: marca, idioma, tema e menu somavam mais do que o
+   ecra, e era a marca que encolhia (o logotipo ficava deformado). A marca nao
+   encolhe; o idioma sai da barra porque ja esta dentro do menu. */
+.bzc-nav-marca { flex: none; }
+@media (max-width: 900px) {
+  .bzc-nav-in { padding: 0 20px; height: 76px; }
+}
+@media (max-width: 359px) {
+  .bzc-nav-fim > .bzc-idioma { display: none; }
+}
+
+
+/* ── Barra de accao (telemovel) ────────────────────────────────────── */
+
+/* Aparece no mesmo ponto em que o botao de contacto sai da barra de cima
+   (1080px). Fixa e por `transform`: nao empurra nada. A `visibility` so muda
+   no fim da saida, para a barra nao desaparecer a meio do deslize. O fundo do
+   telefone (barra do iOS) fica por baixo, nao por cima dos botoes. */
+.bzc-barra-accao { display: none; }
+@media (max-width: 1080px) {
+  .bzc-barra-accao {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    padding: 10px max(16px, calc((100% - 560px) / 2)) calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--bzc-surface); border-top: 1px solid var(--bzc-border);
+    box-shadow: var(--bzc-sombra-cima);
+    transform: translateY(calc(100% + 24px)); visibility: hidden;
+    transition: transform var(--bzc-dur-entrar) var(--bzc-curva), visibility 0s linear var(--bzc-dur-entrar);
+  }
+  .bzc-barra-accao[data-visivel] {
+    transform: none; visibility: visible;
+    transition: transform var(--bzc-dur-entrar) var(--bzc-curva), visibility 0s;
+  }
+  /* 48px de alvo; a sombra azul do botao cheio encurta, que ali em baixo nao
+     ha onde cair. */
+  .bzc-barra-accao .bzc-btn { height: 48px; min-width: 0; padding: 0 12px; }
+  .bzc-barra-accao .bzc-btn--azul { box-shadow: 0 6px 14px rgba(45, 140, 240, .28); }
+}
+/* O convite para instalar a app no iPhone (fixo a 12px do fundo) ficava por
+   cima dos dois botoes — MEDIDO a 390px: convite 756–832, barra 775–844. Com a
+   barra a vista, o convite sobe a altura dela (10 + 48 + 10 + 1 de borda) e
+   desce quando ela sai. `translate` e nao `bottom`: nao mexe na caixa. */
+@media (max-width: 1080px) {
+  .pwa-install-banner { transition: translate var(--bzc-dur-entrar, .3s) var(--bzc-curva, ease-out); }
+  body:has(.bzc-barra-accao[data-visivel]) .pwa-install-banner {
+    translate: 0 calc(-69px - env(safe-area-inset-bottom, 0px));
+  }
+}
+/* Com o menu aberto o convite (z-index 9999) ficava por cima da gaveta e
+   tapava as ultimas ligacoes — visto no Safari do iPhone. Some enquanto a
+   gaveta esta aberta e volta quando fecha. */
+body:has(.bzc-gaveta) .pwa-install-banner { visibility: hidden; }
+/* Num ecra de 320px os dois nao cabem lado a lado sem cortar o texto. Fica so o
+   contacto, que e a venda; o bilhete continua na chapa. */
+@media (max-width: 359px) {
+  .bzc-barra-accao { grid-template-columns: 1fr; }
+  .bzc-barra-accao .bzc-btn--linha { display: none; }
 }
 
 /* ── Contactos ─────────────────────────────────────────────────────── */
@@ -906,4 +1247,38 @@
   .bzc-erro-pistas { grid-template-columns: 1fr; margin-top: 6px; gap: 9px; }
   .bzc-erro-accoes { width: 100%; flex-direction: column; }
   .bzc-erro-accoes > * { width: 100%; justify-content: center; }
+}
+
+/* Aqui no fim porque os campos, as ligacoes dos contactos e o botao do quadro
+   sao declarados mais abaixo com a mesma especificidade.
+   Dedo, nao rato (ou ecra estreito, que no fim e telemovel): alvos de 44px de altura onde o desenho os tinha mais baixos.
+   Os campos a 16px porque o Safari do iPhone faz zoom em qualquer campo abaixo
+   disso e nao volta atras sozinho. */
+@media (pointer: coarse), (max-width: 900px) {
+  .bzc-foot-col { gap: 0; }
+  .bzc-foot-col b { margin-bottom: 6px; }
+  .bzc-foot-col a, .bzc-foot-col span { min-height: 44px; }
+  .bzc-contacto-lista a { min-height: 44px; }
+  .bzc-quadro-cta { min-height: 44px; }
+  /* PT/EN: o botao fica com 36px a vista (a pilula nao cabe mais alta na barra
+     a 320px), mas o dedo apanha 46px — a area de toque sai 5px para cima e
+     para baixo, por cima da borda da pilula. */
+  .bzc-idioma button { height: 36px; min-width: 44px; position: relative; }
+  .bzc-idioma button::after { content: ""; position: absolute; inset: -5px 0; }
+  /* A marca leva para o inicio: a caixa cresce ate 44px, o logotipo fica igual. */
+  .bzc-nav-marca, .bzc-erro-topo > a { min-height: 44px; display: flex; align-items: center; }
+  .bzc-erro-ajuda { height: 44px; }
+  .bzc-contacto-form input,
+  .bzc-contacto-form select,
+  .bzc-contacto-form textarea { font-size: 16px; }
+}
+
+/* No fim do ficheiro de proposito: a subida dos cartoes e declarada mais
+   acima com a mesma especificidade, e so a ultima regra ganha (a entrada da
+   chapa tambem). */
+@media (prefers-reduced-motion: reduce) {
+  .bzc-hero-in > *, .bzc-hero-painel { animation: none; }
+  .bzc-barra-accao, .bzc-barra-accao[data-visivel], .pwa-install-banner { transition: none; }
+  .bzc-plano, a.bzc-produto { transition: none; }
+  .bzc .bzc-plano:hover, .bzc a.bzc-produto:hover { transform: none; }
 }

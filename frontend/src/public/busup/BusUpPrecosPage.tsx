@@ -4,7 +4,7 @@ import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import BusUpPagina, { LogotipoUpDigital, useBusUpMeta } from "./BusUpChrome";
 import { useLandingPrefs } from "../landing/useLandingPrefs";
 import { copyPrecos } from "./busup-precos-copy";
-import { LOGOS_ECO } from "./logos-ecossistema";
+import FaixaLogotipos from "./FaixaLogotipos";
 
 /* Preços — portado do protótipo `Precos BusUp.dc.html`.
  *
@@ -118,7 +118,7 @@ export default function BusUpPrecosPage() {
       </section>
 
       {/* ── Perguntas ─────────────────────────────────────────── */}
-      <section className="bzc-sec">
+      <section className="bzc-sec bzc-sec--pontos">
         <div className="bzc-wrap-sm">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.faqH2}</h2>
@@ -166,16 +166,7 @@ export default function BusUpPrecosPage() {
               <p className="bzc-lead" style={{ maxWidth: "46ch" }}>{t.ecoLead}</p>
               <p className="bzc-lead" style={{ maxWidth: "46ch", marginTop: 12 }}>{t.ecoNote}</p>
             </div>
-            <ul className="bzc-eco-grelha">
-              {LOGOS_ECO.map((l) => (
-                <li key={l.nome}>
-                  <a href={l.url} rel="noopener" target="_blank">
-                    <img alt={l.nome} data-logo="light" src={l.claro} />
-                    <img alt={l.nome} data-logo="dark" src={l.escuro} />
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <FaixaLogotipos fluida />
           </div>
         </div>
       </section>

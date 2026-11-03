@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, ChevronDown, Minus, Plus } from "lucide-react";
-import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital, LOGO_CLARO, LOGO_ESCURO } from "./BusUpChrome";
-import { LOGOS_ECO } from "./logos-ecossistema";
+import BusUpPagina, { MARCA, useBusUpCopy, useBusUpMeta, LogotipoUpDigital } from "./BusUpChrome";
+import AuroraChapa from "./AuroraChapa";
+import FaixaLogotipos from "./FaixaLogotipos";
 
 /* A landing pública do BusUp — o desenho "Céu", portado do protótipo
  * `Landing BusUp - Ceu.dc.html` do projecto de desenho.
@@ -209,19 +210,31 @@ export default function BusUpLandingPage() {
     <BusUpPagina>
       {/* ── CHAPA ─────────────────────────────────────────────────── */}
       <section className="bzc-hero" id="topo">
+        <AuroraChapa />
+        <div aria-hidden className="bzc-hero-grelha" />
         <div aria-hidden className="bzc-hero-luz" />
 
+        {/* UMA ACÇÃO PRINCIPAL. O contacto é a venda — é ao operador que a
+            página se dirige — e leva o botão cheio. A compra do passageiro
+            fica ao lado como ligação com seta: continua à vista e com 52px de
+            alvo, mas já não disputa o olhar com o botão azul. O lead é o
+            `heroLeadShort` do ficheiro de texto, que até aqui só ia para o
+            <meta>: diz a quem serve antes de pedir o clique. */}
         <div className="bzc-hero-in">
           <h1 className="bzc-h1">{t.heroH1a}<span>{t.heroH1b}</span></h1>
+          <p className="bzc-lead bzc-hero-lead">{t.heroLeadShort}</p>
 
           <div className="bzc-hero-accoes">
             <Link className="bzc-btn bzc-btn--azul" to="/contactos">{t.ctaPrimary}</Link>
-            <Link className="bzc-btn bzc-btn--ceu" to="/comprar">{t.buyTicket}</Link>
+            <Link className="bzc-btn bzc-btn--seta" to="/comprar">
+              {t.buyTicket}<ArrowRight aria-hidden size={17} />
+            </Link>
           </div>
         </div>
 
         {/* As quatro etiquetas que apontam para quem usa o quê. São decorativas:
-            o painel por baixo já diz tudo o que elas dizem. */}
+            o painel por baixo já diz tudo o que elas dizem. Ficam penduradas
+            na borda do painel, por fora — antes tapavam a receita e uma rota. */}
         <div aria-hidden className="bzc-hero-painel" id="produto">
           <span className="bzc-etiqueta bzc-etiqueta--1"><i style={{ background: "#2A9D8F" }} />{t.tag1}</span>
           <span className="bzc-etiqueta bzc-etiqueta--2"><i style={{ background: "#2D8CF0" }} />{t.tag2}</span>
@@ -238,23 +251,7 @@ export default function BusUpLandingPage() {
             {t.ecoStripTitle}
           </h2>
           <p className="bzc-lead" style={{ fontSize: 14, textAlign: "center", margin: "6px auto 22px" }}>{t.logosLead}</p>
-          <div className="bzc-desfile">
-            {/* Duas cópias e um deslize de metade: ao fim do percurso a segunda
-                está onde a primeira estava, e o laço fecha sem se ver o corte. */}
-            <ul className="bzc-desfile-fita">
-              {[0, 1].flatMap((copia) => [
-                <li key={`u-${copia}`} aria-hidden={copia > 0 || undefined}>
-                  <LogotipoUpDigital alt={copia === 0 ? "UpDigital, Limitada" : ""} altura={26} />
-                </li>,
-                ...LOGOS_ECO.map((l) => (
-                  <li aria-hidden={copia > 0 || undefined} key={`${copia}-${l.nome}`}>
-                    <img alt={copia === 0 ? l.nome : ""} data-logo="light" src={l.claro} />
-                    <img alt={copia === 0 ? l.nome : ""} data-logo="dark" src={l.escuro} />
-                  </li>
-                )),
-              ])}
-            </ul>
-          </div>
+          <FaixaLogotipos />
         </div>
       </div>
 
@@ -302,7 +299,7 @@ export default function BusUpLandingPage() {
       {/* ── COMEÇAR EM TRÊS PASSOS ────────────────────────────────── */}
       {/* Sem a chapa alternada: os números que vinham antes levavam-na, e com
           eles fora seriam três secções claras seguidas. */}
-      <section className="bzc-sec">
+      <section className="bzc-sec bzc-sec--pontos">
         <div className="bzc-wrap-md">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.stepsH2}</h2>
@@ -396,7 +393,7 @@ export default function BusUpLandingPage() {
       </section>
 
       {/* ── PERGUNTAS ─────────────────────────────────────────────── */}
-      <section className="bzc-sec">
+      <section className="bzc-sec bzc-sec--pontos">
         <div className="bzc-wrap-sm">
           <div className="bzc-sechead">
             <h2 className="bzc-h2">{t.faqH2}</h2>
@@ -444,22 +441,7 @@ export default function BusUpLandingPage() {
               <p className="bzc-lead" style={{ maxWidth: "46ch" }}>{t.ecoLead}</p>
               <p className="bzc-lead" style={{ maxWidth: "46ch", marginTop: 12 }}>{t.ecoNote}</p>
             </div>
-            <ul className="bzc-eco-grelha">
-              {LOGOS_ECO.map((l) => (
-                <li key={l.nome}>
-                  <a href={l.url} rel="noopener" target="_blank">
-                    <img alt={l.nome} data-logo="light" src={l.claro} />
-                    <img alt={l.nome} data-logo="dark" src={l.escuro} />
-                  </a>
-                </li>
-              ))}
-              <li>
-                <a href="https://busup.updigital.co.mz" rel="noopener" target="_blank">
-                  <img alt="BusUp" data-logo="light" src={LOGO_CLARO} />
-                  <img alt="BusUp" data-logo="dark" src={LOGO_ESCURO} />
-                </a>
-              </li>
-            </ul>
+            <FaixaLogotipos fluida />
           </div>
         </div>
       </section>

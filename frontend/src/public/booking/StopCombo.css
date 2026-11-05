@@ -71,3 +71,111 @@
   /* No telemovel o campo ja ocupa a largura toda; a lista segue-o. */
   .bzbk-combo-list { width: 100%; min-width: 0; max-width: none; }
 }
+
+/* O troco do nome que bate com o que se escreveu. Negrito e nao fundo
+   amarelo: o fundo competia com a linha realcada pelo teclado. */
+.bzbk-combo-realce {
+  background: none;
+  color: inherit;
+  font-weight: 800;
+}
+
+/* ── Folha em ecra inteiro, no telemovel ─────────────────────────────
+   Pendurada no campo, a lista ficava com metade do ecra (o teclado levava a
+   outra metade) e os nomes longos partiam-se. Aqui ocupa o ecra todo, com o
+   rotulo do campo por titulo e um X de 44px. A pesquisa NAO recebe o foco ao
+   abrir: com oito paragens, tocar e mais rapido do que escrever, e o teclado
+   aberto tapava metade delas. */
+.bzbk-folha {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--background, #fff);
+  color: var(--foreground, #212529);
+  outline: none;
+  animation: bzbk-folha-entra 180ms ease-out;
+}
+@keyframes bzbk-folha-entra {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bzbk-folha { animation: none; }
+}
+.bzbk-folha-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 6px 6px 18px;
+  border-bottom: 1px solid var(--border, #dfe5ec);
+}
+.bzbk-folha-titulo {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: inherit;
+}
+.bzbk-folha-fechar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.bzbk-folha-fechar:hover,
+.bzbk-folha-fechar:focus-visible {
+  background: var(--accent, #e6eef5);
+  outline: none;
+}
+.bzbk-folha-busca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  margin: 14px 16px 6px;
+  padding: 0 14px;
+  border: 1px solid var(--border, #dfe5ec);
+  border-radius: 12px;
+  background: var(--card, #fff);
+  color: var(--muted-foreground, #6d6d6e);
+}
+.bzbk-folha-busca:focus-within {
+  border-color: var(--primary, #03316b);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #03316b) 18%, transparent);
+}
+.bzbk-folha-busca input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--foreground, #212529);
+  font: inherit;
+  /* 16px: abaixo disso o Safari do iPhone faz zoom ao tocar. */
+  font-size: 16px;
+}
+.bzbk-folha .bzbk-combo-list {
+  position: static;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  padding: 6px 10px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.bzbk-folha .bzbk-combo-opt { min-height: 56px; font-size: 16px; }

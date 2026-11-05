@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CalendarDays, X } from "lucide-react";
 import { pt, enGB } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -48,6 +48,12 @@ export function CampoData({
    * preferencia de idioma (`useUi`), mas as paginas publicas seguem outra — a
    * do selector da landing — e por isso quem chama pode passar o seu. */
   vazio = "dd/mm/aaaa",
+  formatar,
+  aberto: abertoFora,
+  onAbertoChange,
+  invalido = false,
+  depoisDeEscolher,
+  idioma,
 }: {
   value: string;
   onChange: (iso: string) => void;
@@ -57,9 +63,30 @@ export function CampoData({
   disabled?: boolean;
   limpavel?: boolean;
   vazio?: string;
+  /** Como mostrar a data escolhida. Por omissao `dd/mm/aaaa`; o cartao de
+   *  pesquisa das landings passa "Hoje, qui 5 nov", que se le sem contar. */
+  formatar?: (d: Date) => string;
+  /** Abertura controlada por fora, opcional. O cartao de pesquisa abre o
+   *  calendario sozinho depois de escolhido o destino. */
+  aberto?: boolean;
+  onAbertoChange?: (aberto: boolean) => void;
+  invalido?: boolean;
+  /** Para onde vai o foco depois de escolhido um dia. Sem isto o Radix
+   *  devolve-o ao botao da data, e quem usa o teclado tinha de saltar
+   *  sozinho para o passo seguinte. */
+  depoisDeEscolher?: () => void;
+  /** Idioma do calendario. As landings passam o do seu selector; sem isto o
+   *  calendario seguia a preferencia do portal e saia em portugues na pagina
+   *  inglesa ("novembro", "seg ter qua"). */
+  idioma?: "pt" | "en";
 }) {
-  const { locale } = useUi();
-  const [aberto, setAberto] = useState(false);
+  const { locale: localeUi } = useUi();
+  const locale = idioma ?? localeUi;
+  const [abertoProprio, setAbertoProprio] = useState(false);
+  const aberto = abertoFora ?? abertoProprio;
+  const setAberto = (v: boolean) => { setAbertoProprio(v); onAbertoChange?.(v); };
+  const escolheu = useRef(false);
+  const caixaRef = useRef<HTMLDivElement>(null);
   const escolhida = deIso(value);
   const minimo = deIso(min);
   const maximo = deIso(max);
@@ -72,10 +99,10 @@ export function CampoData({
 
   return (
     <Popover onOpenChange={setAberto} open={aberto}>
-      <div className="campo-data">
-        <PopoverTrigger className="campo-data-botao" disabled={disabled} id={id} type="button">
+      <div className="campo-data" ref={caixaRef}>
+        <PopoverTrigger aria-invalid={invalido || undefined} className="campo-data-botao" disabled={disabled} id={id} type="button">
           <CalendarDays aria-hidden size={16} />
-          {escolhida ? paraEcra(escolhida) : <span className="campo-data-vazio">{vazio}</span>}
+          {escolhida ? (formatar ?? paraEcra)(escolhida) : <span className="campo-data-vazio">{vazio}</span>}
         </PopoverTrigger>
         {limpavel && value && !disabled ? (
           <button
@@ -88,7 +115,20 @@ export function CampoData({
           </button>
         ) : null}
       </div>
-      <PopoverContent align="start" className="w-auto p-1">
+      <PopoverContent
+        align="start"
+        className="w-auto p-1"
+        /* Nas landings o calendario abre dentro da caixa do site (`.bzlp`):
+           no body ficava fora do tema escuro e saia branco. No portal nao ha
+           `.bzlp` e continua a ir para o body. */
+        container={caixaRef.current?.closest<HTMLElement>(".bzlp")}
+        onCloseAutoFocus={(e) => {
+          if (!escolheu.current || !depoisDeEscolher) return;
+          escolheu.current = false;
+          e.preventDefault();
+          depoisDeEscolher();
+        }}
+      >
         <Calendar
           className="[--cell-size:--spacing(9)]"
           disabled={desactivados.length ? desactivados : undefined}
@@ -96,6 +136,7 @@ export function CampoData({
           mode="single"
           onSelect={(d) => {
             onChange(d ? paraIso(d) : "");
+            escolheu.current = Boolean(d);
             setAberto(false);
           }}
           selected={escolhida}

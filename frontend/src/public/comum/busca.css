@@ -131,7 +131,24 @@
   color: var(--busca-ink-fraca);
 }
 .bz-busca-campo [data-slot=select-trigger] { width: 100%; }
-.bz-busca-campo .campo-data-botao { height: 48px; }
+/* O botao da data vem do portal e pinta-se com os tokens `--app-*`, que o
+   tema escuro das landings nao muda: saia branco entre campos escuros. Aqui
+   segue os mesmos tokens do Input e do Select do shadcn ao lado dele. */
+.bz-busca-campo .campo-data-botao {
+  height: 48px;
+  border-color: var(--input);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 14px;
+}
+:is([data-theme=dark], .dark) .bz-busca-campo .campo-data-botao {
+  background: color-mix(in oklab, var(--input) 30%, transparent);
+}
+.bz-busca-campo .campo-data-botao .campo-data-vazio { color: var(--muted-foreground); }
+/* O mesmo para o texto das paragens: o booking.css pinta-o com `--ink`, que
+   no tema escuro da landing fica preto sobre o fundo escuro. */
+.bz-busca-campo .bzbk-input { color: var(--foreground); }
 
 /* Entre os dois campos, e alinhado com eles: e ali que a pessoa olha quando
    percebe que trocou os lugares. */
@@ -248,4 +265,16 @@
   .bz-busca-atalhos { display: none; }
   .bz-busca-baixo { justify-content: stretch; }
   .bz-busca-btn { width: 100%; }
+}
+
+/* A caixa que agrupa os campos sem o botao. So a variante `tpm` a desenha
+   (como barra unica, em tpm-paginas.css); nas outras nao existe para o
+   layout e os campos continuam filhos directos da grelha. */
+.bz-busca-segmentos { display: contents; }
+
+/* Campo em falta depois de submeter. A mensagem por baixo diz o que falta;
+   isto diz onde. */
+.bz-busca-campo.is-erro .bzbk-input,
+.bz-busca-campo.is-erro .campo-data-botao {
+  border-color: var(--busca-erro);
 }

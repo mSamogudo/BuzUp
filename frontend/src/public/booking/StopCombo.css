@@ -1,0 +1,73 @@
+/* Lista de paragens do StopCombo.
+
+   Vive aqui, importada pelo proprio componente, e nao no booking.css: o
+   cartao de pesquisa das landings (HeroBusca) usa este combo, e o booking.css
+   so carrega nas rotas /comprar e /checkout. Na pagina inicial a lista saia
+   sem estilo nenhum: com marcadores, empurrando o cartao, e com o codigo
+   interno colado ao nome.
+
+   Usa os tokens do preset (--popover, --accent, --border...) e nao os nomes
+   locais do .bzbk, porque aparece fora dele. O preset ja troca esses tokens
+   em [data-theme=dark], por isso o escuro nao precisa de regras proprias. */
+
+.bzbk-combo { position: relative; }
+
+.bzbk-combo-list {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  /* Mais larga do que o campo quando o campo e estreito: no cartao da TPM o
+     campo de origem tem ~140px e os nomes partiam-se em quatro linhas. Nunca
+     passa da largura do ecra. */
+  width: max-content;
+  min-width: max(100%, 300px);
+  max-width: min(420px, calc(100vw - 32px));
+  max-height: 296px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  text-align: left;
+  background: var(--popover, #fff);
+  color: var(--popover-foreground, #212529);
+  border: 1px solid var(--border, #dfe5ec);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(7, 30, 73, 0.18), 0 2px 6px rgba(7, 30, 73, 0.08);
+}
+
+.bzbk-combo-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14.5px;
+  line-height: 1.3;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+.bzbk-combo-opt-nome { flex: 1 1 auto; min-width: 0; }
+.bzbk-combo-opt-icone { flex: 0 0 auto; color: var(--muted-foreground, #6d6d6e); }
+.bzbk-combo-opt-check { flex: 0 0 auto; color: var(--primary, #03316b); }
+
+.bzbk-combo-opt.is-hi {
+  background: var(--accent, #e6eef5);
+  color: var(--accent-foreground, #03316b);
+}
+.bzbk-combo-opt.is-hi .bzbk-combo-opt-icone { color: inherit; }
+.bzbk-combo-opt.is-sel { font-weight: 700; }
+
+.bzbk-combo-empty {
+  padding: 12px;
+  font-size: 13.5px;
+  color: var(--muted-foreground, #6d6d6e);
+}
+
+@media (max-width: 640px) {
+  /* No telemovel o campo ja ocupa a largura toda; a lista segue-o. */
+  .bzbk-combo-list { width: 100%; min-width: 0; max-width: none; }
+}

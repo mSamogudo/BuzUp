@@ -52,6 +52,9 @@ export type TextosBusca = {
   erroMesmoLugar: string;
   erroData: string;
   erroVolta: string;
+  /* Lista de paragens sem resultado. Tambem estava fixa em portugues, dentro
+     do StopCombo. */
+  semParagem: string;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -187,6 +190,7 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
             exclude={destino}
             id="busca-origem"
             onChange={setOrigem}
+            emptyText={b.semParagem}
             placeholder={semParagens ? b.semPartidas : b.deOnde}
             stops={stops}
             value={origem}
@@ -211,6 +215,7 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
             exclude={origem}
             id="busca-destino"
             onChange={setDestino}
+            emptyText={b.semParagem}
             placeholder={semParagens ? b.semPartidas : b.paraOnde}
             stops={stops}
             value={destino}

@@ -332,7 +332,14 @@
   min-height: calc(100svh - var(--nav-h));
   background: linear-gradient(118deg, var(--chapa-de) 0%, var(--chapa-de) 34%, var(--chapa-para) 100%);
   color: var(--ink);
-  overflow: hidden;
+  /* So o eixo horizontal: as ondas passam uns 80px para a direita e nao podem
+     criar scroll lateral. Com `overflow: hidden` o corte apanhava tambem a
+     lista de paragens do cartao de pesquisa, que desce para alem do fundo do
+     heroi. `clip` (e nao `hidden`) deixa o eixo vertical visivel; o z-index
+     poe a lista por cima da seccao seguinte. */
+  overflow-x: clip;
+  overflow-y: visible;
+  z-index: 2;
 }
 
 .che-hero-in {

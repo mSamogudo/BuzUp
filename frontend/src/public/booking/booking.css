@@ -279,17 +279,7 @@
 .bzbk-currency-btn.is-on{background:var(--navy);color:#fff}
 .bzbk-sum-fx{border-top:1px dashed var(--line);margin-top:4px;padding-top:8px}
 
-/* Combobox de origem/destino: escreve e a lista filtra */
-.bzbk-combo{position:relative}
-.bzbk-combo-list{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;max-height:264px;overflow-y:auto;
-  margin:0;padding:5px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:12px;
-  box-shadow:0 12px 32px rgba(7,30,73,.14)}
-.bzbk-combo-opt{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  padding:9px 11px;border-radius:8px;font-size:14px;color:var(--ink);cursor:pointer}
-.bzbk-combo-opt small{font-size:11px;color:var(--muted-ink);letter-spacing:.04em;white-space:nowrap;flex:0 0 auto}
-.bzbk-combo-opt.is-hi{background:var(--bg)}
-.bzbk-combo-opt.is-sel{font-weight:700;color:var(--heading)}
-.bzbk-combo-empty{padding:12px 11px;font-size:13px;color:var(--muted-ink)}
+/* O combobox de origem/destino tem o seu proprio StopCombo.css. */
 
 @media (prefers-reduced-motion: reduce){
   .bzbk *{transition:none!important;animation-duration:.01ms!important}
@@ -412,11 +402,6 @@
      tem de ser dito, porque no escuro nao pode ser o fundo. */
   --heading:var(--foreground);
 }
-/* Lista de paragens: fundo branco fixo com texto que passa a claro — era o
-   sítio onde a escrita desaparecia por completo ao procurar uma paragem. */
-:root[data-theme="dark"] .bzbk-combo-list{background:var(--card);border-color:var(--line)}
-:root[data-theme="dark"] .bzbk-combo-opt{color:var(--ink)}
-:root[data-theme="dark"] .bzbk-combo-opt.is-hi{background:var(--accent)}
 :root[data-theme="dark"] .bzbk-card{background:var(--card);border-color:var(--line)}
 :root[data-theme="dark"] .bzbk-input,
 :root[data-theme="dark"] .bzbk-select,

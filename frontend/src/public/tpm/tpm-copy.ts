@@ -88,6 +88,7 @@ const PT = {
     erroMesmoLugar: "A origem e o destino não podem ser o mesmo lugar.",
     erroData: "Escolha a data de ida.",
     erroVolta: "Escolha a data de regresso.",
+    semParagem: "Nenhuma paragem com esse nome.",
   },
 
   inicio: {
@@ -512,6 +513,7 @@ const EN: typeof PT = {
     erroMesmoLugar: "Origin and destination cannot be the same place.",
     erroData: "Please choose the outbound date.",
     erroVolta: "Please choose the return date.",
+    semParagem: "No stop matches that name.",
   },
 
   inicio: {

@@ -1,18 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import "./StopCombo.css";
 
 export interface ComboOpt { id: number; code: string; name: string }
 
 /** Combobox de paragem: lista todas as opções e filtra à medida que o
  * utilizador escreve — substitui o <select> que obrigava a rolar a lista
- * inteira à procura do nome. Sem dependências externas. */
-export default function StopCombo({ id, value, onChange, stops, exclude, placeholder }: {
+ * inteira à procura do nome. Sem dependências externas.
+ *
+ * O código da paragem (ST-...) continua a contar para a pesquisa, mas já não
+ * aparece: é um identificador interno, e no cartão estreito da TPM ocupava
+ * metade da linha e saía cortado. */
+export default function StopCombo({ id, value, onChange, stops, exclude, placeholder, emptyText = "Nenhuma paragem com esse nome." }: {
   id: string;
   value: string;
   onChange: (v: string) => void;
   stops: ComboOpt[];
   exclude?: string;
   placeholder: string;
+  /** Texto quando a pesquisa não encontra nada; vem do dicionário do site. */
+  emptyText?: string;
 }) {
   const chosen = stops.find((s) => String(s.id) === value) || null;
   const [text, setText] = useState(chosen?.name || "");
@@ -71,6 +79,7 @@ export default function StopCombo({ id, value, onChange, stops, exclude, placeho
   return (
     <div className="bzbk-combo" ref={rootRef}>
       <Input
+        aria-activedescendant={open && filtered[hi] ? `${id}-opt-${filtered[hi].id}` : undefined}
         aria-autocomplete="list"
         aria-controls={`${id}-list`}
         aria-expanded={open}
@@ -90,18 +99,21 @@ export default function StopCombo({ id, value, onChange, stops, exclude, placeho
       />
       {open && (
         <ul className="bzbk-combo-list" id={`${id}-list`} ref={listRef} role="listbox">
-          {filtered.length === 0 && <li className="bzbk-combo-empty">Nenhuma paragem com esse nome.</li>}
+          {filtered.length === 0 && <li className="bzbk-combo-empty" role="presentation">{emptyText}</li>}
           {filtered.map((s, i) => (
             <li
               aria-selected={String(s.id) === value}
               className={`bzbk-combo-opt${i === hi ? " is-hi" : ""}${String(s.id) === value ? " is-sel" : ""}`}
               data-i={i}
+              id={`${id}-opt-${s.id}`}
               key={s.id}
+              onPointerEnter={() => setHi(i)}
               onPointerDown={(e) => { e.preventDefault(); pick(s); }}
               role="option"
             >
-              {s.name}
-              {s.code ? <small>{s.code}</small> : null}
+              <MapPin aria-hidden className="bzbk-combo-opt-icone" size={16} />
+              <span className="bzbk-combo-opt-nome">{s.name}</span>
+              {String(s.id) === value ? <Check aria-hidden className="bzbk-combo-opt-check" size={16} /> : null}
             </li>
           ))}
         </ul>

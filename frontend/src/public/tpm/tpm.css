@@ -83,7 +83,13 @@
   align-items: flex-end;
   color: #fff;
   isolation: isolate;
-  overflow: hidden;
+  /* So o eixo horizontal. Com `overflow: hidden` o corte apanhava a lista
+     de paragens do cartao de pesquisa, que fica perto do fundo do heroi e
+     desaparecia a meio. `clip` (e nao `hidden`) deixa o eixo vertical
+     visivel; o z-index poe a lista por cima da seccao seguinte. */
+  overflow-x: clip;
+  overflow-y: visible;
+  z-index: 2;
 }
 .tpm-hero-photo {
   position: absolute;

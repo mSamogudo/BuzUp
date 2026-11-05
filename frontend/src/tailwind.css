@@ -82,6 +82,18 @@
   button[data-slot] {
     padding: 0;
   }
+
+  /* Sexta: a borda. O UA poe `2px outset`, e o `border-color` de cima so
+   * lhe muda a cor. Os dias do calendario (botoes `ghost`, sem utilitario de
+   * borda) saiam todos em relevo, como botoes do Windows 98. As setas do mes
+   * vem do react-day-picker sem `data-slot`, por isso o calendario entra
+   * pela caixa. Quem tem `border` por utilitario volta a ter 1px solido,
+   * que e o que desenhou. */
+  button[data-slot],
+  [data-slot="calendar"] button {
+    border-width: 0;
+    border-style: solid;
+  }
 }
 
 /* Inter e Manrope, alojadas localmente. */

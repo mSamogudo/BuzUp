@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftRight, ArrowRight, Search } from "lucide-react";
-import StopCombo, { type ComboOpt } from "../booking/StopCombo";
+import StopCombo, { type ComboOpt, type StopComboControlo } from "../booking/StopCombo";
 import { CampoData } from "../../ui/CampoData";
 import { CampoSelect } from "../../ui/CampoSelect";
 
@@ -39,6 +39,8 @@ export type TextosBusca = {
   procurar: string;
   destinosAVenda: string;
   semPartidas: string;
+  /** Enquanto a lista de paragens ainda nao chegou. */
+  aCarregar: string;
   deOnde: string;
   paraOnde: string;
   passageiros: string;
@@ -52,10 +54,42 @@ export type TextosBusca = {
   erroMesmoLugar: string;
   erroData: string;
   erroVolta: string;
+  /* Lista de paragens sem resultado. Tambem estava fixa em portugues, dentro
+     do StopCombo. */
+  semParagem: string;
+  /* A data escolhida mostra-se por extenso ("Hoje, qui 5 nov") em vez de
+     dd/mm/aaaa: le-se sem contar dias. A lingua do Intl vem daqui e nao do
+     browser, pela mesma razao que o CampoData existe. */
+  locale: string;
+  hoje: string;
+  amanha: string;
+  /** Texto do campo da volta ainda vazio. */
+  voltaVazia: string;
+  /** Botao que fecha a lista de paragens em ecra inteiro, no telemovel. */
+  fechar: string;
 };
+
+type Campo = "origem" | "destino" | "data" | "volta";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const paraIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+/** "quinta 5 nov" / "Thu 5 Nov", com "Hoje," ou "Amanha," a frente quando cabe.
+ *  Cada parte sai de um formatador proprio. Pedidas juntas, o pt-PT devolve o
+ *  mes em numero ("quarta, 11/11"), e o campo mostrava "quarta 11 11". Os
+ *  pontos das abreviaturas ("nov.") saem: num campo de 24px so fazem ruido. */
+function dataAmiga(d: Date, b: TextosBusca) {
+  const p = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(b.locale, o).format(d).replace(/\./g, "");
+  const zero = new Date(); zero.setHours(0, 0, 0, 0);
+  const dia = new Date(d); dia.setHours(0, 0, 0, 0);
+  const dif = Math.round((dia.getTime() - zero.getTime()) / 86400000);
+  /* "Hoje" e "Amanha" tomam o lugar do dia da semana em vez de se juntarem
+     a ele: "Amanha, sex 6 nov" nao cabia no segmento a 1440px. */
+  const dm = `${p({ day: "numeric" })} ${p({ month: "short" })}`;
+  if (dif === 0) return `${b.hoje}, ${dm}`;
+  if (dif === 1) return `${b.amanha}, ${dm}`;
+  return `${p({ weekday: "short" })} ${dm}`;
+}
 
 /** Como o cartao se apresenta.
  *
@@ -82,7 +116,12 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
   const compacto = variante !== "padrao";
   const barra = variante === "barra";
   const navegar = useNavigate();
-  const [stops, setStops] = useState<ComboOpt[]>([]);
+  /* `null` enquanto a lista nao chega. Sem esta distincao, os primeiros
+     segundos (ou todos, numa ligacao lenta) diziam "Sem partidas a venda"
+     e "Nenhuma paragem com esse nome", e as duas coisas eram falsas. */
+  const [carregadas, setStops] = useState<ComboOpt[] | null>(null);
+  const stops = useMemo(() => carregadas ?? [], [carregadas]);
+  const aCarregar = carregadas === null;
   const [origem, setOrigem] = useState("");
   const [destino, setDestino] = useState("");
   const [tipo, setTipo] = useState<"ida" | "idaevolta">("ida");
@@ -90,6 +129,15 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
   const [volta, setVolta] = useState("");
   const [pax, setPax] = useState("1");
   const [erro, setErro] = useState("");
+  /* Qual campo esta em falta. A mensagem continua por baixo (role=alert),
+     mas o campo tambem fica marcado e recebe o foco: antes a pessoa lia
+     "Indique a origem e o destino" e tinha de descobrir sozinha qual. */
+  const [campoErro, setCampoErro] = useState<Campo | null>(null);
+  const [dataAberta, setDataAberta] = useState(false);
+  const [voltaAberta, setVoltaAberta] = useState(false);
+  const origemRef = useRef<StopComboControlo>(null);
+  const destinoRef = useRef<StopComboControlo>(null);
+  const botaoRef = useRef<HTMLButtonElement>(null);
 
   const hoje = useMemo(() => paraIso(new Date()), []);
 
@@ -117,12 +165,41 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
     setDestino(origem);
   };
 
+  // Quem corrige o campo nao precisa de continuar a ler o erro.
+  useEffect(() => { setErro(""); setCampoErro(null); }, [origem, destino, data, volta, tipo]);
+
+  /* Cada escolha leva ao passo seguinte que ainda falta: origem -> destino
+     -> calendario -> (volta) -> botao. Sao dois cliques a menos numa
+     pesquisa completa, e ninguem fica a pensar "e agora?". Nunca submete
+     sozinho: o ultimo passo e sempre da pessoa. */
+  const seguinte = (feito: Campo) => {
+    const falta = (c: Campo) => (c === "origem" ? !origem && feito !== "origem"
+      : c === "destino" ? !destino && feito !== "destino"
+      : c === "data" ? !data && feito !== "data"
+      : tipo === "idaevolta" && !volta && feito !== "volta");
+    if (falta("destino")) destinoRef.current?.abrir();
+    else if (falta("origem")) origemRef.current?.abrir();
+    else if (falta("data")) setDataAberta(true);
+    else if (falta("volta")) setVoltaAberta(true);
+    else botaoRef.current?.focus();
+  };
+
+  const assinalar = (c: Campo, msg: string) => {
+    setErro(msg);
+    setCampoErro(c);
+    if (c === "origem") origemRef.current?.focar();
+    else if (c === "destino") destinoRef.current?.focar();
+    else if (c === "data") setDataAberta(true);
+    else setVoltaAberta(true);
+  };
+
   const submeter = (e: FormEvent) => {
     e.preventDefault();
-    if (!origem || !destino) { setErro(b.erroPercurso); return; }
-    if (origem === destino) { setErro(b.erroMesmoLugar); return; }
-    if (!data) { setErro(b.erroData); return; }
-    if (tipo === "idaevolta" && !volta) { setErro(b.erroVolta); return; }
+    if (!origem) { assinalar("origem", b.erroPercurso); return; }
+    if (!destino) { assinalar("destino", b.erroPercurso); return; }
+    if (origem === destino) { assinalar("destino", b.erroMesmoLugar); return; }
+    if (!data) { assinalar("data", b.erroData); return; }
+    if (tipo === "idaevolta" && !volta) { assinalar("volta", b.erroVolta); return; }
     setErro("");
 
     const q = new URLSearchParams({ origem, destino, data, pax });
@@ -130,7 +207,20 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
     navegar(`/comprar?${q}`);
   };
 
-  const semParagens = stops.length === 0;
+  const semParagens = !aCarregar && stops.length === 0;
+  const formatar = (d: Date) => dataAmiga(d, b);
+  const idiomaCalendario = b.locale.startsWith("pt") ? "pt" : "en";
+
+  /** Um clique em qualquer parte do segmento, e nao so no texto, abre o
+   *  controlo. Na barra da TPM o segmento tem 64px de altura e o controlo 24:
+   *  o resto era area morta que parecia clicavel. */
+  const focarSegmento = (e: MouseEvent<HTMLDivElement>) => {
+    const alvo = e.target as HTMLElement;
+    if (!alvo.classList.contains("bz-busca-campo")) return;
+    const controlo = alvo.querySelector<HTMLElement>("input, button");
+    controlo?.focus();
+    controlo?.click();
+  };
 
   /* O alternador de tipo de viagem. Vive na fila de cima nas variantes
      `padrao` e `tpm`, e dentro da fila dos campos na `barra` — por isso e uma
@@ -170,6 +260,10 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
       )}
 
       <div className={`bz-busca-campos${tipo === "idaevolta" ? " tem-volta" : ""}`}>
+        {/* Os campos, sem o botao. Na `tpm` e esta caixa que desenha a barra
+            unica com divisorias; nas outras variantes e `display: contents` e
+            nao existe para o layout. */}
+        <div className="bz-busca-segmentos" onClick={focarSegmento}>
         {barra ? (
           /* Um campo como os outros: rotulo por cima, controlo por baixo. E um
              `<span>` e nao um `<label>` porque o que ele nomeia sao dois
@@ -181,13 +275,20 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
           </div>
         ) : null}
 
-        <div className="bz-busca-campo is-largo">
+        <div className={`bz-busca-campo is-largo is-origem${campoErro === "origem" ? " is-erro" : ""}`}>
           <label htmlFor="busca-origem">{b.origem}</label>
           <StopCombo
+            emptyText={aCarregar ? b.aCarregar : b.semParagem}
             exclude={destino}
+            fechar={b.fechar}
+            folha
             id="busca-origem"
+            invalido={campoErro === "origem"}
             onChange={setOrigem}
+            onEscolha={() => seguinte("origem")}
             placeholder={semParagens ? b.semPartidas : b.deOnde}
+            ref={origemRef}
+            rotulo={b.origem}
             stops={stops}
             value={origem}
           />
@@ -205,34 +306,67 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
           <ArrowLeftRight aria-hidden size={16} />
         </button>
 
-        <div className="bz-busca-campo is-largo">
+        <div className={`bz-busca-campo is-largo is-destino${campoErro === "destino" ? " is-erro" : ""}`}>
           <label htmlFor="busca-destino">{b.destino}</label>
           <StopCombo
+            emptyText={aCarregar ? b.aCarregar : b.semParagem}
             exclude={origem}
+            fechar={b.fechar}
+            folha
             id="busca-destino"
+            invalido={campoErro === "destino"}
             onChange={setDestino}
+            onEscolha={() => seguinte("destino")}
             placeholder={semParagens ? b.semPartidas : b.paraOnde}
+            ref={destinoRef}
+            rotulo={b.destino}
             stops={stops}
             value={destino}
           />
         </div>
 
-        <div className="bz-busca-campo">
+        <div className={`bz-busca-campo is-data${campoErro === "data" ? " is-erro" : ""}`}>
           <label htmlFor="busca-data">{b.ida}</label>
           {/* `min={hoje}`: nao se vende bilhete para ontem. */}
-          <CampoData id="busca-data" limpavel={false} min={hoje} onChange={setData} value={data} vazio={b.dataVazia} />
+          <CampoData
+            aberto={dataAberta}
+            depoisDeEscolher={() => seguinte("data")}
+            formatar={formatar}
+            id="busca-data"
+            idioma={idiomaCalendario}
+            invalido={campoErro === "data"}
+            limpavel={false}
+            min={hoje}
+            onAbertoChange={setDataAberta}
+            onChange={(v) => { setData(v); if (volta && v > volta) setVolta(""); }}
+            value={data}
+            vazio={b.dataVazia}
+          />
         </div>
 
         {tipo === "idaevolta" && (
-          <div className="bz-busca-campo">
+          <div className={`bz-busca-campo is-data is-volta${campoErro === "volta" ? " is-erro" : ""}`}>
             <label htmlFor="busca-volta">{b.volta}</label>
             {/* O regresso nunca antes da ida. */}
-            <CampoData id="busca-volta" limpavel={false} min={data || hoje} onChange={setVolta} value={volta} vazio={b.dataVazia} />
+            <CampoData
+              aberto={voltaAberta}
+              depoisDeEscolher={() => seguinte("volta")}
+              formatar={formatar}
+              id="busca-volta"
+              idioma={idiomaCalendario}
+              invalido={campoErro === "volta"}
+              limpavel={false}
+              min={data || hoje}
+              onAbertoChange={setVoltaAberta}
+              onChange={setVolta}
+              value={volta}
+              vazio={b.voltaVazia}
+            />
           </div>
         )}
 
         <CampoSelect
-          className="bz-busca-campo"
+          className="bz-busca-campo is-pax"
           label={b.passageiros}
           onChange={setPax}
           value={pax}
@@ -241,9 +375,10 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
             <option key={n} value={n}>{n} {n === 1 ? b.passageiro1 : b.passageiroN}</option>
           ))}
         </CampoSelect>
+        </div>
 
         {compacto ? (
-          <button className="bz-busca-btn" disabled={semParagens} type="submit">
+          <button className="bz-busca-btn" disabled={semParagens} ref={botaoRef} type="submit">
             <Search aria-hidden size={18} /> {b.procurar}
           </button>
         ) : null}
@@ -266,7 +401,7 @@ export default function HeroBusca({ textos: b, variante = "padrao" }: { textos: 
               ))}
             </div>
           ) : <span />}
-          <button className="bz-busca-btn" disabled={semParagens} type="submit">
+          <button className="bz-busca-btn" disabled={semParagens} ref={botaoRef} type="submit">
             <Search aria-hidden size={18} /> {b.procurar}
           </button>
         </div>

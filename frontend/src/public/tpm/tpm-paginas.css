@@ -186,68 +186,334 @@
 
 /* ── A variante TPM do cartão de busca ────────────────────────────────
    O cartão vive em `public/comum` e é partilhado com a Cheetah Express. O
-   desenho da tela só vale para a TPM-TUR, por isso tudo o que aqui se muda é
-   por baixo de `.bz-busca--tpm` — a Cheetah não apanha nada disto.
+   desenho daqui só vale para a TPM-TUR, por isso tudo o que se muda é por
+   baixo de `.bz-busca--tpm`: a Cheetah não apanha nada disto.
 
-   A mudança que importa é o botão ter entrado na fila dos campos. A linha
-   própria que ele ocupava custava 76px, e eram esses 76px que empurravam o
-   cartão para fora do primeiro ecrã. A coluna dele leva `minmax(190px, auto)`
-   — a largura de "Procurar viagens" mais o ícone — que é o que impede o que
-   acontecia antes: com a volta ligada a fila ganhava uma coluna, o botão
-   encolhia e o rótulo quebrava em duas linhas. */
+   UMA BARRA, E NÃO CINCO CAIXAS. Cinco caixas contornadas lado a lado liam-se
+   como um formulário administrativo e cada uma pedia atenção igual. A barra
+   única com divisórias é o desenho que quem compra viagens já conhece (é o
+   das companhias aéreas e das reservas de hotel): lê-se da esquerda para a
+   direita como uma frase, "de, para, quando, quantos", e o botão fecha-a.
+
+   O rótulo vive DENTRO do segmento, por cima do valor, e o ícone à esquerda.
+   O segmento inteiro é a área de clique (64px de altura), e não só os 24px
+   do texto. O botão de trocar senta-se em cima da divisória entre origem e
+   destino, que é onde o olho está quando a pessoa percebe que os trocou.
+
+   Altura: o cartão fica em 152px a 1440px só de ida. Em ida e volta o botão
+   desce para uma fila própria e o cartão fica com 212px (ver em baixo). */
 .bz-busca--tpm .bz-busca-topo { justify-content: flex-start; margin-bottom: 12px; }
+
 .bz-busca--tpm .bz-busca-campos {
-  grid-template-columns:
-    minmax(0, 1.2fr) auto minmax(0, 1.2fr)
-    minmax(0, 0.8fr) minmax(0, 0.85fr) minmax(190px, auto);
+  /* Larguras das colunas de data e de passageiros, medidas nos textos mais
+     longos que lá aparecem, em SF a 14px:
+       data   40 (ícone) + 121 ("Quando regressa?", "Tomorrow, 13 Nov") + 12
+       pax    40 + 95 ("5 passageiros") + 6 + 16 (seta) + 12
+     e mais uns 10% por cima, porque a Segoe UI do Windows é mais larga.
+     Com 174/160 (e 150/150/140 em ida e volta) a volta e os passageiros
+     saíam do segmento e iam por cima do botão. */
+  --busca-data: 188px;
+  --busca-pax: 184px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
 }
-.bz-busca--tpm .bz-busca-campos.tem-volta {
-  grid-template-columns:
-    minmax(0, 1fr) auto minmax(0, 1fr)
-    minmax(0, 0.72fr) minmax(0, 0.72fr) minmax(0, 0.78fr) minmax(190px, auto);
+
+.bz-busca--tpm .bz-busca-segmentos {
+  display: grid;
+  /* Data e passageiros com tecto fixo: não mudam de largura quando se escolhe
+     um valor, e o que sobra vai todo para as paragens. */
+  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, var(--busca-data)) minmax(0, var(--busca-pax));
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid var(--busca-linha);
+  border-radius: 12px;
+  background: var(--busca-superficie);
 }
+.bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-segmentos {
+  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, var(--busca-data)) minmax(0, var(--busca-data)) minmax(0, var(--busca-pax));
+}
+
+/* Ida e volta no computador: seis segmentos e o botão não cabem numa fila
+   sem esmagar alguém (as paragens ficavam com 150px, menos do que o próprio
+   "De onde parte?" pede). A barra fica com a largura toda e o botão desce,
+   alinhado à direita e da largura da coluna dos passageiros, por baixo dela:
+   a leitura continua a acabar no canto de baixo à direita. */
+@media (min-width: 1081px) {
+  .bz-busca--tpm .bz-busca-campos.tem-volta {
+    --busca-pax: 200px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-btn {
+    justify-self: end;
+    /* + 1px da borda da barra, para as arestas baterem certo com o segmento. */
+    width: calc(var(--busca-pax) + 1px);
+    min-height: 52px;
+  }
+}
+
+.bz-busca--tpm .bz-busca-campo {
+  --seg-esq: 40px;
+  position: relative;
+  display: grid;
+  /* Coluna que pode encolher: sem isto a grelha cresce até ao texto mais
+     largo (o botão da data é `nowrap`) e o valor sai pelo segmento fora em
+     vez de levar reticências. */
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: 10px 12px 9px var(--seg-esq);
+  border-radius: 11px;
+  cursor: pointer;
+  /* As divisórias são fundos, e não bordas: numa caixa de cantos redondos a
+     borda curva-se nas pontas. Recuadas 14px das extremidades, ficam linhas
+     direitas, e somem à volta do segmento activo. */
+  --div-v: none;
+  --div-h: none;
+  background-image: var(--div-v), var(--div-h);
+  background-repeat: no-repeat;
+  background-position: 0 50%, 50% 0;
+  background-size: 1px calc(100% - 28px), calc(100% - 28px) 1px;
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+.bz-busca--tpm .bz-busca-segmentos {
+  --busca-div: linear-gradient(var(--busca-linha-suave), var(--busca-linha-suave));
+}
+.bz-busca--tpm .bz-busca-campo:not(.is-origem) {
+  --div-v: var(--busca-div);
+}
+/* O disco de trocar ocupa 17px de cada lado da divisória: a origem afasta o
+   texto pela direita, o destino afasta o ícone pela esquerda. */
+.bz-busca--tpm .bz-busca-campo.is-origem { padding-right: 24px; }
+.bz-busca--tpm .bz-busca-campo.is-destino { --seg-esq: 50px; }
+
+.bz-busca--tpm .bz-busca-campo:hover {
+  background-color: color-mix(in srgb, var(--busca-ink) 4%, transparent);
+}
+.bz-busca--tpm .bz-busca-segmentos > .bz-busca-campo.bz-busca-campo:is(:hover, :focus-within) {
+  --div-v: none;
+  --div-h: none;
+}
+@media (min-width: 1081px) {
+  .bz-busca--tpm .bz-busca-segmentos > .bz-busca-campo:is(:hover, :focus-within) + .bz-busca-campo,
+  .bz-busca--tpm .bz-busca-segmentos > .bz-busca-campo:is(:hover, :focus-within) + .bz-busca-inverter + .bz-busca-campo {
+    --div-v: none;
+  }
+}
+.bz-busca--tpm .bz-busca-campo:focus-within {
+  background-color: var(--busca-superficie);
+  box-shadow: inset 0 0 0 2px var(--busca-accao);
+}
+.bz-busca--tpm .bz-busca-campo.is-erro,
+.bz-busca--tpm .bz-busca-campo.is-erro:focus-within {
+  box-shadow: inset 0 0 0 2px var(--busca-erro);
+}
+
 /* Caixa normal, e não versaletes: "ORIGEM DESTINO IDA PASSAGEIROS" em
-   maiúsculas espaçadas lia-se como uma fila de etiquetas de formulário
-   administrativo e roubava atenção aos campos. */
+   maiúsculas espaçadas lia-se como uma fila de etiquetas e roubava atenção
+   aos valores, que são o que a pessoa vem ver. */
 .bz-busca--tpm .bz-busca-campo > label,
 .bz-busca--tpm .bz-busca-campo > [data-slot=label] {
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  line-height: 16px;
+  letter-spacing: 0.01em;
   text-transform: none;
+  color: var(--busca-ink-fraca);
+  cursor: pointer;
 }
-/* Caixa contornada da altura dos campos, e não um disco marinho. O disco era
-   a mancha mais escura do cartão e puxava o olho para uma acção secundária —
-   trocar origem por destino — antes dos próprios campos. */
+
+/* O ícone de cada segmento. Máscara e não <svg> no markup porque o
+   componente é partilhado e a Cheetah não os usa; a cor segue a tinta fraca
+   e passa à de acção quando o segmento tem o foco. */
+.bz-busca--tpm .bz-busca-campo::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(var(--seg-esq) - 28px);
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  background: var(--busca-ink-fraca);
+  -webkit-mask: var(--seg-icone) center / contain no-repeat;
+  mask: var(--seg-icone) center / contain no-repeat;
+  pointer-events: none;
+}
+.bz-busca--tpm .bz-busca-campo:focus-within::before { background: var(--busca-accao-texto); }
+.bz-busca--tpm .bz-busca-campo.is-erro::before { background: var(--busca-erro); }
+.bz-busca--tpm .bz-busca-campo.is-origem {
+  --seg-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
+.bz-busca--tpm .bz-busca-campo.is-destino {
+  --seg-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");
+}
+.bz-busca--tpm .bz-busca-campo.is-data {
+  --seg-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3Cpath d='M8 14h.01'/%3E%3Cpath d='M12 14h.01'/%3E%3Cpath d='M16 14h.01'/%3E%3Cpath d='M8 18h.01'/%3E%3Cpath d='M12 18h.01'/%3E%3Cpath d='M16 18h.01'/%3E%3C/svg%3E");
+}
+.bz-busca--tpm .bz-busca-campo.is-pax {
+  --seg-icone: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M22 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E");
+}
+
+/* Os controlos perdem a caixa: quem desenha a moldura é o segmento. Regras
+   fora de @layer, por isso ganham às utilidades do Tailwind do Input e do
+   Select do shadcn (h-9, border, ring de foco) sem `!important`. */
+.bz-busca--tpm .bz-busca-campo .bzbk-input,
+.bz-busca--tpm .bz-busca-campo .campo-data-botao,
+.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] {
+  width: 100%;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--busca-ink);
+  font: inherit;
+  /* 14px no computador: a 15 "Fronteira de Ressano Garcia" ja nao cabia
+     no segmento a 1440px. No telemovel sobe para 16 (ver em baixo). */
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 24px;
+  cursor: pointer;
+}
+.bz-busca--tpm .bz-busca-campo .bzbk-input { text-overflow: ellipsis; }
+.bz-busca--tpm .bz-busca-campo .bzbk-input::placeholder,
+.bz-busca--tpm .bz-busca-campo .campo-data-vazio,
+.bz-busca--tpm .bz-busca-campo [data-slot=select-value][data-placeholder] {
+  color: var(--busca-ink-fraca);
+  font-weight: 500;
+  opacity: 1;
+}
+.bz-busca--tpm .bz-busca-campo .campo-data-botao {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.bz-busca--tpm .bz-busca-campo .campo-data-botao > svg { display: none; }
+.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] { gap: 6px; min-width: 0; overflow: hidden; }
+.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] > svg { flex: none; color: var(--busca-ink-fraca); opacity: 1; }
+/* Rede de segurança: se um dia o texto não couber (outra língua, outra
+   fonte), leva reticências dentro do segmento e a seta fica no sítio. */
+.bz-busca--tpm .bz-busca-campo [data-slot=select-value] {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* A lista de paragens desce da base do segmento e alinha pela esquerda dele,
+   e não pelo texto: pendurada nos 24px do input ficava a meio da barra. */
+.bz-busca--tpm .bz-busca-campo .bzbk-combo-list {
+  top: calc(100% + 19px);
+  left: calc(-1 * var(--seg-esq));
+}
+
+/* O disco de trocar, na coluna de largura zero entre origem e destino:
+   centrado na divisória, por cima dos dois segmentos. */
 .bz-busca--tpm .bz-busca-inverter {
-  width: 42px;
-  height: 48px;
-  margin-bottom: 0;
-  border: 1px solid var(--input, var(--line));
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--navy-ink, var(--ink));
+  z-index: 2;
+  align-self: center;
+  justify-self: start;
+  width: 34px;
+  height: 34px;
+  margin: 0 0 0 -17px;
+  border: 1px solid var(--busca-linha);
+  border-radius: 999px;
+  background: var(--busca-superficie);
+  color: var(--navy-ink, var(--busca-ink));
+  box-shadow: 0 2px 6px rgba(7, 30, 73, 0.10);
 }
 .bz-busca--tpm .bz-busca-inverter:hover {
-  border-color: var(--blue);
-  color: var(--blue2);
+  border-color: var(--busca-accao);
+  background: var(--busca-superficie);
+  color: var(--busca-accao-texto);
 }
-.bz-busca--tpm .bz-busca-btn { padding: 0 18px; }
+[data-theme="dark"] .bz-busca--tpm .bz-busca-inverter {
+  background: var(--busca-superficie);
+  color: var(--busca-ink);
+}
 
-@media (max-width: 1080px) {
-  /* Origem e destino ficam com a fila toda — são os campos de texto longo — e
-     a data e os passageiros ficam a par. Duas colunas em vez de uma poupam
-     uma fila de 68px, que é o que falta para o cartão caber na dobra de um
-     telemóvel de 844px de altura. */
-  .bz-busca--tpm .bz-busca-campos,
-  .bz-busca--tpm .bz-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bz-busca--tpm .bz-busca-campo.is-largo { grid-column: 1 / -1; }
-  .bz-busca--tpm .bz-busca-inverter { width: 100%; height: 38px; grid-column: 1 / -1; }
-  .bz-busca--tpm .bz-busca-btn { grid-column: 1 / -1; width: 100%; }
+.bz-busca--tpm .bz-busca-btn {
+  height: auto;
+  min-height: 64px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  white-space: nowrap;
 }
-@media (max-width: 560px) {
+
+/* Tablet: origem e destino a par na primeira fila, com o disco entre eles;
+   data e passageiros na segunda. O botão desce para a largura toda. */
+@media (max-width: 1080px) {
   .bz-busca--tpm .bz-busca-campos,
-  .bz-busca--tpm .bz-busca-campos.tem-volta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-busca--tpm .bz-busca-campos.tem-volta { grid-template-columns: minmax(0, 1fr); }
+  .bz-busca--tpm .bz-busca-segmentos,
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-segmentos {
+    grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr);
+  }
+  .bz-busca--tpm .bz-busca-campo.is-origem { grid-area: 1 / 1; }
+  .bz-busca--tpm .bz-busca-inverter { grid-area: 1 / 2; }
+  .bz-busca--tpm .bz-busca-campo.is-destino { grid-area: 1 / 3; --div-v: var(--busca-div); }
+  .bz-busca--tpm .bz-busca-campo.is-data { grid-area: 2 / 1; --div-v: none; --div-h: var(--busca-div); }
+  .bz-busca--tpm .bz-busca-campo.is-volta,
+  .bz-busca--tpm .bz-busca-campo.is-pax {
+    grid-area: 2 / 3;
+    --div-v: var(--busca-div);
+    --div-h: var(--busca-div);
+  }
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-campo.is-pax { grid-area: 3 / 1 / 4 / 4; --div-v: none; }
+  .bz-busca--tpm .bz-busca-btn { width: 100%; min-height: 52px; }
+  .bz-busca--tpm .bz-busca-campo .bzbk-input,
+  .bz-busca--tpm .bz-busca-campo .campo-data-botao,
+  .bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] { font-size: 15px; }
+  .bz-busca--tpm .bz-busca-inverter:hover { transform: rotate(180deg); }
+}
+
+/* Telemóvel: um segmento por fila, com o disco de trocar encostado à direita
+   sobre a linha que separa origem de destino. Data e passageiros já
+   estiveram a par, mas cada metade fica com 150px a 375 e a 16px
+   "Amanhã, 13 nov" e "5 passageiros" pedem perto de 190: saíam por cima do
+   vizinho. Uma fila de 60px a mais custa menos do que um valor ilegível. */
+@media (max-width: 640px) {
+  .bz-busca--tpm .bz-busca-segmentos,
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-segmentos {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 0 auto auto auto;
+  }
+  .bz-busca--tpm .bz-busca-campo { min-height: 60px; padding-right: 14px; }
+  .bz-busca--tpm .bz-busca-campo.is-origem { grid-area: 1 / 1; padding-right: 60px; }
+  .bz-busca--tpm .bz-busca-inverter {
+    grid-area: 2 / 1;
+    justify-self: end;
+    margin: 0 14px 0 0;
+  }
+  .bz-busca--tpm .bz-busca-campo.is-destino {
+    --seg-esq: 40px;
+    grid-area: 3 / 1;
+    padding-right: 60px;
+    --div-v: none;
+    --div-h: var(--busca-div);
+  }
+  .bz-busca--tpm .bz-busca-campo.is-data,
+  .bz-busca--tpm .bz-busca-campo.is-volta,
+  .bz-busca--tpm .bz-busca-campo.is-pax,
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-campo.is-pax {
+    grid-area: auto / 1;
+    --div-v: none;
+    --div-h: var(--busca-div);
+  }
+  /* 16px, e não 15: abaixo disso o Safari do iPhone faz zoom ao tocar. */
+  .bz-busca--tpm .bz-busca-campo .bzbk-input,
+  .bz-busca--tpm .bz-busca-campo .campo-data-botao,
+  .bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] { font-size: 16px; }
 }
 
 /* ── Vantagens ────────────────────────────────────────────────────── */

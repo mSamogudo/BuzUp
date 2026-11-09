@@ -74,21 +74,21 @@ type Campo = "origem" | "destino" | "data" | "volta";
 const pad = (n: number) => String(n).padStart(2, "0");
 const paraIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-/** "qui 5 nov" / "Thu 5 Nov", com "Hoje," ou "Amanha," a frente quando cabe.
- *  Monta-se pelas partes do Intl porque o formato inteiro em pt traz pontos
- *  e "de" ("qui., 5 de nov."), que num campo de 24px so fazem ruido. */
+/** "quinta 5 nov" / "Thu 5 Nov", com "Hoje," ou "Amanha," a frente quando cabe.
+ *  Cada parte sai de um formatador proprio. Pedidas juntas, o pt-PT devolve o
+ *  mes em numero ("quarta, 11/11"), e o campo mostrava "quarta 11 11". Os
+ *  pontos das abreviaturas ("nov.") saem: num campo de 24px so fazem ruido. */
 function dataAmiga(d: Date, b: TextosBusca) {
-  const partes = new Intl.DateTimeFormat(b.locale, { weekday: "short", day: "numeric", month: "short" }).formatToParts(d);
-  const p = (t: string) => (partes.find((x) => x.type === t)?.value ?? "").replace(/\./g, "");
+  const p = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(b.locale, o).format(d).replace(/\./g, "");
   const zero = new Date(); zero.setHours(0, 0, 0, 0);
   const dia = new Date(d); dia.setHours(0, 0, 0, 0);
   const dif = Math.round((dia.getTime() - zero.getTime()) / 86400000);
   /* "Hoje" e "Amanha" tomam o lugar do dia da semana em vez de se juntarem
      a ele: "Amanha, sex 6 nov" nao cabia no segmento a 1440px. */
-  const dm = `${p("day")} ${p("month")}`;
+  const dm = `${p({ day: "numeric" })} ${p({ month: "short" })}`;
   if (dif === 0) return `${b.hoje}, ${dm}`;
   if (dif === 1) return `${b.amanha}, ${dm}`;
-  return `${p("weekday")} ${dm}`;
+  return `${p({ weekday: "short" })} ${dm}`;
 }
 
 /** Como o cartao se apresenta.

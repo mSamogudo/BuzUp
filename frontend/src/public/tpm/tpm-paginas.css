@@ -200,11 +200,20 @@
    do texto. O botão de trocar senta-se em cima da divisória entre origem e
    destino, que é onde o olho está quando a pessoa percebe que os trocou.
 
-   Altura: o cartão fica em 150px a 1440px, abaixo dos 157 que tinha. */
+   Altura: o cartão fica em 152px a 1440px só de ida. Em ida e volta o botão
+   desce para uma fila própria e o cartão fica com 212px (ver em baixo). */
 .bz-busca--tpm .bz-busca-topo { justify-content: flex-start; margin-bottom: 12px; }
 
-.bz-busca--tpm .bz-busca-campos,
-.bz-busca--tpm .bz-busca-campos.tem-volta {
+.bz-busca--tpm .bz-busca-campos {
+  /* Larguras das colunas de data e de passageiros, medidas nos textos mais
+     longos que lá aparecem, em SF a 14px:
+       data   40 (ícone) + 121 ("Quando regressa?", "Tomorrow, 13 Nov") + 12
+       pax    40 + 95 ("5 passageiros") + 6 + 16 (seta) + 12
+     e mais uns 10% por cima, porque a Segoe UI do Windows é mais larga.
+     Com 174/160 (e 150/150/140 em ida e volta) a volta e os passageiros
+     saíam do segmento e iam por cima do botão. */
+  --busca-data: 188px;
+  --busca-pax: 184px;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: stretch;
@@ -212,11 +221,9 @@
 
 .bz-busca--tpm .bz-busca-segmentos {
   display: grid;
-  /* Data e passageiros têm tecto fixo, medido nos valores mais longos que
-     mostram ("Tomorrow, 13 Nov", "1 passageiro" e a seta): assim não mudam de
-     largura quando se escolhe um valor, e o que sobra vai todo para as
-     paragens, cujos nomes chegam aos 190px ("Fronteira de Ressano Garcia"). */
-  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, 174px) minmax(0, 160px);
+  /* Data e passageiros com tecto fixo: não mudam de largura quando se escolhe
+     um valor, e o que sobra vai todo para as paragens. */
+  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, var(--busca-data)) minmax(0, var(--busca-pax));
   align-items: stretch;
   min-width: 0;
   border: 1px solid var(--busca-linha);
@@ -224,13 +231,35 @@
   background: var(--busca-superficie);
 }
 .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-segmentos {
-  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, 150px) minmax(0, 150px) minmax(0, 140px);
+  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, var(--busca-data)) minmax(0, var(--busca-data)) minmax(0, var(--busca-pax));
+}
+
+/* Ida e volta no computador: seis segmentos e o botão não cabem numa fila
+   sem esmagar alguém (as paragens ficavam com 150px, menos do que o próprio
+   "De onde parte?" pede). A barra fica com a largura toda e o botão desce,
+   alinhado à direita e da largura da coluna dos passageiros, por baixo dela:
+   a leitura continua a acabar no canto de baixo à direita. */
+@media (min-width: 1081px) {
+  .bz-busca--tpm .bz-busca-campos.tem-volta {
+    --busca-pax: 200px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-btn {
+    justify-self: end;
+    /* + 1px da borda da barra, para as arestas baterem certo com o segmento. */
+    width: calc(var(--busca-pax) + 1px);
+    min-height: 52px;
+  }
 }
 
 .bz-busca--tpm .bz-busca-campo {
   --seg-esq: 40px;
   position: relative;
   display: grid;
+  /* Coluna que pode encolher: sem isto a grelha cresce até ao texto mais
+     largo (o botão da data é `nowrap`) e o valor sai pelo segmento fora em
+     vez de levar reticências. */
+  grid-template-columns: minmax(0, 1fr);
   align-content: center;
   gap: 2px;
   min-height: 64px;
@@ -366,8 +395,19 @@
   text-align: left;
 }
 .bz-busca--tpm .bz-busca-campo .campo-data-botao > svg { display: none; }
-.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] { gap: 6px; }
-.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] > svg { color: var(--busca-ink-fraca); opacity: 1; }
+.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] { gap: 6px; min-width: 0; overflow: hidden; }
+.bz-busca--tpm .bz-busca-campo [data-slot=select-trigger] > svg { flex: none; color: var(--busca-ink-fraca); opacity: 1; }
+/* Rede de segurança: se um dia o texto não couber (outra língua, outra
+   fonte), leva reticências dentro do segmento e a seta fica no sítio. */
+.bz-busca--tpm .bz-busca-campo [data-slot=select-value] {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
 
 /* A lista de paragens desce da base do segmento e alinha pela esquerda dele,
    e não pelo texto: pendurada nos 24px do input ficava a meio da barra. */
@@ -437,33 +477,39 @@
   .bz-busca--tpm .bz-busca-inverter:hover { transform: rotate(180deg); }
 }
 
-/* Telemóvel: tudo empilhado, com o disco de trocar encostado à direita sobre
-   a linha que separa origem de destino. Data e passageiros ficam a par: os
-   valores cabem ("Hoje, qui 5 nov"), e poupa-se uma fila de 64px. */
+/* Telemóvel: um segmento por fila, com o disco de trocar encostado à direita
+   sobre a linha que separa origem de destino. Data e passageiros já
+   estiveram a par, mas cada metade fica com 150px a 375 e a 16px
+   "Amanhã, 13 nov" e "5 passageiros" pedem perto de 190: saíam por cima do
+   vizinho. Uma fila de 60px a mais custa menos do que um valor ilegível. */
 @media (max-width: 640px) {
   .bz-busca--tpm .bz-busca-segmentos,
   .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-segmentos {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto 0 auto auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 0 auto auto auto;
   }
   .bz-busca--tpm .bz-busca-campo { min-height: 60px; padding-right: 14px; }
-  .bz-busca--tpm .bz-busca-campo.is-origem { grid-area: 1 / 1 / 2 / 3; padding-right: 60px; }
+  .bz-busca--tpm .bz-busca-campo.is-origem { grid-area: 1 / 1; padding-right: 60px; }
   .bz-busca--tpm .bz-busca-inverter {
-    grid-area: 2 / 1 / 3 / 3;
+    grid-area: 2 / 1;
     justify-self: end;
     margin: 0 14px 0 0;
   }
   .bz-busca--tpm .bz-busca-campo.is-destino {
     --seg-esq: 40px;
-    grid-area: 3 / 1 / 4 / 3;
+    grid-area: 3 / 1;
     padding-right: 60px;
     --div-v: none;
     --div-h: var(--busca-div);
   }
-  .bz-busca--tpm .bz-busca-campo.is-data { grid-area: 4 / 1; }
-  .bz-busca--tpm .bz-busca-campo.is-volta { grid-area: 4 / 2; }
-  .bz-busca--tpm .bz-busca-campo.is-pax { grid-area: 4 / 2; }
-  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-campo.is-pax { grid-area: 5 / 1 / 6 / 3; --div-v: none; }
+  .bz-busca--tpm .bz-busca-campo.is-data,
+  .bz-busca--tpm .bz-busca-campo.is-volta,
+  .bz-busca--tpm .bz-busca-campo.is-pax,
+  .bz-busca--tpm .bz-busca-campos.tem-volta .bz-busca-campo.is-pax {
+    grid-area: auto / 1;
+    --div-v: none;
+    --div-h: var(--busca-div);
+  }
   /* 16px, e não 15: abaixo disso o Safari do iPhone faz zoom ao tocar. */
   .bz-busca--tpm .bz-busca-campo .bzbk-input,
   .bz-busca--tpm .bz-busca-campo .campo-data-botao,
